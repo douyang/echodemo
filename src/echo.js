@@ -118,48 +118,61 @@ export function viewGeometry(anat, key) {
       r = perp(perp(bif.clone().sub(pv), n0), d);
       break;
     }
-    case 'psax_av': case 'psax_tv': {
-      // square to the aortic root, through the valve: the three cusps in cross-section
+    case 'psax_av': case 'psax_avz': case 'psax_tv': case 'psax_pa': case 'psax_cor': {
+      // The great-vessel levels (ASE 2019, Table 2, rows 2.7-2.10). The probe lies in front of the
+      // aortic root and a little to its left, at the left sternal border; the beam runs back,
+      // a little to the right and down. Screen-right is the patient's left. Each level is a
+      // plane through the aortic root, turned from square to it where the level needs.
       const n0 = anat.aorticRoot.clone();
-      d = perp(Y.clone().negate(), n0);
-      r = perp(perp(X, n0), d);
-      O = av.clone().addScaledVector(d, -7.4);
-      if (spec.plane === 'psax_tv') {
-        // same plane, the sector steered medially onto the tricuspid valve
-        const t = tv.clone().addScaledVector(n0, -tv.clone().sub(av).dot(n0));
-        d = t.clone().sub(O).normalize();
-        r = perp(perp(X, n0), d);
+      const e1 = perp(BODY.left, n0), e2 = n0.clone().cross(e1);
+      // n0 turned by tilt degrees toward direction az round the root (az 180: the patient's right)
+      const turned = (tilt, az) => {
+        const t = THREE.MathUtils.degToRad(tilt), a = THREE.MathUtils.degToRad(az);
+        return n0.clone().multiplyScalar(Math.cos(t)).addScaledVector(e1, Math.sin(t) * Math.cos(a)).addScaledVector(e2, Math.sin(t) * Math.sin(a)).normalize();
+      };
+      const probe = (C, n, dist, aim = V3(-0.45, -0.15, -1)) => {
+        d = perp(aim, n);
+        r = perp(perp(BODY.left, n), d);
+        O = C.clone().addScaledVector(d, -dist);
+      };
+      // the shut cusps meet 0.6 to 1.3 cm above the valve's centre point, highest at the wall
+      if (spec.plane === 'psax_avz') {
+        // zoomed on the valve, square to the root through the free edges: the shut cusps meet
+        // in a Y and each cusp shows whole (the sonographer turns the probe until the valve is round)
+        probe(av.clone().addScaledVector(n0, 0.7), n0, 6.2);
+      } else if (spec.plane === 'psax_pa') {
+        // tilted up from the valve: the aorta above its valve in cross-section, the pulmonic
+        // valve, the trunk and the start of both branches. This model's trunk rises steeply, so
+        // the plane leans 27 degrees from square to the root to follow it to the bifurcation
+        probe(av.clone().addScaledVector(n0, 2.0), turned(27, 252), 6.0, V3(-0.1, -0.1, -1));
+      } else if (spec.plane === 'psax_cor') {
+        // through both coronary origins, as square to the aortic root as that allows; the
+        // probe moves onto this plane from the valve-level position
+        const Lm = VP('lmca'), Rc = VP('rca');
+        const u = Lm.clone().sub(Rc).normalize();
+        const n1 = n0.clone().addScaledVector(u, -n0.dot(u)).normalize();
+        const C = Lm.clone().lerp(Rc, 0.5);
+        probe(av.clone().addScaledVector(n0, 0.62), turned(28, 170), 6.2);
+        O = onPlane(O, C, n1);
+        d = C.clone().sub(O).normalize();
+        r = perp(perp(BODY.left, n1), d);
+      } else {
+        // the aortic valve level: through the shut cusps where they meet, leaning 28 degrees
+        // toward the patient's right and 10 degrees back. Square to the root the plane would pass
+        // above this model's left atrium; leaning, it cuts the atrium below the valve and the
+        // tricuspid and pulmonic valves beside it: AV, LA, RA, TV, RVOT, PV and the atrial septum
+        probe(av.clone().addScaledVector(n0, 0.62), turned(28, 170), 6.2);
+        if (spec.plane === 'psax_tv') {
+          // the tricuspid valve: the plane leans 2 degrees further toward it, the probe stays,
+          // and the sector turns onto the valve
+          const n1 = turned(30, 178);
+          const P0 = onPlane(O, av.clone().addScaledVector(n0, 0.55), n1);
+          const t = onPlane(tv, av.clone().addScaledVector(n0, 0.55), n1);
+          O = P0;
+          d = t.clone().sub(O).normalize();
+          r = perp(perp(BODY.left, n1), d);
+        }
       }
-      break;
-    }
-    case 'psax_pa': {
-      // the great-vessel plane moved up onto the centre of the pulmonic valve and turned 12
-      // degrees toward the valve's long axis (the probe slides about 2 cm), the sector steered
-      // onto the valve and the trunk: a small move from the aortic valve level. In this model
-      // the trunk runs 42 degrees out of the aortic short axis, so the closed valve shows its
-      // three cusps meeting, and the trunk turns back toward the bifurcation.
-      const n0 = anat.aorticRoot.clone();
-      d = perp(Y.clone().negate(), n0);
-      r = perp(perp(X, n0), d);
-      O = av.clone().addScaledVector(d, -7.4);
-      const nPV = perp(n0, PV_AXIS);
-      const n1 = n0.clone().applyAxisAngle(n0.clone().cross(nPV).normalize(), Math.min(n0.angleTo(nPV), THREE.MathUtils.degToRad(12)));
-      O = onPlane(O, pv, n1);
-      d = perp(pv.clone().lerp(VP('paBif'), 0.2).sub(O), n1);
-      r = perp(perp(r, n1), d);
-      break;
-    }
-    case 'psax_cor': {
-      // through both coronary origins, as square to the aortic root as that allows; the
-      // probe moves onto this plane from the great-vessel position
-      const Lm = VP('lmca'), Rc = VP('rca'), root = anat.aorticRoot.clone();
-      const u = Lm.clone().sub(Rc).normalize();
-      const n0 = root.addScaledVector(u, -root.dot(u)).normalize();
-      const C = Lm.clone().lerp(Rc, 0.5);
-      const d0 = perp(Y.clone().negate(), anat.aorticRoot);
-      O = onPlane(av.clone().addScaledVector(d0, -7.4), C, n0);
-      d = C.clone().sub(O).normalize();
-      r = perp(perp(X, n0), d);
       break;
     }
     case 'psax': {
@@ -368,6 +381,36 @@ class MeshData {
   }
 }
 
+/**
+ * Directions of the three aortic cusps from the root's axis, named by where they lie: the
+ * right coronary cusp in front, the non-coronary cusp the more rightward of the other two, the
+ * left coronary cusp the last. Each cusp's belly is its lowest point round the root.
+ */
+function cuspDirs(model) {
+  const mesh = model.heart.meshes.AorticValve;
+  if (!mesh) return null;
+  const A = model.anat, n0 = A.aorticRoot.clone(), av = A.point('av', 0, 0);
+  const e1 = BODY.left.clone().addScaledVector(n0, -n0.x).normalize(), e2 = n0.clone().cross(e1);
+  const p = mesh.geometry.attributes.position.array;
+  const low = new Float32Array(72).fill(Infinity);
+  for (let i = 0; i < p.length; i += 3) {
+    const x = p[i] - av.x, y = p[i + 1] - av.y, z = p[i + 2] - av.z;
+    const a = Math.atan2(x * e2.x + y * e2.y + z * e2.z, x * e1.x + y * e1.y + z * e1.z);
+    const b = Math.floor(((a + Math.PI) / (2 * Math.PI)) * 72) % 72;
+    low[b] = Math.min(low[b], x * n0.x + y * n0.y + z * n0.z);
+  }
+  let b0 = 0;
+  const sum = (b) => low[b % 72] + low[(b + 24) % 72] + low[(b + 48) % 72];
+  for (let b = 1; b < 24; b++) if (sum(b) < sum(b0)) b0 = b;
+  const dirs = [0, 1, 2].map((k) => {
+    const a = ((b0 + 0.5 + 24 * k) / 72) * 2 * Math.PI - Math.PI;
+    return e1.clone().multiplyScalar(Math.cos(a)).addScaledVector(e2, Math.sin(a));
+  });
+  const R = dirs.slice().sort((u, v) => v.dot(BODY.ant) - u.dot(BODY.ant))[0];
+  const [N, L] = dirs.filter((u) => u !== R).sort((u, v) => u.dot(BODY.left) - v.dot(BODY.left));
+  return { rcc: R, ncc: N, lcc: L };
+}
+
 // chambers and vessels may sit a little further from the plane than walls and valves and still show
 const ECHO_ONLY = new Set(['liver', 'hv', 'abdao', 'celiac', 'sma', 'ivcl']);
 // full names for the tags on the cross-section
@@ -376,7 +419,7 @@ const FULL = {
   MV: 'Mitral valve', TV: 'Tricuspid valve', AV: 'Aortic valve', PV: 'Pulmonic valve', Ao: 'Aorta', LVOT: 'LV outflow tract', RVOT: 'RV outflow tract',
   PA: 'Pulmonary artery', 'main PA': 'Main pulmonary artery', RPA: 'Right pulmonary artery', LPA: 'Left pulmonary artery', IVC: 'Inferior vena cava',
   SVC: 'Superior vena cava', 'desc Ao': 'Descending aorta', 'ascending Ao': 'Ascending aorta', 'descending Ao': 'Descending aorta', arch: 'Aortic arch',
-  LMCA: 'Left main coronary artery', RCA: 'Right coronary artery', 'Ao root': 'Aortic root', SMA: 'Superior mesenteric artery', 'abdominal Ao': 'Abdominal aorta',
+  LMCA: 'Left main coronary artery', RCA: 'Right coronary artery', 'Ao root': 'Aortic root', RCC: 'Right coronary cusp', LCC: 'Left coronary cusp', NCC: 'Non-coronary cusp', SMA: 'Superior mesenteric artery', 'abdominal Ao': 'Abdominal aorta',
 };
 const ROOMY = new Set(['la', 'ra', 'lv', 'rv', 'rvant', 'rvot', 'mpa', 'ao', 'asc', 'arch', 'desc', 'ivc', 'ivcl', 'rpa', 'lpa', 'svc', 'abdao']);
 
@@ -974,6 +1017,12 @@ export class EchoView {
     an.sma = V3(...ABD.sma.pts[2]);
     an.hv = V3(...ABD.mhv.pts[1]);
     an.ivcl = V3(...ABD.ivc.pts[1]);
+    // the aortic cusps, in the plane where the shut cusps meet (0.7 cm up the root)
+    const cusps = this.cusps || (this.cusps = cuspDirs(this.model));
+    if (cusps) {
+      const C = an.av.clone().addScaledVector(A.aorticRoot, 0.7);
+      for (const [k, dir] of Object.entries(cusps)) an[k] = C.clone().addScaledVector(dir, 0.6);
+    }
     const bif = V3(...VESSELS.paBif);
     an.mpa = an.pv.clone().lerp(bif, 0.5);
     an.rpa = bif.clone().addScaledVector(BODY.left, -2.6).addScaledVector(BODY.ant, -0.8);

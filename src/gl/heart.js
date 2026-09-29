@@ -94,7 +94,64 @@ export async function loadHeart(url, opts = {}) {
     for (const o of drop) o.parent.remove(o);
     for (const o of add) gltf.scene.add(o);   // both models share one frame
   }
+  // a last change to the meshes before the heart is built (model3d.js: the aortic valve's turn)
+  if (opts.prepare) {
+    const meshes = {};
+    gltf.scene.traverse((o) => { if (o.isMesh) meshes[o.name] = o; });
+    opts.prepare(meshes);
+  }
   return new Heart(gltf.scene);
+}
+
+/**
+ * Turn the aortic valve about its own axis (the root's axis through centre c) by deg. The valve
+ * model is three-fold symmetric, so the turn moves cusps to where commissures were. Its shape
+ * targets turn with it; the targets that carry the root's own motion (systole, amyloid) are
+ * split into the root's motion, an affine fit that stays where it is, and the valve's own change,
+ * which turns.
+ */
+export function turnValve(mesh, c, axis, deg) {
+  const g = mesh.geometry, P = g.attributes.position, n = P.count;
+  const q = new THREE.Quaternion().setFromAxisAngle(axis.clone().normalize(), THREE.MathUtils.degToRad(deg));
+  const R = new THREE.Matrix4().makeRotationFromQuaternion(q);
+  const old = Float32Array.from(P.array);
+  const v = new THREE.Vector3();
+  for (let i = 0; i < n; i++) { v.fromBufferAttribute(P, i).sub(c).applyQuaternion(q).add(c); P.setXYZ(i, v.x, v.y, v.z); }
+  P.needsUpdate = true;
+  const turnVectors = (attr) => { for (let i = 0; i < attr.count; i++) { v.fromBufferAttribute(attr, i).applyQuaternion(q); attr.setXYZ(i, v.x, v.y, v.z); } attr.needsUpdate = true; };
+  if (g.attributes.normal) turnVectors(g.attributes.normal);
+  const follow = new Set(['amyloid', 'systole', 'amyloid_systole']);
+  const MP = g.morphAttributes.position || [], MN = g.morphAttributes.normal || [];
+  for (const [name, k] of Object.entries(mesh.morphTargetDictionary || {})) {
+    const T = MP[k];
+    if (!T) continue;
+    if (!follow.has(name)) turnVectors(T);
+    else {
+      // least squares: t_i = M [p_i - c; 1], M 3 x 4
+      const XtX = new Array(16).fill(0), XtV = [new Array(4).fill(0), new Array(4).fill(0), new Array(4).fill(0)];
+      for (let i = 0; i < n; i++) {
+        const x = [old[3 * i] - c.x, old[3 * i + 1] - c.y, old[3 * i + 2] - c.z, 1];
+        for (let a = 0; a < 4; a++) {
+          for (let b = 0; b < 4; b++) XtX[a * 4 + b] += x[a] * x[b];
+          XtV[0][a] += x[a] * T.getX(i); XtV[1][a] += x[a] * T.getY(i); XtV[2][a] += x[a] * T.getZ(i);
+        }
+      }
+      const inv = new THREE.Matrix4().fromArray(XtX).invert().elements;   // symmetric: order does not matter
+      const M = XtV.map((row) => [0, 1, 2, 3].map((b) => row.reduce((s0, r0, a) => s0 + r0 * inv[a * 4 + b], 0)));
+      const fit = (x, y, z) => M.map((m) => m[0] * x + m[1] * y + m[2] * z + m[3]);
+      const res = new THREE.Vector3();
+      for (let i = 0; i < n; i++) {
+        const f0 = fit(old[3 * i] - c.x, old[3 * i + 1] - c.y, old[3 * i + 2] - c.z);
+        res.set(T.getX(i) - f0[0], T.getY(i) - f0[1], T.getZ(i) - f0[2]).applyMatrix4(R);
+        const f1 = fit(P.getX(i) - c.x, P.getY(i) - c.y, P.getZ(i) - c.z);
+        T.setXYZ(i, f1[0] + res.x, f1[1] + res.y, f1[2] + res.z);
+      }
+      T.needsUpdate = true;
+    }
+    if (MN[k]) turnVectors(MN[k]);
+  }
+  g.computeBoundingBox();
+  g.computeBoundingSphere();
 }
 
 export class Heart {

@@ -34,14 +34,20 @@ export const VIEWS = {
   rv_out: V({ win: 'plax', short: 'RVOT', name: 'RV outflow', lab: 'PLAX_RV_outflow', plane: 'rv_out', depth: 13, cor: false,
     labels: [['rvot', 'RVOT'], ['pv', 'PV'], ['mpa', 'main PA']] }),
   // ---- parasternal short axis
-  psax_av: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, aortic valve level', lab: 'PSAX_(level_great_vessels)', plane: 'psax_av', depth: 14,
-    labels: [['av', 'AV'], ['la', 'LA'], ['ra', 'RA'], ['rvot', 'RVOT'], ['tv', 'TV'], ['mpa', 'PA']] }),
-  psax_pa: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, pulmonic valve and pulmonary artery', lab: 'PSAX_(level_great_vessels)_focus_on_PV_and_PA', plane: 'psax_pa', depth: 14,
-    labels: [['pv', 'PV'], ['mpa', 'main PA'], ['rpa', 'RPA'], ['lpa', 'LPA'], ['av', 'AV']] }),
+  // the great-vessel levels, as ASE draws them (Mitchell 2019, Table 2, rows 2.7-2.10): at the aortic
+  // valve, the RVOT across the front from the tricuspid to the pulmonic valve, the valve in the
+  // middle, the right atrium on the left, the left atrium below and the atrial septum between
+  psax_av: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, aortic valve level', lab: 'PSAX_(level_great_vessels)', plane: 'psax_av', depth: 13,
+    labels: [['av', 'AV'], ['la', 'LA'], ['ra', 'RA'], ['rvot', 'RVOT'], ['tv', 'TV'], ['pv', 'PV'], ['ias', 'IAS']] }),
+  // tilted up: the aorta above the valve in cross-section, the pulmonic valve, the trunk and
+  // the start of both branches
+  psax_pa: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, pulmonic valve and pulmonary artery', lab: 'PSAX_(level_great_vessels)_focus_on_PV_and_PA', plane: 'psax_pa', depth: 13,
+    labels: [['ao', 'Ao'], ['rvot', 'RVOT'], ['pv', 'PV'], ['mpa', 'PA'], ['rpa', 'RPA'], ['lpa', 'LPA']] }),
   psax_tv: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, tricuspid valve', lab: 'PSAX_(level_great_vessels)_focus_on_TV', plane: 'psax_tv', depth: 14,
     labels: [['tv', 'TV'], ['ra', 'RA'], ['rvot', 'RV'], ['av', 'AV']] }),
-  psax_avz: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, zoomed aortic valve', lab: 'PSAX_(level_great_vessels)_zoomed_AV', plane: 'psax_av', depth: 14, zoom: { at: 'av', w: 5 },
-    labels: [['av', 'AV']] }),
+  // zoomed on the valve and turned until it is round: the three cusps by name
+  psax_avz: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, zoomed aortic valve', lab: 'PSAX_(level_great_vessels)_zoomed_AV', plane: 'psax_avz', depth: 13, zoom: { at: 'av', w: 5 },
+    labels: [['rcc', 'RCC'], ['lcc', 'LCC'], ['ncc', 'NCC']] }),
   psax_cor: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, coronary artery origins', lab: null, plane: 'psax_cor', depth: 14, zoom: { at: 'avroot', w: 5 },
     labels: [['lmca', 'LMCA'], ['rca', 'RCA'], ['avroot', 'Ao root']] }),
   psax_mv: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, mitral valve level', lab: 'PSAX_(level_of_MV)', plane: 'psax', level: 0.72, depth: 14,
@@ -216,7 +222,7 @@ export const MOVE = {
   psax_av: 'From PLAX, rotate 90° clockwise; marker toward the left shoulder',
   psax_pa: 'From the aortic valve level, tilt superiorly',
   psax_tv: 'At the aortic valve level, narrow the sector onto the tricuspid valve',
-  psax_avz: 'At the aortic valve level, zoom on the valve',
+  psax_avz: 'At the aortic valve level, zoom on the valve and tilt until it is round',
   psax_cor: 'At the aortic valve level, tilt slightly toward the head and zoom on the aortic root',
   psax_mv: 'From the aortic valve level, tilt inferiorly',
   psax_pm: 'Tilt further, just below the mitral leaflet tips',

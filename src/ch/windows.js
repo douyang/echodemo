@@ -16,7 +16,7 @@ const INFO = {
   rv_in: { shows: 'RA, tricuspid valve, RV; IVC and coronary sinus in some', acquire: 'TR color; TR peak velocity by CW' },
   rv_out: { shows: 'RVOT, pulmonic valve, main PA', acquire: 'RVOT PW; pulmonic valve CW; color' },
   psax_av: { shows: 'Aortic valve, LA, RA, tricuspid valve, RVOT, pulmonic valve, atrial septum', acquire: 'Proximal and distal RVOT; TR color and CW' },
-  psax_pa: { shows: 'Aortic root, RA, RVOT, pulmonic valve, main PA and branches', acquire: 'Main PA diameter; RVOT PW; pulmonic CW; PR end-diastolic velocity' },
+  psax_pa: { shows: 'Aorta above the valve, RA, RVOT, pulmonic valve, main PA and branches', acquire: 'Main PA diameter; RVOT PW; pulmonic CW; PR end-diastolic velocity' },
   psax_tv: { shows: 'RA, tricuspid valve, RV inflow, high septum', acquire: 'Tricuspid color; TR CW' },
   psax_avz: { shows: 'Aortic cusps: non-, right and left coronary', acquire: 'Cusp number and motion; color' },
   psax_cor: { shows: 'Aortic root; origins of the left main and right coronary arteries', acquire: 'Where each coronary artery arises (anomalous origin)' },
