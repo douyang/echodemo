@@ -4,6 +4,7 @@
 import { Sheet, clamp, mix, MONO, SANS } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { cycleAt, RR } from '../cyclemodel.js';
+import { loadModel } from '../model3d.js';
 
 export const SEG_NAMES = ['basal anterior', 'basal anteroseptal', 'basal inferoseptal', 'basal inferior', 'basal inferolateral', 'basal anterolateral',
   'mid anterior', 'mid anteroseptal', 'mid inferoseptal', 'mid inferior', 'mid inferolateral', 'mid anterolateral',
@@ -47,6 +48,165 @@ export function scores(s) {
 
 let sheet = null, st = null, setState = null, clock = 0, hover = 0;
 let layout = null;   // where the last frame put the bull's-eye and the apical walls, for taps
+
+// ---------------------------------------------------------------- the apical views as echo
+// The three views are scanner frames cut from the heart model. Each myocardial vertex belongs to
+// an AHA segment, by its level along the LV long axis and its angle round it; its motion in
+// systole is scaled by that segment's score. Until the model is in, line drawings stand in.
+const ECHO = [['A4C', 'a4c'], ['A2C', 'a2c'], ['A3C', 'a3c']];
+let echo = null;
+
+/** The segment at level h (0 apex .. 1 mitral annulus) and angle th (deg; 90 anterior, 180 septal). */
+function segmentOf(h, th) {
+  if (h < 0.06) return 17;
+  const a = ((th % 360) + 360) % 360;
+  if (h < 0.36) return [13, 14, 15, 16][(Math.round((a - 90) / 90) % 4 + 4) % 4];
+  const i = (Math.round((a - 90) / 60) % 6 + 6) % 6;
+  return h < 0.66 ? 7 + i : 1 + i;
+}
+
+/**
+ * Each LV vertex's segments (the neighbourhood is sampled, so borders blend), and where to put
+ * the segment numbers in each view. Angles are turned so that the model's own apical planes
+ * fall on the standard walls: the four-chamber septal wall at 210 degrees (inferoseptal), the
+ * two-chamber at 270 (inferior), the three-chamber at 330 (inferolateral).
+ */
+export function segmentMap(m, geoms) {
+  const mesh = m.heart.meshes.Myocardium;
+  mesh.updateMatrixWorld(true);
+  const e = mesh.matrixWorld.elements, P = mesh.geometry.attributes.position, C = mesh.geometry.attributes.color;
+  const A = m.anat, ax = A.axis, la = A.lateral, an = A.anterior;
+  const apex = A.point('apex_endo', 0, 0), L = A.point('mv', 0, 0).sub(apex).dot(ax);
+  const flat = (v) => v.clone().addScaledVector(ax, -v.dot(ax)).normalize();
+  const angle = (v) => (Math.atan2(v.dot(an), v.dot(la)) * 180) / Math.PI;
+  let sx = 0, sy = 0;
+  [['a4c', 210], ['a2c', 270], ['a3c', 330]].forEach(([k, std]) => {
+    const g = geoms[k];
+    if (!g) return;
+    const d = ((std - angle(flat(g.r.clone().negate()))) * Math.PI) / 180;
+    sx += Math.cos(d); sy += Math.sin(d);
+  });
+  const turn = (Math.atan2(sy, sx) * 180) / Math.PI;
+  const n = P.count, H = new Float32Array(n), TH = new Float32Array(n), R = new Float32Array(n), REG = new Uint8Array(n), X = new Float32Array(3 * n);
+  for (let i = 0; i < n; i++) {
+    const x0 = P.getX(i), y0 = P.getY(i), z0 = P.getZ(i);
+    const x = e[0] * x0 + e[4] * y0 + e[8] * z0 + e[12], y = e[1] * x0 + e[5] * y0 + e[9] * z0 + e[13], z = e[2] * x0 + e[6] * y0 + e[10] * z0 + e[14];
+    X[3 * i] = x; X[3 * i + 1] = y; X[3 * i + 2] = z;
+    const qx = x - apex.x, qy = y - apex.y, qz = z - apex.z;
+    const h = qx * ax.x + qy * ax.y + qz * ax.z;
+    const rx = qx - h * ax.x, ry = qy - h * ax.y, rz = qz - h * ax.z;
+    H[i] = h / L;
+    R[i] = Math.hypot(rx, ry, rz);
+    TH[i] = (Math.atan2(rx * an.x + ry * an.y + rz * an.z, rx * la.x + ry * la.y + rz * la.z) * 180) / Math.PI + turn;
+    REG[i] = C ? Math.round(C.getX(i) * 10) : 1;      // 1 LV, 2 RV (anatomy.json regions)
+  }
+  // the LV's outer radius by level: the septum's RV face lies inside it, the RV free wall outside
+  const NB = 24, rOut = new Float32Array(NB), lists = Array.from({ length: NB }, () => []);
+  const bin = (h) => Math.floor(clamp(h, 0, 0.999) * NB);
+  for (let i = 0; i < n; i++) if (REG[i] === 1) lists[bin(H[i])].push(R[i]);
+  lists.forEach((l, b) => { l.sort((p, q) => p - q); rOut[b] = l.length ? l[Math.floor(l.length * 0.9)] : 3; });
+  const mem = new Array(n).fill(null);
+  for (let i = 0; i < n; i++) {
+    const wall = REG[i] === 1 || (REG[i] === 2 && R[i] < rOut[bin(H[i])] + 0.4);
+    if (!wall || H[i] > 1.06) continue;
+    const cnt = new Map();
+    for (const dh of [-0.04, 0, 0.04]) for (const dt of [-8, 0, 8]) { const s = segmentOf(H[i] + dh, TH[i] + dt); cnt.set(s, (cnt.get(s) || 0) + 1); }
+    mem[i] = [...cnt.entries()];
+  }
+  // the middle of the wall by level: the median distance of the LV's vertices from the axis
+  const rMid = (h) => { const l = lists[bin(h)]; return l.length ? l[Math.floor(l.length * 0.5)] : 2.5; };
+  // the numbers: on each view's two walls at the basal, mid and apical levels, and at the apex
+  const labels = {};
+  for (const [k, g] of Object.entries(geoms)) {
+    const out = [];
+    for (const side of [-1, 1]) {
+      const dir = flat(g.r.clone().multiplyScalar(side));
+      const th = angle(dir) + turn;
+      for (const h of [0.83, 0.51, 0.21]) out.push({ k: segmentOf(h, th), p: apex.clone().addScaledVector(ax, h * L).addScaledVector(dir, rMid(h)) });
+    }
+    out.push({ k: 17, p: apex.clone().addScaledVector(ax, -0.45) });
+    labels[k] = out;
+  }
+  return { mem, labels, turn };
+}
+
+/** Per-vertex scale on the systolic motion for the scores sc[1..17]. */
+export function regionalScale(map, sc) {
+  const out = new Float32Array(map.mem.length).fill(1);
+  map.mem.forEach((mm, i) => {
+    if (!mm) return;
+    let a = 0, w = 0;
+    for (const [s, c] of mm) { a += c * EXC[sc[s]]; w += c; }
+    out[i] = a / w;
+  });
+  return out;
+}
+
+async function startEcho() {
+  if (echo) return;
+  echo = { loading: true };
+  try {
+    const [m, E] = await Promise.all([loadModel(), import('../echo.js')]);
+    const map = segmentMap(m, Object.fromEntries(ECHO.map(([, k]) => [k, E.viewGeometry(m.anat, k)])));
+    const views = ECHO.map(([name, key]) => {
+      const canvas = document.createElement('canvas');
+      const ev = new E.EchoView(m, canvas, { offscreen: true, width: 240, height: 200 });
+      ev.depth = 15;                     // closer than the standard views: the LV fills more
+      ev.setView(key, { animate: false });
+      return { name, key, ev, canvas, fresh: false };
+    });
+    echo = { map, views, next: 0, segs: '' };
+    if (sheet) sheet.dirty = true;
+  } catch (e) {
+    echo = { failed: true };
+  }
+}
+
+/** The scores onto the model; a view that is stale is drawn again. */
+function syncEcho() {
+  if (!echo || !echo.views || echo.segs === st.segs) return;
+  const scale = regionalScale(echo.map, parse(st.segs));
+  for (const v of echo.views) { v.ev.setRegional(scale); v.fresh = false; }
+  echo.segs = st.segs;
+}
+
+function renderView(v) {
+  const c = cycleAt(reducedMotion ? 330 : (clock * 1000) % RR);
+  v.ev.frame({ s: c.s, v: c.v, drive: c.drive, phase: c.phase, t: c.t });
+  v.fresh = true;
+}
+
+/** One apical view as a scanner frame in box, with the segment numbers on its walls. */
+function echoView(sh, t, box, v, sc) {
+  const ctx = sh.ctx;
+  const w = Math.max(60, Math.round(box.w)), h = Math.max(60, Math.round(box.h));
+  if (v.ev.w !== w || v.ev.h !== h) { v.ev.setSize(w, h); v.fresh = false; }
+  if (!v.fresh) renderView(v);
+  ctx.drawImage(v.canvas, box.x, box.y, w, h);
+  const mp = v.ev.map, g = v.ev.g, spec = VIEWS[v.name];
+  if (!mp || !g) return;
+  ctx.save();
+  ctx.font = `600 ${w < 200 ? 9.5 : 11}px ${MONO}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const { k, p } of echo.map.labels[v.key] || []) {
+    const [u, vv] = v.ev.toPlane(p, g);
+    const x = box.x + mp.X(u), y = box.y + mp.Y(vv);
+    if (x < box.x + 6 || x > box.x + w - 6 || y < box.y + 6 || y > box.y + h - 6) continue;
+    const s = sc[k], r = w < 200 ? 7 : 8.5;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = s === 1 ? 'rgba(16,19,21,0.55)' : s === 2 ? '#f0b27a' : '#ff6b5b';
+    ctx.fill();
+    if (k === hover || s === 4) { ctx.lineWidth = s === 4 ? 2 : 1.5; ctx.strokeStyle = k === hover ? '#ffffff' : '#ffe89a'; ctx.stroke(); }
+    ctx.fillStyle = s === 1 ? '#ffe89a' : '#101315';
+    ctx.fillText(String(k), x, y + 0.5);
+    if (layout) layout.walls.push({ x, y, seg: k });
+  }
+  ctx.restore();
+  sh.text(v.name, box.x + 4, box.y + 16, { size: w < 200 ? 15 : 19, color: t.ink });
+  if (w >= 200) sh.text(`${spec.lname} · ${spec.rname}`, box.x + 4, box.y + 32, { family: SANS, weight: 400, size: 10.5, color: t.ink3 });
+}
 
 function fillFor(t, score) {
   return score === 1 ? null : score === 2 ? t.flag2 : t.flag;
@@ -172,21 +332,30 @@ function draw(sh, t) {
   const S = scores(st);
   const sys = reducedMotion ? 1 : clamp(cycleAt((clock * 1000) % RR).s, 0, 1);
   layout = { bull: null, walls: [] };
+  const live = echo && echo.views;
+  if (live) syncEcho();
   if (narrow) {
     const R = Math.min(W * 0.26, H * 0.2);
     layout.bull = { cx: W * 0.5, cy: R + 30, R };
     bullseye(sh, t, W * 0.5, R + 30, R, S.sc);
     const bw = (W - 24) / 3, by = 2 * R + 80;
-    ['A4C', 'A2C', 'A3C'].forEach((n, i) => apicalView(sh, t, { x: 8 + i * (bw + 4), y: by, w: bw, h: H - by - 8 }, n, S.sc, sys));
+    if (live) echo.views.forEach((v, i) => echoView(sh, t, { x: 8 + i * (bw + 4), y: by, w: bw, h: Math.min(H - by - 8, bw * 1.05) }, v, S.sc));
+    else ['A4C', 'A2C', 'A3C'].forEach((n, i) => apicalView(sh, t, { x: 8 + i * (bw + 4), y: by, w: bw, h: H - by - 8 }, n, S.sc, sys));
     return;
   }
   const R = Math.min(W * 0.2, H * 0.3);
   layout.bull = { cx: W * 0.27, cy: H * 0.42, R };
   bullseye(sh, t, W * 0.27, H * 0.42, R, S.sc);
   sh.text('17 segments, seen from the apex; tap one to score it', W * 0.27, H * 0.42 + R + 52, { size: 18, align: 'center', color: t.ink2 });
-  const bw = W * 0.15, bx = W * 0.52, bh = H * 0.62;
-  ['A4C', 'A2C', 'A3C'].forEach((n, i) => apicalView(sh, t, { x: bx + i * (bw + 10), y: H * 0.14, w: bw, h: bh }, n, S.sc, sys));
-  sh.text('the apical views, systole in motion', bx, H * 0.14 + bh + 34, { size: 18, color: t.ink2 });
+  if (live) {
+    // the three views down the right side, as the scanner shows them
+    const x = W * 0.53, w = W * 0.45, top = H * 0.04, gap = 10, h = (H * 0.86 - 2 * gap) / 3;
+    echo.views.forEach((v, i) => echoView(sh, t, { x, y: top + i * (h + gap), w, h }, v, S.sc));
+  } else {
+    const bw = W * 0.15, bx = W * 0.52, bh = H * 0.62;
+    ['A4C', 'A2C', 'A3C'].forEach((n, i) => apicalView(sh, t, { x: bx + i * (bw + 10), y: H * 0.14, w: bw, h: bh }, n, S.sc, sys));
+    sh.text('the apical views, systole in motion', bx, H * 0.14 + bh + 34, { size: 18, color: t.ink2 });
+  }
   // legend
   const ly = H - 40;
   [[1, 'normal'], [2, 'hypokinetic'], [3, 'akinetic'], [4, 'dyskinetic']].forEach(([k, name], i) => {
@@ -292,9 +461,16 @@ export default {
     }
     if ('segs' in ch || 'chapter' in ch) syncPick(s);
   },
+  enter() { startEcho(); },
+  warm() { startEcho(); },
   anim(dt) {
     if (reducedMotion) return;
     clock += dt / 1.5;
+    // one scanner view per frame, in turn: each runs at about a third of the screen rate
+    if (echo && echo.views) {
+      syncEcho();
+      renderView(echo.views[echo.next++ % echo.views.length]);
+    }
     if (sheet) sheet.dirty = true;
   },
   tourEnter(set) { set({ culprit: 'none', wm: 3 }); },

@@ -254,8 +254,10 @@ class MeshData {
     for (const [name, value] of Object.entries(w)) {
       const i = dict[name];
       if (i === undefined || !value) continue;
-      const t = targets[i];
-      for (let k = 0; k < pos.length; k++) pos[k] += value * t[k];
+      const t = targets[i], sc = this.scale && this.scale[name];
+      // a per-vertex scale on a target: regional wall motion on the systole shape
+      if (sc) for (let k = 0, v = 0; k < pos.length; k += 3, v++) { const f = value * sc[v]; pos[k] += f * t[k]; pos[k + 1] += f * t[k + 1]; pos[k + 2] += f * t[k + 2]; }
+      else for (let k = 0; k < pos.length; k++) pos[k] += value * t[k];
     }
     if (!this.identity) {
       const e = this.matrix.elements;
@@ -418,6 +420,11 @@ export class EchoView {
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(canvas);
     this.resize();
+  }
+
+  /** Regional wall motion: a scale on each myocardial vertex's systolic motion, or null. */
+  setRegional(scale) {
+    this.myo.scale = scale ? { systole: scale } : null;
   }
 
   setSize(w, h) {

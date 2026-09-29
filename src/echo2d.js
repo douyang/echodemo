@@ -401,14 +401,22 @@ export function jet(ctx, F, j) {
 }
 
 // ---------------------------------------------------------------- apical four-chamber
-/** Every A4C structure (cm) at contraction c; valves follow the phase ph. */
-function a4cShape(g, c, ph) {
+/**
+ * Every A4C structure (cm) at contraction c; valves follow the phase ph. dyn, for this moment
+ * only: ra, rv (0..1) how far the RA and RV free walls are pushed in (tamponade); sep (cm) how
+ * far the middle of the septum moves toward the LV (inspiration in tamponade); swing [dx, dy]
+ * (cm), the heart's shift inside a large effusion. g.effusion (cm) widens the pericardial space.
+ */
+function a4cShape(g, c, ph, dyn = {}) {
   const lvL = at(g.lvL, c), lvW = at(g.lvW, c), wall = at(g.lvWall, c), ivs = at(g.ivs, c);
   const rvW = at(g.rvW, c), rvWall = at(g.rvWall ?? 0.4, c);
+  const raIn = dyn.ra ?? 0, rvIn = dyn.rv ?? 0;
+  const bow = (u) => (dyn.sep ?? 0) * Math.sin(Math.PI * u);    // septal shift, most at mid-septum
   const laW = at(g.laW, c), laL = at(g.laL, c), raW = at(g.raW, c), raL = at(g.raL, c);
   const ma = at(g.ma ?? 3.1, c), ta = at(g.ta ?? 3.0, c);
-  // LV: apex fixed, the base moves toward it in systole
-  const apexY = 1.9 + 0.65 * wall;
+  // LV: apex fixed, the base moves toward it in systole; fluid in front of the apex sets the
+  // heart deeper, the sac stays under the chest wall
+  const apexY = 1.9 + 0.65 * wall + 0.7 * (g.effusion ?? 0);
   const yb = apexY + lvL;
   const A = [0.2, apexY];                              // endocardial apex
   const xsb = -0.95 + ivs / 2;                         // septal endocardium at the base
@@ -422,7 +430,7 @@ function a4cShape(g, c, ph) {
   const sep = [], lat = [];
   for (let i = 0; i <= N; i++) {
     const u = i / N, w = widthAt(u);
-    sep.push(add(Pax(u), mul(nl, -w * 0.44 * (1 - 0.06 * Math.sin(Math.PI * u)))));
+    sep.push(add(Pax(u), mul(nl, bow(u) - w * 0.44 * (1 - 0.06 * Math.sin(Math.PI * u)))));
     lat.push(add(Pax(u), mul(nl, w * 0.56 * (1 + 0.05 * Math.sin(Math.PI * u)))));
   }
   const lvCav = [...sep, ...lat.slice(0, -1).reverse()];   // septal hinge -> apex -> lateral hinge
@@ -452,9 +460,11 @@ function a4cShape(g, c, ph) {
   const TS = rvSep[iTv];
   const Ra = rvSep[iRvApex];
   const TL = add(add(TS, mul(out, ta)), mul(ax, 0.15));
-  const Mb = add(add(rvSep[Math.round(N * 0.2)], mul(out, rvW)), mul(ax, -0.1));
-  const Mm = add(rvSep[Math.round(N * 0.48)], mul(out, rvW * 0.82));
-  const rvFree = spline([Ra, add(rvSep[Math.round(N * 0.66)], mul(out, rvW * 0.5)), Mm, Mb, TL], 10);
+  // in tamponade the free wall buckles inward in early diastole, most at its middle; it stays
+  // where it is when the septum moves
+  const Mb = add(add(rvSep[Math.round(N * 0.2)], mul(out, rvW * (1 - 0.3 * rvIn) + bow(0.2))), mul(ax, -0.1));
+  const Mm = add(rvSep[Math.round(N * 0.48)], mul(out, rvW * 0.82 * (1 - 0.62 * rvIn) + bow(0.48)));
+  const rvFree = spline([Ra, add(rvSep[Math.round(N * 0.66)], mul(out, rvW * 0.5 * (1 - 0.35 * rvIn) + bow(0.66))), Mm, Mb, TL], 10);
   const rvC = centroid([...rvSep.slice(iTv, iRvApex + 1), ...rvFree]);
   const rvFreeT = trabeculate(rvFree, (u) => 0.17 * (1 - smooth(u / 0.45)), rvC, 1.3);
   const rvOut = offsetAway(rvFree, rvWall, rvC);
@@ -493,11 +503,12 @@ function a4cShape(g, c, ph) {
   // right atrium below the tricuspid annulus
   const rdown = unit(add(mul(ax, -1), mul(out, 0.18)));
   const iasTop = add(S0, mul(nl, -0.38));
+  // in tamponade the RA free wall folds inward at end-diastole and into systole
   const raPts = [
     TL,
-    add(add(TL, mul(rdown, raL * 0.35)), mul(out, Math.max(0.1, raW - ta) * 0.7)),
-    add(add(iasTop, mul(rdown, raL * 0.72)), mul(out, raW * 0.95)),
-    add(add(iasTop, mul(rdown, raL)), mul(out, raW * 0.45)),
+    add(add(TL, mul(rdown, raL * 0.35)), mul(out, Math.max(0.1, raW - ta) * 0.7 - raW * 0.5 * raIn)),
+    add(add(iasTop, mul(rdown, raL * 0.72)), mul(out, raW * (0.95 - 0.55 * raIn))),
+    add(add(iasTop, mul(rdown, raL)), mul(out, raW * (0.45 - 0.12 * raIn))),
     add(add(iasTop, mul(ldown, raL * 0.75)), mul(out, 0.04)),
     add(add(iasTop, mul(ldown, raL * 0.3)), mul(out, 0.02)),
     add(iasTop, mul(ax, 0.12)),
@@ -540,24 +551,56 @@ function a4cShape(g, c, ph) {
   // chordae fan out from the papillary head to the free edges and the bodies of both leaflets
   const pmSide = perp(pmDir);
   const chords = [[pmTip, along(mv.l2, 0.97)], [pmTip, along(mv.l2, 0.6)], [add(pmTip, mul(pmSide, 0.12)), along(mv.l1, 0.97)], [add(pmTip, mul(pmSide, 0.12)), along(mv.l1, 0.72)], [add(pmTip, mul(pmSide, -0.1)), along(mv.l1, 0.5)]];
-  // pericardium around the free walls, from the right atrium to the left atrium
+  // pericardium around the free walls, from the right atrium to the left atrium; fluid widens
+  // the space most around the apex and the free walls, less at the atrioventricular grooves
   const heartC = centroid([lvC, rvC, laC, raC]);
   const every = (p, k) => p.filter((_, i) => i % k === 0);
+  const eff = g.effusion ?? 0;
   const periPts = [add(TL, mul(out, 0.3)), ...every(rvOut.slice().reverse(), 5), ...every(lvOut, 4), add(L0, mul(nl, wall + 0.25))];
-  const peri = offsetAway(spline(periPts, 3), 0.13, heartC);
+  let peri = offsetAway(spline(periPts, 3), 0.13, heartC);
+  if (eff > 0.01) {
+    // the sac, pushed out along lines from the middle of the heart (they never cross): a thin
+    // layer at the atrioventricular grooves, the full depth over the free walls and the apex
+    const n = peri.length - 1, ctl = [];
+    for (let i = 0; i <= 10; i++) {
+      const u = i / 10, p = peri[Math.round(u * n)];
+      ctl.push(add(p, mul(unit(sub(p, heartC)), eff * (0.2 + 0.8 * Math.pow(Math.sin(Math.PI * u), 0.6)))));
+    }
+    peri = spline(ctl, 6);
+  }
+  // outside the sac: lung and fat, grey, so that the fluid shows as the dark band inside it
+  const outer = g.effusion === undefined ? null : ribbon(peri, offsetAway(peri, 1.6, heartC));
   // behind the atria: mediastinum, with the descending aorta beside the left atrium
   const yDeep = Math.max(...laCav.map((p) => p[1]), ...raCav.map((p) => p[1]));
   const medi = [[raC[0] - raW * 0.95, yDeep - 1.1], [laC[0] + laW * 0.95, yDeep - 1.1], [laC[0] + laW + 3.5, 30], [raC[0] - raW - 3.5, 30]];
   const daC = add(laPts[4], add(mul(ldown, 1.45), mul(nl, 0.55)));
-  return {
+  const shape = {
     A, B, S0, L0, TS, TL, Ra, ax, nl, out, lvC, rvC, laC, raC, lvCav, lvCavT, laCav, raCav, rvFree, rvFreeT, rvSep, rvSepEndo,
-    lvOut, rvOut, laOut, raOut, ivsRib, lvRib, rvRib, laRibs, raRib, pvWalls, crux, annuli, pm, mb, mv, tv, chords, peri, mvShut: ph.mvShut,
-    medi, daRing: ring(daC, 0.95, 1.17, 28), daLumen: ellipse(daC, 0.95, 0.95, 28), lvW, lvL, rvW, laW, laL, raW, raL, ma, ta,
+    lvOut, rvOut, laOut, raOut, ivsRib, lvRib, rvRib, laRibs, raRib, pvWalls, crux, annuli, pm, mb, mv, tv, chords, mvShut: ph.mvShut,
+    daRing: ring(daC, 0.95, 1.17, 28), daLumen: ellipse(daC, 0.95, 0.95, 28), lvW, lvL, rvW, laW, laL, raW, raL, ma, ta,
   };
+  // a swinging heart moves inside a sac that stays put
+  const sw = dyn.swing;
+  const moved = sw && (sw[0] || sw[1]) ? shift(shape, sw, ['ax', 'nl', 'out']) : shape;
+  return { ...moved, peri, outer, medi };
+}
+/** Every point in a nested shape moved by d, except the directions named in keep. */
+function shift(x, d, keep = []) {
+  if (Array.isArray(x)) {
+    if (x.length === 2 && typeof x[0] === 'number' && typeof x[1] === 'number') return [x[0] + d[0], x[1] + d[1]];
+    return x.map((y) => shift(y, d));
+  }
+  if (x && typeof x === 'object') {
+    const o = {};
+    for (const [k, v] of Object.entries(x)) o[k] = keep.includes(k) ? v : shift(v, d);
+    return o;
+  }
+  return x;
 }
 
 function a4cItems(S, Sr, g) {
   return [
+    ...(S.outer ? [{ polys: [S.outer], refs: [Sr.outer], e: -11 }] : []),
     { polys: [S.medi], e: -21 },
     { polys: [S.laCav, S.raCav, S.daLumen], e: DB.blood, blood: true },
     { polys: [S.daRing], refs: [Sr.daRing], e: DB.fibrous - 2 },
@@ -594,7 +637,7 @@ export function drawA4C(ctx, box, g, o = {}) {
   const ph = phase(o.t ?? 150);
   const c = ph.c;
   // the reference frame: end-diastole with the valves shut, where the speckle is laid down
-  const S = a4cShape(g, c, ph), Sr = a4cShape(g, 0, { ...ph, mvShut: 1, tvShut: 1 });
+  const S = a4cShape(g, c, ph, o.dyn), Sr = a4cShape(g, 0, { ...ph, mvShut: 1, tvShut: 1 });
   scan(ctx, F, a4cItems(S, Sr, g), { t: o.t, gain: o.gain });
   // jets
   const J = o.jets || {};
@@ -620,7 +663,8 @@ export function drawA4C(ctx, box, g, o = {}) {
 function plaxShape(g, c, ph) {
   const ivs = at(g.ivs, c), lvid = at(g.lvid, c), pw = at(g.pw, c), rvd = at(g.rvd ?? 2.6, c);
   const la = at(g.la, c), root = g.root ?? 3.1, lvot = g.lvot ?? 2.1;
-  const y0 = 1.75;                                  // RV free wall
+  const effA = g.effusionAnt ?? 0;                  // fluid in front of the RV free wall (cm)
+  const y0 = 1.75 + effA;                           // RV free wall
   const yRv = y0 + 0.4, yIvs = yRv + rvd, yLv = yIvs + ivs, yPw = yLv + lvid, yEpi = yPw + pw;
   const xL = -10, xAnn = 0.55, xM = -2.3;
   // the walls converge toward the apex, off the left of the image; not at all at the tips
@@ -657,11 +701,16 @@ function plaxShape(g, c, ph) {
   // coronary sinus in the AV groove; descending aorta behind the LA
   const csC = [hingeP[0] - 0.35, hingeP[1] + pw * 0.75 + 0.45];
   const daoC = [xAnn + 0.7, laTop + la + 1.4];
-  // pericardium behind the posterior wall, round the AV groove, between the LA and the aorta
+  // pericardium behind the posterior wall, round the AV groove, between the LA and the aorta.
+  // Fluid lies behind the LV and thins out at the AV groove, in front of the descending aorta
+  // (a pleural effusion runs on behind the aorta).
   const eff = g.effusion ?? 0;
-  const periPts = [...pwEpi.filter((_, i) => i % 5 === 0).map((p) => [p[0], p[1] + 0.2 + eff]), [csC[0] + 0.3, csC[1] + 0.62 + eff * 0.5], [xAnn + 2.2, laTop + la + 0.4 + eff * 0.3], [xAnn + 3.8, laTop + la * 0.85 + 0.35]];
+  const taper = (x) => 1 - 0.8 * smooth((x + 1.8) / (hingeP[0] + 1.8));
+  const periPts = [...pwEpi.filter((_, i) => i % 5 === 0).map((p) => [p[0], p[1] + 0.2 + eff * taper(p[0])]), [csC[0] + 0.3, csC[1] + 0.62 + eff * 0.12], [xAnn + 2.2, laTop + la + 0.4 + eff * 0.05], [xAnn + 3.8, laTop + la * 0.85 + 0.35]];
   const peri = spline(periPts, 4);
   const post = [...peri, [xAnn + 9, laTop + la], [xAnn + 9, 30], [xL - 2, 30], [xL - 2, peri[0][1]]];
+  // with fluid in front, the parietal pericardium stays under the chest wall as the heart drops
+  const periA = effA > 0.02 ? xs(xL, xAnn + 5.5).map((x) => [x, 1.62 + 0.22 * rvd * cv(x) - (x > xAnn ? 0.05 * (x - xAnn) : 0)]) : null;
   // aortic valve: right (front) and non-coronary (back) cusps from the annulus. Shut, they meet
   // in the middle of the root and sag toward the LV; open, they lie along the sinus walls. A
   // stiff valve opens only to open (cm) and the cusps dome into the aorta.
@@ -711,7 +760,7 @@ function plaxShape(g, c, ph) {
     ivs, lvid, pw, la, yIvs, yLv, yPw, yEpi, laTop, aoTop, aoBot, aoMid, xAnn, lvot, hingeP, hingeA,
     ivsRib, sepLV, sepRV, rvRib, rvEndoT, pwRib, pwEndo, aoAnt, aoPost, aoAntWall, aoPostWall, laCav, laRib,
     csRing: ring(csC, 0.32, 0.46, 20, 0.9), csLumen: ellipse(csC, 0.32, 0.29, 20), daoRing: ring(daoC, 1.02, 1.25, 28, 0.92), daoLumen: ellipse(daoC, 1.02, 0.94, 28),
-    peri, post, cuspA, cuspP, cuspA0, cuspP0, cuspAo, cuspPo, aml, pml, amlO, pmlO, tipA, tipP, pm, chords, lvCav,
+    peri, post, periA, cuspA, cuspP, cuspA0, cuspP0, cuspAo, cuspPo, aml, pml, amlO, pmlO, tipA, tipP, pm, chords, lvCav,
   };
 }
 
@@ -735,7 +784,9 @@ export function drawPLAX(ctx, box, g, o = {}) {
   const S = plaxShape(g, c, ph), Sr = plaxShape(g, 0, { ...ph, mvShut: 1, avOpen: 0 });
   const two = (key) => ({ polys: [RP(S[key])], refs: [RP(Sr[key])] });
   const items = [
-    { polys: [RP(S.post)], e: -26 },
+    // behind the pericardium; grey lung and mediastinum when an effusion is drawn, so the fluid
+    // shows as the dark band in front of it
+    { polys: [RP(S.post)], e: g.effusion === undefined ? -26 : -13 },
     { polys: [RP(S.daoLumen), RP(S.csLumen)], e: DB.blood, blood: true },
     { ...two('daoRing'), e: DB.fibrous - 2 },
     { ...two('rvRib'), e: DB.myo - 1 },
@@ -750,6 +801,7 @@ export function drawPLAX(ctx, box, g, o = {}) {
     { borders: [RP(S.rvEndoT)], refs: [RP(Sr.rvEndoT)], e: DB.myo, spec: 6 },
     { borders: [RP(S.laCav), RP(S.aoAnt), RP(S.aoPost)], refs: [RP(Sr.laCav), RP(Sr.aoAnt), RP(Sr.aoPost)], e: DB.myo, spec: 6 },
     { borders: [RP(S.peri)], refs: [RP(Sr.peri)], e: 8, spec: 10, w: 0.15, all: true },
+    ...(S.periA ? [{ borders: [RP(S.periA)], e: 8, spec: 10, w: 0.15, all: true }] : []),
     { lines: S.chords.map(RP), e: DB.chord - 3 - 14 * (1 - ph.mvShut), w: 0.04 },
     ...leaves([RP(S.cuspAo), RP(S.cuspPo)], [RP(Sr.cuspAo), RP(Sr.cuspPo)], valveDb(g.av)),
     ...leaves([RP(S.amlO), RP(S.pmlO)], [RP(Sr.amlO), RP(Sr.pmlO)], valveDb(g.mv)),

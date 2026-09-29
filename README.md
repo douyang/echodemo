@@ -1,6 +1,6 @@
 # The Heart in Sound
 
-An illustrated, interactive study of echocardiography for trainees: ultrasound physics, the standard views, cardiac physiology, Doppler, ventricular function, valve disease and the final report. Seventeen chapters in six parts. Chapters 11 to 16 each follow one disease from normal to its end stage: one slider, a Play button, and several views that change together. Every guideline value carries its source.
+An illustrated, interactive study of echocardiography for trainees: ultrasound physics, the standard views, cardiac physiology, Doppler, ventricular function, valve disease, the pericardium and the final report. Eighteen chapters in seven parts. Chapters 11 to 17 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. Every guideline value carries its source.
 
 ![Chapter 04, Planes: the standard views as planes through one heart, with the mitral valve selected](docs/screenshots/planes.webp)
 
@@ -17,20 +17,22 @@ An illustrated, interactive study of echocardiography for trainees: ultrasound p
 | III Doppler | 07 Shift | Doppler equation, beam angle, Nyquist limit, pulsed, continuous and color Doppler |
 | | 08 Pressure | Stroke volume from LVOT area × VTI; RV systolic pressure from the TR jet and the IVC |
 | IV Function | 09 Eject | Biplane method of disks and foreshortening; TAPSE, S′ and fractional area change |
-| | 10 Segments | 17-segment bull's-eye and the three apical views: pick an occluded artery, or tap any segment to score it hypokinetic, akinetic or dyskinetic; territories and the wall motion score index follow |
+| | 10 Segments | 17-segment bull's-eye and the apical four-, two- and three-chamber views as echo cine sectors cut from the heart mesh, each segment moving by its score: pick an occluded artery, or tap any segment to score it hypokinetic, akinetic or dyskinetic; territories and the wall motion score index follow |
 | | 11 Fill | Diastolic dysfunction, normal to restrictive: four-chamber view with the LA to scale, mitral inflow, tissue Doppler, pulmonary veins, LA strain, TR jet, and the 2025 ASE algorithm run live |
 | V Valves | 12 Aortic stenosis | Normal valve to severe stenosis, then LV failure and low flow: PLAX with hypertrophy, short-axis orifice to scale, CW and LVOT Doppler, mitral inflow |
 | | 13 Mitral stenosis | Normal valve to severe rheumatic stenosis: doming leaflets, LA size, pressure half-time, the gradient at any heart rate, PA pressure, planimetry |
 | | 14 Mitral regurgitation | Mild to severe with LV dysfunction: color jet and PISA shell, CW jet, pulmonary vein flow reversal, E wave, LV and LA dilation |
 | | 15 Aortic regurgitation | Mild to severe with LV dysfunction: jet width in the LVOT, pressure half-time, descending aorta reversal, LVOT VTI, LV dilation |
 | | 16 Tricuspid regurgitation | Mild to torrential: RV, annulus and RA dilation, hepatic vein reversal, IVC, septal flattening, a jet that slows at the torrential end |
-| VI Report | 17 Report | Four simulated cases written up in the ASE 2025 report structure, with sex-specific ranges |
+| VI Pericardium | 17 Pericardium | No effusion through mild, moderate and severe (large) effusion to tamponade: four-chamber view with the fluid round the heart, the RA and RV folding in and the septum moving with each breath; mitral, tricuspid and hepatic vein Doppler over a breath; PLAX with the fluid in front of the descending aorta; IVC M-mode |
+| VII Report | 18 Report | Four simulated cases written up in the ASE 2025 report structure, with sex-specific ranges |
 
 | | | |
 | --- | --- | --- |
 | ![01 Pulse](docs/screenshots/pulse.webp) | ![03 Windows](docs/screenshots/windows.webp) | ![06 Loop](docs/screenshots/loop.webp) |
-| ![11 Fill](docs/screenshots/fill.webp) | ![12 Aortic stenosis](docs/screenshots/as.webp) | ![14 Mitral regurgitation](docs/screenshots/mr.webp) |
-| ![15 Aortic regurgitation](docs/screenshots/ar.webp) | ![16 Tricuspid regurgitation](docs/screenshots/tr.webp) | ![17 Report](docs/screenshots/report.webp) |
+| ![10 Segments](docs/screenshots/segments.webp) | ![11 Fill](docs/screenshots/fill.webp) | ![12 Aortic stenosis](docs/screenshots/as.webp) |
+| ![13 Mitral stenosis](docs/screenshots/ms.webp) | ![14 Mitral regurgitation](docs/screenshots/mr.webp) | ![15 Aortic regurgitation](docs/screenshots/ar.webp) |
+| ![16 Tricuspid regurgitation](docs/screenshots/tr.webp) | ![17 Pericardium](docs/screenshots/peri.webp) | ![18 Report](docs/screenshots/report.webp) |
 
 On a phone the figure sits above the text and stays in view while the text scrolls:
 
@@ -51,17 +53,17 @@ Chapter 04 shows the planes together. The apical views share the LV long axis; t
 
 ![Chapter 04, a free plane rotated 50° counterclockwise from the four-chamber view, marked as near the two-chamber view](docs/screenshots/free.webp)
 
-## The severity pages (chapters 11 to 16)
+## The severity pages (chapters 11 to 17)
 
 - **One slider per disease.** It runs from normal to the end stage. The bands under it show where the grade changes; the page computes them from its own model, so a band starts where the values cross the guideline cut-off.
-- **Play** moves the slider through the whole course and starts again; any control stops it. **Cine** runs the beat; with it off, the views stop at the moment that shows the jet.
+- **Play** moves the slider through the whole course and starts again. It starts when the page opens; any control stops it. **Cine** runs the beat; with it off, the views stop at the moment that shows the jet.
 - **Several views change together.** A 2D view drawn to scale (a caliper on the screen reads the value in the text), three or four Doppler strips with a cursor at the same moment of the beat, a strip of measurements against their cut-offs, and the guideline table with the current column marked.
-- **Grades and stages.** Regurgitation follows ASE 2017 (Zoghbi), with EACVI 2022 for massive and torrential TR; aortic stenosis follows Baumgartner 2017; mitral stenosis follows ASE 2023 (Pandian); diastolic function follows ASE 2025 (Nagueh). The LV and atrial consequences follow the ACC/AHA 2020 stages (Otto), for example stage C2 in MR at LVEF ≤60% or end-systolic diameter ≥40 mm.
-- **What the model is.** The orifice or valve area drives the numbers (PISA, continuity equation, pressure half-time = 220 ÷ area); the chamber sizes, vein flows and pressures follow illustrative tracks set inside the guideline bands. They are teaching values, not patient data.
+- **Grades and stages.** Regurgitation follows ASE 2017 (Zoghbi), with EACVI 2022 for massive and torrential TR; aortic stenosis follows Baumgartner 2017; mitral stenosis follows ASE 2023 (Pandian); diastolic function follows ASE 2025 (Nagueh). The LV and atrial consequences follow the ACC/AHA 2020 stages (Otto), for example stage C2 in MR at LVEF ≤60% or end-systolic diameter ≥40 mm. Effusion size follows ESC 2015 and 2025 (<10, 10–20, >20 mm at end-diastole); the echo signs of tamponade follow ASE 2013 (Klein) and ESC 2025 (Schulz-Menger).
+- **What the model is.** The orifice or valve area drives the numbers (PISA, continuity equation, pressure half-time = 220 ÷ area); the chamber sizes, vein flows and pressures follow illustrative tracks set inside the guideline bands. In the pericardium page the effusion drives the pressure in the sac; tamponade starts where that pressure reaches the RA pressure, and the right heart then folds in during its relaxation. They are teaching values, not patient data.
 
 ## The echo images
 
-Every echo image is simulated. The anatomy comes from sections of the heart mesh (chapters 02 to 05) or from parametric views drawn to scale (chapters 11 to 16). One renderer, `src/bmode.js`, turns either into a scanner frame:
+Every echo image is simulated. The anatomy comes from sections of the heart mesh (chapters 02 to 05 and 10) or from parametric views drawn to scale (chapters 11 to 17). One renderer, `src/bmode.js`, turns either into a scanner frame:
 
 - **Echogenicity.** Each structure has a level in dB against myocardium: blood about −60, leaflets +15 (to +21 when thickened), chordae +4, pericardium +16, calcium +22 with an acoustic shadow behind it; the coronary arteries sit in bright epicardial fat.
 - **Specular surfaces.** A surface is brightest where the beam meets it head-on (cos⁴ of the angle). Walls that run along the beam, such as the atrial septum in the four-chamber view, stay faint.
@@ -72,13 +74,15 @@ Every echo image is simulated. The anatomy comes from sections of the heart mesh
 - **Display.** Light speckle reduction (a fifth of each sample is the local mean; two fifths in a zoomed view), time-gain with a small loss left at depth, darker sector edges, log compression over 56 dB, then scan conversion at the screen's own pixel density. The views draw about 30 frames a second.
 - **Valves in the parametric views.** Each leaflet keeps its length and swings about its hinge; closed, the leaflets billow a little toward the atrium and share a zone of contact. Rheumatic stenosis holds the tips, so the anterior leaflet domes and the short posterior leaflet cannot move. Regurgitation leaves a gap at closure; the aortic cusps open along the sinus walls, or dome when stiff. Chordae run from the papillary muscles to the leaflets and fade when slack in diastole.
 - **Anatomy in the parametric views.** Papillary muscles and chordae, apical trabeculae, the moderator band, pulmonary vein openings, the pericardium, the coronary sinus and the descending aorta. The walls stay at the model's values on the measuring line, so the calipers read what the page reports.
+- **Effusion.** Fluid widens the pericardial space most over the free walls and the apex and least at the atrioventricular grooves; grey lung and mediastinum lie outside the sac, so the fluid shows as a dark band. In the parasternal long axis the fluid thins out at the atrioventricular groove in front of the descending aorta.
+- **Regional wall motion.** In chapter 10 each vertex of the LV wall belongs to one of the 17 segments, placed from the LV long axis and the apical planes. Its systolic motion scales by the segment's score: normal 100%, hypokinetic 45%, akinetic 0 and dyskinetic −35% (outward).
 - **Color Doppler.** Velocity along the beam inside a color box: red toward the probe, aliasing at the set velocity, a green variance tag in turbulent jets, and a flow-convergence shell sized from the flow rate.
 
 *The Amyloid Heart* got its realistic views from the sculpted mesh; it drew them with flat textures and white outlines. This site keeps the mesh and adds the image formation above.
 
 ## Sources and data
 
-- Guideline values come from ASE, EACVI, ACC/AHA, ESC/ERS and IAC documents; the main ones are Lang 2015 (chamber quantification), Mitchell 2019 (comprehensive TTE), Zoghbi 2017 (regurgitation), Baumgartner 2017 (aortic stenosis), Otto 2020 (valve disease), Pandian 2023 (rheumatic mitral stenosis), Nagueh 2025 (diastolic function), Mukherjee 2025 (right heart), Thomas 2025 (strain) and Taub 2025 (reporting). The full list, with DOI and PubMed links, opens from **Sources** on the page (`src/refs.js`).
+- Guideline values come from ASE, EACVI, ACC/AHA, ESC, ESC/ERS and IAC documents; the main ones are Lang 2015 (chamber quantification), Mitchell 2019 (comprehensive TTE), Zoghbi 2017 (regurgitation), Baumgartner 2017 (aortic stenosis), Otto 2020 (valve disease), Pandian 2023 (rheumatic mitral stenosis), Nagueh 2025 (diastolic function), Mukherjee 2025 (right heart), Thomas 2025 (strain), Klein 2013, Adler 2015 and Schulz-Menger 2025 (pericardium) and Taub 2025 (reporting). The full list, with DOI and PubMed links, opens from **Sources** on the page (`src/refs.js`).
 - Each reference was checked against PubMed and Crossref before use. Where sources disagree, the page follows the current guideline.
 - The figures run simple models set to agree with these sources. The diastolic values and the four report cases are illustrative, not patient data. All images are simulated; there are no patient images.
 - Normal values for the **Normal values** dialog and the grading helpers live in one place: `src/norms.js`.
@@ -113,15 +117,15 @@ python3 -m http.server 8000
 
 Then open <http://localhost:8000/>. A chapter can be opened directly: `#planes`, `#fill`, `#report`.
 
-Keys: ← → change chapter, space plays the tour, 1–5 and [ ] step the views in chapters 03 and 04. A chapter opens directly by its key, for example `#as`, `#mr`, `#tr`.
+Keys: ← → change chapter, space plays the tour, 1–5 and [ ] step the views in chapters 03 and 04. A chapter opens directly by its key, for example `#as`, `#mr`, `#tr`, `#peri`.
 
 ## Checks run before this commit
 
 - `node --check` on every module.
-- Screenshots of all 17 chapters at 1440 × 900 and 390 × 844, and of the main chapters in the dark theme; no console errors.
-- Echo images at 1× and 2× device scale in every chapter that has one, including the zoomed and subcostal views, and the new views of chapter 03. Frame rate of the severity pages on the test machine (headless Chromium, software rendering, 1×): 56–61 fps with the cine running and 35–53 fps with Play, against 56–61 and 38–55 before this change. The 3D chapters run at 4–5 fps there before and after (software WebGL).
-- Plane changes rendered frame by frame (four- to two-chamber, long to short axis); the free plane rotated from the four-chamber view settles onto the two-chamber view at −60° and the three-chamber view at −120°, and from the long axis onto the short axis at +90°; the same planes at +60° and −90° read as mirrored, and a plane from another window never settles (the apical and subcostal four-chamber planes lie 4° apart); cross-sections of the parasternal, apical and subcostal views at desktop and phone width and in the dark theme.
-- Every chapter's tour steps run, and the Play button advances chapters. On the severity pages, Play moves the slider and any control stops it.
-- Each severity model swept across its slider: the grade bands come out in order; in MR, AR and TR the EROA, volume, fraction and vena contracta cross their severe cut-offs at the same point.
-- Citation audit: every cited id resolves to a reference, and every id used in live text also appears in the static text, so it gets a number.
-- Model checks: the diastolic algorithm across the whole filling slider; aortic stenosis velocity, gradient and area across valve areas; mitral gradient across heart rates; pressure–volume presets.
+- All 18 chapters at 1440 × 900 and 390 × 844: no console errors, no horizontal scroll, every citation numbered. Each severity page, the pericardium page included, is playing when it opens.
+- Every chapter's tour steps run, and the Play button advances chapters. On the severity pages any control stops Play.
+- Pericardium model swept across its slider (2,001 points): the grades come in order (none, mild, moderate, severe, tamponade), and the pressure in the sac stays at or above the RA pressure through tamponade. No sign of tamponade turns on before the tamponade grade: RA collapse for more than a third of the cycle, RV collapse, IVC over 2.1 cm with less than 50% collapse, mitral variation over 25%, tricuspid variation over 40%, hepatic vein reversal, pulsus paradoxus over 10 mmHg.
+- Parametric four-chamber and long-axis views with effusions of 0, 5, 15 and 24 mm: the fluid shows as a dark band in both; tamponade frames show the RV free wall folding in.
+- Segments: for each artery (LAD, circumflex, RCA) and each score, the LV wall vertices of the scored segments get 45%, 0 or −35% of the normal systolic motion and the other segments 100%; vertices on a boundary blend the two. End-systolic frames of the three apical views show the scored walls thin and the others thickening.
+- Citation audit: every cited id resolves to a reference, and every id used in live text also appears in the static text, so it gets a number. The five new pericardium references were checked in Crossref (DOI, title, journal, volume, pages) and PubMed.
+- Earlier checks, still valid: plane changes rendered frame by frame; the free plane settles onto the two-chamber view at −60°, the three-chamber view at −120° and, from the long axis, the short axis at +90°, and a plane from another window never settles; echo images at 1× and 2× device scale; model checks of the diastolic algorithm, aortic stenosis, the mitral gradient across heart rates and the pressure–volume presets.

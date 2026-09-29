@@ -1,4 +1,4 @@
-// The seventeen chapters in reading order, grouped into six parts.
+// The eighteen chapters in reading order, grouped into seven parts.
 import pulse from './ch/pulse.js';
 import image from './ch/image.js';
 import windows from './ch/windows.js';
@@ -15,6 +15,7 @@ import msPage from './ch/ms.js';
 import mrPage from './ch/mr.js';
 import arPage from './ch/ar.js';
 import trPage from './ch/tr.js';
+import periPage from './ch/peri.js';
 import report from './ch/report.js';
 
 export const PARTS = [
@@ -23,7 +24,8 @@ export const PARTS = [
   { key: 'doppler', num: 'III', name: 'Doppler' },
   { key: 'function', num: 'IV', name: 'Function' },
   { key: 'valves', num: 'V', name: 'Valves' },
-  { key: 'report', num: 'VI', name: 'Report' },
+  { key: 'pericardium', num: 'VI', name: 'Pericardium' },
+  { key: 'report', num: 'VII', name: 'Report' },
 ];
 
-export const CHAPTERS = [pulse, image, windows, planes, cycle, loop, shift, pressure, eject, segments, fill, asPage, msPage, mrPage, arPage, trPage, report];
+export const CHAPTERS = [pulse, image, windows, planes, cycle, loop, shift, pressure, eject, segments, fill, asPage, msPage, mrPage, arPage, trPage, periPage, report];

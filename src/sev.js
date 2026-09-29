@@ -1,4 +1,4 @@
-// Severity pages (chapters 11–16): one slider walks a disease from normal to its end stage and
+// Severity pages (chapters 11–17): one slider walks a disease from normal to its end stage and
 // Play animates it. Shared here: keyframe tracks, the grade bands under the slider, the Play
 // motion, the beat clock, and the measurement strip drawn to scale.
 import { clamp, mix, SANS, MONO } from './sketch.js';

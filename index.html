@@ -82,7 +82,7 @@
     </figure>
     <figure class="fig" id="fig-segments">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Seventeen-segment bullseye and the three apical views, colored by the wall motion score of each segment. The numbered segment buttons under the controls change the scores.</figcaption>
+      <figcaption class="sr-only">Seventeen-segment bullseye colored by the wall motion score of each segment, and the apical four-, two- and three-chamber echo views, in which each segment moves by its score. The numbered segment buttons under the controls change the scores.</figcaption>
     </figure>
     <figure class="fig" id="fig-fill">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -107,6 +107,10 @@
     <figure class="fig" id="fig-tr">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Tricuspid regurgitation from mild to torrential: an apical four-chamber view with the color jet and a dilating right heart, the continuous-wave jet, hepatic vein flow, the inferior vena cava on M-mode, a short-axis view of the septum, and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-peri">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Pericardial effusion from none to tamponade: an apical four-chamber view with the fluid round the heart and, in tamponade, the right atrium and right ventricle folding in; mitral inflow, tricuspid inflow and hepatic vein flow over a breath; a parasternal long-axis view with the fluid in front of the descending aorta; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-report">
       <div class="sheet-host" id="report-host"></div>
@@ -1006,9 +1010,65 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== VI Report -->
+    <!-- ======================================================== VI Pericardium -->
+    <article class="chapter" id="ch-peri">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Pericardium</h2><p class="ch-kicker">Effusion and tamponade</p></div></div>
+      <p class="dek" data-part="dek">Fluid in the pericardial sac shows as an echo-free space round the heart. As it collects, the pressure in the sac rises; when it reaches the pressure in the right heart, the chambers cannot fill: tamponade.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="periS">Effusion <output data-for="periS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="periS" data-key="periS" min="0" max="1" step="0.005">
+          <div class="grades" id="peri-grades" aria-hidden="true"></div>
+        </div>
+        <div class="toggles"><label class="check"><input type="checkbox" data-key="periCine"> Cine</label></div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="peri-table"></table></div>
+      <div class="table-wrap"><table class="vt grade" id="peri-table2"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>None.</b> The normal sac holds 10–50 mL of fluid<span class="cite" data-ref="adler2015"></span>. A separation seen only in systole is a trivial effusion; a separation in systole and diastole means more than 50 mL<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Mild (small).</b> An echo-free space below 10 mm, measured at end-diastole between the epicardium and the parietal pericardium<span class="cite" data-ref="adler2015"></span>. ASE gives 50–100 mL for a small effusion and calls the volumes arbitrary<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Moderate.</b> 10–20 mm<span class="cite" data-ref="adler2015"></span>, about 100–500 mL<span class="cite" data-ref="klein2013"></span>. In this model the pressure in the sac stays below the pressure in the right heart, so no chamber collapses.</li>
+        <li><b>Severe (large).</b> More than 20 mm<span class="cite" data-ref="adler2015"></span>; ASE adds very large, more than 25 mm<span class="cite" data-ref="klein2013"></span>. The heart can swing in the fluid. ESC links the swing to electrical alternans on the ECG<span class="cite" data-ref="adler2015"></span>.</li>
+        <li><b>Tamponade.</b> The pressure in the sac reaches the pressure in the right heart. A chamber collapses in its relaxation phase, when its pressure falls below the pressure in the sac<span class="cite" data-ref="klein2013"></span>.</li>
+        </ol>
+        <h3>Signs of tamponade</h3>
+        <ul>
+        <li><b>Right atrium.</b> The wall folds in near the peak of the R wave. It stays in until filling in ventricular systole raises the atrial pressure<span class="cite" data-ref="klein2013"></span>. Collapse for more than a third of the cycle is nearly 100% sensitive and specific<span class="cite" data-ref="klein2013"></span>. In the first study, a collapse time above 0.34 of the cycle gave 94% sensitivity and 100% specificity<span class="cite" data-ref="gillam1983"></span>.</li>
+        <li><b>Right ventricle.</b> The free wall collapses in early diastole, after the T wave<span class="cite" data-ref="klein2013"></span>. This occurs when cardiac output is about 20% lower but blood pressure has not fallen<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Left atrium.</b> The LA also collapses in about a quarter of patients; this sign is highly specific<span class="cite" data-ref="spodick2003"></span>.</li>
+        <li><b>IVC.</b> Wider than 2.1 cm, with less than 50% collapse in inspiration. This occurs in more than 90% of patients, but many other heart diseases also cause it<span class="cite" data-ref="klein2013"></span>. ESC 2025 uses 20 mm: sensitivity 97%, specificity 40%<span class="cite" data-ref="schulzmenger2025"></span>.</li>
+        <li><b>Filling with breathing.</b> With inspiration, mitral E falls more than 25–30% and tricuspid E increases more than 40–60%<span class="cite" data-ref="schulzmenger2025"></span>. The RV gets larger and the LV smaller in inspiration, and the reverse occurs in expiration<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Hepatic veins.</b> On the first beat of expiration, diastolic flow falls or reverses<span class="cite" data-ref="klein2013"></span>.</li>
+        </ul>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li>Size does not define tamponade. The rate of accumulation matters more than the volume<span class="cite" data-ref="adler2015"></span>. Fluid that collects fast, as in haemopericardium, can cause tamponade at 200–300 mL; a slow effusion can reach 1–2 L first<span class="cite" data-ref="schulzmenger2025"></span>.</li>
+        <li>Tamponade is a clinical diagnosis: history, symptoms and signs, with echo confirmation<span class="cite" data-ref="schulzmenger2025"></span>. Pulsus paradoxus is an inspiratory fall in systolic pressure of more than 10 mmHg<span class="cite" data-ref="adler2015"></span>.</li>
+        <li>A brief RA inversion occurs without tamponade, so measure its duration. An M-mode line through the wall shows the timing best<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>No chamber collapse gives a negative predictive value above 90%. RV hypertrophy, severe pulmonary hypertension or severe LV dysfunction can delay or prevent collapse<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>Pericardial or pleural fluid: in the parasternal long axis, pericardial fluid lies between the descending aorta and the heart. Pleural fluid runs behind the aorta<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>Respiratory variation of inflow is not a criterion alone. Under positive-pressure ventilation it is minimal, even in tamponade<span class="cite" data-ref="klein2013"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>End-diastolic echo-free space: mild &lt;10 mm, moderate 10–20 mm, severe (large) &gt;20 mm.</li>
+        <li>RA collapse for more than a third of the cycle and RV collapse in early diastole: tamponade physiology.</li>
+        <li>The rate of accumulation, not the size, sets the tolerance. Tamponade is a clinical diagnosis.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== VII Report -->
     <article class="chapter" id="ch-report">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">The study comes together</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">The study comes together</p></div></div>
       <p class="dek" data-part="dek">The report changes the study into a decision. The summary statement comes first; each structure follows, structure before function; every number is called normal or abnormal.</p>
       <div class="controls">
         <div class="control">

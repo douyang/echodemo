@@ -275,7 +275,10 @@ function showChapter() {
   tourT = 0;
   if (active >= 0 && active !== i) CHAPTERS[active].leave?.();
   active = i;
-  if (state.anim) set({ anim: false });
+  // a severity page opens with its progression playing; not during the tour, which moves the
+  // slider itself, and not with reduced motion. Any control stops it.
+  const autoplay = !state.playing && !reducedMotion && !!$(`#ch-${c.key} button[data-anim]`);
+  if (!!state.anim !== autoplay) set({ anim: autoplay });
   $$('.chapter').forEach((a, k) => a.classList.toggle('is-active', k === i));
   $$('.fig').forEach((f) => f.classList.toggle('is-active', f.id === `fig-${c.key}`));
   $$('#chapters button[data-go]').forEach((b, k) => (k === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
