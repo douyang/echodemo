@@ -82,7 +82,13 @@
     </figure>
     <figure class="fig" id="fig-segments">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Seventeen-segment bullseye colored by the wall motion score of each segment, and the apical four-, two- and three-chamber echo views, in which each segment moves by its score. The numbered segment buttons under the controls change the scores.</figcaption>
+      <div class="occl">
+        <span class="occl-label" id="occl-label">Occluded artery</span>
+        <div class="seg" role="group" aria-labelledby="occl-label" data-key="culprit">
+          <button type="button" data-val="none">Normal</button><button type="button" data-val="lad">LAD</button><button type="button" data-val="rca">RCA</button><button type="button" data-val="lcx">LCX</button>
+        </div>
+      </div>
+      <figcaption class="sr-only">Buttons for a normal heart and for an occluded LAD, RCA or circumflex artery. Seventeen-segment bullseye colored by the wall motion score of each segment, with the occluded artery drawn on it, and the apical four-, two- and three-chamber echo views, in which each segment moves by its score. The numbered segment buttons under the controls change the scores.</figcaption>
     </figure>
     <figure class="fig" id="fig-fill">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -678,12 +684,6 @@
       <p class="dek" data-part="dek">The LV wall has 17 segments. A coronary artery usually supplies one set of segments, so the pattern of abnormal motion points to the artery.</p>
       <div class="controls">
         <div class="control">
-          <span class="label">Occluded artery</span>
-          <div class="seg" role="group" aria-label="Occluded artery" data-key="culprit">
-            <button type="button" data-val="none">None</button><button type="button" data-val="lad">LAD</button><button type="button" data-val="lcx">Circumflex</button><button type="button" data-val="rca">RCA</button>
-          </div>
-        </div>
-        <div class="control">
           <span class="label">Wall motion of the affected segments</span>
           <div class="seg" role="group" aria-label="Wall motion" data-key="wm">
             <button type="button" data-val="2">Hypokinetic</button><button type="button" data-val="3">Akinetic</button><button type="button" data-val="4">Dyskinetic</button>
@@ -706,6 +706,12 @@
         </ul>
         <h3>Views and walls</h3>
         <p>The apical four-chamber view shows the inferoseptal and anterolateral walls; the two-chamber view the inferior and anterior walls; the three-chamber view the inferolateral and anteroseptal walls<span class="cite" data-ref="lang2015"></span>.</p>
+        <h3>What each occlusion shows</h3>
+        <ul>
+        <li><b>LAD.</b> The anterior wall in the two-chamber view and the anteroseptal wall in the three-chamber view, each from base to apex; the apical septum in the four-chamber view; the apex in all three<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
+        <li><b>RCA.</b> The inferior wall in the two-chamber view, from base to apex, and the basal and mid inferoseptum in the four-chamber view. The three-chamber view stays normal<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
+        <li><b>Circumflex.</b> The anterolateral wall in the four-chamber view and the inferolateral wall in the three-chamber view. The two-chamber view stays normal<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
+        </ul>
         <h3>Territories</h3>
         <p>In the standard map, the LAD supplies segments 1, 2, 7, 8, 13, 14 and 17; the right coronary artery 3, 4, 9, 10 and 15; the circumflex 5, 6, 11, 12 and 16<span class="cite" data-ref="javadi2010"></span>. Supply varies: in one CT study, 72% of patients had at least one segment supplied by a different artery<span class="cite" data-ref="javadi2010"></span>. Treat the map as a guide, not a rule.</p>
         <p>Regional strain values are not recommended for clinical decisions, because they vary between tests and vendors<span class="cite" data-ref="thomas2025"></span>.</p>
@@ -713,7 +719,7 @@
         <ol class="steps">
         <li>16 segments for wall motion; the index is their mean score.</li>
         <li>Each apical view shows two opposite walls.</li>
-        <li>Anterior wall, septum and apex: think LAD.</li>
+        <li>Anterior wall, anteroseptum and apex: think LAD. Inferior wall and basal inferoseptum: RCA. Lateral walls: circumflex.</li>
         </ol>
       </div>
       <div class="quiz"></div>

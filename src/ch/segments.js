@@ -1,6 +1,7 @@
 // 10 Segments: regional wall motion. The 17-segment model as a bull's-eye and as the three
-// apical views that show it. An occluded coronary artery sets the motion of its territory,
-// and each segment can be scored by hand: tap it on the bull's-eye or on an apical view.
+// apical views that show it. The buttons on the figure occlude the LAD, RCA or circumflex and
+// set the motion of its territory; each segment can also be scored by hand: tap it on the
+// bull's-eye or on an apical view.
 import { Sheet, clamp, mix, MONO, SANS } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { cycleAt, RR } from '../cyclemodel.js';
@@ -14,7 +15,7 @@ export const TERRITORY = { lad: [1, 2, 7, 8, 13, 14, 17], rca: [3, 4, 9, 10, 15]
 const ANAME = { lad: 'left anterior descending', rca: 'right coronary', lcx: 'circumflex' };
 // Segments along each apical view, screen-left base to apex to screen-right base (Lang 2015, Figure 4).
 const VIEWS = {
-  A4C: { left: [3, 9, 14], right: [6, 12, 16], lname: 'septum', rname: 'lateral' },
+  A4C: { left: [3, 9, 14], right: [6, 12, 16], lname: 'inferoseptal', rname: 'anterolateral' },
   A2C: { left: [4, 10, 15], right: [1, 7, 13], lname: 'inferior', rname: 'anterior' },
   A3C: { left: [5, 11, 16], right: [2, 8, 14], lname: 'inferolateral', rname: 'anteroseptal' },
 };
@@ -127,7 +128,36 @@ export function segmentMap(m, geoms) {
     out.push({ k: 17, p: apex.clone().addScaledVector(ax, -0.45) });
     labels[k] = out;
   }
-  return { mem, labels, turn };
+  // the pericardium moves with the wall under it: each of its vertices takes the scale of the
+  // nearest LV wall vertex within 1.5 cm (a grid of 1.5 cm cells keeps the search short)
+  let near = null;
+  const pm = m.heart.meshes.Pericardium;
+  if (pm) {
+    pm.updateMatrixWorld(true);
+    const f = pm.matrixWorld.elements, Q = pm.geometry.attributes.position, G = 1.5, grid = new Map();
+    const cellKey = (x, y, z) => `${Math.floor(x / G)},${Math.floor(y / G)},${Math.floor(z / G)}`;
+    for (let i = 0; i < n; i++) {
+      if (!mem[i]) continue;
+      const k = cellKey(X[3 * i], X[3 * i + 1], X[3 * i + 2]);
+      if (!grid.has(k)) grid.set(k, []);
+      grid.get(k).push(i);
+    }
+    near = new Int32Array(Q.count).fill(-1);
+    for (let j = 0; j < Q.count; j++) {
+      const x0 = Q.getX(j), y0 = Q.getY(j), z0 = Q.getZ(j);
+      const x = f[0] * x0 + f[4] * y0 + f[8] * z0 + f[12], y = f[1] * x0 + f[5] * y0 + f[9] * z0 + f[13], z = f[2] * x0 + f[6] * y0 + f[10] * z0 + f[14];
+      const cx = Math.floor(x / G), cy = Math.floor(y / G), cz = Math.floor(z / G);
+      let best = -1, bd = G * G;
+      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
+        for (const i of grid.get(`${cx + a},${cy + b},${cz + c}`) || []) {
+          const d = (X[3 * i] - x) ** 2 + (X[3 * i + 1] - y) ** 2 + (X[3 * i + 2] - z) ** 2;
+          if (d < bd) { bd = d; best = i; }
+        }
+      }
+      near[j] = best;
+    }
+  }
+  return { mem, labels, turn, near };
 }
 
 /** Per-vertex scale on the systolic motion for the scores sc[1..17]. */
@@ -140,6 +170,11 @@ export function regionalScale(map, sc) {
     out[i] = a / w;
   });
   return out;
+}
+/** The same for the pericardium: each vertex follows the LV wall vertex nearest to it. */
+export function periScale(map, scale) {
+  if (!map.near) return null;
+  return Float32Array.from(map.near, (i) => (i >= 0 ? scale[i] : 1));
 }
 
 async function startEcho() {
@@ -165,8 +200,8 @@ async function startEcho() {
 /** The scores onto the model; a view that is stale is drawn again. */
 function syncEcho() {
   if (!echo || !echo.views || echo.segs === st.segs) return;
-  const scale = regionalScale(echo.map, parse(st.segs));
-  for (const v of echo.views) { v.ev.setRegional(scale); v.fresh = false; }
+  const scale = regionalScale(echo.map, parse(st.segs)), ps = periScale(echo.map, scale);
+  for (const v of echo.views) { v.ev.setRegional(scale, ps); v.fresh = false; }
   echo.segs = st.segs;
 }
 
@@ -212,8 +247,10 @@ function fillFor(t, score) {
   return score === 1 ? null : score === 2 ? t.flag2 : t.flag;
 }
 
-function bullseye(sh, t, cx, cy, R, sc) {
+function bullseye(sh, t, cx, cy, R, sc, small = false, over = null) {
   const ctx = sh.ctx;
+  const num = small ? 9.5 : 11;
+  const names = [];
   const rings = [
     { r0: 0.66, r1: 1, segs: [1, 2, 3, 4, 5, 6], a0: 60, n: 6 },
     { r0: 0.36, r1: 0.66, segs: [7, 8, 9, 10, 11, 12], a0: 60, n: 6 },
@@ -249,7 +286,7 @@ function bullseye(sh, t, cx, cy, R, sc) {
       ctx.stroke(p);
       ctx.restore();
       const am = (mid * Math.PI) / 180, rm = ((ring.r0 + ring.r1) / 2) * R;
-      sh.text(String(seg), cx + Math.cos(am) * rm, cy - Math.sin(am) * rm + 4, { family: MONO, weight: 500, size: 11, align: 'center', color: t.ink });
+      names.push([String(seg), cx + Math.cos(am) * rm, cy - Math.sin(am) * rm + num * 0.36]);
     });
   }
   const cap = new Path2D();
@@ -257,12 +294,103 @@ function bullseye(sh, t, cx, cy, R, sc) {
   const f = fillFor(t, sc[17]);
   if (f) { ctx.save(); ctx.fillStyle = f; ctx.globalAlpha = 0.75; ctx.fill(cap); ctx.restore(); }
   ctx.save(); ctx.strokeStyle = hover === 17 ? t.accent : t.ink; ctx.lineWidth = hover === 17 ? 2.5 : 1; ctx.stroke(cap); ctx.restore();
-  sh.text('17', cx, cy + 4, { family: MONO, weight: 500, size: 11, align: 'center' });
+  names.push(['17', cx, cy + num * 0.36]);
+  // whatever is drawn over the map (the arteries) goes under the numbers, so they stay legible
+  if (over) over();
+  for (const [str, x, y] of names) {
+    ctx.save();
+    ctx.font = `500 ${num}px ${MONO}`;
+    const w = ctx.measureText(str).width;
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = t.paper;
+    if (over) ctx.fillRect(x - w / 2 - 1, y - num * 0.8, w + 2, num);
+    ctx.restore();
+    sh.text(str, x, y, { family: MONO, weight: 500, size: num, align: 'center', color: t.ink });
+  }
   // orientation
-  sh.text('anterior', cx, cy - R - 10, { size: 16, align: 'center', color: t.ink2 });
-  sh.text('inferior', cx, cy + R + 22, { size: 16, align: 'center', color: t.ink2 });
-  sh.text('septal', cx - R - 8, cy + 5, { size: 16, align: 'right', color: t.ink2 });
-  sh.text('lateral', cx + R + 8, cy + 5, { size: 16, color: t.ink2 });
+  const fs = small ? 12 : 16;
+  sh.text(small ? 'ant' : 'anterior', cx, cy - R - (small ? 5 : 10), { size: fs, align: 'center', color: t.ink2 });
+  sh.text(small ? 'inf' : 'inferior', cx, cy + R + (small ? 13 : 22), { size: fs, align: 'center', color: t.ink2 });
+  sh.text(small ? 'sept' : 'septal', cx - R - (small ? 4 : 8), cy + 5, { size: fs, align: 'right', color: t.ink2 });
+  sh.text(small ? 'lat' : 'lateral', cx + R + (small ? 9 : 16), cy + 5, { size: fs, color: t.ink2 });
+}
+
+// The coronary arteries on the bull's-eye, schematic: the apex at the centre, the base at the
+// rim, so a vessel that runs from the base to the apex is a line toward the centre. Points are
+// [radius as a fraction of R, angle in degrees, counterclockwise from lateral]. The LAD runs in
+// the anterior interventricular groove (between segments 1 and 2) and round the apex, with a
+// diagonal over the anterior wall; the RCA comes to the crux in the right atrioventricular
+// groove and runs on as the posterior descending artery (between segments 3 and 4); the
+// circumflex runs round the lateral wall in the left atrioventricular groove, with obtuse
+// marginal branches over it.
+const COURSE = {
+  lad: { name: 'LAD', main: [[1.16, 120], [0.66, 120], [0.36, 119], [0.14, 116], [0, 116], [0, 300], [0.13, 300]], branches: [[[0.8, 120], [0.55, 96], [0.42, 76]]], block: [1.02, 120], label: [1.3, 128] },
+  rca: { name: 'RCA', main: [[1.16, 190], [1.1, 215], [1.08, 240], [0.66, 240], [0.36, 240], [0.22, 240]], branches: [], block: [1.11, 207], label: [1.32, 210] },
+  lcx: { name: 'LCX', main: [[1.17, 77], [1.08, 62], [1.08, 20], [1.08, -20], [1.08, -58]], branches: [[[1.08, 20], [0.66, 8], [0.38, 2]], [[1.08, -20], [0.66, -27], [0.42, -32]]], block: [1.12, 70], label: [1.32, 52] },
+};
+const toXY = ([r, a], cx, cy, R) => [cx + Math.cos((a * Math.PI) / 180) * r * R, cy - Math.sin((a * Math.PI) / 180) * r * R];
+
+/** Sample a polar path into screen points, so that a run at one radius follows the circle. */
+function polar(pts, cx, cy, R) {
+  const out = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [r0, a0] = pts[i], [r1, a1] = pts[i + 1];
+    // a step every 4 degrees round and every 0.05 R across; none to spin on the spot at the apex
+    const n = r0 === 0 && r1 === 0 ? 1 : Math.max(2, Math.ceil(Math.abs(a1 - a0) / 4), Math.ceil(Math.abs(r1 - r0) / 0.05));
+    for (let j = i ? 1 : 0; j <= n; j++) {
+      const u = j / n, r = r0 + (r1 - r0) * u, a = ((a0 + (a1 - a0) * u) * Math.PI) / 180;
+      out.push([cx + Math.cos(a) * r * R, cy - Math.sin(a) * r * R]);
+    }
+  }
+  return out;
+}
+
+/** The arteries: all faint, the occluded one dark, with a bar at the block and dashes beyond. */
+function arteries(sh, t, cx, cy, R, culprit, small) {
+  const ctx = sh.ctx;
+  const lw = small ? 1.8 : 2.6;
+  const stroke = (pts, color, width, dash, halo) => {
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.setLineDash(dash || []);
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    if (halo) { ctx.strokeStyle = t.paper; ctx.lineWidth = width + 3; ctx.stroke(); }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.stroke();
+    ctx.restore();
+  };
+  for (const [key, c] of Object.entries(COURSE)) {
+    const on = key === culprit;
+    if (!on && small) continue;
+    const main = polar(c.main, cx, cy, R);
+    if (!on) {
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      stroke(main, t.ink3, lw * 0.6);
+      for (const b of c.branches) stroke(polar(b, cx, cy, R), t.ink3, lw * 0.45);
+      ctx.restore();
+      const [lr, la] = c.label, a = (la * Math.PI) / 180;
+      sh.text(c.name, cx + Math.cos(a) * lr * R, cy - Math.sin(a) * lr * R + 4, { family: SANS, weight: 500, size: small ? 9.5 : 11, align: 'center', color: t.ink3 });
+      continue;
+    }
+    // flow stops at the block: solid before it, dashed after it
+    const [qx, qy] = toXY(c.block, cx, cy, R);
+    let k = 1;
+    main.forEach(([x, y], i) => { if (i && i < main.length - 1 && Math.hypot(x - qx, y - qy) < Math.hypot(main[k][0] - qx, main[k][1] - qy)) k = i; });
+    const dash = small ? [4, 3] : [6, 4];
+    stroke(main.slice(0, k + 1), t.ink, lw, null, true);
+    stroke(main.slice(k), t.ink, lw, dash, true);
+    for (const b of c.branches) stroke(polar(b, cx, cy, R), t.ink, lw * 0.75, dash, true);
+    const [x0, y0] = main[k - 1], [x1, y1] = main[k + 1] || main[k];
+    const d = Math.hypot(x1 - x0, y1 - y0) || 1, nx = -(y1 - y0) / d, ny = (x1 - x0) / d, L = small ? 6 : 9;
+    const [bx, by] = main[k];
+    stroke([[bx - nx * L, by - ny * L], [bx + nx * L, by + ny * L]], t.flag, small ? 3 : 4, null, true);
+    const [lr, la] = c.label, a = (la * Math.PI) / 180;
+    sh.text(c.name, cx + Math.cos(a) * lr * R, cy - Math.sin(a) * lr * R + 4, { family: SANS, weight: 700, size: small ? 11 : 13, align: 'center', color: t.ink });
+  }
 }
 
 function apicalView(sh, t, box, name, sc, sys) {
@@ -334,32 +462,24 @@ function draw(sh, t) {
   layout = { bull: null, walls: [] };
   const live = echo && echo.views;
   if (live) syncEcho();
-  if (narrow) {
-    const R = Math.min(W * 0.26, H * 0.2);
-    layout.bull = { cx: W * 0.5, cy: R + 30, R };
-    bullseye(sh, t, W * 0.5, R + 30, R, S.sc);
-    const bw = (W - 24) / 3, by = 2 * R + 80;
-    if (live) echo.views.forEach((v, i) => echoView(sh, t, { x: 8 + i * (bw + 4), y: by, w: bw, h: Math.min(H - by - 8, bw * 1.05) }, v, S.sc));
-    else ['A4C', 'A2C', 'A3C'].forEach((n, i) => apicalView(sh, t, { x: 8 + i * (bw + 4), y: by, w: bw, h: H - by - 8 }, n, S.sc, sys));
-    return;
-  }
-  const R = Math.min(W * 0.2, H * 0.3);
-  layout.bull = { cx: W * 0.27, cy: H * 0.42, R };
-  bullseye(sh, t, W * 0.27, H * 0.42, R, S.sc);
-  sh.text('17 segments, seen from the apex; tap one to score it', W * 0.27, H * 0.42 + R + 52, { size: 18, align: 'center', color: t.ink2 });
-  if (live) {
-    // the three views down the right side, as the scanner shows them
-    const x = W * 0.53, w = W * 0.45, top = H * 0.04, gap = 10, h = (H * 0.86 - 2 * gap) / 3;
-    echo.views.forEach((v, i) => echoView(sh, t, { x, y: top + i * (h + gap), w, h }, v, S.sc));
-  } else {
-    const bw = W * 0.15, bx = W * 0.52, bh = H * 0.62;
-    ['A4C', 'A2C', 'A3C'].forEach((n, i) => apicalView(sh, t, { x: bx + i * (bw + 10), y: H * 0.14, w: bw, h: bh }, n, S.sc, sys));
-    sh.text('the apical views, systole in motion', bx, H * 0.14 + bh + 34, { size: 18, color: t.ink2 });
-  }
+  // the occlusion buttons sit over the top of the figure. Below them, two by two: the
+  // bull's-eye, then the four-, two- and three-chamber views
+  const top = narrow ? 50 : 66, pad = narrow ? 6 : 14, gap = narrow ? 6 : 14;
+  const cw = (W - 2 * pad - gap) / 2, chh = (H - top - pad - gap) / 2;
+  const cell = (i) => ({ x: pad + (i % 2) * (cw + gap), y: top + Math.floor(i / 2) * (chh + gap), w: cw, h: chh });
+  const b = cell(0);
+  const R = narrow ? Math.min(b.w * 0.3, (b.h - 34) / 2) : Math.min(b.w * 0.3, (b.h - 116) / 2);
+  const cx = b.x + b.w / 2, cy = narrow ? b.y + b.h / 2 : b.y + 22 + R;
+  layout.bull = { cx, cy, R };
+  bullseye(sh, t, cx, cy, R, S.sc, narrow, () => arteries(sh, t, cx, cy, R, st.culprit, narrow));
+  if (live) echo.views.forEach((v, i) => echoView(sh, t, cell(i + 1), v, S.sc));
+  else ['A4C', 'A2C', 'A3C'].forEach((n, i) => apicalView(sh, t, cell(i + 1), n, S.sc, sys));
+  if (narrow) return;
+  sh.text('17 segments, seen from the apex; tap one to score it', cx, b.y + b.h - 30, { size: 15, align: 'center', color: t.ink2 });
   // legend
-  const ly = H - 40;
+  const ly = b.y + b.h - 4, step = Math.min(124, b.w / 4);
   [[1, 'normal'], [2, 'hypokinetic'], [3, 'akinetic'], [4, 'dyskinetic']].forEach(([k, name], i) => {
-    const lx = 30 + i * 130;
+    const lx = cx - 2 * step + 8 + i * step;
     const ctx = sh.ctx;
     ctx.save();
     ctx.fillStyle = fillFor(t, k) || t.paper2;
@@ -373,6 +493,30 @@ function draw(sh, t) {
 }
 
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
+
+/** Where each apical view shows the abnormal segments, in words: 'A2C, the anterior wall ...'. */
+function where(sc) {
+  const out = [];
+  for (const [name, v] of Object.entries(VIEWS)) {
+    const parts = [];
+    for (const [segs, wall] of [[v.left, v.lname], [v.right, v.rname]]) {
+      const bad = segs.filter((k) => sc[k] > 1);
+      if (bad.length === 3) { parts.push(`the whole ${wall} wall`); continue; }
+      // name the levels: 'the basal and mid inferoseptal segments', 'the apical septal segment'
+      const groups = [];
+      for (const k of bad) {
+        const [lvl, ...rest] = SEG_NAMES[k - 1].split(' '), wallName = rest.join(' ');
+        const g = groups.find((x) => x.wall === wallName);
+        if (g) g.lvls.push(lvl); else groups.push({ wall: wallName, lvls: [lvl] });
+      }
+      for (const g of groups) parts.push(`the ${g.lvls.join(' and ')} ${g.wall} segment${g.lvls.length > 1 ? 's' : ''}`);
+    }
+    if (sc[17] > 1) parts.push('the apex');
+    const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
+    out.push(`${name}, ${list || 'normal'}`);
+  }
+  return out.join('; ');
+}
 
 /** The segment under a pointer event on the figure, or 0. */
 function segAt(e) {
@@ -433,7 +577,7 @@ export default {
   part: 'function',
   title: 'Segments',
   dwell: 14,
-  defaults: { culprit: 'lad', wm: 3, segs: preset('lad', 3) },
+  defaults: { culprit: 'none', wm: 3, segs: preset('none') },
   watch: ['culprit', 'wm', 'segs'],
   figure(fig) {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
@@ -482,19 +626,18 @@ export default {
     const S = scores(s);
     const bad = [];
     for (let k = 1; k <= 17; k++) if (S.sc[k] > 1) bad.push(k);
-    const seen = Object.entries(VIEWS).filter(([, v]) => [...v.left, ...v.right].some((k) => bad.includes(k))).map(([n]) => n);
     const by = Object.keys(TERRITORY).map((c) => ({ c, n: TERRITORY[c].filter((k) => S.sc[k] > 1).length, of: TERRITORY[c].length })).filter((x) => x.n);
     const listBy = [2, 3, 4].map((w) => ({ w, ks: bad.filter((k) => S.sc[k] === w) })).filter((x) => x.ks.length)
       .map((x) => `${WM[x.w]} (${x.w}): ${x.ks.join(', ')}`).join('; ');
     const territory = s.culprit === 'none' ? 'none' : TERRITORY[s.culprit] ? ANAME[s.culprit] : by.length ? by.map((x) => `${x.c === 'lcx' ? 'Cx' : x.c.toUpperCase()} ${x.n} of ${x.of}`).join(' · ') : 'none';
     const tail = `The index is the mean of the 16 scores: ${fmt(S.wmsi, 2)}${cite('lang2015')}.`;
     let live;
-    if (!bad.length) live = `All 16 segments score 1 (normal): the wall motion score index is 1.00${cite('lang2015')}. Tap a segment to score it.`;
+    if (!bad.length) live = `Normal: all 16 segments score 1, and the wall motion score index is 1.00${cite('lang2015')}. Press LAD, RCA or LCX on the figure to occlude that artery, or tap a segment to score it.`;
     else if (TERRITORY[s.culprit]) {
       const segs = TERRITORY[s.culprit];
-      live = `A ${ANAME[s.culprit]} territory that is ${WM[s.wm]} scores ${s.wm} in segments ${segs.filter((k) => k < 17).join(', ')}${segs.includes(17) ? ' (and the apical cap, which the index leaves out)' : ''}. Views that show it: ${seen.join(', ')}. ${tail} The map is the standard one; in one CT study, 72% of patients had at least one segment supplied by a different artery${cite('javadi2010')}.`;
+      live = `<b>${COURSE[s.culprit].name} occlusion.</b> Its territory is ${WM[s.wm]}: segments ${segs.filter((k) => k < 17).join(', ')} score ${s.wm}${segs.includes(17) ? ', and so does the apical cap, which the index leaves out' : ''}. Where to look: ${where(S.sc)}${cite('lang2015')}. ${tail} The map is the standard one; in one CT study, 72% of patients had at least one segment supplied by a different artery${cite('javadi2010')}.`;
     } else {
-      live = `Scored by hand: ${listBy}. Views that show them: ${seen.join(', ') || 'none'}. By the standard map, the abnormal segments lie in the territory of ${by.map((x) => `the ${ANAME[x.c]} (${x.n} of ${x.of})`).join(', ')}${cite('javadi2010')}. ${tail}${bad.includes(17) ? ' The apical cap counts only in the 17-segment model.' : ''}`;
+      live = `Scored by hand: ${listBy}. Where to look: ${where(S.sc)}. By the standard map, the abnormal segments lie in the territory of ${by.map((x) => `the ${ANAME[x.c]} (${x.n} of ${x.of})`).join(', ')}${cite('javadi2010')}. ${tail}${bad.includes(17) ? ' The apical cap counts only in the 17-segment model.' : ''}`;
     }
     return {
       readouts: [

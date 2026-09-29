@@ -51,7 +51,7 @@ export function model(s) {
 }
 export function gradeOf(s) {
   const m = TRK(s);
-  if (m.ipp >= m.rap - 0.05) return 'tamponade';
+  if (m.ipp >= m.rap - 1e-9) return 'tamponade';
   if (m.eff < 1) return 'none';
   if (m.eff < 10) return 'mild';
   if (m.eff < 20) return 'moderate';

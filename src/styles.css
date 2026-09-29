@@ -758,3 +758,14 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .chapter.is-active { animation: none; }
   .fig .poster { transition: none; }
 }
+
+/* chapter 10: the occlusion buttons sit on the figure, over the views they change */
+.occl { position: absolute; top: 14px; left: 16px; z-index: 2; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
+.occl-label { font: 500 0.625rem/1.2 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); }
+.occl .seg { background: var(--paper-2); }
+.occl .seg button { padding: 9px 16px; font-size: 0.875rem; font-weight: 600; }
+@media (max-width: 820px) {
+  .occl { top: 7px; left: 8px; right: 8px; gap: 8px; }
+  .occl-label { letter-spacing: 0.1em; }
+  .occl .seg button { padding: 7px 12px; font-size: 0.8125rem; }
+}

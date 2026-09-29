@@ -422,9 +422,13 @@ export class EchoView {
     this.resize();
   }
 
-  /** Regional wall motion: a scale on each myocardial vertex's systolic motion, or null. */
-  setRegional(scale) {
+  /**
+   * Regional wall motion: a scale on each myocardial vertex's systolic motion, or null; and one
+   * for the pericardium, so that it moves with the wall under it.
+   */
+  setRegional(scale, periScale = null) {
     this.myo.scale = scale ? { systole: scale } : null;
+    if (this.peri) this.peri.scale = periScale ? { systole: periScale } : null;
   }
 
   setSize(w, h) {
@@ -777,6 +781,47 @@ export class EchoView {
       return k > 0 && k % 2 === 0 && wallGap(C) > 0.12;
     };
     const cor = (extra.cor || []).filter(closed).map((L) => L.pts).filter((C) => !inBlood(C));
+    // the pericardium mesh dips into the myocardium in places (up to about 3 mm), and more where
+    // a wall moves on its own (chapter 10): a point of its line inside a wall moves out to the
+    // wall's outer surface and 0.6 mm beyond, so the line never runs through muscle
+    // even-odd over all the wall loops at once, with the edges sorted into 2.5 mm bands of depth
+    // so that a point tests only the edges at its own depth
+    const BAND = 0.25, bands = new Map();
+    for (const L of loops) {
+      const P = L.pts;
+      for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+        const e = [P[j][0], P[j][1], P[i][0], P[i][1]];
+        for (let b = Math.floor(Math.min(e[1], e[3]) / BAND); b <= Math.floor(Math.max(e[1], e[3]) / BAND); b++) {
+          if (!bands.has(b)) bands.set(b, []);
+          bands.get(b).push(e);
+        }
+      }
+    }
+    const inWall = (x, y) => {
+      let c = false;
+      for (const [xj, yj, xi, yi] of bands.get(Math.floor(y / BAND)) || []) if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+      return c;
+    };
+    // a wall's outer surface: a loop that an even number of the other loops enclose
+    const outer = loops.filter((L, i) => loops.reduce((k, M, j) => (j !== i && inside(M.pts, L.pts[0][0], L.pts[0][1]) ? k + 1 : k), 0) % 2 === 0);
+    const clearOf = (pts) => pts.map((p) => {
+      if (!inWall(p[0], p[1])) return p;
+      let q = null, bd = Infinity;
+      for (const L of outer) {
+        const P = L.pts;
+        for (let i = 0; i < P.length; i++) {
+          const a = P[i], b = P[(i + 1) % P.length], ux = b[0] - a[0], uy = b[1] - a[1], l2 = ux * ux + uy * uy || 1e-9;
+          const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * ux + (p[1] - a[1]) * uy) / l2));
+          const x = a[0] + t * ux, y = a[1] + t * uy, d = Math.hypot(p[0] - x, p[1] - y);
+          if (d < bd) { bd = d; q = [x, y]; }
+        }
+      }
+      if (!q || bd > 1.2) return p;
+      const d = bd || 1;
+      return [q[0] + ((q[0] - p[0]) / d) * 0.06, q[1] + ((q[1] - p[1]) / d) * 0.06];
+    });
+    const periPts = peri.map((L) => clearOf(L.pts));
+    this.periDrawn = periPts;          // the pericardium line as drawn, plane coordinates
     const items = [
       { polys: liver, e: DB.liver },
       { borders: liver, e: 6, spec: 9, w: 0.12, closed: true, all: true },
@@ -793,7 +838,7 @@ export class EchoView {
       { borders: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, spec: 6, closed: true },
       { polys: tri(extra.chords), e: DB.chord - 7 },
       { polys: tri(extra.chordsCore), e: DB.chord },
-      { borders: peri.map((L) => L.pts), refs: ref(peri), e: 8, spec: 10, w: 0.15, all: true },
+      { borders: periPts, refs: ref(peri), e: 8, spec: 10, w: 0.15, all: true },
       { polys: leaf, e: DB.valve },
       { borders: leaf, e: DB.valve, spec: 7, w: 0.06, closed: true },
       // coronary arteries run in epicardial fat: a bright sleeve, the wall, the dark lumen

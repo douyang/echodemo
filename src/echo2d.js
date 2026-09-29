@@ -52,6 +52,50 @@ function offsetAway(poly, th, ref) {
   });
 }
 const ribbon = (inner, outer) => [...inner, ...outer.slice().reverse()];
+/** A polyline resampled to n points at even steps along its length. */
+function resample(poly, n) {
+  const cum = [0];
+  for (let i = 1; i < poly.length; i++) cum.push(cum[i - 1] + Math.hypot(poly[i][0] - poly[i - 1][0], poly[i][1] - poly[i - 1][1]));
+  const L = cum[cum.length - 1], out = [];
+  for (let k = 0, j = 0; k < n; k++) {
+    const d = (L * k) / (n - 1);
+    while (j < poly.length - 2 && cum[j + 1] < d) j++;
+    const seg = cum[j + 1] - cum[j] || 1;
+    out.push(lerp2(poly[j], poly[j + 1], clamp((d - cum[j]) / seg, 0, 1)));
+  }
+  return out;
+}
+/**
+ * The outer envelope of an open outline, from its first point to its last: the side of its convex
+ * hull away from the chord between the ends, as 160 even steps, lightly smoothed. A fixed count
+ * keeps it matched to its reference shape, so its speckle moves with it.
+ */
+function envelope(pts) {
+  const a = pts[0], b = pts[pts.length - 1];
+  const P = pts.slice().sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+  const cross = (o, p, q) => (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+  const lo = [], hi = [];
+  for (const p of P) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (let i = P.length - 1; i >= 0; i--) { const p = P[i]; while (hi.length >= 2 && cross(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+  const H = [...lo.slice(0, -1), ...hi.slice(0, -1)];
+  const near = (q) => H.reduce((k, p, i) => (Math.hypot(p[0] - q[0], p[1] - q[1]) < Math.hypot(H[k][0] - q[0], H[k][1] - q[1]) ? i : k), 0);
+  const ia = near(a), ib = near(b), n = H.length;
+  const fwd = [], back = [];
+  for (let i = ia; ; i = (i + 1) % n) { fwd.push(H[i]); if (i === ib) break; }
+  for (let i = ia; ; i = (i - 1 + n) % n) { back.push(H[i]); if (i === ib) break; }
+  // the far side: the arc that lies farther from the chord a-b
+  const off = (arc) => Math.max(...arc.map((p) => Math.abs(cross(a, b, p))));
+  // it starts and ends on the hull, at the corners nearest the two ends of the outline
+  const arc = off(fwd) >= off(back) ? fwd : back;
+  const r = resample(arc, 160);
+  // a light running mean rounds the corners where the hull leaves the outline
+  return r.map((p, i) => {
+    if (i < 2 || i > r.length - 3) return p;
+    let x = 0, y = 0;
+    for (let k = -2; k <= 2; k++) { x += r[i + k][0]; y += r[i + k][1]; }
+    return [x / 5, y / 5];
+  });
+}
 const centroid = (poly) => mul(poly.reduce((a, p) => add(a, p), [0, 0]), 1 / poly.length);
 /** An ellipse (or circle) of n points. */
 const ellipse = (c, rx, ry = rx, n = 40) => Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2; return [c[0] + rx * Math.cos(a), c[1] + ry * Math.sin(a)]; });
@@ -427,9 +471,12 @@ function a4cShape(g, c, ph, dyn = {}) {
   const N = 36;
   const widthAt = (u) => (u < 0.22 ? mix(ma, lvW, smooth(u / 0.22)) : lvW * Math.pow(Math.max(0, 1 - ((u - 0.22) / 0.78) ** 2.3), 0.5));
   const Pax = (u) => lerp2(B, A, u);
+  // even steps to 80% of the length, then shorter ones: the width falls fast near the apex, and
+  // even steps there would leave a faceted, pointed tip
+  const U = (i) => { const x = i / N; return x <= 0.8 ? x : 0.8 + 0.2 * (1 - (1 - (x - 0.8) / 0.2) ** 2); };
   const sep = [], lat = [];
   for (let i = 0; i <= N; i++) {
-    const u = i / N, w = widthAt(u);
+    const u = U(i), w = widthAt(u);
     sep.push(add(Pax(u), mul(nl, bow(u) - w * 0.44 * (1 - 0.06 * Math.sin(Math.PI * u)))));
     lat.push(add(Pax(u), mul(nl, w * 0.56 * (1 + 0.05 * Math.sin(Math.PI * u)))));
   }
@@ -460,11 +507,14 @@ function a4cShape(g, c, ph, dyn = {}) {
   const TS = rvSep[iTv];
   const Ra = rvSep[iRvApex];
   const TL = add(add(TS, mul(out, ta)), mul(ax, 0.15));
-  // in tamponade the free wall buckles inward in early diastole, most at its middle; it stays
-  // where it is when the septum moves
-  const Mb = add(add(rvSep[Math.round(N * 0.2)], mul(out, rvW * (1 - 0.3 * rvIn) + bow(0.2))), mul(ax, -0.1));
-  const Mm = add(rvSep[Math.round(N * 0.48)], mul(out, rvW * 0.82 * (1 - 0.62 * rvIn) + bow(0.48)));
-  const rvFree = spline([Ra, add(rvSep[Math.round(N * 0.66)], mul(out, rvW * 0.5 * (1 - 0.35 * rvIn) + bow(0.66))), Mm, Mb, TL], 10);
+  // in tamponade the free wall buckles inward in early diastole (k), most at its middle; it
+  // stays where it is when the septum moves
+  const rvFreeAt = (k) => {
+    const Mb = add(add(rvSep[Math.round(N * 0.2)], mul(out, rvW * (1 - 0.3 * k) + bow(0.2))), mul(ax, -0.1));
+    const Mm = add(rvSep[Math.round(N * 0.48)], mul(out, rvW * 0.82 * (1 - 0.62 * k) + bow(0.48)));
+    return spline([Ra, add(rvSep[Math.round(N * 0.66)], mul(out, rvW * 0.5 * (1 - 0.35 * k) + bow(0.66))), Mm, Mb, TL], 10);
+  };
+  const rvFree = rvFreeAt(rvIn);
   const rvC = centroid([...rvSep.slice(iTv, iRvApex + 1), ...rvFree]);
   const rvFreeT = trabeculate(rvFree, (u) => 0.17 * (1 - smooth(u / 0.45)), rvC, 1.3);
   const rvOut = offsetAway(rvFree, rvWall, rvC);
@@ -551,22 +601,21 @@ function a4cShape(g, c, ph, dyn = {}) {
   // chordae fan out from the papillary head to the free edges and the bodies of both leaflets
   const pmSide = perp(pmDir);
   const chords = [[pmTip, along(mv.l2, 0.97)], [pmTip, along(mv.l2, 0.6)], [add(pmTip, mul(pmSide, 0.12)), along(mv.l1, 0.97)], [add(pmTip, mul(pmSide, 0.12)), along(mv.l1, 0.72)], [add(pmTip, mul(pmSide, -0.1)), along(mv.l1, 0.5)]];
-  // pericardium around the free walls, from the right atrium to the left atrium; fluid widens
-  // the space most around the apex and the free walls, less at the atrioventricular grooves
+  // pericardium round the free walls, from one atrioventricular groove to the other. It follows
+  // the convex envelope of the ventricles' outer walls, so it bridges the interventricular
+  // groove (epicardial fat fills it) and never cuts into a wall; a collapsing RV wall pulls away
+  // from it. Fluid widens the space most round the apex and the free walls, least at the grooves
   const heartC = centroid([lvC, rvC, laC, raC]);
-  const every = (p, k) => p.filter((_, i) => i % k === 0);
   const eff = g.effusion ?? 0;
-  const periPts = [add(TL, mul(out, 0.3)), ...every(rvOut.slice().reverse(), 5), ...every(lvOut, 4), add(L0, mul(nl, wall + 0.25))];
-  let peri = offsetAway(spline(periPts, 3), 0.13, heartC);
+  const rvOut0 = rvIn > 0.001 ? offsetAway(rvFreeAt(0), rvWall, rvC) : rvOut;
+  const wallsOut = [add(rvOut0[rvOut0.length - 1], mul(out, 0.1)), ...rvOut0.slice().reverse(), ...lvOut, add(L0, mul(nl, wall + 0.25))];
+  const hull = envelope(wallsOut);
+  const fat = ribbon(hull, wallsOut);        // on the heart: it moves when the heart swings
+  let peri = offsetAway(hull, 0.13, heartC);
   if (eff > 0.01) {
-    // the sac, pushed out along lines from the middle of the heart (they never cross): a thin
-    // layer at the atrioventricular grooves, the full depth over the free walls and the apex
-    const n = peri.length - 1, ctl = [];
-    for (let i = 0; i <= 10; i++) {
-      const u = i / 10, p = peri[Math.round(u * n)];
-      ctl.push(add(p, mul(unit(sub(p, heartC)), eff * (0.2 + 0.8 * Math.pow(Math.sin(Math.PI * u), 0.6)))));
-    }
-    peri = spline(ctl, 6);
+    // the sac, pushed out along lines from the middle of the heart (they never cross)
+    const n = peri.length - 1;
+    peri = peri.map((p, i) => add(p, mul(unit(sub(p, heartC)), eff * (0.2 + 0.8 * Math.pow(Math.sin((Math.PI * i) / n), 0.6)))));
   }
   // outside the sac: lung and fat, grey, so that the fluid shows as the dark band inside it
   const outer = g.effusion === undefined ? null : ribbon(peri, offsetAway(peri, 1.6, heartC));
@@ -577,22 +626,29 @@ function a4cShape(g, c, ph, dyn = {}) {
   const shape = {
     A, B, S0, L0, TS, TL, Ra, ax, nl, out, lvC, rvC, laC, raC, lvCav, lvCavT, laCav, raCav, rvFree, rvFreeT, rvSep, rvSepEndo,
     lvOut, rvOut, laOut, raOut, ivsRib, lvRib, rvRib, laRibs, raRib, pvWalls, crux, annuli, pm, mb, mv, tv, chords, mvShut: ph.mvShut,
-    daRing: ring(daC, 0.95, 1.17, 28), daLumen: ellipse(daC, 0.95, 0.95, 28), lvW, lvL, rvW, laW, laL, raW, raL, ma, ta,
+    daRing: ring(daC, 0.95, 1.17, 28), daLumen: ellipse(daC, 0.95, 0.95, 28), lvW, lvL, rvW, laW, laL, raW, raL, ma, ta, fat,
   };
-  // a swinging heart moves inside a sac that stays put
+  // a swinging heart moves inside a sac that stays put. It rocks about the middle of the
+  // atrioventricular plane, so the apex travels farthest (sw[0], cm) and the grooves, where
+  // the fluid is thinnest, hardly move sideways; and it bobs a little (sw[1], cm)
   const sw = dyn.swing;
-  const moved = sw && (sw[0] || sw[1]) ? shift(shape, sw, ['ax', 'nl', 'out']) : shape;
+  let moved = shape;
+  if (sw && (sw[0] || sw[1])) {
+    const pv = lerp2(TL, L0, 0.5), th = sw[0] / lvL, cs = Math.cos(th), sn = Math.sin(th);
+    const rot = (v) => [v[0] * cs - v[1] * sn, v[0] * sn + v[1] * cs];
+    moved = mapShape(shape, (p) => add(add(pv, rot(sub(p, pv))), [0, sw[1]]), rot, ['ax', 'nl', 'out']);
+  }
   return { ...moved, peri, outer, medi };
 }
-/** Every point in a nested shape moved by d, except the directions named in keep. */
-function shift(x, d, keep = []) {
+/** Every point in a nested shape through f; the directions named in dirs through g. */
+function mapShape(x, f, g, dirs = []) {
   if (Array.isArray(x)) {
-    if (x.length === 2 && typeof x[0] === 'number' && typeof x[1] === 'number') return [x[0] + d[0], x[1] + d[1]];
-    return x.map((y) => shift(y, d));
+    if (x.length === 2 && typeof x[0] === 'number' && typeof x[1] === 'number') return f(x);
+    return x.map((y) => mapShape(y, f, g));
   }
   if (x && typeof x === 'object') {
     const o = {};
-    for (const [k, v] of Object.entries(x)) o[k] = keep.includes(k) ? v : shift(v, d);
+    for (const [k, v] of Object.entries(x)) o[k] = dirs.includes(k) ? g(v) : mapShape(v, f, g);
     return o;
   }
   return x;
@@ -602,6 +658,7 @@ function a4cItems(S, Sr, g) {
   return [
     ...(S.outer ? [{ polys: [S.outer], refs: [Sr.outer], e: -11 }] : []),
     { polys: [S.medi], e: -21 },
+    { polys: [S.fat], refs: [Sr.fat], e: DB.fat - 2 },
     { polys: [S.laCav, S.raCav, S.daLumen], e: DB.blood, blood: true },
     { polys: [S.daRing], refs: [Sr.daRing], e: DB.fibrous - 2 },
     { polys: [S.lvRib], refs: [Sr.lvRib], e: DB.myo },
@@ -700,14 +757,32 @@ function plaxShape(g, c, ph) {
   const laRib = ribbon(laCav, offsetAway(laCav, 0.22, centroid(laCav)));
   // coronary sinus in the AV groove; descending aorta behind the LA
   const csC = [hingeP[0] - 0.35, hingeP[1] + pw * 0.75 + 0.45];
-  const daoC = [xAnn + 0.7, laTop + la + 1.4];
-  // pericardium behind the posterior wall, round the AV groove, between the LA and the aorta.
-  // Fluid lies behind the LV and thins out at the AV groove, in front of the descending aorta
-  // (a pleural effusion runs on behind the aorta).
+  const daoC = [xAnn + 1.75, laTop + la + 1.85];
+  // pericardium behind the posterior wall, round the coronary sinus in the AV groove and on
+  // behind the LA, in front of the descending aorta (a pleural effusion runs on behind the
+  // aorta). At each x it lies a margin below the deepest wall it wraps, so it never cuts one.
+  // Fluid lies behind the LV and thins out at the AV groove.
   const eff = g.effusion ?? 0;
-  const taper = (x) => 1 - 0.8 * smooth((x + 1.8) / (hingeP[0] + 1.8));
-  const periPts = [...pwEpi.filter((_, i) => i % 5 === 0).map((p) => [p[0], p[1] + 0.2 + eff * taper(p[0])]), [csC[0] + 0.3, csC[1] + 0.62 + eff * 0.12], [xAnn + 2.2, laTop + la + 0.4 + eff * 0.05], [xAnn + 3.8, laTop + la * 0.85 + 0.35]];
-  const peri = spline(periPts, 4);
+  const taper = (x) => (x < hingeP[0] ? 1 - 0.8 * smooth((x + 1.8) / (hingeP[0] + 1.8)) : mix(0.2, 0.05, smooth((x - hingeP[0]) / 1.2)));
+  const laOut = offsetAway(laCav, 0.22, centroid(laCav));
+  const deepest = (poly, x) => {
+    let y = -Infinity;
+    for (let i = 0; i < poly.length - 1; i++) {
+      const [ax_, ay] = poly[i], [bx, by] = poly[i + 1];
+      if ((ax_ - x) * (bx - x) <= 0 && ax_ !== bx) y = Math.max(y, ay + ((by - ay) * (x - ax_)) / (bx - ax_));
+    }
+    return y;
+  };
+  // the margin goes round the coronary sinus too, not only under it
+  const M = 0.17, csRx = 0.46 + M, csRy = 0.414 + M;
+  const csBelow = (x) => (Math.abs(x - csC[0]) < csRx ? csC[1] + csRy * Math.sqrt(1 - ((x - csC[0]) / csRx) ** 2) : -Infinity);
+  const px = xs(xL, xAnn + 3.7, Math.round((xAnn + 3.7 - xL) / 0.1));
+  const raw = px.map((x) => Math.max(deepest(pwEpi, x) + M, csBelow(x), deepest(laOut, x) + M));
+  const peri = px.map((x, i) => {
+    let m = 0, k = 0;
+    for (let j = Math.max(0, i - 3); j <= Math.min(px.length - 1, i + 3); j++) if (Number.isFinite(raw[j])) { m += raw[j]; k++; }
+    return [x, Math.max(k ? m / k : raw[i], raw[i]) + eff * taper(x)];
+  });
   const post = [...peri, [xAnn + 9, laTop + la], [xAnn + 9, 30], [xL - 2, 30], [xL - 2, peri[0][1]]];
   // with fluid in front, the parietal pericardium stays under the chest wall as the heart drops
   const periA = effA > 0.02 ? xs(xL, xAnn + 5.5).map((x) => [x, 1.62 + 0.22 * rvd * cv(x) - (x > xAnn ? 0.05 * (x - xAnn) : 0)]) : null;
