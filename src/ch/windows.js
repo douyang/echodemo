@@ -168,12 +168,13 @@ export default {
     if ('wcine' in ch) stage.opts.beat = s.wcine;
   },
   key_(k, set, s) {
-    if (/^[1-5]$/.test(k)) { set({ win: WIN_KEYS[Number(k) - 1], playing: false }); return; }
-    if (k === '[' || k === ']') {
-      const list = ORDER[s.win], i = list.indexOf(s.view);
-      const j = Math.max(0, Math.min(list.length - 1, i + (k === ']' ? 1 : -1)));
-      set({ view: list[j], playing: false });
-    }
+    if (k !== '[' && k !== ']') return;
+    // every view in one row, window by window: past a window's last view comes the next
+    // window's first, and past the last window the first again
+    const all = WIN_KEYS.flatMap((w) => ORDER[w]);
+    const i = all.indexOf(s.view), n = all.length;
+    const v = all[(i + (k === ']' ? 1 : n - 1)) % n];
+    set({ win: VIEWS[v].win, view: v, playing: false });
   },
   tourEnter(set) { set({ win: 'plax', view: 'plax', wcine: true }); },
   tourTick(tt, set) {

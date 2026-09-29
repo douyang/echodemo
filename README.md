@@ -127,7 +127,7 @@ python3 -m http.server 8000
 
 Then open <http://localhost:8000/>. A chapter can be opened directly: `#planes`, `#fill`, `#report`.
 
-Keys: ← → change chapter, space plays the tour, 1–5 and [ ] step the views in chapters 07 and 08. A chapter opens directly by its key, for example `#as`, `#mr`, `#tr`, `#peri`.
+Keys: ← → change chapter, space plays the tour, [ and ] step the views in chapters 07 and 08. In chapter 07 they run through every view of every window: after a window's last view comes the next window's first. A chapter opens directly by its key, for example `#as`, `#mr`, `#tr`, `#peri`.
 
 ## Checks run before this commit
 
