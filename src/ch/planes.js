@@ -210,31 +210,39 @@ function freePose(s = st) {
   return { O, d: d.normalize(), r: r.normalize(), n: n.normalize() };
 }
 const moved = (s = st) => FREE_KEYS.some((k) => Math.abs(s[k] || 0) > 1e-6);
+// the probe's window; the long- and short-axis views share the parasternal one
+const SITE = { plax: 'parasternal', psax: 'parasternal', apical: 'apical', sub: 'subcostal', ssn: 'suprasternal' };
+const site = (k) => SITE[VIEWS[k].win];
 
 /**
- * The standard view nearest to plane g: the angle between the planes, and how far the view's
- * imaged centre lies off g (it must also lie within the sector's reach in g). Where two views
- * share a plane, the closer beam direction decides.
+ * The standard view nearest to plane g, among the views of the window that the probe is in
+ * (the focused view's): the angle between the planes, and how far the view's imaged centre
+ * lies off g (it must also lie within the sector's reach in g). The angle counts the side the
+ * marker is on: the same plane turned 180° shows the heart mirrored and is not the view
+ * (`flip` names that view). A plane from another window can lie close to g (the apical and
+ * subcostal four-chamber planes do) but is another view. Where two views share a plane, the
+ * closer beam direction decides.
  */
-function nearest(g) {
-  if (!g) return null;
-  let best = null;
+function nearest(g, from = st.pfocus) {
+  if (!g || !VIEWS[from]) return null;
+  let best = null, flip = null;
   for (const k of PLANE_VIEWS) {
     const G = geoms[k];
-    if (!G) continue;
+    if (!G || site(k) !== site(from)) continue;
     const depth = VIEWS[k].depth;
-    const deg = (Math.acos(Math.min(1, Math.abs(g.n.dot(G.n)))) * 180) / Math.PI;
+    const deg = (Math.acos(Math.max(-1, Math.min(1, g.n.dot(G.n)))) * 180) / Math.PI;
     const q = G.O.clone().addScaledVector(G.d, depth / 2).sub(g.O);
     const cm = Math.abs(q.dot(g.n));
-    const reach = Math.hypot(q.dot(g.r), q.dot(g.d) - depth / 2);
+    const inside = Math.hypot(q.dot(g.r), q.dot(g.d) - depth / 2) <= depth / 2;
     const beam = (Math.acos(Math.max(-1, Math.min(1, g.d.dot(G.d)))) * 180) / Math.PI;
-    const score = deg / NEAR.deg + cm / NEAR.cm + beam / 180 + (reach > depth / 2 ? 2 : 0);
-    if (!best || score < best.score) best = { k, deg, cm, score, reach, depth };
+    if (inside && 180 - deg < NEAR.deg && cm < NEAR.cm && (!flip || 180 - deg < flip.deg)) flip = { k, deg: 180 - deg };
+    const score = deg / NEAR.deg + cm / NEAR.cm + beam / 180 + (inside ? 0 : 2);
+    if (!best || score < best.score) best = { k, deg, cm, score, inside };
   }
   if (best) {
-    const inside = best.reach <= best.depth / 2;
-    best.near = inside && best.deg < NEAR.deg && best.cm < NEAR.cm;
-    best.on = inside && best.deg < ON.deg && best.cm < ON.cm;
+    best.near = best.inside && best.deg < NEAR.deg && best.cm < NEAR.cm;
+    best.on = best.near && best.deg < ON.deg && best.cm < ON.cm;
+    best.flip = !best.near && flip ? flip.k : null;
   }
   return best;
 }
@@ -278,7 +286,7 @@ function syncFree(animate = false) {
     const out = document.getElementById('pfree-state');
     if (out) {
       const nb = nearInfo;
-      out.textContent = !nb ? '' : nb.on && nb.deg < 0.05 && nb.cm < 0.01 ? `on ${CODE[nb.k]}` : nb.on ? `${CODE[nb.k]}: let go to settle on it` : nb.near ? `near ${CODE[nb.k]} · ${Math.round(nb.deg)}° · ${nb.cm.toFixed(1)} cm` : 'no standard view near';
+      out.textContent = !nb ? '' : nb.on && nb.deg < 0.05 && nb.cm < 0.01 ? `on ${CODE[nb.k]}` : nb.on ? `${CODE[nb.k]}: let go to settle on it` : nb.near ? `near ${CODE[nb.k]} · ${Math.round(nb.deg)}° · ${nb.cm.toFixed(1)} cm` : nb.flip ? `${CODE[nb.flip]} plane, marker reversed` : 'no standard view near';
     }
   }
   drawFree(g);
@@ -710,12 +718,12 @@ export default {
       { k: 'Window', v: k ? WNAME[VIEWS[k].win] : '–', text: true },
     ];
     if (k) readouts.push({ k: 'How to get there', v: MOVE[k], text: true });
-    const nb = s.pfree && geoms && T ? nearest(freePose(s)) : null;
-    if (nb) readouts.push({ k: 'Free plane', v: nb.on && !moved(s) ? `on ${CODE[nb.k]}` : `${Math.round(nb.deg)}° · ${nb.cm.toFixed(1)} cm off ${CODE[nb.k]}`, text: true });
+    const nb = s.pfree && geoms && T ? nearest(freePose(s), s.pfocus) : null;
+    if (nb) readouts.push({ k: 'Free plane', v: nb.on && !moved(s) ? `on ${CODE[nb.k]}` : nb.flip ? `${CODE[nb.flip]} plane, marker reversed` : `${Math.round(nb.deg)}° · ${nb.cm.toFixed(1)} cm off ${CODE[nb.k]}`, text: true });
     let live = '';
     if (nb) {
-      live += `<b>Free plane.</b> ${nb.on && !moved(s) ? `It lies on ${VIEWS[nb.k].name}.` : nb.near ? `It is ${Math.round(nb.deg)}° from the plane of ${VIEWS[nb.k].name}, whose centre lies ${nb.cm.toFixed(1)} cm off it.` : 'No standard view is near.'} `;
-      live += `Within ${NEAR.deg}° and ${NEAR.cm} cm the nearest view is marked; within ${ON.deg}° and ${ON.cm} cm the plane settles onto it when you let go. `;
+      live += `<b>Free plane.</b> ${nb.on && !moved(s) ? `It lies on ${VIEWS[nb.k].name}.` : nb.near ? `It is ${Math.round(nb.deg)}° from the plane of ${VIEWS[nb.k].name}, whose centre lies ${nb.cm.toFixed(1)} cm off it.` : nb.flip ? `It is the plane of ${CODE[nb.flip]} with the marker on the other side, so the image is mirrored. Turn the probe 180° to get the view.` : 'No standard view is near.'} `;
+      live += `The probe stays in the ${site(s.pfocus)} window, so only the views of that window count. Within ${NEAR.deg}° and ${NEAR.cm} cm the nearest view is marked; within ${ON.deg}° and ${ON.cm} cm the plane settles onto it when you let go. `;
     }
     if (k) {
       live += `<b>${VIEWS[k].name}.</b> Shows ${HAS[k].map((id) => SNAME[id].short).join(', ')}${cite('mitchell2019')}. `;
