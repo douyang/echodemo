@@ -1,4 +1,4 @@
-// 04 Cycle: one heartbeat as a Wiggers diagram, with the Doppler and the echo frame that
+// 05 Cycle: one heartbeat as a Wiggers diagram, with the Doppler and the echo frame that
 // belong to each moment. One cursor runs through pressures, volume, ECG, sounds and images.
 import { Sheet, clamp, MONO, SANS } from '../sketch.js';
 import { reducedMotion } from '../state.js';

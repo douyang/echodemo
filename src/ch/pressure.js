@@ -1,4 +1,4 @@
-// 08 Pressure: two Doppler calculations that run every study. Flow: stroke volume from the
+// 04 Pressure: two Doppler calculations that run every study. Flow: stroke volume from the
 // LVOT area and the LVOT velocity-time integral. Pressure: RV systolic pressure from the peak
 // tricuspid regurgitation velocity (simplified Bernoulli) plus the RA pressure from the IVC.
 import { Sheet, clamp, MONO, SANS } from '../sketch.js';
@@ -173,7 +173,7 @@ const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 
 export default {
   key: 'pressure',
-  part: 'doppler',
+  part: 'physics',
   title: 'Pressure',
   dwell: 14,
   defaults: { sv: 70, lvotD: 2.0, calErr: 0, hr: 70, trV: 2.4, ivcD: 1.8, ivcCollapse: 'gt' },

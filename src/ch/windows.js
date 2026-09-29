@@ -1,4 +1,4 @@
-// 03 Windows: the canonical 2D views. Each view is a plane through the heart: left, the 3D
+// 07 Windows: the canonical 2D views. Each view is a plane through the heart: left, the 3D
 // heart with the sector; right, the echo image that plane cuts from the same mesh.
 import { VIEWS, WINDOWS, ORDER, SHORT, MOVE } from '../views.js';
 import { loadModel } from '../model3d.js';
@@ -120,7 +120,7 @@ async function enter() {
 
 export default {
   key: 'windows',
-  part: 'physics',
+  part: 'views',
   title: 'Windows',
   dwell: 30,
   defaults: { win: 'plax', view: 'plax', wcine: true, wlabels: true, wsec: true, wmeas: '' },

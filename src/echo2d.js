@@ -446,6 +446,31 @@ export function jet(ctx, F, j) {
 
 // ---------------------------------------------------------------- apical four-chamber
 /**
+ * LV cavity width (cm) at level u (0 mitral annulus .. 1 apex) in an apical view: it widens from
+ * the annulus (ma) to its widest (lvW) over the basal 22% of the length, then narrows to a round
+ * apex. Chapter 09's disk model uses the same profile.
+ */
+export function lvWidth(u, lvW, ma) {
+  return u < 0.22 ? mix(ma, lvW, smooth(u / 0.22)) : lvW * Math.sqrt(Math.max(0, 1 - ((u - 0.22) / 0.78) ** 2.3));
+}
+/** A leaflet pair in an apical view, hinges h1 and h2, lengths L1 and L2 (cm); v: {thick, gap, dome, tip}. */
+const rotDir = (d, side, deg) => { const a = (deg * Math.PI) / 180; return unit(add(mul(d, Math.cos(a)), mul(side, Math.sin(a)))); };
+function apValve(h1, h2, toward, L1, L2, v, shut) {
+  const span = unit(sub(h2, h1)), out1 = mul(span, -1);
+  let open1 = add(h1, mul(rotDir(toward, out1, 10), L1 * 0.95)), open2 = add(h2, mul(rotDir(toward, span, 22), L2 * 0.95));
+  const dome = v?.dome ?? 0;
+  if (dome > 0) {
+    // rheumatic: the fused tips stay close, a small orifice; the anterior leaflet domes
+    const k = smooth(dome / 0.6), tip = add(lerp2(h1, h2, 0.5), mul(toward, 1.2 + 0.3 * (1 - dome))), tw = v.tip ?? 1.2;
+    open1 = lerp2(open1, add(tip, mul(span, -tw / 2)), k);
+    open2 = lerp2(open2, add(tip, mul(span, tw / 2)), k);
+  }
+  const P = valvePair(h1, h2, L1, L2, toward, { gap: v?.gap ?? 0, open1, open2, bulge1: out1, bulge2: span });
+  const l1 = swing(h1, P.open1, P.shut1, shut), l2 = swing(h2, P.open2, P.shut2, shut);
+  const th = v?.thick ?? 0.12, tipTh = th * (1 + 0.4 * dome);
+  return { l1, l2, o1: leafOutline(l1, th * 0.75, tipTh), o2: leafOutline(l2, th * 0.75, tipTh), tip: lerp2(l1[NL], l2[NL], 0.5), gapMid: P.C };
+}
+/**
  * Every A4C structure (cm) at contraction c; valves follow the phase ph. dyn, for this moment
  * only: ra, rv (0..1) how far the RA and RV free walls are pushed in (tamponade); sep (cm) how
  * far the middle of the septum moves toward the LV (inspiration in tamponade); swing [dx, dy]
@@ -461,15 +486,15 @@ function a4cShape(g, c, ph, dyn = {}) {
   // LV: apex fixed, the base moves toward it in systole; fluid in front of the apex sets the
   // heart deeper, the sac stays under the chest wall
   const apexY = 1.9 + 0.65 * wall + 0.7 * (g.effusion ?? 0);
-  const yb = apexY + lvL;
   const A = [0.2, apexY];                              // endocardial apex
   const xsb = -0.95 + ivs / 2;                         // septal endocardium at the base
-  const B = [xsb + ma * 0.5, yb];                      // mitral annulus center
+  const bx = xsb + ma * 0.5;                           // mitral annulus center, lvL from the apex
+  const B = [bx, apexY + Math.sqrt(Math.max(lvL * lvL - (bx - A[0]) ** 2, 0.25 * lvL * lvL))];
   const ax = unit(sub(A, B));                          // base -> apex
   let nl = perp(ax); if (nl[0] < 0) nl = mul(nl, -1);  // toward the lateral wall
   const out = mul(nl, -1);                             // toward the RV free wall
   const N = 36;
-  const widthAt = (u) => (u < 0.22 ? mix(ma, lvW, smooth(u / 0.22)) : lvW * Math.pow(Math.max(0, 1 - ((u - 0.22) / 0.78) ** 2.3), 0.5));
+  const widthAt = (u) => lvWidth(u, lvW, ma);
   const Pax = (u) => lerp2(B, A, u);
   // even steps to 80% of the length, then shorter ones: the width falls fast near the apex, and
   // even steps there would leave a faceted, pointed tip
@@ -499,7 +524,8 @@ function a4cShape(g, c, ph, dyn = {}) {
   const ivsRib = ribbon(sepT.slice(0, iRvApex + 2), rvSep.slice(0, iRvApex + 2));
   // LV apical and lateral wall
   const lvFree = lvCav.slice(iRvApex - 1), lvFreeT = lvCavT.slice(iRvApex - 1);
-  const lvOut = offsetAway(lvFree, (u) => wall * (0.68 + 0.32 * smooth((u - 0.35) / 0.4)), lvC);
+  // thin at the apex; thinner again where the muscle inserts into the annulus (the last 10%)
+  const lvOut = offsetAway(lvFree, (u) => wall * (0.68 + 0.32 * smooth((u - 0.35) / 0.4)) * (1 - 0.4 * smooth((u - 0.9) / 0.1)), lvC);
   const lvRib = ribbon(lvFreeT, lvOut);
   // RV: from the tricuspid septal hinge (more apical than the mitral one) up the septum, around
   // the RV apex, down the free wall to the tricuspid lateral hinge
@@ -578,23 +604,9 @@ function a4cShape(g, c, ph, dyn = {}) {
   const pmTip = add(pmBase, mul(pmDir, 0.82));
   // valves. Mitral: anterior leaflet on the septal side (2.5 cm), posterior on the lateral side
   // (1.5 cm). Tricuspid: septal leaflet (1.5 cm), anterior leaflet on the free wall (2.1 cm).
-  const rot = (d, side, deg) => { const a = (deg * Math.PI) / 180; return unit(add(mul(d, Math.cos(a)), mul(side, Math.sin(a)))); };
-  const valve = (h1, h2, toward, L1, L2, v, shut) => {
-    const span = unit(sub(h2, h1)), out1 = mul(span, -1);
-    let open1 = add(h1, mul(rot(toward, out1, 10), L1 * 0.95)), open2 = add(h2, mul(rot(toward, span, 22), L2 * 0.95));
-    const dome = v?.dome ?? 0;
-    if (dome > 0) {
-      // rheumatic: the fused tips stay close, a small orifice; the anterior leaflet domes
-      const k = smooth(dome / 0.6), tip = add(lerp2(h1, h2, 0.5), mul(toward, 1.2 + 0.3 * (1 - dome))), tw = v.tip ?? 1.2;
-      open1 = lerp2(open1, add(tip, mul(span, -tw / 2)), k);
-      open2 = lerp2(open2, add(tip, mul(span, tw / 2)), k);
-    }
-    const P = valvePair(h1, h2, L1, L2, toward, { gap: v?.gap ?? 0, open1, open2, bulge1: out1, bulge2: span });
-    const l1 = swing(h1, P.open1, P.shut1, shut), l2 = swing(h2, P.open2, P.shut2, shut);
-    const th = v?.thick ?? 0.12, tipTh = th * (1 + 0.4 * dome);
-    return { l1, l2, o1: leafOutline(l1, th * 0.75, tipTh), o2: leafOutline(l2, th * 0.75, tipTh), tip: lerp2(l1[NL], l2[NL], 0.5), gapMid: P.C };
-  };
-  const mv = valve(S0, L0, ax, 2.5, 1.5, g.mv, ph.mvShut);
+  const valve = apValve;
+  const mvK = g.mvK ?? 1;   // leaflet length factor: longer leaflets span a dilated annulus
+  const mv = valve(S0, L0, ax, 2.5 * mvK, 1.5 * mvK, g.mv, ph.mvShut);
   const Tc = lerp2(TS, TL, 0.5);
   const rvAx = unit(sub(Ra, Tc));
   const tv = valve(TS, TL, rvAx, 1.5, 2.1, g.tv, ph.tvShut);
@@ -686,12 +698,13 @@ function a4cItems(S, Sr, g) {
  * g (cm; [ED, ES] pairs beat with the heart):
  *   lvL, lvW, lvWall, ivs, rvW, rvWall, laW, laL ([min, max]), raW, raL, ma (mitral annulus),
  *   ta (tricuspid annulus), mv: {thick, gap, dome, tip}, tv: {thick, gap}
- * o: t (ms), title, depth, jets: {mr, tr, ms} (flow q mL/s, va, vc, jl, jw), labels, gain
+ * o: t (ms), ph (the phase, in place of t's), title, depth, jets: {mr, tr, ms} (flow q mL/s, va,
+ *    vc, jl, jw), labels (false, or a list such as ['LA', 'RA']), gain, after(ctx, F, geo)
  * Returns the geometry (cm) for labels and measurements.
  */
 export function drawA4C(ctx, box, g, o = {}) {
   const F = frame(ctx, box, o.depth ?? 16, o.title ?? 'APICAL FOUR-CHAMBER', { deg: 80, near: 1.2 });
-  const ph = phase(o.t ?? 150);
+  const ph = o.ph ?? phase(o.t ?? 150);
   const c = ph.c;
   // the reference frame: end-diastole with the valves shut, where the speckle is laid down
   const S = a4cShape(g, c, ph, o.dyn), Sr = a4cShape(g, 0, { ...ph, mvShut: 1, tvShut: 1 });
@@ -703,16 +716,162 @@ export function drawA4C(ctx, box, g, o = {}) {
   if (J.tr) jet(ctx, F, { ...J.tr, O: S.tv.gapMid, dir: rdown, clip: S.raCav });
   if (J.ms) jet(ctx, F, { ...J.ms, O: S.mv.tip, dir: S.ax, clip: S.lvCav });
   if (J.mr || J.tr || J.ms) colorBar(ctx, box.x + box.w - 20, box.y + 34, Math.min(90, box.h * 0.25), (J.mr || J.tr || J.ms).va / 100, { w: 7 });
-  if (o.labels !== false) {
-    tag(ctx, F, 'LV', add(S.lvC, mul(S.ax, 0.8)));
-    tag(ctx, F, 'RV', add(centroid(S.rvFree), mul(S.out, -0.2)));
-    tag(ctx, F, 'LA', S.laC);
-    tag(ctx, F, 'RA', S.raC);
-  }
+  const want = (k) => (Array.isArray(o.labels) ? o.labels.includes(k) : o.labels !== false);
+  if (want('LV')) tag(ctx, F, 'LV', add(S.lvC, mul(S.ax, 0.8)));
+  if (want('RV')) tag(ctx, F, 'RV', add(centroid(S.rvFree), mul(S.out, -0.2)));
+  if (want('LA')) tag(ctx, F, 'LA', S.laC);
+  if (want('RA')) tag(ctx, F, 'RA', S.raC);
   const geo = { ...S, F, c, ph };
   if (o.after) o.after(ctx, F, geo);
   finish(ctx, F);
   return geo;
+}
+
+// ---------------------------------------------------------------- apical two-chamber
+/**
+ * The A2C structures (cm) at contraction c: the LV with the inferior wall on screen-left and the
+ * anterior wall on screen-right, both papillary muscles, the mitral valve, the LA below it and
+ * the coronary sinus in the inferior atrioventricular groove. g as for drawA4C (lvL, lvW, lvWall,
+ * laW, laL, ma, mv, mvK, effusion); both LV walls take lvWall.
+ */
+function a2cShape(g, c, ph) {
+  const lvL = at(g.lvL, c), lvW = at(g.lvW, c), wall = at(g.lvWall, c);
+  const laW = at(g.laW, c), laL = at(g.laL, c), ma = at(g.ma ?? 3.1, c);
+  const apexY = 1.9 + 0.65 * wall + 0.7 * (g.effusion ?? 0);
+  const A = [0.1, apexY], B = [0.4, apexY + Math.sqrt(lvL * lvL - 0.09)];   // lvL from apex to annulus center
+  const ax = unit(sub(A, B));                          // base -> apex
+  let nl = perp(ax); if (nl[0] < 0) nl = mul(nl, -1);  // toward the anterior wall
+  const N = 36;
+  const widthAt = (u) => lvWidth(u, lvW, ma);
+  const Pax = (u) => lerp2(B, A, u);
+  const U = (i) => { const x = i / N; return x <= 0.8 ? x : 0.8 + 0.2 * (1 - (1 - (x - 0.8) / 0.2) ** 2); };
+  const inf = [], ant = [];
+  for (let i = 0; i <= N; i++) {
+    const u = U(i), w = widthAt(u);
+    inf.push(add(Pax(u), mul(nl, -w * 0.5 * (1 - 0.04 * Math.sin(Math.PI * u)))));
+    ant.push(add(Pax(u), mul(nl, w * 0.5 * (1 + 0.04 * Math.sin(Math.PI * u)))));
+  }
+  const lvCav = [...inf, ...ant.slice(0, -1).reverse()];   // inferior hinge -> apex -> anterior hinge
+  const S0 = inf[0], L0 = ant[0];
+  const lvC = centroid(lvCav);
+  const trab = (u) => 0.13 * smooth((u - 0.58) / 0.3);
+  const infT = trabeculate(inf, trab, lvC, 1.1), antT = trabeculate(ant, trab, lvC, 2.7);
+  const lvCavT = [...infT, ...antT.slice(0, -1).reverse()];
+  // one U of muscle, thinner at the apex and at the annulus as in the four-chamber view
+  const lvOut = offsetAway(lvCav, (u) => wall * (1 - 0.32 * Math.exp(-(((u - 0.5) / 0.16) ** 2))) * (1 - 0.4 * smooth((Math.abs(u - 0.5) - 0.42) / 0.08)), lvC);
+  const lvRib = ribbon(lvCavT, lvOut);
+  // left atrium below the annulus
+  const ldown = mul(ax, -1);
+  const mid = lerp2(S0, L0, 0.5), side = Math.max(0.1, (laW - ma) / 2);
+  const laCav = spline([
+    S0,
+    add(add(S0, mul(ldown, laL * 0.35)), mul(nl, -side * 0.8)),
+    add(add(mid, mul(ldown, laL * 0.92)), mul(nl, -laW * 0.42)),
+    add(mid, mul(ldown, laL * 1.03)),
+    add(add(mid, mul(ldown, laL * 0.9)), mul(nl, laW * 0.46)),
+    add(add(L0, mul(ldown, laL * 0.35)), mul(nl, side * 0.9)),
+    L0,
+  ], 10);
+  const laC = centroid(laCav);
+  const laOut = offsetAway(laCav, 0.18, laC);
+  const annuli = [ellipse(S0, 0.2, 0.2, 12), ellipse(L0, 0.22, 0.2, 12)];
+  const csC = add(add(S0, mul(nl, -(wall + 0.45))), mul(ldown, 0.35));
+  // papillary muscles: posteromedial on the inferior wall, anterolateral on the anterior wall
+  const pmI = inf[Math.round(N * 0.56)], pmA = ant[Math.round(N * 0.56)];
+  const dI = unit(add(mul(nl, 0.85), mul(ax, -0.5))), dA = unit(add(mul(nl, -0.85), mul(ax, -0.5)));
+  const pm = [muscle(pmI, dI, 0.9, 0.75 + 0.25 * c, mul(nl, -1)), muscle(pmA, dA, 0.9, 0.75 + 0.25 * c, nl)];
+  const tipI = add(pmI, mul(dI, 0.82)), tipA = add(pmA, mul(dA, 0.82));
+  // mitral valve: the posterior leaflet on the inferior side (1.5 cm), the anterior on the anterior side (2.3 cm)
+  const mvK = g.mvK ?? 1;
+  const mv = apValve(S0, L0, ax, 1.5 * mvK, 2.3 * mvK, g.mv, ph.mvShut);
+  const chords = [[tipI, along(mv.l1, 0.97)], [tipI, along(mv.l1, 0.6)], [tipA, along(mv.l2, 0.97)], [tipA, along(mv.l2, 0.7)], [add(tipA, mul(nl, -0.12)), along(mv.l2, 0.5)]];
+  // pericardium round the LV, from one atrioventricular groove to the other
+  const wallsOut = [add(S0, mul(nl, -(wall + 0.25))), ...lvOut, add(L0, mul(nl, wall + 0.25))];
+  const hull = envelope(wallsOut);
+  const fat = ribbon(hull, wallsOut);
+  const eff = g.effusion ?? 0;
+  let peri = offsetAway(hull, 0.13, lvC);
+  if (eff > 0.01) {
+    const n = peri.length - 1;
+    peri = peri.map((p, i) => add(p, mul(unit(sub(p, lvC)), eff * (0.2 + 0.8 * Math.pow(Math.sin((Math.PI * i) / n), 0.6)))));
+  }
+  const outer = g.effusion === undefined ? null : ribbon(peri, offsetAway(peri, 1.6, lvC));
+  const yDeep = Math.max(...laCav.map((p) => p[1]));
+  const medi = [[laC[0] - laW - 1.2, yDeep - 0.8], [laC[0] + laW + 1.2, yDeep - 0.8], [laC[0] + laW + 4, 30], [laC[0] - laW - 4, 30]];
+  return {
+    A, B, S0, L0, ax, nl, lvC, laC, lvCav, lvCavT, laCav, lvOut, laOut, lvRib, laRib: ribbon(laCav, laOut), annuli, pm, mv, chords,
+    fat, peri, outer, medi, csRing: ring(csC, 0.3, 0.44, 20), csLumen: ellipse(csC, 0.3, 0.3, 20), mvShut: ph.mvShut, lvW, lvL,
+  };
+}
+
+function a2cItems(S, Sr, g) {
+  return [
+    ...(S.outer ? [{ polys: [S.outer], refs: [Sr.outer], e: -11 }] : []),
+    { polys: [S.medi], e: -21 },
+    { polys: [S.fat], refs: [Sr.fat], e: DB.fat - 2 },
+    { polys: [S.laCav, S.csLumen], e: DB.blood, blood: true },
+    { polys: [S.lvRib], refs: [Sr.lvRib], e: DB.myo },
+    { polys: [S.laRib], refs: [Sr.laRib], e: DB.myo - 5 },
+    { polys: [S.csRing], refs: [Sr.csRing], e: DB.fibrous - 4 },
+    { polys: S.annuli, refs: Sr.annuli, e: DB.fibrous + 1 },
+    { polys: S.pm, refs: Sr.pm, e: DB.myo },
+    { borders: [S.lvCavT], refs: [Sr.lvCavT], e: DB.myo, spec: 8 },
+    { borders: [S.laCav], refs: [Sr.laCav], e: DB.myo - 2, spec: 6 },
+    { borders: [S.lvOut], refs: [Sr.lvOut], e: DB.myo, spec: 6 },
+    { borders: [S.peri], refs: [Sr.peri], e: 7, spec: 10, w: 0.14, all: true },
+    { lines: S.chords, e: DB.chord - 3 - 14 * (1 - S.mvShut), w: 0.04 },
+    ...leaves([S.mv.o1, S.mv.o2], [Sr.mv.o1, Sr.mv.o2], valveDb(g.mv)),
+  ];
+}
+
+/** Apical two-chamber view; g and o as for drawA4C (no jets). Returns the geometry (cm). */
+export function drawA2C(ctx, box, g, o = {}) {
+  const F = frame(ctx, box, o.depth ?? 16, o.title ?? 'APICAL TWO-CHAMBER', { deg: 80, near: 1.2 });
+  const ph = o.ph ?? phase(o.t ?? 150);
+  const c = ph.c;
+  const S = a2cShape(g, c, ph), Sr = a2cShape(g, 0, { ...ph, mvShut: 1 });
+  scan(ctx, F, a2cItems(S, Sr, g), { t: o.t, gain: o.gain });
+  const want = (k) => (Array.isArray(o.labels) ? o.labels.includes(k) : o.labels !== false);
+  if (want('LV')) tag(ctx, F, 'LV', add(S.lvC, mul(S.ax, 0.8)));
+  if (want('LA')) tag(ctx, F, 'LA', S.laC);
+  const geo = { ...S, F, c, ph };
+  if (o.after) o.after(ctx, F, geo);
+  finish(ctx, F);
+  return geo;
+}
+
+/**
+ * The tracing of an apical view for the method of disks (the geometry drawA4C or drawA2C returns):
+ * the border of the compacted myocardium (trabeculae in the cavity), closed by a straight line
+ * across the mitral annulus; the length L from the middle of that line to the farthest point of
+ * the border; n disks square to it. d: the disk diameters (cm).
+ */
+export function lvTrace(geo, n = 20) {
+  const poly = geo.lvCav, M = lerp2(geo.S0, geo.L0, 0.5);
+  let A = poly[0];
+  for (const p of poly) if (len(sub(p, M)) > len(sub(A, M))) A = p;
+  const L = len(sub(A, M)), u = unit(sub(A, M)), q = perp(u);
+  // the nearest crossing of the ray P + t dir (t > 0) with the border
+  const hit = (P, dir) => {
+    let best = Infinity;
+    for (let i = 0; i < poly.length - 1; i++) {
+      const a = poly[i], e = sub(poly[i + 1], a), den = dir[0] * e[1] - dir[1] * e[0];
+      if (Math.abs(den) < 1e-12) continue;
+      const w = sub(a, P);
+      const t = (w[0] * e[1] - w[1] * e[0]) / den, s = (w[0] * dir[1] - w[1] * dir[0]) / den;
+      if (t > 0 && s >= 0 && s <= 1) best = Math.min(best, t);
+    }
+    return best;
+  };
+  const disks = [], d = [];
+  for (let i = 0; i < n; i++) {
+    const P = add(M, mul(u, ((i + 0.5) / n) * L));
+    const t1 = hit(P, q), t2 = hit(P, mul(q, -1));
+    if (!Number.isFinite(t1) || !Number.isFinite(t2)) { d.push(0); continue; }
+    disks.push([add(P, mul(q, t1)), add(P, mul(q, -t2))]);
+    d.push(t1 + t2);
+  }
+  return { M, A, L, disks, d, border: poly };
 }
 
 // ---------------------------------------------------------------- parasternal long axis

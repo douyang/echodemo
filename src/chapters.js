@@ -19,13 +19,13 @@ import periPage from './ch/peri.js';
 import report from './ch/report.js';
 
 export const PARTS = [
-  { key: 'physics', num: 'I', name: 'Physics and views' },
+  { key: 'physics', num: 'I', name: 'Physics' },
   { key: 'physiology', num: 'II', name: 'Physiology' },
-  { key: 'doppler', num: 'III', name: 'Doppler' },
+  { key: 'views', num: 'III', name: 'Views' },
   { key: 'function', num: 'IV', name: 'Function' },
   { key: 'valves', num: 'V', name: 'Valves' },
   { key: 'pericardium', num: 'VI', name: 'Pericardium' },
   { key: 'report', num: 'VII', name: 'Report' },
 ];
 
-export const CHAPTERS = [pulse, image, windows, planes, cycle, loop, shift, pressure, eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, report];
+export const CHAPTERS = [pulse, image, shift, pressure, cycle, loop, windows, planes, eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, report];

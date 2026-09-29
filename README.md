@@ -1,22 +1,22 @@
 # The Heart in Sound
 
-An illustrated, interactive study of echocardiography for trainees: ultrasound physics, the standard views, cardiac physiology, Doppler, ventricular function, valve disease, the pericardium and the final report. Eighteen chapters in seven parts. Chapters 11 to 17 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. Every guideline value carries its source.
+An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and the final report. Eighteen chapters in seven parts. Chapters 11 to 17 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. Every guideline value carries its source.
 
-![Chapter 04, Planes: the standard views as planes through one heart, with the mitral valve selected](docs/screenshots/planes.webp)
+![Chapter 08, Planes: the standard views as planes through one heart, with the mitral valve selected](docs/screenshots/planes.webp)
 
 ## Chapters
 
 | Part | Chapter | The figure |
 | --- | --- | --- |
-| Physics and views | 01 Pulse | One scan line: pulse, echoes, A-mode, wavelength and axial resolution, attenuation by tissue |
+| Physics | 01 Pulse | One scan line: pulse, echoes, A-mode, wavelength and axial resolution, attenuation by tissue |
 | | 02 Image | A sector image built line by line, with a sweep whose speed follows the frame rate; four artifacts |
-| | 03 Windows | 35 standard views: the heart cut on the imaging plane and labeled (or whole, with the plane through it), and the echo view that plane cuts from the same mesh; the plane moves from view to view as a probe does |
-| | 04 Planes | All standard view planes in one heart: crossings, parallel stacks, which views show a structure, and a free plane that settles onto the nearest standard view and moves to any view on request |
+| | 03 Shift | Doppler equation, beam angle, Nyquist limit, pulsed, continuous and color Doppler |
+| | 04 Pressure | Stroke volume from LVOT area × VTI; RV systolic pressure from the TR jet and the IVC |
 | Physiology | 05 Cycle | Wiggers diagram with ECG, heart sounds, mitral and LVOT Doppler, and the four-chamber frame at the cursor |
 | | 06 Loop | Pressure–volume loop: ESPVR, EDPVR, arterial elastance, EF = Ees ÷ (Ees + Ea) |
-| Doppler | 07 Shift | Doppler equation, beam angle, Nyquist limit, pulsed, continuous and color Doppler |
-| | 08 Pressure | Stroke volume from LVOT area × VTI; RV systolic pressure from the TR jet and the IVC |
-| Function | 09 Eject | Biplane method of disks and foreshortening; TAPSE, S′ and fractional area change |
+| Views | 07 Windows | 35 standard views: the heart cut on the imaging plane and labeled (or whole, with the plane through it), and the echo view that plane cuts from the same mesh; the plane moves from view to view as a probe does |
+| | 08 Planes | All standard view planes in one heart: crossings, parallel stacks, which views show a structure, and a free plane that settles onto the nearest standard view and moves to any view on request |
+| Function | 09 Eject | Biplane method of disks: apical four- and two-chamber echo views with the traced border and disks, each above the disk model of the same LV; foreshortening; TAPSE, S′ and fractional area change |
 | | 10 Segments | Buttons on the figure occlude the LAD, RCA or circumflex: its territory turns hypokinetic, akinetic or dyskinetic on the 17-segment bull's-eye, which draws the artery with its block, and in the apical four-, two- and three-chamber views, echo cine sectors cut from the heart mesh in which each segment moves by its score. The text names the walls to watch in each view. Any segment can also be scored by tapping it; the wall motion score index follows |
 | | 11 Fill | Diastolic dysfunction, normal to restrictive: four-chamber view with the LA to scale, mitral inflow, tissue Doppler, pulmonary veins, LA strain, TR jet, and the 2025 ASE algorithm run live |
 | Valves | 12 Aortic stenosis | Normal valve to severe stenosis, then LV failure and low flow: PLAX with hypertrophy, short-axis orifice to scale, CW and LVOT Doppler, mitral inflow |
@@ -29,18 +29,19 @@ An illustrated, interactive study of echocardiography for trainees: ultrasound p
 
 | | | |
 | --- | --- | --- |
-| ![01 Pulse](docs/screenshots/pulse.webp) | ![03 Windows](docs/screenshots/windows.webp) | ![06 Loop](docs/screenshots/loop.webp) |
+| ![01 Pulse](docs/screenshots/pulse.webp) | ![03 Shift](docs/screenshots/shift.webp) | ![05 Cycle](docs/screenshots/cycle.webp) |
+| ![06 Loop](docs/screenshots/loop.webp) | ![07 Windows](docs/screenshots/windows.webp) | ![09 Eject](docs/screenshots/eject.webp) |
 | ![10 Segments](docs/screenshots/segments.webp) | ![11 Fill](docs/screenshots/fill.webp) | ![12 Aortic stenosis](docs/screenshots/as.webp) |
 | ![13 Aortic regurgitation](docs/screenshots/ar.webp) | ![14 Mitral stenosis](docs/screenshots/ms.webp) | ![15 Mitral regurgitation](docs/screenshots/mr.webp) |
 | ![16 Tricuspid regurgitation](docs/screenshots/tr.webp) | ![17 Pericardium](docs/screenshots/peri.webp) | ![18 Report](docs/screenshots/report.webp) |
 
 On a phone the figure sits above the text and stays in view while the text scrolls:
 
-![Phone, chapter 04](docs/screenshots/phone-planes.webp) ![Phone, chapter 15](docs/screenshots/phone-mr.webp)
+![Phone, chapter 08](docs/screenshots/phone-planes.webp) ![Phone, chapter 15](docs/screenshots/phone-mr.webp)
 
 ## Views and the lab's annotation classes
 
-Chapter 03 covers the ASE comprehensive transthoracic views (Mitchell 2019, Tables 2.1–2.27). Each view carries the class name from the lab's annotation list (`lab` in `src/views.js`), for example `PLAX_IVS_LVPW_LVIDD`, `PSAX_(level_great_vessels)_focus_on_PV_and_PA`, `Subcostal_IVC`, `SSN_aortic_arch`. Six views have no class in that list: the coronary artery origins, the zoomed tricuspid valve, LV apex and aortic valve (apical), the zoomed atrial septum (subcostal) and the suprasternal short axis.
+Chapter 07 covers the ASE comprehensive transthoracic views (Mitchell 2019, Tables 2.1–2.27). Each view carries the class name from the lab's annotation list (`lab` in `src/views.js`), for example `PLAX_IVS_LVPW_LVIDD`, `PSAX_(level_great_vessels)_focus_on_PV_and_PA`, `Subcostal_IVC`, `SSN_aortic_arch`. Six views have no class in that list: the coronary artery origins, the zoomed tricuspid valve, LV apex and aortic valve (apical), the zoomed atrial septum (subcostal) and the suprasternal short axis.
 
 - **The plane moves between views.** A change of view turns the plane along the shortest rotation while the point it images slides across, so neighbouring views are small moves: the tricuspid valve view leans 2° further than the aortic valve level and steers onto the valve, and the abdominal aorta is 7° from the IVC plane.
 - **The great-vessel short axis (ASE 2019, Table 2, rows 2.7–2.10).** The probe lies in front of the aortic root, a little to its left; the beam runs back, a little to the right and down. At the aortic valve the plane passes through the shut cusps where they meet and leans 28° from square to the root, toward the patient's right and a little back. Square to the root, it would pass above this model's left atrium; in the ASE images the left atrium lies directly behind the valve at this level. Leaning, it shows what ASE lists: the RVOT across the front from the tricuspid to the pulmonic valve, the valve in the middle, the right atrium on the left, the left atrium below and the atrial septum between. The zoomed valve view is square to the root, so the shut cusps meet in a Y, with the right coronary cusp at the top, the left on the right and the non-coronary cusp at the lower left. Tilted 1.4 cm up the root and leaning 27°, the plane shows the aorta above its valve in cross-section, the pulmonic valve, the trunk and both branches.
@@ -49,16 +50,16 @@ Chapter 03 covers the ASE comprehensive transthoracic views (Mitchell 2019, Tabl
 - **The pulmonic valve.** The RV outflow view runs along the valve's own axis (the principal axis of the valve mesh), turned 10° about it and 3 mm to one side, so it crosses two cusps and the line where they meet: shut, they meet in the middle; open, they lie along the walls of the trunk, which runs on toward the bifurcation. In this model the pulmonary trunk runs 42° out of the aortic short axis and rises steeply to the bifurcation. The model's left main runs through a gap in the mesh beside the valve, so the RV outflow view leaves the coronary arteries out, and any coronary section that lies inside a blood pool, clear of the walls, is dropped in every view.
 - **Below the diaphragm.** The heart model ends at the diaphragm. For the subcostal views, `src/abdomen.js` adds simple shapes to the echo only: a liver moulded to the underside of the heart, the IVC down through it, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine. The subcostal four-chamber plane in this model passes above the liver, so that view keeps a liver layer in the near field.
 
-![Chapter 03, parasternal short axis at the aortic valve level: the RVOT in front, the valve in the middle, the right atrium and tricuspid valve on the left, the left atrium below, the pulmonic valve on the right](docs/screenshots/psax.webp)
+![Chapter 07, parasternal short axis at the aortic valve level: the RVOT in front, the valve in the middle, the right atrium and tricuspid valve on the left, the left atrium below, the pulmonic valve on the right](docs/screenshots/psax.webp)
 
 
-Chapter 04 shows the planes together. The apical views share the LV long axis; the model places the two-chamber plane about 60° from the four- and three-chamber planes, as the ASE rotation describes. The short-axis levels form a parallel stack. The structure table lists what ASE names for each view.
+Chapter 08 shows the planes together. The apical views share the LV long axis; the model places the two-chamber plane about 60° from the four- and three-chamber planes, as the ASE rotation describes. The short-axis levels form a parallel stack. The structure table lists what ASE names for each view.
 
 **Free plane.** Five controls move a plane away from the focused view as a probe moves: rotate about the beam, tilt across the plane, rock within it, slide along it and sweep across it. The echo pane shows what the plane cuts, and *Square to the plane* turns the heart to face it. The probe stays in the focused view's window, so only the standard views of that window count; the apical four-chamber plane lies 4° from the subcostal one in this model, but the two are different views. The nearest view is judged by the angle between the planes, with the marker on the same side, and how far that view's centre lies off the free plane: within 20° and 3 cm it is marked, and within 10° and 1.5 cm the plane settles onto it when the control is let go. The same plane turned 180° is flagged as mirrored, not taken as the view. The textbook turns work: the four-chamber plane rotated 60° counterclockwise settles on the two-chamber view and 120° on the three-chamber view, and the long axis rotated 90° clockwise on the short axis at the mitral valve.
 
 **Moves to a view.** *Back to the focused view* eases the controls to zero in steps: slide and sweep first, then tilt and rock, then rotate, each over 1.4–4 s by the size of the move, on the clock and not the frame count. *Go to a view* lists every standard view by window. In the same window the new view becomes the focused view, the controls are counted from it (an exact inverse of the rotate–tilt–rock order), and they ease to zero. For another window the probe first returns to the focused view, then the plane moves to the new window in 2.6 s; the 3D fan follows the echo plane.
 
-![Chapter 04, a free plane rotated 50° counterclockwise from the four-chamber view, marked as near the two-chamber view](docs/screenshots/free.webp)
+![Chapter 08, a free plane rotated 50° counterclockwise from the four-chamber view, marked as near the two-chamber view](docs/screenshots/free.webp)
 
 ## The severity pages (chapters 11 to 17)
 
@@ -70,7 +71,7 @@ Chapter 04 shows the planes together. The apical views share the LV long axis; t
 
 ## The echo images
 
-Every echo image is simulated. The anatomy comes from sections of the heart mesh (chapters 02 to 05 and 10) or from parametric views drawn to scale (chapters 11 to 17). One renderer, `src/bmode.js`, turns either into a scanner frame:
+Every echo image is simulated. The anatomy comes from sections of the heart mesh (chapters 02, 05, 07, 08 and 10) or from parametric views drawn to scale (chapters 09 and 11 to 17). One renderer, `src/bmode.js`, turns either into a scanner frame:
 
 - **Echogenicity.** Each structure has a level in dB against myocardium: blood about −60, leaflets +15 (to +21 when thickened), chordae +4, pericardium +16, calcium +22 with an acoustic shadow behind it; the coronary arteries sit in bright epicardial fat.
 - **Specular surfaces.** A surface is brightest where the beam meets it head-on (cos⁴ of the angle). Walls that run along the beam, such as the atrial septum in the four-chamber view, stay faint.
@@ -84,6 +85,7 @@ Every echo image is simulated. The anatomy comes from sections of the heart mesh
 - **Pericardium.** In the four-chamber view the sac follows the convex envelope of the ventricles' outer walls, 1.3 mm out: it wraps the apex and bridges the interventricular groove, which epicardial fat fills; an RV wall that collapses in tamponade pulls away from it. In the long axis it runs behind the posterior wall, round the coronary sinus in the atrioventricular groove and behind the LA, in front of the descending aorta, at least 1.3 mm from each. In the views cut from the mesh, any point of the pericardium that falls inside a wall moves out to the wall's surface.
 - **Effusion.** Fluid widens the pericardial space most over the free walls and the apex and least at the atrioventricular grooves; grey lung and mediastinum lie outside the sac, so the fluid shows as a dark band. In the parasternal long axis the fluid thins out at the atrioventricular groove in front of the descending aorta. A swinging heart rocks about the middle of the atrioventricular plane inside a sac that stays put: the apex travels farthest, and the grooves, where the fluid is thinnest, hardly move sideways.
 - **Regional wall motion.** In chapter 10 each vertex of the LV wall belongs to one of the 17 segments, placed from the LV long axis and the apical planes. Its systolic motion scales by the segment's score: normal 100%, hypokinetic 45%, akinetic 0 and dyskinetic −35% (outward). The pericardium over a segment moves with it.
+- **Biplane tracing (chapter 09).** The four- and two-chamber views trace the border of the compacted myocardium, close it with a straight line across the mitral annulus and take L from the middle of that line to the farthest point of the border (Lang 2015). The disk drawing under each view is the same LV, with one width profile (`lvWidth` in `src/echo2d.js`). Its cross-section is an ellipse, 0.94 as wide in the two-chamber view as in the four-chamber view, with the area of the circle in the model's volume. At 120 mL and an EF of 60%, the model LV shortens 15% along its axis and 33% across it, the annulus narrows 12%, and the wall thickens so that the muscle keeps its volume.
 - **Color Doppler.** Velocity along the beam inside a color box: red toward the probe, aliasing at the set velocity, a green variance tag in turbulent jets, and a flow-convergence shell sized from the flow rate.
 
 *The Amyloid Heart* got its realistic views from the sculpted mesh; it drew them with flat textures and white outlines. This site keeps the mesh and adds the image formation above.
@@ -106,7 +108,7 @@ src/ch/*.js         one module per chapter
 src/sev.js          severity pages: keyframe tracks, grade bands, Play, measurement strip
 src/bmode.js        B-mode and M-mode image formation for every echo view
 src/abdomen.js      liver, IVC, hepatic veins, abdominal aorta and spine for the subcostal echo views
-src/echo2d.js       parametric echo views drawn to scale (A4C, PLAX, three short-axis levels, IVC M-mode) and color Doppler jets
+src/echo2d.js       parametric echo views drawn to scale (A4C, A2C, PLAX, three short-axis levels, IVC M-mode), the biplane tracing and color Doppler jets
 src/views.js        view catalog: planes, lab classes, structures, probe moves
 src/echo.js         plane geometry, plane changes, cross-sections and the echo views cut from the heart mesh
 src/cyclemodel.js   one heartbeat (pressures, volume, valve events)
@@ -125,7 +127,7 @@ python3 -m http.server 8000
 
 Then open <http://localhost:8000/>. A chapter can be opened directly: `#planes`, `#fill`, `#report`.
 
-Keys: ← → change chapter, space plays the tour, 1–5 and [ ] step the views in chapters 03 and 04. A chapter opens directly by its key, for example `#as`, `#mr`, `#tr`, `#peri`.
+Keys: ← → change chapter, space plays the tour, 1–5 and [ ] step the views in chapters 07 and 08. A chapter opens directly by its key, for example `#as`, `#mr`, `#tr`, `#peri`.
 
 ## Checks run before this commit
 
@@ -137,6 +139,7 @@ Keys: ← → change chapter, space plays the tour, 1–5 and [ ] step the views
 - Pericardium against myocardium, measured point by point. In the parametric four-chamber view, before this change the line ran 0.4 cm inside the apical wall; now no point of it lies inside a wall at any contraction, effusion (none to 2.2 cm), RV collapse or septal shift, and it stays at least 1.0 mm from the epicardium. With the swing the pericardium page pairs with each effusion (up to 0.7 cm at 2.3 cm of fluid), the walls stay at least 3.5 mm inside the sac. In the long axis, no point lies inside the posterior wall, the coronary sinus, the LA wall or the descending aorta, with at least 1.3 mm of clearance. In the mesh views (A4C, A2C, A3C, PLAX, PSAX, subcostal four-chamber) at eight moments of the beat, the overlap fell from up to 0.27 cm (normal) and 0.40 cm (dyskinetic segments in chapter 10) to at most 0.06 cm, below the beam's lateral resolution.
 - Pericardium model swept at 2,001 points: the grades come in order, the pressure in the sac stays at or above the RA pressure through tamponade, and no sign of tamponade turns on before the tamponade grade.
 - Free-plane moves: the inverse of the rotate–tilt–rock order is exact to 4 × 10⁻¹⁴ over 200 random poses. From (rotate −50°, tilt 12°, rock −15°, slide 1.5 cm, sweep −1.0 cm), *Back to the focused view* brought slide and sweep to zero at 1.8 s, tilt and rock at 2.9 s and rotation at 3.6 s (planned: 1.6, 2.7 and 3.5 s). The headless browser drew 4.2 frames a second, so each step came at most one frame late. *Go to a view* re-counted a pose 20° off the four-chamber view as 42°, 8.5°, −10.1° from the two-chamber view, then eased to it; a move to the long axis crossed windows. The picker fits at 390 px.
+- Eject: the biplane volume traced on the two echo views equals the model volume within 0.1% at 360 states (EDV 50 to 320 mL, EF 10 to 75%, walls 6 to 20 mm, foreshortening 0 and 15%; end-diastole, mid-systole and end-systole). Before the apical LV length was made exact, the four-chamber view ran up to 0.2 cm long when the septum was thick. Each echo panel now keeps its own last frame, and the page draws 53 frames a second on the desktop layout and 56 on the phone layout (headless; 38 before). The pericardium check above, run again after the basal wall taper: no point inside a wall, at least 1.0 mm clear.
 - Image: the sweep takes 125 frame times, so 1.2 s a frame at 100 fps and 3.7 s at 33 fps, and the label says so.
 - Great-vessel short axis against ASE 2019 (Table 2, rows 2.7–2.9), view by view: at the aortic valve level the RVOT lies across the front, the tricuspid valve at the upper left, the pulmonic valve at the right, the right atrium on the left, the left atrium below the valve with the atrial septum between; the zoomed valve shows the right coronary cusp at the top, the left on the right and the non-coronary cusp at the lower left; one level up the aorta is round and the trunk runs down its right side to both branches. Before this change the beam reached the root from the patient's left side (6.7 cm left of the valve, 2.7 cm in front), and the plane cut the cusps below where they meet.
 - Aortic valve turn: after the turn the cusp bellies lie at −75°, 45° and 165° round the root, the left main origin within 5° of the left coronary cusp's centre and the right coronary origin 11° from the right coronary cusp's centre (before: both at commissures), and the valve's outer radius is unchanged (1.15 cm). Parasternal long axis, five-chamber and three-chamber frames compared before and after.

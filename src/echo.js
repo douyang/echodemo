@@ -1,5 +1,5 @@
 // Echo views as live cross-sections of the heart mesh. The same code draws the
-// on-screen view beside the 3D heart (chapter 03) and offscreen frames for other chapters.
+// on-screen view beside the 3D heart (chapter 07) and offscreen frames for other chapters.
 import * as THREE from '../vendor/three.bundle.min.js';
 import { tokens, MONO, SANS } from './sketch.js';
 import { VIEWS, VESSELS } from './views.js';

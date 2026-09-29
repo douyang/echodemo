@@ -1,4 +1,4 @@
-// 15 Aortic regurgitation: one slider from no leak to severe chronic AR with LV dilation and
+// 13 Aortic regurgitation: one slider from no leak to severe chronic AR with LV dilation and
 // dysfunction. The orifice drives the volume numbers; the pressure half-time shortens, flow
 // reverses in the descending aorta, and the LV dilates. Illustrative values in ASE 2017 bands.
 import { Sheet, clamp, MONO } from '../sketch.js';

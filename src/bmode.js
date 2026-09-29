@@ -127,13 +127,14 @@ const GEO = new Map();
 /**
  * v: { box: {x, y, w, h} (CSS px), cx, top (sector apex, px), k (px per cm), half (rad),
  *      depth (cm), near (cm of chest wall), liver (cm: liver down to this depth, subcostal) }
- * q: image pixels per CSS px (the device pixel ratio).
+ * q: image pixels per CSS px (the device pixel ratio). caller: one cache entry per caller, so
+ * two panels of the same size each keep their last frame.
  */
-function geometry(v, q) {
+function geometry(v, q, caller) {
   const { box, cx, top, k, half, depth } = v;
   const near = v.near ?? 1.2, liver = v.liver ?? 0;
   const W = Math.max(2, Math.round(box.w * q)), H = Math.max(2, Math.round(box.h * q));
-  const key = [W, H, (cx - box.x).toFixed(1), (top - box.y).toFixed(1), k.toFixed(3), half.toFixed(4), depth, near, liver, q].join('|');
+  const key = [W, H, (cx - box.x).toFixed(1), (top - box.y).toFixed(1), k.toFixed(3), half.toFixed(4), depth, near, liver, q, caller].join('|');
   let G = GEO.get(key);
   if (G) return G;
   const n = W * H;
@@ -513,7 +514,7 @@ const MOT = new Float32Array(256 * 6);
  */
 export function bmode(ctx, view, items, o = {}) {
   const Z = scatterers();
-  const G = geometry(view, o.q ?? Math.min(2, window.devicePixelRatio || 1));
+  const G = geometry(view, o.q ?? Math.min(2, window.devicePixelRatio || 1), o.key);
   // a running cine asks for a new frame at the screen rate; the scanner makes about 30 a
   // second, so a frame under 30 ms old is shown again (only for the same caller)
   const now = performance.now();

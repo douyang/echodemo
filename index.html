@@ -44,6 +44,22 @@
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">A sector image of the heart builds one scan line at a time. A chosen artifact is drawn into the image.</figcaption>
     </figure>
+    <figure class="fig" id="fig-shift">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">An ultrasound beam meets flowing blood at an angle. Below, the Doppler display shows the measured velocity, the Nyquist limit and aliasing.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-pressure">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Left: stroke volume from the outflow tract area and the velocity-time integral. Right: right ventricular systolic pressure from the tricuspid regurgitation velocity and the right atrial pressure estimated from the inferior vena cava.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-cycle">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Wiggers diagram of one heartbeat: aortic, left ventricular and left atrial pressure, left ventricular volume, the ECG, the heart sounds, mitral inflow and left ventricular outflow Doppler, and an apical four-chamber frame at the chosen moment.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-loop">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Left ventricular pressure-volume loop with the end-systolic and end-diastolic pressure-volume relations and the arterial elastance line, beside the normal loop.</figcaption>
+    </figure>
     <figure class="fig" id="fig-windows">
       <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
       <div class="split">
@@ -60,25 +76,9 @@
       </div>
       <figcaption class="sr-only">A three-dimensional heart with the imaging planes of the chosen standard views drawn through it, each in the color of its acoustic window, with the lines where the planes cross. Beside it, the echo view of the focused plane.</figcaption>
     </figure>
-    <figure class="fig" id="fig-cycle">
-      <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Wiggers diagram of one heartbeat: aortic, left ventricular and left atrial pressure, left ventricular volume, the ECG, the heart sounds, mitral inflow and left ventricular outflow Doppler, and an apical four-chamber frame at the chosen moment.</figcaption>
-    </figure>
-    <figure class="fig" id="fig-loop">
-      <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Left ventricular pressure-volume loop with the end-systolic and end-diastolic pressure-volume relations and the arterial elastance line, beside the normal loop.</figcaption>
-    </figure>
-    <figure class="fig" id="fig-shift">
-      <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">An ultrasound beam meets flowing blood at an angle. Below, the Doppler display shows the measured velocity, the Nyquist limit and aliasing.</figcaption>
-    </figure>
-    <figure class="fig" id="fig-pressure">
-      <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Left: stroke volume from the outflow tract area and the velocity-time integral. Right: right ventricular systolic pressure from the tricuspid regurgitation velocity and the right atrial pressure estimated from the inferior vena cava.</figcaption>
-    </figure>
     <figure class="fig" id="fig-eject">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Apical four-chamber and two-chamber views with the left ventricular border traced and divided into twenty disks for the biplane method; or, for the right ventricle, TAPSE on M-mode, tricuspid annular velocity and fractional area change.</figcaption>
+      <figcaption class="sr-only">Apical four-chamber and two-chamber echo views with the left ventricular border traced, its long axis and twenty disks for the biplane method, each above a drawing of the same ventricle divided into the same disks; or, for the right ventricle, TAPSE on M-mode, tricuspid annular velocity and fractional area change.</figcaption>
     </figure>
     <figure class="fig" id="fig-segments">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -237,147 +237,122 @@
       <div class="quiz"></div>
     </article>
 
-    <article class="chapter" id="ch-windows">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">03</span><div><h2 class="ch-title">Windows</h2><p class="ch-kicker">The views</p></div></div>
-      <p class="dek" data-part="dek">Each standard view is one plane through the heart. The probe position, the rotation of the marker and the tilt of the beam select the plane.</p>
+    <article class="chapter" id="ch-shift">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">03</span><div><h2 class="ch-title">Shift</h2><p class="ch-kicker">The Doppler effect</p></div></div>
+      <p class="dek" data-part="dek">Doppler measures blood velocity from the frequency shift of the echoes. The beam angle and the Nyquist limit decide what the scanner can report.</p>
       <div class="controls">
         <div class="control">
-          <span class="label">Window <output>keys 1–5</output></span>
-          <div class="seg" role="group" aria-label="Acoustic window" data-key="win">
-            <button type="button" data-val="plax">Parasternal long</button><button type="button" data-val="psax">Parasternal short</button><button type="button" data-val="apical">Apical</button><button type="button" data-val="sub">Subcostal</button><button type="button" data-val="ssn">Suprasternal</button>
+          <span class="label">Mode</span>
+          <div class="seg" role="group" aria-label="Doppler mode" data-key="dmode">
+            <button type="button" data-val="pw">Pulsed wave</button><button type="button" data-val="cw">Continuous wave</button><button type="button" data-val="color">Color</button>
           </div>
         </div>
-        <div class="control">
-          <span class="label">View <output>[ and ] step</output></span>
-          <div class="seg" role="group" aria-label="View" data-key="view" id="view-seg"></div>
-        </div>
-        <div class="toggles">
-          <label class="check"><input type="checkbox" id="w-cine" data-key="wcine"> Cine</label>
-          <label class="check"><input type="checkbox" id="w-labels" data-key="wlabels"> Labels</label>
-          <label class="check"><input type="checkbox" id="w-sec" data-key="wsec"> Cross-section</label>
+        <div class="row2">
+          <div class="control">
+            <label for="angle">Beam angle to flow <output data-for="angle"></output></label>
+            <input type="range" id="angle" data-key="angle" min="0" max="80" step="1">
+          </div>
+          <div class="control">
+            <label for="vtrue">True peak velocity <output data-for="vtrue"></output></label>
+            <input type="range" id="vtrue" data-key="vtrue" min="0.2" max="5" step="0.05">
+          </div>
+          <div class="control">
+            <label for="sdepth">Sample depth <output data-for="sdepth"></output></label>
+            <input type="range" id="sdepth" data-key="sdepth" min="3" max="20" step="0.5">
+          </div>
+          <div class="control">
+            <label for="f0">Doppler frequency <output data-for="f0"></output></label>
+            <input type="range" id="f0" data-key="f0" min="1.5" max="5" step="0.1">
+          </div>
         </div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
       <div class="prose" data-part="prose">
-        <h3>Four windows</h3>
-        <p>ASE describes four acoustic windows: parasternal, apical, subcostal and suprasternal notch<span class="cite" data-ref="mitchell2019"></span>. Parasternal and apical imaging is done with the patient on the left side; subcostal and suprasternal imaging with the patient supine<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <h3>The Doppler equation</h3>
+        <p class="eq">Δf = 2 × f0 × v × cos θ ÷ c</p>
+        <p>Flow toward the transducer gives a positive shift, and flow away a negative shift<span class="cite" data-ref="quinones2002"></span>. The equation uses c = 1540 m/s<span class="cite" data-ref="quinones2002"></span>. With blood at about 1 m/s and MHz transducers, the shift is a few kHz: an audible sound<span class="cite" data-ref="iaea2014"></span>.</p>
+        <h3>The angle</h3>
+        <p>Cardiac Doppler assumes the beam is parallel to the flow (θ = 0)<span class="cite" data-ref="quinones2002"></span>. A 20° angle underestimates the velocity by only about 6%<span class="cite" data-ref="mitchell2019"></span>. At 60° the scanner reports half the true velocity (cos 60° = 0.5, a calculation). ASE does not recommend angle correction: align the beam with the flow, use several windows, and report the highest velocity<span class="cite" data-ref="mitchell2019,quinones2002"></span>.</p>
+        <h3>Pulsed wave and the Nyquist limit</h3>
+        <p>Pulsed-wave Doppler measures at one depth, but it must wait for each echo before the next pulse. The deepest sample sets the pulse repetition frequency (PRF), and the highest velocity without aliasing is c² ÷ (8 × depth × f0)<span class="cite" data-ref="iaea2014"></span>. The Nyquist limit is PRF ÷ 2; faster flow wraps to the other side of the baseline<span class="cite" data-ref="quinones2002"></span>.</p>
         <ul>
-        <li><b>Parasternal long axis.</b> Third or fourth left intercostal space, marker toward the right shoulder, 9 to 10 o’clock<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Parasternal short axis.</b> Rotate 90° clockwise from the long axis; the marker points to the left shoulder<span class="cite" data-ref="mitchell2019"></span>. Tilt the beam to step from the great vessels to the mitral valve, the papillary muscles and the apex<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Apical.</b> At the apical impulse, marker at 4 to 5 o’clock<span class="cite" data-ref="mitchell2019"></span>. From the four-chamber view, rotate about 60° counterclockwise for the two-chamber view and 60° more for the three-chamber view<span class="cite" data-ref="mitchell2019"></span>. Tilt anteriorly for the five-chamber view<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Subcostal.</b> Below the xiphoid. It shows the heart, the pericardium, the RV free wall and the inferior vena cava<span class="cite" data-ref="mitchell2019"></span>; angled a little to the patient's left, the abdominal aorta.</li>
-        <li><b>Suprasternal.</b> It shows the ascending aorta, the arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>Move the sample volume closer, or use a lower Doppler frequency, to increase the limit.</li>
+        <li>High-PRF Doppler adds sample volumes to increase the limit, and accepts range ambiguity<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>Continuous wave has no Nyquist limit, and no depth information<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
-        <h3>The figure</h3>
-        <p>Left: the heart model cut on the imaging plane and seen square to it, turned as the echo is, with the structures named. Turn off <b>Cross-section</b> to see the whole heart with the plane through it. Right: the echo view that the same plane cuts from the model. A change of view moves the plane from where it is, as the probe would move.</p>
-        <p>Below the diaphragm, the liver, the inferior vena cava, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views; they are not part of the heart model and the 3D heart does not show them. Each view carries the class name that the lab uses to annotate it, where the lab's list has one. The model is a normal adult heart; in a patient, the position of the heart changes the angles.</p>
-        <h3>A good apical view</h3>
-        <p>An apical view that is not foreshortened shows about two thirds LV and one third LA along the long axis<span class="cite" data-ref="mitchell2019"></span>. A plane that misses the true apex makes the LV look short and round, and its volumes read low<span class="cite" data-ref="lang2015"></span>.</p>
-        <p>The British Society of Echocardiography lists a minimum dataset of views in scanning order, and asks for at least two cardiac cycles for each clip<span class="cite" data-ref="bse2020"></span>.</p>
+        <h3>Color Doppler</h3>
+        <p>Color shows the mean velocity at many sample volumes<span class="cite" data-ref="iaea2014"></span>: red toward the transducer, blue away<span class="cite" data-ref="mitchell2019"></span>. It is a pulsed method, so it aliases too. ASE suggests a scale of 50 to 70 cm/s for routine color, and about 30 cm/s for slow flow<span class="cite" data-ref="mitchell2019"></span>. A small, shallow color box keeps the frame rate high<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <p>A wide spectrum does not always mean turbulent flow; a large sample volume or high gain also widen it<span class="cite" data-ref="paeng2025,mitchell2019"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Parasternal long → short: rotate 90° clockwise.</li>
-        <li>Apical four → two → three chamber: rotate about 60° counterclockwise each step.</li>
-        <li>Measure the IVC 1 to 2 cm from the right atrium, in the subcostal view<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>Measured velocity = true velocity × cos θ.</li>
+        <li>Deeper sample, higher frequency: lower Nyquist limit.</li>
+        <li>For high velocities, use continuous wave.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
-    <article class="chapter" id="ch-planes">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">04</span><div><h2 class="ch-title">Planes</h2><p class="ch-kicker">All views in one heart</p></div></div>
-      <p class="dek" data-part="dek">The standard views are planes through one heart. Seen together, the planes show which views share a line, which views are parallel, and which views show a structure.</p>
+    <article class="chapter" id="ch-pressure">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">04</span><div><h2 class="ch-title">Pressure</h2><p class="ch-kicker">Flow and gradients</p></div></div>
+      <p class="dek" data-part="dek">Two Doppler calculations appear in almost every report: stroke volume from the LV outflow tract, and RV systolic pressure from the tricuspid jet.</p>
       <div class="controls">
-        <div class="control">
-          <span class="label">Sets</span>
-          <div class="seg" role="group" aria-label="View sets" id="planes-sets">
-            <button type="button" data-set="nine">Nine views</button><button type="button" data-set="long">Parasternal long</button><button type="button" data-set="stack">Short-axis stack</button><button type="button" data-set="apical">Apical</button><button type="button" data-set="all">All</button><button type="button" data-set="none">Clear</button>
+        <div class="row2">
+          <div class="control">
+            <label for="sv">Stroke volume <output data-for="sv"></output></label>
+            <input type="range" id="sv" data-key="sv" min="20" max="120" step="1">
+          </div>
+          <div class="control">
+            <label for="lvotD">LVOT diameter <output data-for="lvotD"></output></label>
+            <input type="range" id="lvotD" data-key="lvotD" min="1.6" max="2.6" step="0.01">
+          </div>
+          <div class="control">
+            <label for="calErr">Caliper error <output data-for="calErr"></output></label>
+            <input type="range" id="calErr" data-key="calErr" min="-3" max="3" step="0.5">
+          </div>
+          <div class="control">
+            <label for="hr">Heart rate <output data-for="hr"></output></label>
+            <input type="range" id="hr" data-key="hr" min="40" max="140" step="1">
+          </div>
+          <div class="control">
+            <label for="trV">TR peak velocity <output data-for="trV"></output></label>
+            <input type="range" id="trV" data-key="trV" min="1.5" max="5" step="0.05">
+          </div>
+          <div class="control">
+            <label for="ivcD">IVC diameter <output data-for="ivcD"></output></label>
+            <input type="range" id="ivcD" data-key="ivcD" min="1" max="3" step="0.05">
           </div>
         </div>
         <div class="control">
-          <span class="label">Views <output>click: add, focus, remove</output></span>
-          <div class="chips" id="planes-views"></div>
-        </div>
-        <div class="control">
-          <span class="label">Find a structure</span>
-          <div class="seg" role="group" aria-label="Structure" data-key="pstruct"><button type="button" data-val="none">None</button></div>
-        </div>
-        <div class="control">
-          <span class="label">Look from</span>
-          <div class="seg" role="group" aria-label="Camera" data-key="pcam">
-            <button type="button" data-val="front">Front</button><button type="button" data-val="apex">The apex</button><button type="button" data-val="side">The side</button><button type="button" data-val="plane">Square to the plane</button>
-          </div>
-        </div>
-        <div class="toggles">
-          <label class="check"><input type="checkbox" data-key="pheart"> Heart</label>
-          <label class="check"><input type="checkbox" data-key="plines"> Where the focused plane crosses</label>
-          <label class="check"><input type="checkbox" data-key="pcut"> Cut at the focused plane</label>
-          <label class="check"><input type="checkbox" data-key="pfree"> Free plane</label>
-        </div>
-        <div class="free" id="planes-free" hidden>
-          <p class="free-head"><span>Free plane, from the focused view</span> <output id="pfree-state"></output></p>
-          <div class="row2">
-            <div class="control">
-              <label for="prot">Rotate, + clockwise <output data-for="prot"></output></label>
-              <input type="range" id="prot" data-key="prot" min="-180" max="180" step="1">
-            </div>
-            <div class="control">
-              <label for="ptilt">Tilt <output data-for="ptilt"></output></label>
-              <input type="range" id="ptilt" data-key="ptilt" min="-45" max="45" step="1">
-            </div>
-          </div>
-          <div class="row2">
-            <div class="control">
-              <label for="prock">Rock, + to the right <output data-for="prock"></output></label>
-              <input type="range" id="prock" data-key="prock" min="-40" max="40" step="1">
-            </div>
-            <div class="control">
-              <label for="pslide">Slide <output data-for="pslide"></output></label>
-              <input type="range" id="pslide" data-key="pslide" min="-5" max="5" step="0.1">
-            </div>
-          </div>
-          <div class="row2">
-            <div class="control">
-              <label for="psweep">Sweep <output data-for="psweep"></output></label>
-              <input type="range" id="psweep" data-key="psweep" min="-5" max="5" step="0.1">
-            </div>
-            <div class="control free-reset"><button type="button" class="chip" id="pfree-reset">Back to the focused view</button></div>
-          </div>
-          <div class="control free-goto">
-            <label for="pgoto">Go to a view</label>
-            <select id="pgoto"></select>
+          <span class="label">IVC collapse with a sniff</span>
+          <div class="seg" role="group" aria-label="IVC collapse" data-key="ivcCollapse">
+            <button type="button" data-val="gt">More than 50%</button><button type="button" data-val="lt">Less than 50%</button>
           </div>
         </div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <div class="table-wrap"><table class="vt matrix" id="planes-matrix"></table></div>
       <div class="prose" data-part="prose">
-        <h3>How the views relate</h3>
+        <h3>Stroke volume</h3>
+        <p class="eq">SV = 0.785 × d² × VTI &nbsp;(d, VTI in cm; SV in mL)</p>
+        <p>The outflow tract is taken as a circle with diameter d<span class="cite" data-ref="zoghbi2017"></span>. Measure d in a zoomed parasternal long-axis view, inner edge to inner edge, in mid-systole<span class="cite" data-ref="baumgartner2017"></span>. Record the LVOT velocity with pulsed wave from the apical five-chamber or long-axis view, just below the valve<span class="cite" data-ref="mitchell2019"></span>. Take both at the same level<span class="cite" data-ref="baumgartner2017"></span>.</p>
+        <p>The diameter is squared, so a small error becomes a large one. Repeated LVOT measurements vary by 5 to 8%, the largest error in the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. A 2 mm error on a 2.0 cm outflow tract changes the stroke volume by about 20%.</p>
+        <p>Normal resting values from catheter studies: stroke volume 60 to 100 mL, cardiac output 4 to 8 L/min, cardiac index 2.5 to 4.0 L/min/m²<span class="cite" data-ref="humbert2022"></span>.</p>
+        <h3>Pressure from velocity</h3>
+        <p class="eq">ΔP = 4 v² &nbsp;·&nbsp; RVSP = 4 × (peak TR velocity)² + RA pressure</p>
+        <p>The simplified Bernoulli equation gives the pressure difference in mmHg from a velocity in m/s<span class="cite" data-ref="baumgartner2017"></span>. It holds when the velocity before the narrowing is 1.5 m/s or less<span class="cite" data-ref="quinones2002"></span>. The TR jet gives the pressure difference between the RV and the RA; add the RA pressure from the IVC<span class="cite" data-ref="mukherjee2025"></span>.</p>
         <ul>
-        <li><b>The apical views share one line.</b> The four-, two- and three-chamber planes all contain the long axis of the LV. ASE rotates about 60° between them<span class="cite" data-ref="mitchell2019"></span>; the figure shows the angles of this model. Look from the apex to see the three planes as a star.</li>
-        <li><b>The short-axis levels are parallel.</b> Tilting the probe steps the plane from the mitral valve to the papillary muscles and the apex<span class="cite" data-ref="mitchell2019"></span>. Look from the side to see the stack.</li>
-        <li><b>Long and short axis cross at right angles.</b> The short axis comes from a 90° rotation of the long axis<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Small tilts make new views.</b> From the parasternal long axis, tilt toward the right hip for RV inflow, and anteriorly for RV outflow. From the four-chamber view, tilt anteriorly to add the LVOT and the aortic valve<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>IVC ≤2.1 cm that collapses ≥50% with a sniff: RA pressure 3 mmHg.</li>
+        <li>IVC >2.1 cm that collapses &lt;50%: 15 mmHg. Other combinations: 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li>Report one number, not a range<span class="cite" data-ref="mukherjee2025"></span>.</li>
         </ul>
-        <h3>Free plane</h3>
-        <p>Turn on <b>Free plane</b> to move a plane away from the focused view the way a probe moves: rotate it about the beam, tilt the beam across the plane, rock it within the plane, slide the probe along the plane and sweep it across. The echo pane shows what that plane cuts; <b>Square to the plane</b> turns the 3D heart to face it. In this model, a turn of 60° counterclockwise from the four-chamber view gives the two-chamber view, and a turn of 120° gives the three-chamber view. A turn of 90° clockwise from the parasternal long axis gives the short axis at the mitral valve.</p>
-        <p>The probe stays in the window of the focused view, so the free plane is compared only with the standard views of that window. A plane from another window can cut the heart almost the same way (the apical and subcostal four-chamber planes do), but it is a different view. The comparison uses the angle between the planes, with the marker on the same side, and how far the view's centre lies off the free plane. The same plane with the marker on the other side gives a mirrored image, and the panel says so. Within 20° and 3 cm the nearest view is marked; within 10° and 1.5 cm the plane settles onto it when you let go of the control.</p>
-        <p><b>Back to the focused view</b> moves the probe in steps: slide and sweep first, then tilt and rock, then rotate. Each step starts before the previous step ends, so the move does not stop between steps. <b>Go to a view</b> takes the free plane to any standard view. For a view in the same window, the new view becomes the focused view. The controls then show the present plane relative to it and move to zero. For a view in another window, the probe first returns to the focused view. Then it moves across the chest to the new window.</p>
-        <h3>What each view shows</h3>
-        <p>The table lists the structures that ASE names for each view on show<span class="cite" data-ref="mitchell2019"></span>. Choose a structure to light the views that contain it. The figure shows each parent view only, not its zoomed or LV-focused variants.</p>
-        <h3>Why it matters</h3>
-        <ul>
-        <li>Confirm a finding in two views that cross it at different angles.</li>
-        <li>Some measurements need two views at one site: the LVOT diameter (zoomed parasternal long axis) and the LVOT velocity (apical five-chamber) must come from the same level<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li>Each apical view shows two opposite walls of the LV, and together the three views cover the 17 segments<span class="cite" data-ref="lang2015"></span>.</li>
-        </ul>
+        <p>A resting peak TR velocity of 2.9 m/s or more, or 2.8 m/s with two other signs, suggests pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Apical planes rotate about the LV long axis.</li>
-        <li>Short-axis planes are parallel slices.</li>
-        <li>Every structure appears in several views: use at least two.</li>
+        <li>SV = area × VTI; the diameter error is squared.</li>
+        <li>ΔP = 4v².</li>
+        <li>RVSP = 4 × TR² + RA pressure from the IVC.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -482,123 +457,148 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== Doppler -->
-    <article class="chapter" id="ch-shift">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">07</span><div><h2 class="ch-title">Shift</h2><p class="ch-kicker">The Doppler effect</p></div></div>
-      <p class="dek" data-part="dek">Doppler measures blood velocity from the frequency shift of the echoes. The beam angle and the Nyquist limit decide what the scanner can report.</p>
+    <!-- ======================================================== Views -->
+    <article class="chapter" id="ch-windows">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">07</span><div><h2 class="ch-title">Windows</h2><p class="ch-kicker">The views</p></div></div>
+      <p class="dek" data-part="dek">Each standard view is one plane through the heart. The probe position, the rotation of the marker and the tilt of the beam select the plane.</p>
       <div class="controls">
         <div class="control">
-          <span class="label">Mode</span>
-          <div class="seg" role="group" aria-label="Doppler mode" data-key="dmode">
-            <button type="button" data-val="pw">Pulsed wave</button><button type="button" data-val="cw">Continuous wave</button><button type="button" data-val="color">Color</button>
+          <span class="label">Window <output>keys 1–5</output></span>
+          <div class="seg" role="group" aria-label="Acoustic window" data-key="win">
+            <button type="button" data-val="plax">Parasternal long</button><button type="button" data-val="psax">Parasternal short</button><button type="button" data-val="apical">Apical</button><button type="button" data-val="sub">Subcostal</button><button type="button" data-val="ssn">Suprasternal</button>
           </div>
         </div>
-        <div class="row2">
-          <div class="control">
-            <label for="angle">Beam angle to flow <output data-for="angle"></output></label>
-            <input type="range" id="angle" data-key="angle" min="0" max="80" step="1">
-          </div>
-          <div class="control">
-            <label for="vtrue">True peak velocity <output data-for="vtrue"></output></label>
-            <input type="range" id="vtrue" data-key="vtrue" min="0.2" max="5" step="0.05">
-          </div>
-          <div class="control">
-            <label for="sdepth">Sample depth <output data-for="sdepth"></output></label>
-            <input type="range" id="sdepth" data-key="sdepth" min="3" max="20" step="0.5">
-          </div>
-          <div class="control">
-            <label for="f0">Doppler frequency <output data-for="f0"></output></label>
-            <input type="range" id="f0" data-key="f0" min="1.5" max="5" step="0.1">
-          </div>
+        <div class="control">
+          <span class="label">View <output>[ and ] step</output></span>
+          <div class="seg" role="group" aria-label="View" data-key="view" id="view-seg"></div>
+        </div>
+        <div class="toggles">
+          <label class="check"><input type="checkbox" id="w-cine" data-key="wcine"> Cine</label>
+          <label class="check"><input type="checkbox" id="w-labels" data-key="wlabels"> Labels</label>
+          <label class="check"><input type="checkbox" id="w-sec" data-key="wsec"> Cross-section</label>
         </div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
       <div class="prose" data-part="prose">
-        <h3>The Doppler equation</h3>
-        <p class="eq">Δf = 2 × f0 × v × cos θ ÷ c</p>
-        <p>Flow toward the transducer gives a positive shift, and flow away a negative shift<span class="cite" data-ref="quinones2002"></span>. The equation uses c = 1540 m/s<span class="cite" data-ref="quinones2002"></span>. With blood at about 1 m/s and MHz transducers, the shift is a few kHz: an audible sound<span class="cite" data-ref="iaea2014"></span>.</p>
-        <h3>The angle</h3>
-        <p>Cardiac Doppler assumes the beam is parallel to the flow (θ = 0)<span class="cite" data-ref="quinones2002"></span>. A 20° angle underestimates the velocity by only about 6%<span class="cite" data-ref="mitchell2019"></span>. At 60° the scanner reports half the true velocity (cos 60° = 0.5, a calculation). ASE does not recommend angle correction: align the beam with the flow, use several windows, and report the highest velocity<span class="cite" data-ref="mitchell2019,quinones2002"></span>.</p>
-        <h3>Pulsed wave and the Nyquist limit</h3>
-        <p>Pulsed-wave Doppler measures at one depth, but it must wait for each echo before the next pulse. The deepest sample sets the pulse repetition frequency (PRF), and the highest velocity without aliasing is c² ÷ (8 × depth × f0)<span class="cite" data-ref="iaea2014"></span>. The Nyquist limit is PRF ÷ 2; faster flow wraps to the other side of the baseline<span class="cite" data-ref="quinones2002"></span>.</p>
+        <h3>Four windows</h3>
+        <p>ASE describes four acoustic windows: parasternal, apical, subcostal and suprasternal notch<span class="cite" data-ref="mitchell2019"></span>. Parasternal and apical imaging is done with the patient on the left side; subcostal and suprasternal imaging with the patient supine<span class="cite" data-ref="mitchell2019"></span>.</p>
         <ul>
-        <li>Move the sample volume closer, or use a lower Doppler frequency, to increase the limit.</li>
-        <li>High-PRF Doppler adds sample volumes to increase the limit, and accepts range ambiguity<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li>Continuous wave has no Nyquist limit, and no depth information<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Parasternal long axis.</b> Third or fourth left intercostal space, marker toward the right shoulder, 9 to 10 o’clock<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Parasternal short axis.</b> Rotate 90° clockwise from the long axis; the marker points to the left shoulder<span class="cite" data-ref="mitchell2019"></span>. Tilt the beam to step from the great vessels to the mitral valve, the papillary muscles and the apex<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Apical.</b> At the apical impulse, marker at 4 to 5 o’clock<span class="cite" data-ref="mitchell2019"></span>. From the four-chamber view, rotate about 60° counterclockwise for the two-chamber view and 60° more for the three-chamber view<span class="cite" data-ref="mitchell2019"></span>. Tilt anteriorly for the five-chamber view<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Subcostal.</b> Below the xiphoid. It shows the heart, the pericardium, the RV free wall and the inferior vena cava<span class="cite" data-ref="mitchell2019"></span>; angled a little to the patient's left, the abdominal aorta.</li>
+        <li><b>Suprasternal.</b> It shows the ascending aorta, the arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
-        <h3>Color Doppler</h3>
-        <p>Color shows the mean velocity at many sample volumes<span class="cite" data-ref="iaea2014"></span>: red toward the transducer, blue away<span class="cite" data-ref="mitchell2019"></span>. It is a pulsed method, so it aliases too. ASE suggests a scale of 50 to 70 cm/s for routine color, and about 30 cm/s for slow flow<span class="cite" data-ref="mitchell2019"></span>. A small, shallow color box keeps the frame rate high<span class="cite" data-ref="mitchell2019"></span>.</p>
-        <p>A wide spectrum does not always mean turbulent flow; a large sample volume or high gain also widen it<span class="cite" data-ref="paeng2025,mitchell2019"></span>.</p>
+        <h3>The figure</h3>
+        <p>Left: the heart model cut on the imaging plane and seen square to it, turned as the echo is, with the structures named. Turn off <b>Cross-section</b> to see the whole heart with the plane through it. Right: the echo view that the same plane cuts from the model. A change of view moves the plane from where it is, as the probe would move.</p>
+        <p>Below the diaphragm, the liver, the inferior vena cava, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views; they are not part of the heart model and the 3D heart does not show them. Each view carries the class name that the lab uses to annotate it, where the lab's list has one. The model is a normal adult heart; in a patient, the position of the heart changes the angles.</p>
+        <h3>A good apical view</h3>
+        <p>An apical view that is not foreshortened shows about two thirds LV and one third LA along the long axis<span class="cite" data-ref="mitchell2019"></span>. A plane that misses the true apex makes the LV look short and round, and its volumes read low<span class="cite" data-ref="lang2015"></span>.</p>
+        <p>The British Society of Echocardiography lists a minimum dataset of views in scanning order, and asks for at least two cardiac cycles for each clip<span class="cite" data-ref="bse2020"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Measured velocity = true velocity × cos θ.</li>
-        <li>Deeper sample, higher frequency: lower Nyquist limit.</li>
-        <li>For high velocities, use continuous wave.</li>
+        <li>Parasternal long → short: rotate 90° clockwise.</li>
+        <li>Apical four → two → three chamber: rotate about 60° counterclockwise each step.</li>
+        <li>Measure the IVC 1 to 2 cm from the right atrium, in the subcostal view<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
-    <article class="chapter" id="ch-pressure">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">08</span><div><h2 class="ch-title">Pressure</h2><p class="ch-kicker">Flow and gradients</p></div></div>
-      <p class="dek" data-part="dek">Two Doppler calculations appear in almost every report: stroke volume from the LV outflow tract, and RV systolic pressure from the tricuspid jet.</p>
+    <article class="chapter" id="ch-planes">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">08</span><div><h2 class="ch-title">Planes</h2><p class="ch-kicker">All views in one heart</p></div></div>
+      <p class="dek" data-part="dek">The standard views are planes through one heart. Seen together, the planes show which views share a line, which views are parallel, and which views show a structure.</p>
       <div class="controls">
-        <div class="row2">
-          <div class="control">
-            <label for="sv">Stroke volume <output data-for="sv"></output></label>
-            <input type="range" id="sv" data-key="sv" min="20" max="120" step="1">
-          </div>
-          <div class="control">
-            <label for="lvotD">LVOT diameter <output data-for="lvotD"></output></label>
-            <input type="range" id="lvotD" data-key="lvotD" min="1.6" max="2.6" step="0.01">
-          </div>
-          <div class="control">
-            <label for="calErr">Caliper error <output data-for="calErr"></output></label>
-            <input type="range" id="calErr" data-key="calErr" min="-3" max="3" step="0.5">
-          </div>
-          <div class="control">
-            <label for="hr">Heart rate <output data-for="hr"></output></label>
-            <input type="range" id="hr" data-key="hr" min="40" max="140" step="1">
-          </div>
-          <div class="control">
-            <label for="trV">TR peak velocity <output data-for="trV"></output></label>
-            <input type="range" id="trV" data-key="trV" min="1.5" max="5" step="0.05">
-          </div>
-          <div class="control">
-            <label for="ivcD">IVC diameter <output data-for="ivcD"></output></label>
-            <input type="range" id="ivcD" data-key="ivcD" min="1" max="3" step="0.05">
+        <div class="control">
+          <span class="label">Sets</span>
+          <div class="seg" role="group" aria-label="View sets" id="planes-sets">
+            <button type="button" data-set="nine">Nine views</button><button type="button" data-set="long">Parasternal long</button><button type="button" data-set="stack">Short-axis stack</button><button type="button" data-set="apical">Apical</button><button type="button" data-set="all">All</button><button type="button" data-set="none">Clear</button>
           </div>
         </div>
         <div class="control">
-          <span class="label">IVC collapse with a sniff</span>
-          <div class="seg" role="group" aria-label="IVC collapse" data-key="ivcCollapse">
-            <button type="button" data-val="gt">More than 50%</button><button type="button" data-val="lt">Less than 50%</button>
+          <span class="label">Views <output>click: add, focus, remove</output></span>
+          <div class="chips" id="planes-views"></div>
+        </div>
+        <div class="control">
+          <span class="label">Find a structure</span>
+          <div class="seg" role="group" aria-label="Structure" data-key="pstruct"><button type="button" data-val="none">None</button></div>
+        </div>
+        <div class="control">
+          <span class="label">Look from</span>
+          <div class="seg" role="group" aria-label="Camera" data-key="pcam">
+            <button type="button" data-val="front">Front</button><button type="button" data-val="apex">The apex</button><button type="button" data-val="side">The side</button><button type="button" data-val="plane">Square to the plane</button>
+          </div>
+        </div>
+        <div class="toggles">
+          <label class="check"><input type="checkbox" data-key="pheart"> Heart</label>
+          <label class="check"><input type="checkbox" data-key="plines"> Where the focused plane crosses</label>
+          <label class="check"><input type="checkbox" data-key="pcut"> Cut at the focused plane</label>
+          <label class="check"><input type="checkbox" data-key="pfree"> Free plane</label>
+        </div>
+        <div class="free" id="planes-free" hidden>
+          <p class="free-head"><span>Free plane, from the focused view</span> <output id="pfree-state"></output></p>
+          <div class="row2">
+            <div class="control">
+              <label for="prot">Rotate, + clockwise <output data-for="prot"></output></label>
+              <input type="range" id="prot" data-key="prot" min="-180" max="180" step="1">
+            </div>
+            <div class="control">
+              <label for="ptilt">Tilt <output data-for="ptilt"></output></label>
+              <input type="range" id="ptilt" data-key="ptilt" min="-45" max="45" step="1">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="control">
+              <label for="prock">Rock, + to the right <output data-for="prock"></output></label>
+              <input type="range" id="prock" data-key="prock" min="-40" max="40" step="1">
+            </div>
+            <div class="control">
+              <label for="pslide">Slide <output data-for="pslide"></output></label>
+              <input type="range" id="pslide" data-key="pslide" min="-5" max="5" step="0.1">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="control">
+              <label for="psweep">Sweep <output data-for="psweep"></output></label>
+              <input type="range" id="psweep" data-key="psweep" min="-5" max="5" step="0.1">
+            </div>
+            <div class="control free-reset"><button type="button" class="chip" id="pfree-reset">Back to the focused view</button></div>
+          </div>
+          <div class="control free-goto">
+            <label for="pgoto">Go to a view</label>
+            <select id="pgoto"></select>
           </div>
         </div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
+      <div class="table-wrap"><table class="vt matrix" id="planes-matrix"></table></div>
       <div class="prose" data-part="prose">
-        <h3>Stroke volume</h3>
-        <p class="eq">SV = 0.785 × d² × VTI &nbsp;(d, VTI in cm; SV in mL)</p>
-        <p>The outflow tract is taken as a circle with diameter d<span class="cite" data-ref="zoghbi2017"></span>. Measure d in a zoomed parasternal long-axis view, inner edge to inner edge, in mid-systole<span class="cite" data-ref="baumgartner2017"></span>. Record the LVOT velocity with pulsed wave from the apical five-chamber or long-axis view, just below the valve<span class="cite" data-ref="mitchell2019"></span>. Take both at the same level<span class="cite" data-ref="baumgartner2017"></span>.</p>
-        <p>The diameter is squared, so a small error becomes a large one. Repeated LVOT measurements vary by 5 to 8%, the largest error in the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. A 2 mm error on a 2.0 cm outflow tract changes the stroke volume by about 20%.</p>
-        <p>Normal resting values from catheter studies: stroke volume 60 to 100 mL, cardiac output 4 to 8 L/min, cardiac index 2.5 to 4.0 L/min/m²<span class="cite" data-ref="humbert2022"></span>.</p>
-        <h3>Pressure from velocity</h3>
-        <p class="eq">ΔP = 4 v² &nbsp;·&nbsp; RVSP = 4 × (peak TR velocity)² + RA pressure</p>
-        <p>The simplified Bernoulli equation gives the pressure difference in mmHg from a velocity in m/s<span class="cite" data-ref="baumgartner2017"></span>. It holds when the velocity before the narrowing is 1.5 m/s or less<span class="cite" data-ref="quinones2002"></span>. The TR jet gives the pressure difference between the RV and the RA; add the RA pressure from the IVC<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <h3>How the views relate</h3>
         <ul>
-        <li>IVC ≤2.1 cm that collapses ≥50% with a sniff: RA pressure 3 mmHg.</li>
-        <li>IVC >2.1 cm that collapses &lt;50%: 15 mmHg. Other combinations: 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        <li>Report one number, not a range<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>The apical views share one line.</b> The four-, two- and three-chamber planes all contain the long axis of the LV. ASE rotates about 60° between them<span class="cite" data-ref="mitchell2019"></span>; the figure shows the angles of this model. Look from the apex to see the three planes as a star.</li>
+        <li><b>The short-axis levels are parallel.</b> Tilting the probe steps the plane from the mitral valve to the papillary muscles and the apex<span class="cite" data-ref="mitchell2019"></span>. Look from the side to see the stack.</li>
+        <li><b>Long and short axis cross at right angles.</b> The short axis comes from a 90° rotation of the long axis<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Small tilts make new views.</b> From the parasternal long axis, tilt toward the right hip for RV inflow, and anteriorly for RV outflow. From the four-chamber view, tilt anteriorly to add the LVOT and the aortic valve<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
-        <p>A resting peak TR velocity of 2.9 m/s or more, or 2.8 m/s with two other signs, suggests pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <h3>Free plane</h3>
+        <p>Turn on <b>Free plane</b> to move a plane away from the focused view the way a probe moves: rotate it about the beam, tilt the beam across the plane, rock it within the plane, slide the probe along the plane and sweep it across. The echo pane shows what that plane cuts; <b>Square to the plane</b> turns the 3D heart to face it. In this model, a turn of 60° counterclockwise from the four-chamber view gives the two-chamber view, and a turn of 120° gives the three-chamber view. A turn of 90° clockwise from the parasternal long axis gives the short axis at the mitral valve.</p>
+        <p>The probe stays in the window of the focused view, so the free plane is compared only with the standard views of that window. A plane from another window can cut the heart almost the same way (the apical and subcostal four-chamber planes do), but it is a different view. The comparison uses the angle between the planes, with the marker on the same side, and how far the view's centre lies off the free plane. The same plane with the marker on the other side gives a mirrored image, and the panel says so. Within 20° and 3 cm the nearest view is marked; within 10° and 1.5 cm the plane settles onto it when you let go of the control.</p>
+        <p><b>Back to the focused view</b> moves the probe in steps: slide and sweep first, then tilt and rock, then rotate. Each step starts before the previous step ends, so the move does not stop between steps. <b>Go to a view</b> takes the free plane to any standard view. For a view in the same window, the new view becomes the focused view. The controls then show the present plane relative to it and move to zero. For a view in another window, the probe first returns to the focused view. Then it moves across the chest to the new window.</p>
+        <h3>What each view shows</h3>
+        <p>The table lists the structures that ASE names for each view on show<span class="cite" data-ref="mitchell2019"></span>. Choose a structure to light the views that contain it. The figure shows each parent view only, not its zoomed or LV-focused variants.</p>
+        <h3>Why it matters</h3>
+        <ul>
+        <li>Confirm a finding in two views that cross it at different angles.</li>
+        <li>Some measurements need two views at one site: the LVOT diameter (zoomed parasternal long axis) and the LVOT velocity (apical five-chamber) must come from the same level<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>Each apical view shows two opposite walls of the LV, and together the three views cover the 17 segments<span class="cite" data-ref="lang2015"></span>.</li>
+        </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>SV = area × VTI; the diameter error is squared.</li>
-        <li>ΔP = 4v².</li>
-        <li>RVSP = 4 × TR² + RA pressure from the IVC.</li>
+        <li>Apical planes rotate about the LV long axis.</li>
+        <li>Short-axis planes are parallel slices.</li>
+        <li>Every structure appears in several views: use at least two.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -659,7 +659,8 @@
       <div class="prose" data-part="prose">
         <h3>Biplane volumes</h3>
         <p>The biplane method of disks (modified Simpson’s rule) is the recommended 2D method; use 3D when it is available and the images are good<span class="cite" data-ref="lang2015"></span>. Trace the LV at end-diastole and end-systole in the apical four- and two-chamber views. The software divides the LV into a stack of thin disks and adds their volumes. Do not calculate volumes from linear dimensions<span class="cite" data-ref="lang2015"></span>.</p>
-        <p>Foreshortened views make the volumes read low<span class="cite" data-ref="lang2015"></span>. In the figure, both volumes fall by the same fraction, so the EF changes little while the volumes are wrong.</p>
+        <p>Trace the border between the compacted myocardium and the cavity. Close it with a straight line across the mitral annulus. L runs from the middle of that line to the farthest point of the border. Use the longer L of the two views<span class="cite" data-ref="lang2015"></span>. In the figure, each echo view shows its tracing, L and the 20 disks. The drawing under each view is the model LV that the view cuts.</p>
+        <p>Foreshortened views make the volumes read low<span class="cite" data-ref="lang2015"></span>. A depth set on the LV makes foreshortening less likely<span class="cite" data-ref="lang2015"></span>. In a foreshortened view the apex looks more round<span class="cite" data-ref="mitchell2019"></span>. In the figure, both volumes fall by the same fraction, so the EF changes little while the volumes are wrong.</p>
         <h3>Normal values</h3>
         <ul>
         <li>LVEF normal: 52 to 72% in men, 54 to 74% in women. Mildly abnormal: 41 to 51% (men) or 41 to 53% (women); moderately 30 to 40%; severely below 30%<span class="cite" data-ref="lang2015"></span>.</li>

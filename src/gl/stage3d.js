@@ -1,4 +1,4 @@
-// Shared WebGL stage: the heart with the imaging plane (chapter 03 Windows).
+// Shared WebGL stage: the heart with the imaging plane (chapter 07 Windows).
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { Pencil } from './pencil.js';
 import { loadModel } from '../model3d.js';

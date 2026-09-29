@@ -1,4 +1,4 @@
-// 07 Shift: the Doppler equation. The beam meets moving blood at an angle; the scanner turns
+// 03 Shift: the Doppler equation. The beam meets moving blood at an angle; the scanner turns
 // the frequency shift into velocity, assumes the angle is zero, and (in pulsed modes) can only
 // measure up to the Nyquist limit set by the sample depth.
 import { Sheet, clamp, mix, MONO, SANS, rng } from '../sketch.js';
@@ -91,12 +91,14 @@ function draw(sh, t) {
     ctx.setLineDash([]);
   }
   ctx.restore();
-  // flow arrow, downstream
-  const ax = Sx - fx * (narrow ? 90 : 150) + nx * (vr + 18), ay = Sy - fy * (narrow ? 90 : 150) + ny * (vr + 18);
+  // flow arrow, upstream of the sample, on the side away from the sample volume label; closer
+  // on phones, where the space under the sample is short
+  const back = narrow ? 56 : 150, side = -(vr + 18);
+  const ax = Sx - fx * back + nx * side, ay = Sy - fy * back + ny * side;
   sh.line(ax, ay, ax + fx * 44, ay + fy * 44, { width: 1.3, rough: 0.3, seed: 4, stroke: t.flag });
   sh.line(ax + fx * 44, ay + fy * 44, ax + fx * 36 + nx * 5, ay + fy * 36 + ny * 5, { width: 1.3, rough: 0.2, seed: 5, stroke: t.flag });
   sh.line(ax + fx * 44, ay + fy * 44, ax + fx * 36 - nx * 5, ay + fy * 36 - ny * 5, { width: 1.3, rough: 0.2, seed: 6, stroke: t.flag });
-  sh.text('flow', ax + nx * 16, ay + ny * 16 + 4, { size: 17 * s, color: t.flag, align: 'center' });
+  sh.text('flow', ax + fx * 22 - nx * 24, ay + fy * 22 - ny * 24 + 4, { size: 17 * s, color: t.flag, align: 'center' });   // beside the arrow's middle
   // beam
   const end = st.dmode === 'cw' ? topH - Ty - 6 : Sy - Ty;
   sh.line(Tx, Ty, Tx, Ty + end, { width: st.dmode === 'cw' ? 2 : 1.4, rough: 0.3, seed: 7, stroke: t.accent, dash: st.dmode === 'cw' ? undefined : [7, 5] });
@@ -196,7 +198,7 @@ const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 
 export default {
   key: 'shift',
-  part: 'doppler',
+  part: 'physics',
   title: 'Shift',
   dwell: 16,
   defaults: { dmode: 'pw', angle: 0, vtrue: 1.0, sdepth: 10, f0: 2.5 },

@@ -1,4 +1,4 @@
-// 14 Mitral regurgitation: one slider from no leak to severe primary MR with LV dysfunction.
+// 15 Mitral regurgitation: one slider from no leak to severe primary MR with LV dysfunction.
 // The orifice drives the numbers (PISA, volume, fraction); the chambers, the pulmonary veins and
 // the mitral inflow follow. Values are illustrative, set inside the ASE 2017 bands.
 import { Sheet, clamp, MONO, SANS } from '../sketch.js';

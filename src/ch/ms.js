@@ -1,4 +1,4 @@
-// 13 Mitral stenosis: one slider from a normal mitral valve to severe rheumatic stenosis. The
+// 14 Mitral stenosis: one slider from a normal mitral valve to severe rheumatic stenosis. The
 // area sets the pressure half-time (220 / area) and, with the heart rate, the mean gradient;
 // the LA enlarges, the pulmonary pressure rises, the RV follows. Illustrative values.
 import { Sheet, clamp, MONO } from '../sketch.js';

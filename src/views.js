@@ -197,7 +197,7 @@ export const HAS = {
   ssn_sax: ['arch', 'pa', 'la', 'svc'],
 };
 
-/** Views with a plane of their own, in scanning order (chapter 04). */
+/** Views with a plane of their own, in scanning order (chapter 08). */
 export const PLANE_VIEWS = ['plax', 'plax_asc', 'rv_in', 'rv_out', 'psax_av', 'psax_pa', 'psax_tv', 'psax_cor', 'psax_mv', 'psax_pm', 'psax_ap',
   'a4c', 'a4c_rv', 'a5c', 'a2c', 'a3c', 'sc4c', 'sc_ivc', 'sc_aorta', 'ssn', 'ssn_sax'];
 
