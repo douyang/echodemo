@@ -506,6 +506,43 @@ export class EchoView {
     this.fanMat.color.setStyle(t.ink);
     this.fanLineMat.color.setStyle(t.ink);
     this.probe.material.color.setStyle(t.ink);
+    if (this.bodyKey) this.bodyKey.retheme(t);
+  }
+
+  /**
+   * Probe and body (chapter 07): the whole heart from the front, head up, with the plane and
+   * the probe, and the body key in a corner (gl/bodykey.js). Off: the cut, seen square to it.
+   */
+  async setBody(on) {
+    this.bodyOn = !!on;
+    if (!this.stage) return;
+    if (on && !this.bodyKey) {
+      const { BodyKey } = await import('./gl/bodykey.js');
+      const h = this.model.heart.meshes;
+      const box = new THREE.Box3().setFromObject(h.Pericardium || h.Myocardium);
+      this.bodyKey = new BodyKey(box.getCenter(new THREE.Vector3()), this.model.anat.axis);
+      this.bodyKey.retheme(tokens());
+    }
+    if (!!on !== this.bodyOn) return;   // switched again while the key loaded
+    this.stage.inset = on ? this.bodyKey : null;
+    this.cutOn = !on;
+    if (on) this.stage.heart.setCut(null);
+    const g = this.geoms[this.view];
+    if (!g) return;
+    const spec = this.specOf(this.view);
+    this._place3d(this.g, spec);
+    if (on) {
+      this._keySite();
+      this.stage.opts.labeled = false;
+      this.stage.view(new THREE.Vector3(-0.38, -0.2, -1).normalize(), BODY.sup.clone(), 3.0, this.stage.center.clone());
+    } else this._aim(g, spec);
+  }
+
+  /** The body key's probe at this view's window, its beam toward the middle of the sector. */
+  _keySite() {
+    const g = this.geoms[this.view];
+    if (!this.bodyKey || !g || !VIEWS[this.view]) return;
+    this.bodyKey.setView(VIEWS[this.view].win, g.O.clone().addScaledVector(g.d, this.specOf(this.view).depth * 0.45));
   }
 
   /** The view's settings; a chapter may set its own depth and sector width (chapter 02). */
@@ -556,7 +593,8 @@ export class EchoView {
     }
     this.fan.visible = this.fanLine.visible = this.probe.visible = true;
     this._place3d(this.g, spec);
-    this._aim(g1, spec);
+    if (this.bodyOn) this._keySite();   // the camera stays where the viewer put it
+    else this._aim(g1, spec);
   }
 
   /**
@@ -578,7 +616,7 @@ export class EchoView {
   setSection(on) {
     this.section = !!on;
     const g = this.geoms[this.view];
-    if (g) this._aim(g, this.specOf(this.view));
+    if (g && !this.bodyOn) this._aim(g, this.specOf(this.view));
   }
 
   /**

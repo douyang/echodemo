@@ -107,6 +107,7 @@ export class Stage3D {
     // look: draft 2 only, 0 line, 1 mass, 2 detail, 3 reality
     this.opts = { a: 0, beat: true, peri: true, cut: 'a4c', labels: true, look: 0 };
     this.onFrame = null;
+    this.inset = null;    // a key in a corner (gl/bodykey.js): frame(camera, w, h) -> { scene, camera, rect }
     this.tween = null;
     this.ready = this._load();
   }
@@ -257,6 +258,7 @@ export class Stage3D {
       groundUp: o.groundUp,
       site: o.site,
       overlayScene: this.overlayScene.children.length ? this.overlayScene : null,
+      inset: this.inset ? this.inset.frame(this.camera, this.pencil.w, this.pencil.h) : null,
     });
   }
 

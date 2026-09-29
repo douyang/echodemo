@@ -282,5 +282,24 @@ export class Pencil {
       r.clearDepth();
       r.render(opts.overlayScene, camera);
     }
+    // an inset in a corner (the body key, chapter 07): its own scene and camera on paper
+    if (opts.inset) {
+      const { scene: s2, camera: c2, rect, clear, border } = opts.inset;
+      const y = this.h - rect.y - rect.h;
+      r.setScissorTest(true);
+      if (border) {
+        r.setScissor(rect.x - 1, y - 1, rect.w + 2, rect.h + 2);
+        r.setClearColor(border, 1);
+        r.clear(true, false, false);
+      }
+      r.setScissor(rect.x, y, rect.w, rect.h);
+      r.setViewport(rect.x, y, rect.w, rect.h);
+      r.setClearColor(clear, 1);
+      r.clear(true, true, false);
+      r.render(s2, c2);
+      r.setScissorTest(false);
+      r.setViewport(0, 0, this.w, this.h);
+      r.setClearColor(0x000000, 0);
+    }
   }
 }

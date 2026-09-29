@@ -81,7 +81,7 @@ async function ensure() {
 /** Tags for the cross-section, in columns beside the sector. */
 function sectionTags(stg) {
   if (!labels) return;
-  if (!st.wsec || !st.wlabels) { labels.update([], null, 1, 1); return; }
+  if (st.wbody || !st.wlabels) { labels.update([], null, 1, 1); return; }
   const host = fig.querySelector('.pane-3d').getBoundingClientRect();
   labels.update(echo.sectionLabels(stg.state.s), echo.sectorBox(), host.width, host.height);
 }
@@ -90,7 +90,7 @@ function onFrame(stg) {
   if (!echo) return;
   sectionTags(stg);
   if (tick++ % 2) return;   // about 30 frames a second is enough for the echo
-  echo.labels = st.wlabels;
+  echo.labels = false;      // the labels name the structures on the model, not on the echo
   echo.calipers = !st.wcine;
   echo.frame({ ...stg.state });
   const m = echo.measure;
@@ -109,8 +109,9 @@ async function enter() {
   stage.heart.group.visible = true;
   stage.heart.setPericardium(true);
   echo.overlay.visible = true;
-  echo.section = st.wsec;
+  echo.section = true;
   echo.setView(st.view);
+  echo.setBody(st.wbody);
   stage.onFrame = onFrame;
   fig.classList.add('gl-ready');
   stage.resize();
@@ -123,8 +124,9 @@ export default {
   part: 'views',
   title: 'Windows',
   dwell: 30,
-  defaults: { win: 'plax', view: 'plax', wcine: true, wlabels: true, wsec: true, wmeas: '' },
-  watch: ['win', 'view', 'wcine', 'wlabels', 'wsec', 'wmeas'],
+  // wcine: the beat runs all the time (no control); off, the PLAX calipers would show
+  defaults: { win: 'plax', view: 'plax', wcine: true, wlabels: true, wbody: false, wmeas: '' },
+  watch: ['win', 'view', 'wcine', 'wlabels', 'wbody', 'wmeas'],
   figure(f) { fig = f; return null; },
   init({ state, set }) {
     st = state;
@@ -136,7 +138,7 @@ export default {
   leave() {
     on = false;
     if (labels) labels.update([], null, 1, 1);
-    if (stage) stage.opts.labeled = false;
+    if (stage) { stage.opts.labeled = false; stage.inset = null; }   // the stage is shared with 08 Planes
     if (echo && echo.overlay) echo.overlay.visible = false;
     if (stage && stage.onFrame === onFrame) { stage.stop(); stage.onFrame = null; }
   },
@@ -158,13 +160,13 @@ export default {
       const lab = fig && fig.querySelector('#windows-label');
       if (lab) lab.textContent = VIEWS[s.view].name;
     }
-    if ('wsec' in ch || 'chapter' in ch) {
+    if ('wbody' in ch || 'chapter' in ch) {
       const l3 = fig && fig.querySelector('#windows-3dlabel');
-      if (l3) l3.textContent = s.wsec ? 'Cross-section' : 'Imaging plane';
+      if (l3) l3.textContent = s.wbody ? 'Probe and body' : 'Cross-section';
     }
     if (!stage || !echo || !on) return;
     if ('view' in ch) echo.setView(s.view);
-    if ('wsec' in ch) echo.setSection(s.wsec);
+    if ('wbody' in ch) echo.setBody(s.wbody);
     if ('wcine' in ch) stage.opts.beat = s.wcine;
   },
   key_(k, set, s) {
@@ -193,7 +195,6 @@ export default {
     let live = `<b>${v.name}.</b> `;
     if (!v.plane) live += 'The heart model ends at the diaphragm, so this view has no slice here. ';
     else if (s.view === 'plax' && m && !s.wcine) live += `Calipers at end-diastole, square to the long axis: septum ${(m.ivs / 10).toFixed(1)} cm, cavity ${(m.lvid / 10).toFixed(1)} cm, inferolateral wall ${(m.pw / 10).toFixed(1)} cm. `;
-    else if (s.view === 'plax') live += 'Stop the cine to measure the walls and cavity at end-diastole. ';
     else if (v.zoom) live += `A ${v.zoom.w} cm box, magnified. `;
     live += `<span class="note">Views and measurements: ASE${cite('mitchell2019')}. Lab class: ${v.lab || 'none in the list'}</span>`;
     return { readouts, live };

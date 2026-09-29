@@ -473,9 +473,8 @@
           <div class="seg" role="group" aria-label="View" data-key="view" id="view-seg"></div>
         </div>
         <div class="toggles">
-          <label class="check"><input type="checkbox" id="w-cine" data-key="wcine"> Cine</label>
           <label class="check"><input type="checkbox" id="w-labels" data-key="wlabels"> Labels</label>
-          <label class="check"><input type="checkbox" id="w-sec" data-key="wsec"> Cross-section</label>
+          <label class="check"><input type="checkbox" id="w-body" data-key="wbody"> Probe and body</label>
         </div>
       </div>
       <dl class="readouts"></dl>
@@ -491,7 +490,7 @@
         <li><b>Suprasternal.</b> It shows the ascending aorta, the arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
         <h3>The figure</h3>
-        <p>Left: the heart model cut on the imaging plane and seen square to it, turned as the echo is, with the structures named. Turn off <b>Cross-section</b> to see the whole heart with the plane through it. Right: the echo view that the same plane cuts from the model. A change of view moves the plane from where it is, as the probe would move.</p>
+        <p>Left: the heart model cut on the imaging plane and seen square to it, turned as the echo is. <b>Labels</b> names the structures on the model. <b>Probe and body</b> shows the whole heart from the front with the plane through it and the probe, and a small figure of the body: the probe on the skin at the window, the heart inside the chest, and the head and the patient's left, turned as the heart is. Right: the echo view that the same plane cuts from the model. A change of view moves the plane from where it is, as the probe would move.</p>
         <p>Below the diaphragm, the liver, the inferior vena cava, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views; they are not part of the heart model and the 3D heart does not show them. Each view carries the class name that the lab uses to annotate it, where the lab's list has one. The model is a normal adult heart; in a patient, the position of the heart changes the angles.</p>
         <h3>A good apical view</h3>
         <p>An apical view that is not foreshortened shows about two thirds LV and one third LA along the long axis<span class="cite" data-ref="mitchell2019"></span>. A plane that misses the true apex makes the LV look short and round, and its volumes read low<span class="cite" data-ref="lang2015"></span>.</p>
@@ -743,7 +742,6 @@
           <input type="range" id="fstate" data-key="fstate" min="0" max="3" step="0.01">
           <div class="grades" id="fill-grades" aria-hidden="true"></div>
         </div>
-        <div class="toggles"><label class="check"><input type="checkbox" data-key="fCine"> Cine</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
@@ -805,7 +803,6 @@
           <input type="range" id="asS" data-key="asS" min="0" max="1" step="0.005">
           <div class="grades" id="as-grades" aria-hidden="true"></div>
         </div>
-        <div class="toggles"><label class="check"><input type="checkbox" data-key="asCine"> Cine</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
@@ -855,7 +852,6 @@
           <input type="range" id="arS" data-key="arS" min="0" max="1" step="0.005">
           <div class="grades" id="ar-grades" aria-hidden="true"></div>
         </div>
-        <div class="toggles"><label class="check"><input type="checkbox" data-key="arCine"> Cine</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
@@ -901,7 +897,6 @@
           <label for="hr13">Heart rate <output data-for="hr"></output></label>
           <input type="range" id="hr13" data-key="hr" min="40" max="140" step="1">
         </div>
-        <div class="toggles"><label class="check"><input type="checkbox" data-key="msCine"> Cine</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
@@ -942,7 +937,6 @@
           <input type="range" id="mrS" data-key="mrS" min="0" max="1" step="0.005">
           <div class="grades" id="mr-grades" aria-hidden="true"></div>
         </div>
-        <div class="toggles"><label class="check"><input type="checkbox" data-key="mrCine"> Cine</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
@@ -991,7 +985,6 @@
           <input type="range" id="trS" data-key="trS" min="0" max="1" step="0.005">
           <div class="grades" id="tr-grades" aria-hidden="true"></div>
         </div>
-        <div class="toggles"><label class="check"><input type="checkbox" data-key="trCine"> Cine</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
@@ -1035,7 +1028,6 @@
           <input type="range" id="periS" data-key="periS" min="0" max="1" step="0.005">
           <div class="grades" id="peri-grades" aria-hidden="true"></div>
         </div>
-        <div class="toggles"><label class="check"><input type="checkbox" data-key="periCine"> Cine</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
