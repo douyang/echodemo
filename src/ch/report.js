@@ -55,7 +55,8 @@ const CASES = {
   },
 };
 
-const GO = (key, n) => `<a class="go" href="#${key}" data-go="${key}">${n} ${key[0].toUpperCase()}${key.slice(1)} →</a>`;
+const NAME = { eject: 'Eject', fill: 'Fill', pressure: 'Pressure', as: 'Aortic stenosis', mr: 'Mitral regurgitation' };
+const GO = (key, n) => `<a class="go" href="#${key}" data-go="${key}">${n} ${NAME[key] || key} →</a>`;
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 const f1 = (v) => v.toFixed(1), f0 = (v) => v.toFixed(0);
 
@@ -137,8 +138,8 @@ export function buildReport(caseId, sex) {
       <div class="finding"><p><b>Right ventricle.</b> ${langRV(c.rvb)} RV systolic function is ${rvFun} (TAPSE ${f0(c.tapse)} mm, S′ ${f1(c.sPrime)} cm/s).</p>${GO('eject', '09')}</div>
       <div class="finding"><p><b>Left atrium.</b> ${la === 'normal' ? 'Normal size' : `${cap(la)} dilated`} (LA volume index ${f0(c.lavi)} mL/m²).</p>${GO('fill', '11')}</div>
       <div class="finding"><p><b>Right atrium.</b> Normal size.</p><span></span></div>
-      <div class="finding"><p><b>Aortic valve.</b> ${esc(c.av.text)}</p>${GO('narrow', '12')}</div>
-      <div class="finding"><p><b>Mitral valve.</b> ${esc(c.mv.text)}</p>${GO('leak', '13')}</div>
+      <div class="finding"><p><b>Aortic valve.</b> ${esc(c.av.text)}</p>${GO('as', '12')}</div>
+      <div class="finding"><p><b>Mitral valve.</b> ${esc(c.mv.text)}</p>${GO('mr', '14')}</div>
       <div class="finding"><p><b>Tricuspid valve.</b> ${esc(c.trText)} Peak TR velocity ${f1(c.tr)} m/s; estimated RV systolic pressure ${rvsp} mmHg.</p>${GO('pressure', '08')}</div>
       <div class="finding"><p><b>Pulmonic valve.</b> Normal in structure. Trace pulmonic regurgitation.</p><span></span></div>
       <div class="finding"><p><b>Aorta.</b> The aortic root and proximal ascending aorta are normal in size.</p><span></span></div>

@@ -86,15 +86,27 @@
     </figure>
     <figure class="fig" id="fig-fill">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Mitral inflow, septal and lateral tissue Doppler and tricuspid regurgitation Doppler, with the diastolic function algorithm and the path the current values take.</figcaption>
+      <figcaption class="sr-only">Diastolic function from normal to restrictive filling: an apical four-chamber view with the left atrium to scale, mitral inflow, septal and lateral tissue Doppler, pulmonary vein flow, left atrial strain and the tricuspid jet, with the 2025 diastolic algorithm and the path the current values take.</figcaption>
     </figure>
-    <figure class="fig" id="fig-narrow">
+    <figure class="fig" id="fig-as">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Aortic stenosis: flow through the outflow tract and the narrowed valve, with pulsed-wave and continuous-wave Doppler and a severity scale. Mitral stenosis: mitral inflow Doppler with the pressure half-time.</figcaption>
+      <figcaption class="sr-only">Aortic stenosis from a normal valve to severe stenosis and then low flow: a parasternal long-axis view with the thickened walls and the calcified valve, the short-axis valve orifice to scale, continuous-wave and outflow Doppler, mitral inflow, and the measurements against their cut-offs.</figcaption>
     </figure>
-    <figure class="fig" id="fig-leak">
+    <figure class="fig" id="fig-ms">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">A regurgitant jet in color Doppler with its flow convergence zone and vena contracta, the continuous-wave Doppler signal, and the proximal isovelocity surface area geometry.</figcaption>
+      <figcaption class="sr-only">Mitral stenosis from a normal valve to severe stenosis: a parasternal long-axis view with doming leaflets and a large left atrium, the short-axis orifice to scale, continuous-wave mitral inflow with the pressure half-time, the tricuspid jet, and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-mr">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Mitral regurgitation from mild to severe: an apical four-chamber view with the color jet and flow convergence, the continuous-wave jet, pulmonary vein and mitral inflow Doppler, and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-ar">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Aortic regurgitation from mild to severe: a parasternal long-axis view with the color jet in the outflow tract and a dilating left ventricle, the continuous-wave jet with its pressure half-time, flow reversal in the descending aorta, outflow Doppler, and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-tr">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Tricuspid regurgitation from mild to torrential: an apical four-chamber view with the color jet and a dilating right heart, the continuous-wave jet, hepatic vein flow, the inferior vena cava on M-mode, a short-axis view of the septum, and the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-report">
       <div class="sheet-host" id="report-host"></div>
@@ -665,13 +677,17 @@
 
     <article class="chapter" id="ch-fill">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">11</span><div><h2 class="ch-title">Fill</h2><p class="ch-kicker">Diastolic function</p></div></div>
-      <p class="dek" data-part="dek">Diastolic function decides how high the LA pressure must be to fill the LV. The 2025 ASE algorithm estimates that pressure from a small set of measurements.</p>
+      <p class="dek" data-part="dek">Diastolic function decides how high the LA pressure must be to fill the LV. As the LV relaxes more slowly and then stiffens, the inflow, the annulus, the pulmonary veins and the LA change together; the 2025 ASE algorithm reads them.</p>
       <div class="controls">
-        <div class="control">
-          <label for="fstate">Filling pattern <output data-for="fstate"></output></label>
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="fstate">Filling pattern <output data-for="fstate"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
           <input type="range" id="fstate" data-key="fstate" min="0" max="3" step="0.01">
-          <div class="ticks" aria-hidden="true"><span>Normal</span><span>Slow relaxation</span><span>High LAP</span><span>Restrictive</span></div>
+          <div class="grades" id="fill-grades" aria-hidden="true"></div>
         </div>
+        <div class="toggles"><label class="check"><input type="checkbox" data-key="fCine"> Cine</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
@@ -682,6 +698,13 @@
         </table>
       </div>
       <div class="prose" data-part="prose">
+        <h3>As the grade rises</h3>
+        <ol class="steps">
+        <li><b>Grade 1.</b> Relaxation slows: e′ falls, and E/A falls to 0.8 or less. E/e′ and the PA pressure stay normal, so the LA pressure is normal<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>Grade 2.</b> The LA pressure rises (mild to moderate) and E/A stays below 2: the inflow can look normal again, a pseudonormal pattern<span class="cite" data-ref="nagueh2025"></span>. E/e′ and the TR velocity rise; pulmonary vein S/D falls to 0.67 or less; LA reservoir strain falls to 18% or less<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>Grade 3.</b> A marked rise in LA pressure with E/A ≥2, the restrictive pattern<span class="cite" data-ref="nagueh2025"></span>. With a normal EF, a restrictive pattern with a dilated LA carries a poor prognosis<span class="cite" data-ref="nagueh2025"></span>.</li>
+        </ol>
+        <p>The values on the page are illustrative. With a normal EF, S/D can stay above 0.67 although the filling pressures are high; LA strain ≤18% is specific but can miss raised pressure<span class="cite" data-ref="nagueh2025"></span>.</p>
         <h3>What the signals mean</h3>
         <ul>
         <li><b>Mitral E and A.</b> Early filling (E) and atrial filling (A). Slow relaxation decreases early filling relative to late filling, so E/A falls<span class="cite" data-ref="nagueh2025"></span>.</li>
@@ -714,126 +737,230 @@
     </article>
 
     <!-- ======================================================== V Valves -->
-    <article class="chapter" id="ch-narrow">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">12</span><div><h2 class="ch-title">Narrow</h2><p class="ch-kicker">Stenosis</p></div></div>
-      <p class="dek" data-part="dek">A stenotic valve forces the blood through a small orifice at high velocity. Echo grades the stenosis from velocity, gradient and valve area, and checks the flow before it accepts a low gradient.</p>
+    <article class="chapter" id="ch-as">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">12</span><div><h2 class="ch-title">Aortic stenosis</h2><p class="ch-kicker">Pressure load</p></div></div>
+      <p class="dek" data-part="dek">As a calcified aortic valve narrows, the jet speeds up and the LV wall thickens against the pressure. Late, the LV fails: the stroke volume falls, and the gradient falls with it.</p>
       <div class="controls">
-        <div class="control">
-          <span class="label">Valve</span>
-          <div class="seg" role="group" aria-label="Valve" data-key="sten">
-            <button type="button" data-val="as">Aortic</button><button type="button" data-val="ms">Mitral</button>
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="asS">Severity <output data-for="asS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
           </div>
+          <input type="range" id="asS" data-key="asS" min="0" max="1" step="0.005">
+          <div class="grades" id="as-grades" aria-hidden="true"></div>
         </div>
-        <div class="row2">
-          <div class="control" data-show-sten="as">
-            <label for="ava">Aortic valve area <output data-for="ava"></output></label>
-            <input type="range" id="ava" data-key="ava" min="0.4" max="3.5" step="0.05">
-          </div>
-          <div class="control" data-show-sten="ms">
-            <label for="mva">Mitral valve area <output data-for="mva"></output></label>
-            <input type="range" id="mva" data-key="mva" min="0.6" max="4.5" step="0.05">
-          </div>
-          <div class="control">
-            <label for="sv11">Stroke volume <output data-for="sv"></output></label>
-            <input type="range" id="sv11" data-key="sv" min="20" max="120" step="1">
-          </div>
-          <div class="control" data-show-sten="ms">
-            <label for="hr11">Heart rate <output data-for="hr"></output></label>
-            <input type="range" id="hr11" data-key="hr" min="40" max="140" step="1">
-          </div>
-        </div>
+        <div class="toggles"><label class="check"><input type="checkbox" data-key="asCine"> Cine</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="as-table"></table></div>
       <div class="prose" data-part="prose">
-        <h3>Aortic stenosis</h3>
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Progressive stenosis.</b> Mild: peak velocity 2.0–2.9 m/s or mean gradient below 20 mmHg. Moderate: 3.0–3.9 m/s or 20–39 mmHg. Early LV diastolic dysfunction can be present; the LVEF is normal<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Severe stenosis.</b> Peak velocity ≥4 m/s or mean gradient ≥40 mmHg; the area is typically ≤1.0 cm². The LV shows diastolic dysfunction and mild hypertrophy, with a normal LVEF<span class="cite" data-ref="otto2020"></span>. Very severe: ≥5 m/s or ≥60 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>LV dysfunction.</b> Severe stenosis with an LVEF below 50%<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Low flow, low gradient.</b> The failing LV cannot open the valve fully: area ≤1.0 cm² with a velocity below 4 m/s or a mean gradient below 40 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
+        </ol>
+        <p>The letter stages also need the symptoms: stage C has none, stage D has them<span class="cite" data-ref="otto2020"></span>. The page follows the echo findings only.</p>
+        <h3>Grading</h3>
         <p class="eq">AVA = LVOT area × VTI(LVOT) ÷ VTI(AV) &nbsp;·&nbsp; mean gradient = mean of 4v² over ejection</p>
-        <p>Find the highest jet velocity with continuous wave from several windows, and report the window; do not use angle correction<span class="cite" data-ref="baumgartner2017"></span>. The mean gradient is the average of the instantaneous gradients, not 4 × (mean velocity)²<span class="cite" data-ref="baumgartner2017"></span>. The valve area comes from the continuity equation<span class="cite" data-ref="baumgartner2017"></span>.</p>
         <ul>
-        <li>Severe: peak velocity ≥4.0 m/s, mean gradient ≥40 mmHg, or area &lt;1.0 cm². Any one suggests severe stenosis; ideally all three agree<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li>Very severe: peak velocity ≥5 m/s or mean gradient ≥60 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
-        <li>The velocity ratio (LVOT ÷ AV) below 0.25 also indicates severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>Find the highest jet velocity with continuous wave from several windows, and report the window; do not use angle correction<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>Any one of peak velocity ≥4.0 m/s, mean gradient ≥40 mmHg or area &lt;1.0 cm² suggests severe stenosis; ideally all three agree<span class="cite" data-ref="baumgartner2017"></span>. A velocity ratio below 0.25 also indicates severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>With more severe obstruction the peak comes later in systole and the curve is more rounded; mild stenosis peaks early, with a triangular curve<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>At normal flow, a mean gradient of 40 mmHg matches an area nearer 0.8 than 1.0 cm²<span class="cite" data-ref="baumgartner2017"></span>. The “area” band on the slider is this gap.</li>
         </ul>
-        <h3>When area and gradient disagree</h3>
-        <p>At normal flow, a mean gradient of 40 mmHg matches an area nearer 0.8 than 1.0 cm²<span class="cite" data-ref="baumgartner2017"></span>. The figure shows this. When the area is below 1.0 cm² and the gradient is low, check the flow: a stroke volume index below 35 mL/m² is low flow<span class="cite" data-ref="baumgartner2017"></span>.</p>
+        <h3>When the gradient falls</h3>
         <ul>
-        <li><b>Low flow, low gradient, reduced EF.</b> Low-dose dobutamine: a fixed area ≤1.0 cm² with a velocity ≥4 m/s at any flow confirms severe stenosis<span class="cite" data-ref="baumgartner2017,otto2020"></span>.</li>
-        <li><b>Paradoxical low flow, normal EF.</b> Small LV, low stroke volume: the stenosis can be severe with a low gradient<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li><b>Normal flow, low gradient.</b> Recheck the measurements; this behaves like moderate stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        </ul>
-        <h3>Mitral stenosis</h3>
-        <p class="eq">MVA = 220 ÷ pressure half-time</p>
-        <p>The pressure half-time is the time for the peak gradient to fall by half; the velocity falls to about 70% of its peak<span class="cite" data-ref="pandian2023,quinones2002"></span>. The constant 220 is empirical<span class="cite" data-ref="baumgartner2009"></span>. Hatle described the method in 1979<span class="cite" data-ref="hatle1979"></span>.</p>
-        <ul>
-        <li>Severe: area ≤1.5 cm² and pressure half-time ≥150 ms<span class="cite" data-ref="otto2020,pandian2023"></span>.</li>
-        <li>The mean gradient changes with heart rate and flow, so it is not a severity criterion; report it with the heart rate<span class="cite" data-ref="otto2020"></span>.</li>
-        <li>The half-time is not reliable just after balloon valvotomy, with severe aortic regurgitation, or with abnormal LV compliance<span class="cite" data-ref="baumgartner2009"></span>.</li>
+        <li>A stroke volume index below 35 mL/m² is low flow<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li><b>Low EF.</b> Area &lt;1.0 cm², mean gradient &lt;40 mmHg, LVEF &lt;50%: classical low-flow, low-gradient stenosis<span class="cite" data-ref="baumgartner2017"></span>. Low-dose dobutamine: a velocity ≥4.0 m/s with an area that stays ≤1.0 cm² confirms severe stenosis; an area that rises above 1.0 cm² suggests pseudo-severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li><b>Normal EF.</b> A small LV with a low stroke volume can give a low gradient through a severe stenosis: paradoxical low flow<span class="cite" data-ref="baumgartner2017"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Severe AS: 4 m/s, 40 mmHg, 1.0 cm², ideally all three.</li>
-        <li>Area small but gradient low: check the stroke volume index.</li>
-        <li>Severe MS: area ≤1.5 cm²; report the gradient with the heart rate.</li>
+        <li>Severe: 4 m/s, 40 mmHg, 1.0 cm², ideally all three.</li>
+        <li>The LV thickens first; the EF falls late.</li>
+        <li>A falling gradient with a falling EF is not a better valve: check the flow.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
-    <article class="chapter" id="ch-leak">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">13</span><div><h2 class="ch-title">Leak</h2><p class="ch-kicker">Regurgitation</p></div></div>
-      <p class="dek" data-part="dek">A regurgitant valve leaks through an effective orifice. Echo grades the leak from the orifice area, the regurgitant volume and signs that support them.</p>
+    <article class="chapter" id="ch-ms">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">13</span><div><h2 class="ch-title">Mitral stenosis</h2><p class="ch-kicker">Inflow obstruction</p></div></div>
+      <p class="dek" data-part="dek">In rheumatic mitral stenosis the commissures fuse and the leaflets dome. As the orifice narrows, the LA pressure rises: the LA enlarges, the pulmonary pressure rises and the right heart follows.</p>
       <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="msS">Severity <output data-for="msS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="msS" data-key="msS" min="0" max="1" step="0.005">
+          <div class="grades" id="ms-grades" aria-hidden="true"></div>
+        </div>
         <div class="control">
-          <span class="label">Valve</span>
-          <div class="seg" role="group" aria-label="Valve" data-key="regv">
-            <button type="button" data-val="mr">Mitral</button><button type="button" data-val="ar">Aortic</button><button type="button" data-val="tr">Tricuspid</button>
-          </div>
+          <label for="hr13">Heart rate <output data-for="hr"></output></label>
+          <input type="range" id="hr13" data-key="hr" min="40" max="140" step="1">
         </div>
-        <div class="row2">
-          <div class="control" data-show-regv="mr">
-            <label for="mrEroa">MR orifice (EROA) <output data-for="mrEroa"></output></label>
-            <input type="range" id="mrEroa" data-key="mrEroa" min="0" max="0.8" step="0.01">
-          </div>
-          <div class="control" data-show-regv="ar">
-            <label for="arEroa">AR orifice (EROA) <output data-for="arEroa"></output></label>
-            <input type="range" id="arEroa" data-key="arEroa" min="0" max="0.6" step="0.01">
-          </div>
-          <div class="control" data-show-regv="tr">
-            <label for="trEroa">TR orifice (EROA) <output data-for="trEroa"></output></label>
-            <input type="range" id="trEroa" data-key="trEroa" min="0" max="1" step="0.01">
-          </div>
-          <div class="control">
-            <label for="nyq">Color aliasing velocity <output data-for="nyq"></output></label>
-            <input type="range" id="nyq" data-key="nyq" min="20" max="70" step="1">
-          </div>
-        </div>
+        <div class="toggles"><label class="check"><input type="checkbox" data-key="msCine"> Cine</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <div class="table-wrap"><table class="vt" id="leak-grade"></table></div>
+      <div class="table-wrap"><table class="vt grade" id="ms-table"></table></div>
       <div class="prose" data-part="prose">
-        <h3>The PISA method</h3>
-        <p class="eq">flow = 2π r² × Va &nbsp;·&nbsp; EROA = flow ÷ peak velocity &nbsp;·&nbsp; RVol = EROA × VTI</p>
-        <p>Blood speeds up as it converges on the orifice. At the aliasing velocity Va the color changes, and that shell is a hemisphere of radius r<span class="cite" data-ref="zoghbi2017"></span>. Shift the color baseline toward the jet to lower Va to about 30 to 40 cm/s and enlarge the shell<span class="cite" data-ref="zoghbi2017"></span>. Measure the radius at the time of the peak jet velocity<span class="cite" data-ref="zoghbi2017"></span>.</p>
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Progressive stenosis.</b> Commissural fusion and diastolic doming; area &gt;1.5 cm², pressure half-time &lt;150 ms; mild to moderate LA enlargement; normal pulmonary pressure at rest<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Severe stenosis.</b> Area ≤1.5 cm², pressure half-time ≥150 ms; severe LA enlargement; PA systolic pressure above 50 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
+        </ol>
+        <p>ASE divides progressive stenosis into mild (area &gt;2.5 cm², half-time &lt;100 ms, mean gradient &lt;5 mmHg, PA systolic pressure &lt;30 mmHg) and moderate (2.5–1.6 cm², 100–149 ms, 5–9 mmHg, 30–49 mmHg)<span class="cite" data-ref="pandian2023"></span>.</p>
+        <h3>Measuring the area</h3>
+        <p class="eq">MVA = 220 ÷ pressure half-time</p>
         <ul>
-        <li>The radius is squared: errors of 10 to 25% are common, even among experts<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>The method assumes a flat, round orifice. An elliptical orifice, common in secondary MR, makes PISA underestimate the flow<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>For regurgitation in only part of systole, use the regurgitant volume; one frame overestimates the EROA<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Planimetry.</b> The short axis shows the commissural fusion and allows planimetry of the orifice<span class="cite" data-ref="otto2020"></span>. When the methods disagree, planimetry is the reference<span class="cite" data-ref="baumgartner2009"></span>.</li>
+        <li><b>Pressure half-time.</b> The time for the peak gradient to fall by half; the velocity falls to about 70% of its peak<span class="cite" data-ref="pandian2023,quinones2002"></span>. The constant 220 is empirical<span class="cite" data-ref="baumgartner2009"></span>; Hatle described the method in 1979<span class="cite" data-ref="hatle1979"></span>. The half-time is not reliable just after balloon valvotomy, with severe aortic regurgitation, or with abnormal LV compliance<span class="cite" data-ref="baumgartner2009"></span>.</li>
+        <li><b>Mean gradient.</b> It changes with heart rate and flow, so it is not a severity criterion; report it with the heart rate<span class="cite" data-ref="otto2020"></span>. Move the heart rate: the same valve gives a higher gradient at a faster rate.</li>
         </ul>
-        <h3>Grading</h3>
-        <p>No single parameter is enough; combine them<span class="cite" data-ref="zoghbi2017"></span>. Severe primary MR: EROA ≥0.40 cm², regurgitant volume ≥60 mL, regurgitant fraction ≥50%, vena contracta ≥0.7 cm<span class="cite" data-ref="zoghbi2017,otto2020"></span>. For secondary MR, ASE notes that EROA ≥0.30 cm² by 2D PISA may still be severe<span class="cite" data-ref="zoghbi2017"></span>; EACVI accepts ≥0.30 cm² or ≥45 mL<span class="cite" data-ref="lancellotti2022"></span>.</p>
-        <ul>
-        <li><b>Color jet area</b> helps to exclude MR but is unreliable to grade it<span class="cite" data-ref="zoghbi2017"></span>. Set the color scale to 50 to 70 cm/s for jets<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Flow reversal</b> in the pulmonary veins (MR) or hepatic veins (TR) during systole is specific for severe regurgitation, but not sensitive<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Aortic regurgitation:</b> a pressure half-time below 200 ms and holodiastolic reversal in the abdominal aorta support severe AR<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Tricuspid regurgitation:</b> severe at EROA ≥0.40 cm² and regurgitant volume ≥45 mL; the volume cut-off is lower than for MR because the jet velocity is lower<span class="cite" data-ref="zoghbi2017"></span>. Beyond severe, EACVI describes massive and torrential grades<span class="cite" data-ref="lancellotti2022"></span>.</li>
-        </ul>
-        <p>Use “trace” for less than mild; mild TR or PR of a normal valve can be physiologic<span class="cite" data-ref="taub2025"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Flow = 2πr² × Va; EROA = flow ÷ peak velocity.</li>
-        <li>Lower Va: the shell grows, the EROA does not.</li>
-        <li>Grade with several parameters, never with jet area alone.</li>
+        <li>Severe: area ≤1.5 cm² and half-time ≥150 ms.</li>
+        <li>The LA and the pulmonary pressure carry the consequence.</li>
+        <li>Report the gradient with the heart rate.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-mr">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">14</span><div><h2 class="ch-title">Mitral regurgitation</h2><p class="ch-kicker">Volume load, left heart</p></div></div>
+      <p class="dek" data-part="dek">A leaking mitral valve sends part of each stroke back into the LA. The LV and LA dilate to carry the extra volume; late, the LV fails.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="mrS">Severity <output data-for="mrS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="mrS" data-key="mrS" min="0" max="1" step="0.005">
+          <div class="grades" id="mr-grades" aria-hidden="true"></div>
+        </div>
+        <div class="toggles"><label class="check"><input type="checkbox" data-key="mrCine"> Cine</label></div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="mr-table"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Mild.</b> A small central jet, normal leaflets, a vena contracta below 0.3 cm, no flow convergence and A-wave-dominant inflow: the regurgitation is mild<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Moderate.</b> The LV and LA are normal or mildly dilated; pulmonary vein flow is normal or blunted in systole<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Severe.</b> EROA ≥0.40 cm², regurgitant volume ≥60 mL, regurgitant fraction ≥50%, vena contracta ≥0.7 cm<span class="cite" data-ref="zoghbi2017"></span>. The LV and LA dilate; the CW signal is dense and triangular; systolic flow in the pulmonary veins stops or reverses; mitral E exceeds 1.2 m/s<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>LV dysfunction.</b> ACC/AHA stage C1: LVEF &gt;60% and LV end-systolic diameter &lt;40 mm. Stage C2: LVEF ≤60% or diameter ≥40 mm<span class="cite" data-ref="otto2020"></span>.</li>
+        </ol>
+        <h3>The PISA method</h3>
+        <p class="eq">flow = 2π r² × Va &nbsp;·&nbsp; EROA = flow ÷ peak velocity &nbsp;·&nbsp; RVol = EROA × VTI</p>
+        <p>Blood speeds up as it converges on the orifice; at the aliasing velocity Va the color changes, and that shell is a hemisphere of radius r<span class="cite" data-ref="zoghbi2017"></span>. Shift the baseline toward the jet to lower Va to about 30 to 40 cm/s; measure the radius at the time of the peak jet velocity<span class="cite" data-ref="zoghbi2017"></span>. A radius of 1.0 cm or more at this setting is specific for severe MR<span class="cite" data-ref="zoghbi2017"></span>.</p>
+        <ul>
+        <li>The radius is squared: errors of 10 to 25% are common, even among experts<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>An elliptical orifice, common in secondary MR, makes PISA underestimate the flow<span class="cite" data-ref="zoghbi2017"></span>. In secondary MR, an EROA ≥0.30 cm² by 2D PISA may still be severe<span class="cite" data-ref="zoghbi2017"></span>; EACVI accepts ≥0.30 cm² or ≥45 mL<span class="cite" data-ref="lancellotti2022"></span>.</li>
+        <li>For regurgitation in only part of systole, use the regurgitant volume; one frame overestimates the EROA<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ul>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li>A normal LA size generally excludes severe chronic MR; a dilated LA alone does not prove it<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>Color jet area helps to exclude MR but is unreliable to grade it; set the color scale to 50 to 70 cm/s for jets<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>Systolic flow reversal in the pulmonary veins is specific for severe regurgitation but not sensitive<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Severe: EROA ≥0.40 cm², volume ≥60 mL, fraction ≥50%.</li>
+        <li>Support it with E ≥1.2 m/s and pulmonary vein reversal.</li>
+        <li>LVEF ≤60% or end-systolic diameter ≥40 mm: stage C2.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-ar">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">15</span><div><h2 class="ch-title">Aortic regurgitation</h2><p class="ch-kicker">Volume and pressure load</p></div></div>
+      <p class="dek" data-part="dek">A leaking aortic valve returns blood to the LV in diastole. The LV receives blood from the LA and from the aorta, dilates, and ejects a large stroke volume; late, it fails.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="arS">Severity <output data-for="arS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="arS" data-key="arS" min="0" max="1" step="0.005">
+          <div class="grades" id="ar-grades" aria-hidden="true"></div>
+        </div>
+        <div class="toggles"><label class="check"><input type="checkbox" data-key="arCine"> Cine</label></div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="ar-table"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Mild.</b> A small central jet, a faint or incomplete CW signal, a pressure half-time above 500 ms and a brief early diastolic reversal in the descending aorta<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Moderate.</b> The LV is normal or dilated; half-time 500–200 ms; regurgitant volume 30–59 mL<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Severe.</b> Vena contracta &gt;0.6 cm, jet width ≥65% of the LVOT, regurgitant volume ≥60 mL, fraction ≥50%, EROA ≥0.30 cm², half-time below 200 ms, holodiastolic reversal<span class="cite" data-ref="zoghbi2017"></span>. Holodiastolic reversal in the abdominal aorta is consistent with severe AR<span class="cite" data-ref="zoghbi2017"></span>. EACVI uses an end-diastolic velocity ≥20 cm/s in the proximal descending aorta<span class="cite" data-ref="lancellotti2022"></span>. Chronic severe AR also requires LV dilation<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>LV dysfunction.</b> ACC/AHA stage C1: LVEF &gt;55% and end-systolic diameter &lt;50 mm. Stage C2: LVEF ≤55%, or diameter &gt;50 mm or &gt;25 mm/m²<span class="cite" data-ref="otto2020"></span>.</li>
+        </ol>
+        <h3>Why the LVOT velocity rises</h3>
+        <p>The LV ejects the forward volume plus the volume that returns in diastole. The regurgitant volume is the stroke volume through the leaking valve minus the stroke volume through a competent valve<span class="cite" data-ref="zoghbi2017"></span>. On the page, the LVOT VTI rises as the leak grows.</p>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li>The half-time shortens as the LV diastolic pressure rises and can lengthen in chronic adaptation to severe AR<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>The length of the jet into the LV is not a reliable measure of severity<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Severe: vena contracta &gt;0.6 cm, jet ≥65% of the LVOT, volume ≥60 mL.</li>
+        <li>Holodiastolic reversal in the abdominal aorta: severe.</li>
+        <li>LVEF ≤55% or end-systolic diameter &gt;50 mm: stage C2.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-tr">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">16</span><div><h2 class="ch-title">Tricuspid regurgitation</h2><p class="ch-kicker">Volume load, right heart</p></div></div>
+      <p class="dek" data-part="dek">A leaking tricuspid valve loads the right heart. The RV, the annulus and the RA dilate and the veins fill; at the torrential end the jet slows, because the RV and RA pressures come close.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="trS">Severity <output data-for="trS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="trS" data-key="trS" min="0" max="1" step="0.005">
+          <div class="grades" id="tr-grades" aria-hidden="true"></div>
+        </div>
+        <div class="toggles"><label class="check"><input type="checkbox" data-key="trCine"> Cine</label></div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="tr-table"></table></div>
+      <div class="table-wrap"><table class="vt grade" id="tr-table2"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Mild.</b> A small, narrow central jet; a faint CW signal; systolic dominance in the hepatic veins; IVC below 2 cm<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Moderate.</b> The RV and RA are normal or mildly dilated; the hepatic veins show systolic blunting; vena contracta 0.3–0.69 cm; EROA 0.20–0.39 cm²<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Severe.</b> Vena contracta ≥0.7 cm, EROA ≥0.40 cm², regurgitant volume ≥45 mL, PISA radius &gt;0.9 cm (baseline shifted to 28 cm/s), jet area &gt;10 cm²; systolic reversal in the hepatic veins; tricuspid E &gt;1.0 m/s; IVC &gt;2.5 cm<span class="cite" data-ref="zoghbi2017"></span>. ACC/AHA adds a dilated RV and RA and a raised RA pressure with a c-V wave<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Beyond severe.</b> Massive: vena contracta 14–20 mm, EROA 60–79 mm², volume 60–74 mL. Torrential: ≥21 mm, ≥80 mm², ≥75 mL<span class="cite" data-ref="lancellotti2022"></span>. A report can name them as subgroups of severe TR<span class="cite" data-ref="taub2025"></span>.</li>
+        </ol>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li>The TR velocity does not show the regurgitant volume. Very severe TR often has a low velocity, about 2 m/s, because the RV and RA pressures equalize<span class="cite" data-ref="zoghbi2017"></span>; EACVI gives a peak below 2 m/s in massive TR<span class="cite" data-ref="lancellotti2022"></span>.</li>
+        <li>Hepatic vein systolic reversal is specific for severe TR, after other causes (atrial fibrillation, pacing, RA or RV compliance) are excluded<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>The volume limit for severe TR (45 mL) is lower than for MR (60 mL) at the same EROA, because the TR velocity is lower<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>At left-sided valve surgery, a tricuspid annulus above 4.0 cm in diastole makes tricuspid repair reasonable, even with less than severe TR<span class="cite" data-ref="otto2020"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Severe: vena contracta ≥0.7 cm, EROA ≥0.40 cm², volume ≥45 mL.</li>
+        <li>Hepatic vein systolic reversal is specific.</li>
+        <li>A low jet velocity does not exclude severe TR.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -841,7 +968,7 @@
 
     <!-- ======================================================== VI Report -->
     <article class="chapter" id="ch-report">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">14</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">The study comes together</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">The study comes together</p></div></div>
       <p class="dek" data-part="dek">The report changes the study into a decision. The summary statement comes first; each structure follows, structure before function; every number is called normal or abnormal.</p>
       <div class="controls">
         <div class="control">

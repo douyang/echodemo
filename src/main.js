@@ -133,6 +133,8 @@ function bindControls() {
       if (Number.isFinite(v)) set({ [el.dataset.key]: v, playing: false, anim: false });
     });
   }
+  // Play buttons of the severity pages run the active chapter's own motion
+  for (const b of $$('button[data-anim]')) b.addEventListener('click', () => set({ anim: !state.anim, playing: false }));
 }
 function syncControls(changed) {
   const has = (k) => !changed || k in changed;
@@ -150,6 +152,7 @@ function syncControls(changed) {
     for (const b of $$('button[data-val]', g)) b.setAttribute('aria-pressed', String(String(parse(b.dataset.val)) === String(state[k])));
   }
   for (const el of $$('input[type="checkbox"][data-key]')) if (has(el.dataset.key)) el.checked = !!state[el.dataset.key];
+  if (has('anim')) for (const b of $$('button[data-anim]')) { b.setAttribute('aria-pressed', String(!!state.anim)); b.setAttribute('aria-label', state.anim ? 'Pause' : 'Play the progression'); }
   for (const el of $$('input[type="number"][data-key]')) {
     const k = el.dataset.key;
     if (!has(k) || document.activeElement === el) continue;
@@ -163,7 +166,7 @@ function syncControls(changed) {
     o.textContent = c ? c.format[k](state[k], state) : String(state[k]);
   }
   // conditional controls: data-show-<key>="value1 value2"
-  for (const el of $$('[data-show-view],[data-show-side],[data-show-sten],[data-show-regv]')) {
+  for (const el of $$('[data-show-view],[data-show-side]')) {
     for (const a of el.attributes) {
       if (!a.name.startsWith('data-show-')) continue;
       const k = a.name.slice(10);
@@ -269,6 +272,7 @@ function showChapter() {
   tourT = 0;
   if (active >= 0 && active !== i) CHAPTERS[active].leave?.();
   active = i;
+  if (state.anim) set({ anim: false });
   $$('.chapter').forEach((a, k) => a.classList.toggle('is-active', k === i));
   $$('.fig').forEach((f) => f.classList.toggle('is-active', f.id === `fig-${c.key}`));
   $$('#chapters button[data-go]').forEach((b, k) => (k === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
@@ -369,7 +373,7 @@ function buildTransport() {
   const track = nav.querySelector('.track');
   CHAPTERS.forEach((c, i) => {
     const li = document.createElement('li');
-    li.innerHTML = `<button type="button" data-go="${i}" aria-label="${String(i + 1).padStart(2, '0')} ${esc(c.title)}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${esc(c.title)}</span></button>`;
+    li.innerHTML = `<button type="button" data-go="${i}" aria-label="${String(i + 1).padStart(2, '0')} ${esc(c.title)}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${esc(c.nav || c.title)}</span></button>`;
     nav.insertBefore(li, track);
   });
   nav.style.setProperty('--n-ch', CHAPTERS.length);
@@ -393,6 +397,12 @@ function start() {
   const fromHash = KEYS.indexOf(h);
   renderAllText();
   if (fromHash > 0) set({ chapter: fromHash }); else showChapter();
+  // a new #key in the address bar opens that chapter (showChapter writes the hash with
+  // replaceState, which fires no hashchange)
+  window.addEventListener('hashchange', () => {
+    const i = KEYS.indexOf((location.hash || '').slice(1));
+    if (i >= 0 && i !== state.chapter) goChapter(i);
+  });
   window.addEventListener('resize', () => {
     for (const s of Object.values(sheets)) s?.resize?.();
     CHAPTERS[state.chapter].resize?.();

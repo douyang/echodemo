@@ -343,6 +343,26 @@ a:hover { text-decoration-color: var(--accent); }
 .zone i { position: absolute; top: 0; left: calc(9px + (100% - 18px) * var(--a)); width: calc((100% - 18px) * var(--w)); height: 3px; border-radius: 2px; background: var(--accent-2); }
 .zone span { position: absolute; top: 6px; left: calc(9px + (100% - 18px) * var(--a)); font: 400 0.6875rem/1 var(--sans); color: var(--ink-3); white-space: nowrap; }
 
+/* severity pages: slider head with a Play button, grade bands under the slider */
+.sev-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.sev-head label { flex: 1; margin-bottom: 0; }
+.sev-play { flex: none; width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; cursor: pointer; }
+.sev-play svg { width: 12px; height: 12px; }
+.sev-play .i-pause { display: none; }
+.sev-play[aria-pressed="true"] .i-play { display: none; }
+.sev-play[aria-pressed="true"] .i-pause { display: block; }
+.grades { position: relative; height: 28px; margin-top: 3px; }
+.grades i { position: absolute; top: 0; left: calc(9px + (100% - 18px) * var(--a)); width: calc((100% - 18px) * var(--w)); height: 5px; background: var(--rule); box-shadow: inset -1px 0 0 var(--paper); }
+.grades i[data-l="1"] { background: var(--accent-2); }
+.grades i[data-l="2"] { background: color-mix(in srgb, var(--accent-2) 40%, var(--flag-2)); }
+.grades i[data-l="3"] { background: var(--flag-2); }
+.grades i[data-l="4"] { background: var(--flag); }
+.grades i[data-l="5"] { background: color-mix(in srgb, var(--flag) 65%, var(--ink)); }
+.grades span { position: absolute; top: 10px; left: calc(9px + (100% - 18px) * var(--a)); width: calc((100% - 18px) * var(--w)); text-align: center; font: 400 0.6875rem/1.1 var(--sans); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vt.grade { font-size: 0.78rem; }
+.vt.grade td { vertical-align: top; padding: 5px 4px; }
+.vt.grade td:first-child { color: var(--ink-2); }
+
 /* view chips (chapter 04) */
 .chips { display: grid; gap: 7px; }
 .chips .win { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }

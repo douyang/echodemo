@@ -1,15 +1,19 @@
 // 11 Fill: diastolic function and left atrial pressure. One slider walks the filling pattern
-// from normal to restrictive; the 2025 ASE algorithm (sinus rhythm) runs on the values.
+// from normal to restrictive and Play animates it; the 2025 ASE algorithm (sinus rhythm) runs
+// on the values. The LA, the pulmonary veins and LA strain change with the grade.
 import { Sheet, clamp, mix, MONO, SANS } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { RR, EV } from '../cyclemodel.js';
+import { bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, note, LEVEL, fit } from '../sev.js';
+import { drawA4C, measures } from '../echo2d.js';
+import { BSA } from './pressure.js';
 
 // Illustrative values at four points of the slider (not patient data).
 const KEYS = [
-  { E: 0.75, A: 0.55, DT: 190, sep: 9.0, lat: 12.0, tr: 2.3, lavi: 26, lars: 38, sd: 1.3, ivrt: 85 },
-  { E: 0.55, A: 0.80, DT: 260, sep: 5.0, lat: 6.5, tr: 2.4, lavi: 30, lars: 28, sd: 1.4, ivrt: 110 },
-  { E: 0.95, A: 0.65, DT: 170, sep: 5.0, lat: 6.5, tr: 3.0, lavi: 42, lars: 16, sd: 0.6, ivrt: 65 },
-  { E: 1.20, A: 0.40, DT: 130, sep: 4.0, lat: 5.0, tr: 3.3, lavi: 50, lars: 10, sd: 0.4, ivrt: 50 },
+  { E: 0.75, A: 0.55, DT: 190, sep: 9.0, lat: 12.0, tr: 2.3, lavi: 26, lars: 38, sd: 1.3, ivrt: 85, pvD: 0.42, ar: 0.25, lact: 14, wall: 0.9 },
+  { E: 0.55, A: 0.80, DT: 260, sep: 5.0, lat: 6.5, tr: 2.4, lavi: 30, lars: 28, sd: 1.4, ivrt: 110, pvD: 0.34, ar: 0.3, lact: 14, wall: 1.05 },
+  { E: 0.95, A: 0.65, DT: 170, sep: 5.0, lat: 6.5, tr: 3.0, lavi: 42, lars: 16, sd: 0.6, ivrt: 65, pvD: 0.6, ar: 0.38, lact: 6, wall: 1.1 },
+  { E: 1.20, A: 0.40, DT: 130, sep: 4.0, lat: 5.0, tr: 3.3, lavi: 50, lars: 10, sd: 0.4, ivrt: 50, pvD: 0.68, ar: 0.4, lact: 2, wall: 1.1 },
 ];
 
 export function fillValues(f) {
@@ -43,6 +47,12 @@ export function lapAlgorithm(v) {
 }
 
 const GRADE = { 0: 'normal diastolic function', 1: 'grade 1 diastolic dysfunction', 2: 'grade 2 diastolic dysfunction', 3: 'grade 3 diastolic dysfunction' };
+/** Short label for the bands under the slider. */
+function gradeLabel(f) {
+  const r = lapAlgorithm(fillValues(f));
+  return r.grade === null ? 'normal LAP' : r.grade === 0 ? 'normal' : `grade ${r.grade}`;
+}
+let BANDS = [];
 
 let sheet = null, st = null;
 
@@ -83,32 +93,124 @@ function arrow(sh, t, x1, y1, x2, y2, on) {
   sh.line(x2, y2, x2 - k * Math.cos(a + 0.45), y2 - k * Math.sin(a + 0.45), { width: on ? 1.8 : 1, rough: 0.2, seed: 6, stroke: on ? t.accent : t.rule });
 }
 
-function flowchart(sh, t, X, Y, Wd, r) {
-  const bw = Math.min(170, Wd * 0.3), bh = 40;
+function flowchart(sh, t, X, Y, Wd, Hd, r) {
+  const bw = Math.min(150, Wd * 0.31), bh = 30;
+  const gap = Math.max(14, (Hd - (bh + 12) - bh - (bh + 8) - bh) / 3);
   const cx = X + Wd / 2;
   const s1 = r.step1;
-  box(sh, t, cx - bw * 1.2, Y, bw * 2.4, bh + 16, 'Step 1: e′ reduced? E/e′ raised? TR ≥2.8 m/s?', true,
+  box(sh, t, cx - bw * 1.25, Y, bw * 2.5, bh + 12, 'Step 1: e′ reduced? E/e′ raised? TR ≥2.8?', true,
     `${s1.eRed ? '●' : '○'} e′   ${s1.eeUp ? '●' : '○'} E/e′   ${s1.trUp ? '●' : '○'} TR   (${s1.n} abnormal)`);
-  const y2 = Y + bh + 60;
-  const cols = [X + 4, X + Wd / 2 - bw / 2, X + Wd - bw - 4];
-  box(sh, t, cols[0], y2, bw, bh, 'none abnormal', s1.n === 0);
-  box(sh, t, cols[1], y2, bw, bh, 'one or two', s1.n === 1 || s1.n === 2);
-  box(sh, t, cols[2], y2, bw, bh, 'all three', s1.n === 3);
-  arrow(sh, t, cx, Y + bh + 16, cols[0] + bw / 2, y2, s1.n === 0);
-  arrow(sh, t, cx, Y + bh + 16, cols[1] + bw / 2, y2, s1.n === 1 || s1.n === 2);
-  arrow(sh, t, cx, Y + bh + 16, cols[2] + bw / 2, y2, s1.n === 3);
-  const y3 = y2 + bh + 44;
+  const y2 = Y + bh + 12 + gap;
+  const colsX = [X + 2, X + Wd / 2 - bw / 2, X + Wd - bw - 2];
+  box(sh, t, colsX[0], y2, bw, bh, 'none abnormal', s1.n === 0);
+  box(sh, t, colsX[1], y2, bw, bh, 'one or two', s1.n === 1 || s1.n === 2);
+  box(sh, t, colsX[2], y2, bw, bh, 'all three', s1.n === 3);
+  arrow(sh, t, cx, Y + bh + 12, colsX[0] + bw / 2, y2, s1.n === 0);
+  arrow(sh, t, cx, Y + bh + 12, colsX[1] + bw / 2, y2, s1.n === 1 || s1.n === 2);
+  arrow(sh, t, cx, Y + bh + 12, colsX[2] + bw / 2, y2, s1.n === 3);
+  const y3 = y2 + bh + gap;
   const g1 = r.node === 'g1';
-  const w2 = Math.min(Wd - 24, bw * 1.75);
-  box(sh, t, cols[1] + bw / 2 - w2 / 2, y3, w2, bh + 10, g1 ? 'e′ only, E/A ≤ 0.8' : 'Step 2', r.via === 'step2' || r.node === 'normal2' || g1, g1 ? 'no second step' : 'S/D ≤0.67 · LARS ≤18% · LAVi >34');
-  arrow(sh, t, cols[1] + bw / 2, y2 + bh, cols[1] + bw / 2, y3, s1.n === 1 || s1.n === 2);
-  const y4 = y3 + bh + 54;
-  box(sh, t, cols[0], y4, bw, bh, 'normal LA pressure', r.lap === 'normal', r.grade === 1 ? 'grade 1' : r.grade === 0 ? 'normal function' : r.node === 'normal2' ? 'no grade drawn' : '');
-  box(sh, t, cols[2], y4, bw, bh, 'raised LA pressure', r.lap === 'raised', r.grade ? `grade ${r.grade}: E/A ${r.grade === 3 ? '≥' : '<'} 2` : '');
-  arrow(sh, t, cols[0] + bw / 2, y2 + bh, cols[0] + bw / 2, y4, s1.n === 0);
-  arrow(sh, t, cols[2] + bw / 2, y2 + bh, cols[2] + bw / 2, y4, s1.n === 3);
-  arrow(sh, t, cols[1] + bw * 0.2, y3 + bh + 10, cols[0] + bw * 0.7, y4, r.lap === 'normal' && (s1.n === 1 || s1.n === 2));
-  arrow(sh, t, cols[1] + bw * 0.8, y3 + bh + 10, cols[2] + bw * 0.3, y4, r.via === 'step2');
+  const w2 = Math.min(Wd - 20, bw * 1.8);
+  box(sh, t, colsX[1] + bw / 2 - w2 / 2, y3, w2, bh + 8, g1 ? 'e′ only, E/A ≤ 0.8' : 'Step 2', r.via === 'step2' || r.node === 'normal2' || g1, g1 ? 'no second step' : 'S/D ≤0.67 · LARS ≤18% · LAVi >34');
+  arrow(sh, t, colsX[1] + bw / 2, y2 + bh, colsX[1] + bw / 2, y3, s1.n === 1 || s1.n === 2);
+  const y4 = y3 + bh + 8 + gap;
+  box(sh, t, colsX[0], y4, bw, bh + 6, 'normal LA pressure', r.lap === 'normal', r.grade === 1 ? 'grade 1' : r.grade === 0 ? 'normal function' : r.node === 'normal2' ? 'no grade drawn' : '');
+  box(sh, t, colsX[2], y4, bw, bh + 6, 'raised LA pressure', r.lap === 'raised', r.grade ? `grade ${r.grade}: E/A ${r.grade === 3 ? '≥' : '<'} 2` : '');
+  arrow(sh, t, colsX[0] + bw / 2, y2 + bh, colsX[0] + bw / 2, y4, s1.n === 0);
+  arrow(sh, t, colsX[2] + bw / 2, y2 + bh, colsX[2] + bw / 2, y4, s1.n === 3);
+  arrow(sh, t, colsX[1] + bw * 0.2, y3 + bh + 8, colsX[0] + bw * 0.7, y4, r.lap === 'normal' && (s1.n === 1 || s1.n === 2));
+  arrow(sh, t, colsX[1] + bw * 0.8, y3 + bh + 8, colsX[2] + bw * 0.3, y4, r.via === 'step2');
+}
+
+const beat = new Beat(RR);
+const q2 = (x) => Math.round(x * 50) / 50;
+
+function a4c(ctx, box, v, tt) {
+  const laMax = v.lavi * BSA, laMin = laMax * (1 - 0.5 * v.lars / 38);
+  const dims = (vol, r) => { const L = Math.cbrt(vol / (0.524 * r * r)); return [r * L, L]; };
+  const [wMax, lMax] = dims(laMax, 0.8), [wMin, lMin] = dims(laMin, 0.8);
+  const g = {
+    lvL: [8.2, 7.0], lvW: [4.6, 2.95], lvWall: [v.wall, v.wall * 1.4], ivs: [v.wall, v.wall * 1.35],
+    rvW: [3.3, 2.7], laW: [wMin, wMax], laL: [lMin, lMax], raW: [3.2, 3.8], raL: [3.9, 4.5], ma: 3.1, ta: 3.0,
+  };
+  drawA4C(ctx, box, g, {
+    t: tt, depth: 16, title: fit(box.w, 'APICAL FOUR-CHAMBER', 'A4C'),
+    after: (c, F) => measures(c, F, [`LA volume index ${Math.round(v.lavi)} mL/m²`]),
+  });
+}
+
+function inflowPanel(ctx, P, v) {
+  panel(ctx, P.x, P.y, P.w, P.h, 'PW · MITRAL INFLOW');
+  const bx = inner(P);
+  spectral(ctx, bx, { fn: (u) => inflow(v)(u * 2 * RR), scale: 1.4, base: 0.92, mode: 'pw', broad: 0.1, key: `inflow|${st.fstate.toFixed(2)}`, seed: 2 });
+  vscale(ctx, bx, 1.4, 0.92, 0.5);
+  note(ctx, bx, fit(P.w, `E ${v.E.toFixed(2)} · A ${v.A.toFixed(2)} m/s · E/A ${v.ea.toFixed(2)} · DT ${Math.round(v.DT)} ms`, `E/A ${v.ea.toFixed(2)}`), 'top');
+  return bx;
+}
+
+function tdiPanel(ctx, P, v) {
+  panel(ctx, P.x, P.y, P.w, P.h, fit(P.w, 'TISSUE DOPPLER · SEPTAL | LATERAL', 'TDI · SEPT | LAT'));
+  const bx0 = inner(P);
+  const hw = (bx0.w - 8) / 2;
+  const out = [];
+  for (const [i, eP, name] of [[0, v.sep, 'septal'], [1, v.lat, 'lateral']]) {
+    const bx = { x: bx0.x + i * (hw + 8), y: bx0.y, w: hw, h: bx0.h };
+    spectral(ctx, bx, { fn: (u) => tissue(v, eP)(u * RR), scale: 0.18, base: 0.4, mode: 'pw', broad: 0.25, key: `tdi|${name}|${eP.toFixed(2)}`, seed: 6 + i });
+    note(ctx, bx, fit(P.w, `e′ ${eP.toFixed(1)} · E/e′ ${((v.E * 100) / eP).toFixed(1)}`, `e′ ${eP.toFixed(1)}`), 'bottom');
+    out.push(bx);
+  }
+  return out;
+}
+
+function pvPanel(ctx, P, v) {
+  panel(ctx, P.x, P.y, P.w, P.h, 'PW · PULMONARY VEIN');
+  const bx = inner(P, 26);
+  const D = q2(v.pvD), S = q2(v.sd * v.pvD), Ar = -q2(v.ar);
+  const bump = (t, a, b, pk) => (t > a && t < b ? Math.sin(Math.PI * Math.pow((t - a) / (b - a), Math.log(0.5) / Math.log((pk - a) / (b - a)))) : 0);
+  const fn = (u) => {
+    const t = (u * 2 * RR) % RR;
+    const tt = t < 60 ? t + RR : t;
+    return S * bump(t, 90, 400, 250) + D * bump(t, EV.mvo + 15, 720, 540) + Ar * bump(tt, 790, 900, 835);
+  };
+  spectral(ctx, bx, { fn, scale: 1.0, base: 0.62, mode: 'pw', broad: 0.12, key: `fpv|${S}|${D}|${Ar}`, seed: 21 });
+  vscale(ctx, bx, 1.0, 0.62, 0.5, '');
+  note(ctx, bx, `S/D ${v.sd.toFixed(2)} · Ar ${Math.round(v.ar * 100)} cm/s`, 'top');
+  return bx;
+}
+
+function strainPanel(ctx, P, v) {
+  panel(ctx, P.x, P.y, P.w, P.h, 'LA STRAIN');
+  const bx = inner(P, 26);
+  const L = v.lars, C = v.lact;
+  const smooth = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
+  const eps = (tt) => {
+    const t = ((tt % RR) + RR) % RR;
+    if (t < 400) return L * smooth(t / 400);
+    if (t < 650) return L - (L - C) * smooth((t - 400) / 250);
+    if (t < 780) return C;
+    return C * (1 - smooth((t - 780) / (RR - 780)));
+  };
+  const top = 45;
+  const y0 = bx.y + bx.h - 6, k = (bx.h - 14) / top;
+  ctx.save();
+  ctx.strokeStyle = SC.frame;
+  ctx.beginPath();
+  ctx.moveTo(bx.x, y0);
+  ctx.lineTo(bx.x + bx.w, y0);
+  ctx.stroke();
+  ctx.strokeStyle = SC.cal;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  for (let i = 0; i <= 200; i++) {
+    const u = i / 200;
+    const y = y0 - eps(u * 2 * RR) * k;
+    if (i) ctx.lineTo(bx.x + u * bx.w, y); else ctx.moveTo(bx.x + u * bx.w, y);
+  }
+  ctx.stroke();
+  ctx.restore();
+  vscale(ctx, { x: bx.x, y: bx.y + 8, w: bx.w, h: bx.h - 14 }, 40, 1, 20, '%');
+  note(ctx, bx, `reservoir ${Math.round(L)}%`, 'top');
+  return bx;
 }
 
 function draw(sh, t) {
@@ -116,58 +218,36 @@ function draw(sh, t) {
   const narrow = W < 700;
   const v = fillValues(st.fstate);
   const r = lapAlgorithm(v);
-  const lx = narrow ? 8 : 24, lw = narrow ? W - 16 : W * 0.46;
-  const ph = narrow ? H * 0.2 : (H - 90) / 3;
-  let y = narrow ? 8 : 40;
-  // mitral inflow
-  panel(ctx, lx, y, lw, ph, 'PW · MITRAL INFLOW');
-  let bx = { x: lx + 4, y: y + 22, w: lw - 32, h: ph - 26 };
-  spectral(ctx, bx, { fn: (u) => inflow(v)(u * 2 * RR), scale: 1.4, base: 0.92, mode: 'pw', broad: 0.1, key: `inflow|${st.fstate.toFixed(2)}`, seed: 2 });
-  vscale(ctx, bx, 1.4, 0.92, 0.5);
-  const k = (bx.h * 0.92) / 1.4, yb = bx.y + bx.h * 0.92;
-  const xE = bx.x + ((EV.mvo + 70) / (2 * RR)) * bx.w, xA = bx.x + (800 / (2 * RR)) * bx.w;
-  ctx.save();
-  ctx.font = `500 11px ${MONO}`;
-  ctx.fillStyle = SC.cal;
-  ctx.fillText(`E ${v.E.toFixed(2)}`, xE - 14, yb - v.E * k - 6);
-  ctx.fillText(`A ${v.A.toFixed(2)}`, xA - 14, yb - v.A * k - 6);
-  ctx.fillText(`E/A ${v.ea.toFixed(2)} · DT ${Math.round(v.DT)} ms`, bx.x + 8, bx.y + 12);
-  ctx.restore();
-  // tissue Doppler, septal and lateral side by side
-  y += ph + 12;
-  panel(ctx, lx, y, lw, ph, 'TISSUE DOPPLER · SEPTAL | LATERAL');
-  const hw = (lw - 40) / 2;
-  for (const [i, eP, name] of [[0, v.sep, 'septal'], [1, v.lat, 'lateral']]) {
-    bx = { x: lx + 4 + i * (hw + 8), y: y + 22, w: hw, h: ph - 26 };
-    spectral(ctx, bx, { fn: (u) => tissue(v, eP)(u * RR), scale: 0.18, base: 0.4, mode: 'pw', broad: 0.25, key: `tdi|${name}|${eP.toFixed(2)}`, seed: 6 + i });
-    const kk = (bx.h * 0.6) / 0.18, yy = bx.y + bx.h * 0.4;
-    ctx.save();
-    ctx.font = `500 11px ${MONO}`;
-    ctx.fillStyle = SC.cal;
-    ctx.fillText(`e′ ${eP.toFixed(1)}`, bx.x + ((EV.mvo + 65) / RR) * bx.w - 10, yy + (eP / 100) * kk + 14);
-    ctx.fillText(`E/e′ ${((v.E * 100) / eP).toFixed(1)}`, bx.x + 6, bx.y + bx.h - 6);
-    ctx.restore();
+  const tt = beat.at(st.fCine, 250);
+  if (narrow) {
+    const [a, b] = cols({ x: 6, y: 6, w: W - 12, h: H - 12 }, [1.2, 1], 8);
+    a4c(ctx, a, v, tt);
+    const [p1, p2] = rows(b, [1, 1], 8);
+    cursor(ctx, inflowPanel(ctx, p1, v), beat.sweep);
+    for (const bx of tdiPanel(ctx, p2, v)) cursor(ctx, bx, (beat.sweep * 2) % 1);
+    return;
   }
+  const colL = { x: 16, y: 36, w: W * 0.45 - 16, h: H - 48 };
+  const colR = { x: W * 0.465, y: 36, w: W * 0.535 - 18, h: H - 48 };
+  const vh = Math.min(colL.w * 1.05, colL.h * 0.54);
+  a4c(ctx, { x: colL.x, y: colL.y, w: colL.w, h: vh }, v, tt);
+  flowchart(sh, t, colL.x, colL.y + vh + 18, colL.w, colL.h - vh - 22, r);
+  const [p1, p2, p3, p4] = rows(colR, [1, 0.95, 1, 0.95], 10);
+  cursor(ctx, inflowPanel(ctx, p1, v), beat.sweep);
+  for (const bx of tdiPanel(ctx, p2, v)) cursor(ctx, bx, (beat.sweep * 2) % 1);
+  const [c1, c2] = cols(p3, [1, 1], 10);
+  cursor(ctx, pvPanel(ctx, c1, v), beat.sweep);
+  cursor(ctx, strainPanel(ctx, c2, v), beat.sweep);
   // TR
-  y += ph + 12;
-  panel(ctx, lx, y, lw, ph, 'CW · TR JET');
-  bx = { x: lx + 4, y: y + 22, w: lw - 32, h: ph - 26 };
+  panel(ctx, p4.x, p4.y, p4.w, p4.h, 'CW · TR JET');
+  const bx = inner(p4);
   spectral(ctx, bx, {
-    fn: (u) => { const tt = (u * 2 * RR) % RR; const w = (tt - 20) / 400; return w > 0 && w < 1 ? -v.tr * Math.sin(Math.PI * w) ** 0.45 : 0; },
+    fn: (u) => { const t2 = (u * 2 * RR) % RR; const w = (t2 - 20) / 400; return w > 0 && w < 1 ? -v.tr * Math.sin(Math.PI * w) ** 0.45 : 0; },
     scale: 4, base: 0.1, mode: 'cw', broad: 0.5, key: `trfill|${v.tr.toFixed(2)}`, seed: 9,
   });
   vscale(ctx, bx, 4, 0.1, 1);
-  ctx.save();
-  ctx.font = `500 11px ${MONO}`;
-  ctx.fillStyle = SC.cal;
-  ctx.fillText(`TR ${v.tr.toFixed(2)} m/s`, bx.x + 8, bx.y + bx.h - 8);
-  ctx.restore();
-  // algorithm
-  if (!narrow) {
-    const fx = W * 0.52, fw = W * 0.46;
-    sh.text('ASE 2025 algorithm, sinus rhythm', fx, 40, { size: 20 });
-    flowchart(sh, t, fx, 60, fw, r);
-  }
+  note(ctx, bx, `TR ${v.tr.toFixed(2)} m/s`, 'bottom');
+  cursor(ctx, bx, beat.sweep);
 }
 
 const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toFixed(d) : '–');
@@ -196,14 +276,26 @@ export default {
   part: 'function',
   title: 'Fill',
   dwell: 16,
-  defaults: { fstate: 0 },
+  defaults: { fstate: 0, fCine: true },
   format: { fstate: (v) => (v < 0.5 ? 'normal' : v < 1.5 ? 'slow relaxation' : v < 2.5 ? 'raised LA pressure' : 'restrictive') },
-  watch: ['fstate'],
+  watch: ['fstate', 'fCine'],
   figure(fig) {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
     return sheet;
   },
-  init({ state }) { st = state; },
+  init({ state }) {
+    st = state;
+    BANDS = bands((s) => gradeLabel(s * 3));
+    paintBands(document.getElementById('fill-grades'), BANDS, LEVEL, { 'normal LAP': '' });
+  },
+  anim(dt, s, set) {
+    // Play walks the pattern from normal to restrictive (the slider runs 0 to 3)
+    if (s.anim) {
+      const scaled = { anim: true, f01: s.fstate / 3 };
+      playSeverity(dt, scaled, (p) => set({ fstate: Math.round(p.f01 * 3 * 100) / 100 }), 'f01', BANDS, { dur: 16 });
+    }
+    if (beat.tick(dt, s.fCine) && sheet) sheet.dirty = true;
+  },
   tourEnter(set) { set({ fstate: 0 }); },
   tourTick(tt, set) { set({ fstate: Math.round(clamp((tt - 1.5) / 12, 0, 1) * 3 * 20) / 20 }); },
   text(s, { cite }) {

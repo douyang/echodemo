@@ -1,4 +1,4 @@
-// The fourteen chapters in reading order, grouped into six parts.
+// The seventeen chapters in reading order, grouped into six parts.
 import pulse from './ch/pulse.js';
 import image from './ch/image.js';
 import windows from './ch/windows.js';
@@ -10,8 +10,11 @@ import pressure from './ch/pressure.js';
 import eject from './ch/eject.js';
 import segments from './ch/segments.js';
 import fill from './ch/fill.js';
-import narrow from './ch/narrow.js';
-import leak from './ch/leak.js';
+import asPage from './ch/as.js';
+import msPage from './ch/ms.js';
+import mrPage from './ch/mr.js';
+import arPage from './ch/ar.js';
+import trPage from './ch/tr.js';
 import report from './ch/report.js';
 
 export const PARTS = [
@@ -23,4 +26,4 @@ export const PARTS = [
   { key: 'report', num: 'VI', name: 'Report' },
 ];
 
-export const CHAPTERS = [pulse, image, windows, planes, cycle, loop, shift, pressure, eject, segments, fill, narrow, leak, report];
+export const CHAPTERS = [pulse, image, windows, planes, cycle, loop, shift, pressure, eject, segments, fill, asPage, msPage, mrPage, arPage, trPage, report];
