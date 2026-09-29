@@ -11,9 +11,9 @@ import eject from './ch/eject.js';
 import segments from './ch/segments.js';
 import fill from './ch/fill.js';
 import asPage from './ch/as.js';
+import arPage from './ch/ar.js';
 import msPage from './ch/ms.js';
 import mrPage from './ch/mr.js';
-import arPage from './ch/ar.js';
 import trPage from './ch/tr.js';
 import periPage from './ch/peri.js';
 import report from './ch/report.js';
@@ -28,4 +28,4 @@ export const PARTS = [
   { key: 'report', num: 'VII', name: 'Report' },
 ];
 
-export const CHAPTERS = [pulse, image, windows, planes, cycle, loop, shift, pressure, eject, segments, fill, asPage, msPage, mrPage, arPage, trPage, periPage, report];
+export const CHAPTERS = [pulse, image, windows, planes, cycle, loop, shift, pressure, eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, report];

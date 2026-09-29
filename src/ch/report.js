@@ -56,7 +56,12 @@ const CASES = {
 };
 
 const NAME = { eject: 'Eject', fill: 'Fill', pressure: 'Pressure', as: 'Aortic stenosis', mr: 'Mitral regurgitation' };
-const GO = (key, n) => `<a class="go" href="#${key}" data-go="${key}">${n} ${NAME[key] || key} →</a>`;
+// Links from the report to the chapters behind its values are off: the text names a chapter only
+// in its header. The code stays. A chapter's number is read from the page, so it stays right
+// when chapters move.
+const SHOW_LINKS = false;
+const numOf = (key) => document.getElementById(`ch-${key}`)?.querySelector('.ch-num')?.textContent.trim() ?? '';
+const GO = (key) => (SHOW_LINKS ? `<a class="go" href="#${key}" data-go="${key}">${numOf(key)} ${NAME[key] || key} →</a>` : '');
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 const f1 = (v) => v.toFixed(1), f0 = (v) => v.toFixed(0);
 
@@ -134,16 +139,16 @@ export function buildReport(caseId, sex) {
       <h3>Summary statement</h3>
       <ol class="impression">${sum.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
       <h3>Findings</h3>
-      <div class="finding"><p><b>Left ventricle.</b> ${lvSize === 'normal' ? 'Normal size' : `${cap(lvSize)} dilated`} (LV diameter ${f1(c.lvidd)} cm; end-diastolic volume index ${f0(edvi)} mL/m²). ${wallHi ? 'Wall thickness is increased' : 'Wall thickness is normal'} (septum ${f1(c.ivs)} cm, inferolateral wall ${f1(c.pw)} cm); ${geo}. ${lvFun === 'normal' ? 'Normal' : cap(lvFun)} systolic function: LVEF ${ef}% by the biplane method of disks; global longitudinal strain ${String(c.gls).replace('-', '−')}% (${gls}). ${c.wm === 'none' ? 'No regional wall motion abnormality.' : `${cap(c.wm)}.`} ${diaText}</p>${GO('eject', '09')}</div>
-      <div class="finding"><p><b>Right ventricle.</b> ${langRV(c.rvb)} RV systolic function is ${rvFun} (TAPSE ${f0(c.tapse)} mm, S′ ${f1(c.sPrime)} cm/s).</p>${GO('eject', '09')}</div>
-      <div class="finding"><p><b>Left atrium.</b> ${la === 'normal' ? 'Normal size' : `${cap(la)} dilated`} (LA volume index ${f0(c.lavi)} mL/m²).</p>${GO('fill', '11')}</div>
+      <div class="finding"><p><b>Left ventricle.</b> ${lvSize === 'normal' ? 'Normal size' : `${cap(lvSize)} dilated`} (LV diameter ${f1(c.lvidd)} cm; end-diastolic volume index ${f0(edvi)} mL/m²). ${wallHi ? 'Wall thickness is increased' : 'Wall thickness is normal'} (septum ${f1(c.ivs)} cm, inferolateral wall ${f1(c.pw)} cm); ${geo}. ${lvFun === 'normal' ? 'Normal' : cap(lvFun)} systolic function: LVEF ${ef}% by the biplane method of disks; global longitudinal strain ${String(c.gls).replace('-', '−')}% (${gls}). ${c.wm === 'none' ? 'No regional wall motion abnormality.' : `${cap(c.wm)}.`} ${diaText}</p>${GO('eject')}</div>
+      <div class="finding"><p><b>Right ventricle.</b> ${langRV(c.rvb)} RV systolic function is ${rvFun} (TAPSE ${f0(c.tapse)} mm, S′ ${f1(c.sPrime)} cm/s).</p>${GO('eject')}</div>
+      <div class="finding"><p><b>Left atrium.</b> ${la === 'normal' ? 'Normal size' : `${cap(la)} dilated`} (LA volume index ${f0(c.lavi)} mL/m²).</p>${GO('fill')}</div>
       <div class="finding"><p><b>Right atrium.</b> Normal size.</p><span></span></div>
-      <div class="finding"><p><b>Aortic valve.</b> ${esc(c.av.text)}</p>${GO('as', '12')}</div>
-      <div class="finding"><p><b>Mitral valve.</b> ${esc(c.mv.text)}</p>${GO('mr', '14')}</div>
-      <div class="finding"><p><b>Tricuspid valve.</b> ${esc(c.trText)} Peak TR velocity ${f1(c.tr)} m/s; estimated RV systolic pressure ${rvsp} mmHg.</p>${GO('pressure', '08')}</div>
+      <div class="finding"><p><b>Aortic valve.</b> ${esc(c.av.text)}</p>${GO('as')}</div>
+      <div class="finding"><p><b>Mitral valve.</b> ${esc(c.mv.text)}</p>${GO('mr')}</div>
+      <div class="finding"><p><b>Tricuspid valve.</b> ${esc(c.trText)} Peak TR velocity ${f1(c.tr)} m/s; estimated RV systolic pressure ${rvsp} mmHg.</p>${GO('pressure')}</div>
       <div class="finding"><p><b>Pulmonic valve.</b> Normal in structure. Trace pulmonic regurgitation.</p><span></span></div>
       <div class="finding"><p><b>Aorta.</b> The aortic root and proximal ascending aorta are normal in size.</p><span></span></div>
-      <div class="finding"><p><b>Inferior vena cava.</b> ${f1(c.ivcD)} cm; collapses ${c.ivcCollapse ? 'more' : 'less'} than 50% with a sniff. Estimated RA pressure ${rap} mmHg.</p>${GO('pressure', '08')}</div>
+      <div class="finding"><p><b>Inferior vena cava.</b> ${f1(c.ivcD)} cm; collapses ${c.ivcCollapse ? 'more' : 'less'} than 50% with a sniff. Estimated RA pressure ${rap} mmHg.</p>${GO('pressure')}</div>
       <div class="finding"><p><b>Pericardium.</b> No pericardial effusion.</p><span></span></div>
       <h3>Measurements</h3>
       <div class="table-wrap"><table class="vt"><thead><tr><th>Measurement</th><th class="num">Value</th><th>Normal (${sex === 'F' ? 'women' : 'men'})</th><th>Grade</th></tr></thead>
@@ -190,14 +195,16 @@ export default {
         if (host) host.innerHTML = R.html;
         const tb = art.querySelector('#report-inputs tbody');
         if (tb) {
-          const link = (key, n) => `<a href="#${key}" data-go="${key}">${n}</a>`;
+          const link = (key) => `<a href="#${key}" data-go="${key}">${numOf(key)} ${NAME[key]}</a>`;
           tb.innerHTML = [
-            ['LVEF (biplane)', `${R.ef}%`, link('eject', '09 Eject')],
-            ['LV geometry', R.geo, link('eject', '09 Eject')],
-            ['Diastolic grade', R.lap.grade === null ? 'normal LAP' : R.lap.grade === 0 ? 'normal' : `grade ${R.lap.grade}`, link('fill', '11 Fill')],
-            ['RA pressure', `${R.rap} mmHg`, link('pressure', '08 Pressure')],
-            ['RV systolic pressure', `${R.rvsp} mmHg`, link('pressure', '08 Pressure')],
-          ].map(([a, b, c]) => `<tr><td>${a}</td><td class="num">${b}</td><td>${c}</td></tr>`).join('');
+            ['LVEF (biplane)', `${R.ef}%`, link('eject')],
+            ['LV geometry', R.geo, link('eject')],
+            ['Diastolic grade', R.lap.grade === null ? 'normal LAP' : R.lap.grade === 0 ? 'normal' : `grade ${R.lap.grade}`, link('fill')],
+            ['RA pressure', `${R.rap} mmHg`, link('pressure')],
+            ['RV systolic pressure', `${R.rvsp} mmHg`, link('pressure')],
+          ].map(([a, b, c]) => `<tr><td>${a}</td><td class="num">${b}</td>${SHOW_LINKS ? `<td>${c}</td>` : ''}</tr>`).join('');
+          const head = art.querySelector('#report-inputs thead tr');
+          if (SHOW_LINKS && head && head.children.length < 3) head.insertAdjacentHTML('beforeend', '<th>Chapter</th>');
         }
       },
     };

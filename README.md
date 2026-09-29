@@ -8,35 +8,35 @@ An illustrated, interactive study of echocardiography for trainees: ultrasound p
 
 | Part | Chapter | The figure |
 | --- | --- | --- |
-| I Physics and views | 01 Pulse | One scan line: pulse, echoes, A-mode, wavelength and axial resolution, attenuation by tissue |
+| Physics and views | 01 Pulse | One scan line: pulse, echoes, A-mode, wavelength and axial resolution, attenuation by tissue |
 | | 02 Image | A sector image built line by line; frame rate; four artifacts |
 | | 03 Windows | 35 standard views: the heart cut on the imaging plane and labeled (or whole, with the plane through it), and the echo view that plane cuts from the same mesh; the plane moves from view to view as a probe does |
 | | 04 Planes | All standard view planes in one heart: crossings, parallel stacks, which views show a structure, and a free plane that settles onto the nearest standard view |
-| II Physiology | 05 Cycle | Wiggers diagram with ECG, heart sounds, mitral and LVOT Doppler, and the four-chamber frame at the cursor |
+| Physiology | 05 Cycle | Wiggers diagram with ECG, heart sounds, mitral and LVOT Doppler, and the four-chamber frame at the cursor |
 | | 06 Loop | Pressure–volume loop: ESPVR, EDPVR, arterial elastance, EF = Ees ÷ (Ees + Ea) |
-| III Doppler | 07 Shift | Doppler equation, beam angle, Nyquist limit, pulsed, continuous and color Doppler |
+| Doppler | 07 Shift | Doppler equation, beam angle, Nyquist limit, pulsed, continuous and color Doppler |
 | | 08 Pressure | Stroke volume from LVOT area × VTI; RV systolic pressure from the TR jet and the IVC |
-| IV Function | 09 Eject | Biplane method of disks and foreshortening; TAPSE, S′ and fractional area change |
+| Function | 09 Eject | Biplane method of disks and foreshortening; TAPSE, S′ and fractional area change |
 | | 10 Segments | Buttons on the figure occlude the LAD, RCA or circumflex: its territory turns hypokinetic, akinetic or dyskinetic on the 17-segment bull's-eye, which draws the artery with its block, and in the apical four-, two- and three-chamber views, echo cine sectors cut from the heart mesh in which each segment moves by its score. The text names the walls to watch in each view. Any segment can also be scored by tapping it; the wall motion score index follows |
 | | 11 Fill | Diastolic dysfunction, normal to restrictive: four-chamber view with the LA to scale, mitral inflow, tissue Doppler, pulmonary veins, LA strain, TR jet, and the 2025 ASE algorithm run live |
-| V Valves | 12 Aortic stenosis | Normal valve to severe stenosis, then LV failure and low flow: PLAX with hypertrophy, short-axis orifice to scale, CW and LVOT Doppler, mitral inflow |
-| | 13 Mitral stenosis | Normal valve to severe rheumatic stenosis: doming leaflets, LA size, pressure half-time, the gradient at any heart rate, PA pressure, planimetry |
-| | 14 Mitral regurgitation | Mild to severe with LV dysfunction: color jet and PISA shell, CW jet, pulmonary vein flow reversal, E wave, LV and LA dilation |
-| | 15 Aortic regurgitation | Mild to severe with LV dysfunction: jet width in the LVOT, pressure half-time, descending aorta reversal, LVOT VTI, LV dilation |
+| Valves | 12 Aortic stenosis | Normal valve to severe stenosis, then LV failure and low flow: PLAX with hypertrophy, short-axis orifice to scale, CW and LVOT Doppler, mitral inflow |
+| | 13 Aortic regurgitation | Mild to severe with LV dysfunction: jet width in the LVOT, pressure half-time, descending aorta reversal, LVOT VTI, LV dilation |
+| | 14 Mitral stenosis | Normal valve to severe rheumatic stenosis: doming leaflets, LA size, pressure half-time, the gradient at any heart rate, PA pressure, planimetry |
+| | 15 Mitral regurgitation | Mild to severe with LV dysfunction: color jet and PISA shell, CW jet, pulmonary vein flow reversal, E wave, LV and LA dilation |
 | | 16 Tricuspid regurgitation | Mild to torrential: RV, annulus and RA dilation, hepatic vein reversal, IVC, septal flattening, a jet that slows at the torrential end |
-| VI Pericardium | 17 Pericardium | No effusion through mild, moderate and severe (large) effusion to tamponade: four-chamber view with the fluid round the heart, the RA and RV folding in and the septum moving with each breath; mitral, tricuspid and hepatic vein Doppler over a breath; PLAX with the fluid in front of the descending aorta; IVC M-mode |
-| VII Report | 18 Report | Four simulated cases written up in the ASE 2025 report structure, with sex-specific ranges |
+| Pericardium | 17 Pericardium | No effusion through mild, moderate and severe (large) effusion to tamponade: four-chamber view with the fluid round the heart, the RA and RV folding in and the septum moving with each breath; mitral, tricuspid and hepatic vein Doppler over a breath; PLAX with the fluid in front of the descending aorta; IVC M-mode |
+| Report | 18 Report | Four simulated cases written up in the ASE 2025 report structure, with sex-specific ranges |
 
 | | | |
 | --- | --- | --- |
 | ![01 Pulse](docs/screenshots/pulse.webp) | ![03 Windows](docs/screenshots/windows.webp) | ![06 Loop](docs/screenshots/loop.webp) |
 | ![10 Segments](docs/screenshots/segments.webp) | ![11 Fill](docs/screenshots/fill.webp) | ![12 Aortic stenosis](docs/screenshots/as.webp) |
-| ![13 Mitral stenosis](docs/screenshots/ms.webp) | ![14 Mitral regurgitation](docs/screenshots/mr.webp) | ![15 Aortic regurgitation](docs/screenshots/ar.webp) |
+| ![13 Aortic regurgitation](docs/screenshots/ar.webp) | ![14 Mitral stenosis](docs/screenshots/ms.webp) | ![15 Mitral regurgitation](docs/screenshots/mr.webp) |
 | ![16 Tricuspid regurgitation](docs/screenshots/tr.webp) | ![17 Pericardium](docs/screenshots/peri.webp) | ![18 Report](docs/screenshots/report.webp) |
 
 On a phone the figure sits above the text and stays in view while the text scrolls:
 
-![Phone, chapter 04](docs/screenshots/phone-planes.webp) ![Phone, chapter 14](docs/screenshots/phone-mr.webp)
+![Phone, chapter 04](docs/screenshots/phone-planes.webp) ![Phone, chapter 15](docs/screenshots/phone-mr.webp)
 
 ## Views and the lab's annotation classes
 
@@ -125,6 +125,7 @@ Keys: ← → change chapter, space plays the tour, 1–5 and [ ] step the views
 - Every module parsed as an ES module (`node --experimental-default-type=module --check`). Plain `node --check` treats these files as CommonJS and passes them without parsing them fully; it missed a duplicate declaration during this change, which the module-mode check caught.
 - All 18 chapters at 1440 × 900 and 390 × 844: no console errors, no horizontal scroll, every citation numbered. Each severity page is playing when it opens.
 - Every chapter's tour steps run, and the Play button advances chapters. On the severity pages any control stops Play.
+- Chapter order and labels: the valve chapters run aortic stenosis, aortic regurgitation, mitral stenosis, mitral regurgitation, tricuspid regurgitation (12 to 16), and every chapter header's number matches its place in the navigation. The part labels carry no numerals; a part of one chapter shows only its rule, so no label is cut off at 1024 or 1440 px. The page text names no chapter outside the chapter headers (the report's links to chapters are off, `SHOW_LINKS` in `src/ch/report.js`).
 - Segments: the page opens normal. The LAD, RCA and LCX buttons on the figure set their territories (segments 1, 2, 7, 8, 13, 14, 17; 3, 4, 9, 10, 15; 5, 6, 11, 12, 16), and the text names the walls per view (for the RCA: A4C, the basal and mid inferoseptal segments; A2C, the whole inferior wall; A3C, normal). A tap on the bull's-eye scores a segment at desktop and phone width. 47 fps on the desktop layout and 60 on the phone layout (headless, software rendering). Dark theme checked.
 - Pericardium against myocardium, measured point by point. In the parametric four-chamber view, before this change the line ran 0.4 cm inside the apical wall; now no point of it lies inside a wall at any contraction, effusion (none to 2.2 cm), RV collapse or septal shift, and it stays at least 1.0 mm from the epicardium. With the swing the pericardium page pairs with each effusion (up to 0.7 cm at 2.3 cm of fluid), the walls stay at least 3.5 mm inside the sac. In the long axis, no point lies inside the posterior wall, the coronary sinus, the LA wall or the descending aorta, with at least 1.3 mm of clearance. In the mesh views (A4C, A2C, A3C, PLAX, PSAX, subcostal four-chamber) at eight moments of the beat, the overlap fell from up to 0.27 cm (normal) and 0.40 cm (dyskinetic segments in chapter 10) to at most 0.06 cm, below the beam's lateral resolution.
 - Pericardium model swept at 2,001 points: the grades come in order, the pressure in the sac stays at or above the RA pressure through tamponade, and no sign of tamponade turns on before the tamponade grade.

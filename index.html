@@ -98,6 +98,10 @@
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Aortic stenosis from a normal valve to severe stenosis and then low flow: a parasternal long-axis view with the thickened walls and the calcified valve, the short-axis valve orifice to scale, continuous-wave and outflow Doppler, mitral inflow, and the measurements against their cut-offs.</figcaption>
     </figure>
+    <figure class="fig" id="fig-ar">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Aortic regurgitation from mild to severe: a parasternal long-axis view with the color jet in the outflow tract and a dilating left ventricle, the continuous-wave jet with its pressure half-time, flow reversal in the descending aorta, outflow Doppler, and the measurements against their cut-offs.</figcaption>
+    </figure>
     <figure class="fig" id="fig-ms">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Mitral stenosis from a normal valve to severe stenosis: a parasternal long-axis view with doming leaflets and a large left atrium, the short-axis orifice to scale, continuous-wave mitral inflow with the pressure half-time, the tricuspid jet, and the measurements against their cut-offs.</figcaption>
@@ -105,10 +109,6 @@
     <figure class="fig" id="fig-mr">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Mitral regurgitation from mild to severe: an apical four-chamber view with the color jet and flow convergence, the continuous-wave jet, pulmonary vein and mitral inflow Doppler, and the measurements against their cut-offs.</figcaption>
-    </figure>
-    <figure class="fig" id="fig-ar">
-      <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Aortic regurgitation from mild to severe: a parasternal long-axis view with the color jet in the outflow tract and a dilating left ventricle, the continuous-wave jet with its pressure half-time, flow reversal in the descending aorta, outflow Doppler, and the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-tr">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -127,7 +127,7 @@
   <!-- ============================================================ chapters -->
   <section class="panel" id="panel" aria-live="off">
 
-    <!-- ======================================================== I Physics -->
+    <!-- ======================================================== Physics -->
     <article class="chapter is-active" id="ch-pulse">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">01</span><div><h2 class="ch-title">Pulse</h2><p class="ch-kicker">The sound</p></div></div>
       <p class="dek" data-part="dek">An echo image starts as one short pulse of sound. The scanner times each echo and changes the time into depth.</p>
@@ -378,7 +378,7 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== II Physiology -->
+    <!-- ======================================================== Physiology -->
     <article class="chapter" id="ch-cycle">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">05</span><div><h2 class="ch-title">Cycle</h2><p class="ch-kicker">One heartbeat</p></div></div>
       <p class="dek" data-part="dek">One heartbeat has four valve events. Echo times each event from the ECG, from valve motion and from Doppler.</p>
@@ -477,7 +477,7 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== III Doppler -->
+    <!-- ======================================================== Doppler -->
     <article class="chapter" id="ch-shift">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">07</span><div><h2 class="ch-title">Shift</h2><p class="ch-kicker">The Doppler effect</p></div></div>
       <p class="dek" data-part="dek">Doppler measures blood velocity from the frequency shift of the echoes. The beam angle and the Nyquist limit decide what the scanner can report.</p>
@@ -599,7 +599,7 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== IV Function -->
+    <!-- ======================================================== Function -->
     <article class="chapter" id="ch-eject">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">09</span><div><h2 class="ch-title">Eject</h2><p class="ch-kicker">Systolic function</p></div></div>
       <p class="dek" data-part="dek">LVEF is the fraction of the end-diastolic volume that the LV ejects. Measure it from biplane volumes; the right ventricle needs its own measures.</p>
@@ -786,7 +786,7 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== V Valves -->
+    <!-- ======================================================== Valves -->
     <article class="chapter" id="ch-as">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">12</span><div><h2 class="ch-title">Aortic stenosis</h2><p class="ch-kicker">Pressure load</p></div></div>
       <p class="dek" data-part="dek">As a calcified aortic valve narrows, the jet speeds up and the LV wall thickens against the pressure. Late, the LV fails: the stroke volume falls, and the gradient falls with it.</p>
@@ -837,8 +837,50 @@
       <div class="quiz"></div>
     </article>
 
+    <article class="chapter" id="ch-ar">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">13</span><div><h2 class="ch-title">Aortic regurgitation</h2><p class="ch-kicker">Volume and pressure load</p></div></div>
+      <p class="dek" data-part="dek">A leaking aortic valve returns blood to the LV in diastole. The LV receives blood from the LA and from the aorta, dilates, and ejects a large stroke volume; late, it fails.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="arS">Severity <output data-for="arS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="arS" data-key="arS" min="0" max="1" step="0.005">
+          <div class="grades" id="ar-grades" aria-hidden="true"></div>
+        </div>
+        <div class="toggles"><label class="check"><input type="checkbox" data-key="arCine"> Cine</label></div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="ar-table"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Mild.</b> A small central jet, a faint or incomplete CW signal, a pressure half-time above 500 ms and a brief early diastolic reversal in the descending aorta<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Moderate.</b> The LV is normal or dilated; half-time 500–200 ms; regurgitant volume 30–59 mL<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Severe.</b> Vena contracta &gt;0.6 cm, jet width ≥65% of the LVOT, regurgitant volume ≥60 mL, fraction ≥50%, EROA ≥0.30 cm², half-time below 200 ms, holodiastolic reversal<span class="cite" data-ref="zoghbi2017"></span>. Holodiastolic reversal in the abdominal aorta is consistent with severe AR<span class="cite" data-ref="zoghbi2017"></span>. EACVI uses an end-diastolic velocity ≥20 cm/s in the proximal descending aorta<span class="cite" data-ref="lancellotti2022"></span>. Chronic severe AR also requires LV dilation<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>LV dysfunction.</b> ACC/AHA stage C1: LVEF &gt;55% and end-systolic diameter &lt;50 mm. Stage C2: LVEF ≤55%, or diameter &gt;50 mm or &gt;25 mm/m²<span class="cite" data-ref="otto2020"></span>.</li>
+        </ol>
+        <h3>Why the LVOT velocity rises</h3>
+        <p>The LV ejects the forward volume plus the volume that returns in diastole. The regurgitant volume is the stroke volume through the leaking valve minus the stroke volume through a competent valve<span class="cite" data-ref="zoghbi2017"></span>. On the page, the LVOT VTI rises as the leak grows.</p>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li>The half-time shortens as the LV diastolic pressure rises and can lengthen in chronic adaptation to severe AR<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>The length of the jet into the LV is not a reliable measure of severity<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Severe: vena contracta &gt;0.6 cm, jet ≥65% of the LVOT, volume ≥60 mL.</li>
+        <li>Holodiastolic reversal in the abdominal aorta: severe.</li>
+        <li>LVEF ≤55% or end-systolic diameter &gt;50 mm: stage C2.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
     <article class="chapter" id="ch-ms">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">13</span><div><h2 class="ch-title">Mitral stenosis</h2><p class="ch-kicker">Inflow obstruction</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">14</span><div><h2 class="ch-title">Mitral stenosis</h2><p class="ch-kicker">Inflow obstruction</p></div></div>
       <p class="dek" data-part="dek">In rheumatic mitral stenosis the commissures fuse and the leaflets dome. As the orifice narrows, the LA pressure rises: the LA enlarges, the pulmonary pressure rises and the right heart follows.</p>
       <div class="controls">
         <div class="control sev">
@@ -883,7 +925,7 @@
     </article>
 
     <article class="chapter" id="ch-mr">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">14</span><div><h2 class="ch-title">Mitral regurgitation</h2><p class="ch-kicker">Volume load, left heart</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">15</span><div><h2 class="ch-title">Mitral regurgitation</h2><p class="ch-kicker">Volume load, left heart</p></div></div>
       <p class="dek" data-part="dek">A leaking mitral valve sends part of each stroke back into the LA. The LV and LA dilate to carry the extra volume; late, the LV fails.</p>
       <div class="controls">
         <div class="control sev">
@@ -926,48 +968,6 @@
         <li>Severe: EROA ≥0.40 cm², volume ≥60 mL, fraction ≥50%.</li>
         <li>Support it with E ≥1.2 m/s and pulmonary vein reversal.</li>
         <li>LVEF ≤60% or end-systolic diameter ≥40 mm: stage C2.</li>
-        </ol>
-      </div>
-      <div class="quiz"></div>
-    </article>
-
-    <article class="chapter" id="ch-ar">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">15</span><div><h2 class="ch-title">Aortic regurgitation</h2><p class="ch-kicker">Volume and pressure load</p></div></div>
-      <p class="dek" data-part="dek">A leaking aortic valve returns blood to the LV in diastole. The LV receives blood from the LA and from the aorta, dilates, and ejects a large stroke volume; late, it fails.</p>
-      <div class="controls">
-        <div class="control sev">
-          <div class="sev-head">
-            <label for="arS">Severity <output data-for="arS"></output></label>
-            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
-          </div>
-          <input type="range" id="arS" data-key="arS" min="0" max="1" step="0.005">
-          <div class="grades" id="ar-grades" aria-hidden="true"></div>
-        </div>
-        <div class="toggles"><label class="check"><input type="checkbox" data-key="arCine"> Cine</label></div>
-      </div>
-      <dl class="readouts"></dl>
-      <p class="live"></p>
-      <div class="table-wrap"><table class="vt grade" id="ar-table"></table></div>
-      <div class="prose" data-part="prose">
-        <h3>What changes, in order</h3>
-        <ol class="steps">
-        <li><b>Mild.</b> A small central jet, a faint or incomplete CW signal, a pressure half-time above 500 ms and a brief early diastolic reversal in the descending aorta<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Moderate.</b> The LV is normal or dilated; half-time 500–200 ms; regurgitant volume 30–59 mL<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Severe.</b> Vena contracta &gt;0.6 cm, jet width ≥65% of the LVOT, regurgitant volume ≥60 mL, fraction ≥50%, EROA ≥0.30 cm², half-time below 200 ms, holodiastolic reversal<span class="cite" data-ref="zoghbi2017"></span>. Holodiastolic reversal in the abdominal aorta is consistent with severe AR<span class="cite" data-ref="zoghbi2017"></span>. EACVI uses an end-diastolic velocity ≥20 cm/s in the proximal descending aorta<span class="cite" data-ref="lancellotti2022"></span>. Chronic severe AR also requires LV dilation<span class="cite" data-ref="otto2020"></span>.</li>
-        <li><b>LV dysfunction.</b> ACC/AHA stage C1: LVEF &gt;55% and end-systolic diameter &lt;50 mm. Stage C2: LVEF ≤55%, or diameter &gt;50 mm or &gt;25 mm/m²<span class="cite" data-ref="otto2020"></span>.</li>
-        </ol>
-        <h3>Why the LVOT velocity rises</h3>
-        <p>The LV ejects the forward volume plus the volume that returns in diastole. The regurgitant volume is the stroke volume through the leaking valve minus the stroke volume through a competent valve<span class="cite" data-ref="zoghbi2017"></span>. On the page, the LVOT VTI rises as the leak grows.</p>
-        <h3>Pitfalls</h3>
-        <ul>
-        <li>The half-time shortens as the LV diastolic pressure rises and can lengthen in chronic adaptation to severe AR<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>The length of the jet into the LV is not a reliable measure of severity<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        </ul>
-        <h3>Key points</h3>
-        <ol class="steps">
-        <li>Severe: vena contracta &gt;0.6 cm, jet ≥65% of the LVOT, volume ≥60 mL.</li>
-        <li>Holodiastolic reversal in the abdominal aorta: severe.</li>
-        <li>LVEF ≤55% or end-systolic diameter &gt;50 mm: stage C2.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -1016,7 +1016,7 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== VI Pericardium -->
+    <!-- ======================================================== Pericardium -->
     <article class="chapter" id="ch-peri">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Pericardium</h2><p class="ch-kicker">Effusion and tamponade</p></div></div>
       <p class="dek" data-part="dek">Fluid in the pericardial sac shows as an echo-free space round the heart. As it collects, the pressure in the sac rises; when it reaches the pressure in the right heart, the chambers cannot fill: tamponade.</p>
@@ -1072,7 +1072,7 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== VII Report -->
+    <!-- ======================================================== Report -->
     <article class="chapter" id="ch-report">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">The study comes together</p></div></div>
       <p class="dek" data-part="dek">The report changes the study into a decision. The summary statement comes first; each structure follows, structure before function; every number is called normal or abnormal.</p>
@@ -1095,7 +1095,7 @@
       <div class="table-wrap">
         <table class="vt" id="report-inputs">
           <caption>The values behind the report</caption>
-          <thead><tr><th>Measurement</th><th class="num">Value</th><th>Chapter</th></tr></thead>
+          <thead><tr><th>Measurement</th><th class="num">Value</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -1120,8 +1120,8 @@
         </ul>
         <h3>Accreditation</h3>
         <p>IAC requires standard reports across a laboratory. Routine inpatient studies must be read within 24 hours, outpatient studies by the end of the next business day, and STAT findings at once<span class="cite" data-ref="iac2025"></span>. Every structure that is not well seen must be noted, and the text must agree with the numbers<span class="cite" data-ref="iac2025"></span>.</p>
-        <h3>This chapter</h3>
-        <p>Four simulated cases use the models of the earlier chapters. Change the sex: the normal ranges change, and so can the words. In the stiff-ventricle case, an LV mass index of 100 g/m² is hypertrophy in a woman and normal in a man<span class="cite" data-ref="lang2015"></span>.</p>
+        <h3>The cases</h3>
+        <p>Four simulated cases use the same models as the other figures. Change the sex: the normal ranges change, and so can the words. In the stiff-ventricle case, an LV mass index of 100 g/m² is hypertrophy in a woman and normal in a man<span class="cite" data-ref="lang2015"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
         <li>Summary statement at the top: five elements.</li>

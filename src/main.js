@@ -385,7 +385,12 @@ function buildTransport() {
   nav.style.setProperty('--n-ch', CHAPTERS.length);
   const groups = $('#groups');
   groups.style.setProperty('--n-ch', CHAPTERS.length);
-  groups.innerHTML = PARTS.map((p) => `<li data-part="${p.key}" style="--span: ${CHAPTERS.filter((c) => c.part === p.key).length}"><span>${p.num}</span>${esc(p.name)}</li>`).join('');
+  // the parts by name, no numerals. A part of one chapter shows only its rule: the chapter's own
+  // button below names it, and a column is too narrow for the part's name
+  groups.innerHTML = PARTS.map((p) => {
+    const n = CHAPTERS.filter((c) => c.part === p.key).length;
+    return `<li data-part="${p.key}" style="--span: ${n}" title="${esc(p.name)}">${n > 1 ? esc(p.name) : ''}</li>`;
+  }).join('');
 }
 
 function start() {
