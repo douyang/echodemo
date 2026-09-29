@@ -325,8 +325,9 @@ function drawInk() {
     const p = stage.project(marker.position);
     tag(SNAME[S].name, p.x, p.y - 16, css.getPropertyValue('--flag').trim(), true, null);
   }
-  // body axes: patient left, superior, anterior
-  const ox = 34, oy = h - 34;
+  // body axes: patient left, superior, anterior; above the note, which wraps on phones
+  const note = document.getElementById('planes-note');
+  const ox = 34, oy = Math.min(h - 34, (note && note.offsetParent ? note.offsetTop : h) - 36);
   const axes = [[new T.Vector3(1, 0, 0), 'L'], [new T.Vector3(0, 1, 0), 'S'], [new T.Vector3(0, 0, 1), 'A']];
   ctx.font = `600 10px ${SANS}`;
   ctx.textAlign = 'center';
