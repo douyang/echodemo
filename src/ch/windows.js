@@ -3,6 +3,7 @@
 import { VIEWS, WINDOWS, ORDER, SHORT, MOVE } from '../views.js';
 import { loadModel } from '../model3d.js';
 import { sharedStage } from '../gl/shared.js';
+import { Labels } from '../gl/stage3d.js';
 
 // What each view shows and what is measured there (ASE 2019, Tables 2.1-2.27 and Section IV).
 const INFO = {
@@ -18,6 +19,7 @@ const INFO = {
   psax_pa: { shows: 'Aortic root, RA, RVOT, pulmonic valve, main PA and branches', acquire: 'Main PA diameter; RVOT PW; pulmonic CW; PR end-diastolic velocity' },
   psax_tv: { shows: 'RA, tricuspid valve, RV inflow, high septum', acquire: 'Tricuspid color; TR CW' },
   psax_avz: { shows: 'Aortic cusps: non-, right and left coronary', acquire: 'Cusp number and motion; color' },
+  psax_cor: { shows: 'Aortic root; origins of the left main and right coronary arteries', acquire: 'Where each coronary artery arises (anomalous origin)' },
   psax_mv: { shows: 'RV, septum, both mitral leaflets, LV', acquire: 'Leaflet excursion; basal wall motion; mitral color' },
   psax_pm: { shows: 'RV, septum, papillary muscles, LV', acquire: 'Global and regional LV function' },
   psax_ap: { shows: 'LV apex', acquire: 'Apical wall motion' },
@@ -26,19 +28,24 @@ const INFO = {
   a4c_rv: { shows: 'RA, tricuspid valve, RV, LA, LV', acquire: 'RV diameters and areas; TAPSE; tricuspid annular S′; TR CW' },
   a4c_la: { shows: 'Pulmonary veins, LA, mitral valve, LV, RA, tricuspid valve, RV', acquire: 'LA volume at end-systole; RA volume; pulmonary vein flow' },
   a4c_mv: { shows: 'Mitral valve', acquire: 'Leaflet anatomy; mitral color; MR CW' },
+  a4c_tv: { shows: 'Tricuspid leaflets and annulus', acquire: 'Leaflet anatomy and coaptation; TR color' },
+  a4c_apex: { shows: 'LV apex', acquire: 'Apical wall motion; apical thrombus' },
   a5c: { shows: 'LA, mitral valve, LV, septum, LVOT, aortic valve, proximal aorta, RA, RV', acquire: 'LVOT PW about 5 mm below the valve; aortic valve CW; AR CW' },
   a2c: { shows: 'LV, mitral valve, LA; coronary sinus and LA appendage in some', acquire: 'LA volume; biplane LV volumes; mitral color' },
   a2c_lv: { shows: 'LV', acquire: 'Biplane LV volumes (with A4C)' },
   a3c: { shows: 'LA, mitral valve, LV, LVOT, aortic valve, aorta', acquire: 'Color on the mitral valve, LVOT and aortic valve; LVOT PW and aortic CW; AR and MR CW' },
   a3c_lv: { shows: 'LV', acquire: 'Wall motion; strain' },
-  sc4c: { shows: 'LV, mitral valve, RV, tricuspid valve, both septa, RA, LA', acquire: 'RV free wall thickness; septal defects; color on the atrial septum' },
-  sc_ivc: { shows: 'IVC in long axis, hepatic veins, IVC–RA junction', acquire: 'IVC diameter 1 to 2 cm from the RA and its collapse; hepatic vein PW' },
-  sc_aorta: { shows: 'Upper abdominal aorta', acquire: 'Color and PW of aortic flow (appendix view)' },
+  a3c_av: { shows: 'Aortic valve, LVOT, proximal aorta', acquire: 'Aortic valve and LVOT color' },
+  sc4c: { shows: 'Liver, LV, mitral valve, RV, tricuspid valve, both septa, RA, LA', acquire: 'RV free wall thickness; septal defects; color on the atrial septum' },
+  sc4c_ias: { shows: 'Atrial septum, square to the beam', acquire: 'Septal defects and color across the septum' },
+  sc_ivc: { shows: 'IVC in long axis through the liver, hepatic veins, IVC–RA junction', acquire: 'IVC diameter 1 to 2 cm from the RA and its collapse; hepatic vein PW' },
+  sc_aorta: { shows: 'Upper abdominal aorta behind the liver, celiac trunk, SMA', acquire: 'Color and PW of aortic flow (appendix view)' },
   ssn: { shows: 'Ascending aorta, arch, descending aorta, head vessels, right PA', acquire: 'Arch color; ascending and descending aorta PW; descending aorta CW' },
+  ssn_sax: { shows: 'Arch in cross-section, right PA along its length, LA', acquire: 'Right PA size; LA and the pulmonary veins' },
 };
 const WIN_KEYS = WINDOWS.map((w) => w.key);
 
-let stage = null, echo = null, ready = null, failed = false, fig = null, tick = 0;
+let stage = null, echo = null, ready = null, failed = false, fig = null, tick = 0, labels = null;
 let st = null, setState = null, lastMeas = '', on = false;
 
 function note(msg) {
@@ -64,14 +71,24 @@ async function ensure() {
       echo.overlay.visible = false;
       echo.top = 42;
       echo.retheme();
+      labels = new Labels(fig.querySelector('#windows-overlay'));
       return true;
     })().catch((err) => { failed = true; note('This device could not start the 3D view.'); throw err; });
   }
   return ready;
 }
 
+/** Tags for the cross-section, in columns beside the sector. */
+function sectionTags(stg) {
+  if (!labels) return;
+  if (!st.wsec || !st.wlabels) { labels.update([], null, 1, 1); return; }
+  const host = fig.querySelector('.pane-3d').getBoundingClientRect();
+  labels.update(echo.sectionLabels(stg.state.s), echo.sectorBox(), host.width, host.height);
+}
+
 function onFrame(stg) {
   if (!echo) return;
+  sectionTags(stg);
   if (tick++ % 2) return;   // about 30 frames a second is enough for the echo
   echo.labels = st.wlabels;
   echo.calipers = !st.wcine;
@@ -92,6 +109,7 @@ async function enter() {
   stage.heart.group.visible = true;
   stage.heart.setPericardium(true);
   echo.overlay.visible = true;
+  echo.section = st.wsec;
   echo.setView(st.view);
   stage.onFrame = onFrame;
   fig.classList.add('gl-ready');
@@ -105,8 +123,8 @@ export default {
   part: 'physics',
   title: 'Windows',
   dwell: 30,
-  defaults: { win: 'plax', view: 'plax', wcine: true, wlabels: true, wmeas: '' },
-  watch: ['win', 'view', 'wcine', 'wlabels', 'wmeas'],
+  defaults: { win: 'plax', view: 'plax', wcine: true, wlabels: true, wsec: false, wmeas: '' },
+  watch: ['win', 'view', 'wcine', 'wlabels', 'wsec', 'wmeas'],
   figure(f) { fig = f; return null; },
   init({ state, set }) {
     st = state;
@@ -117,6 +135,8 @@ export default {
   enter() { enter(); },
   leave() {
     on = false;
+    if (labels) labels.update([], null, 1, 1);
+    if (stage) stage.opts.labeled = false;
     if (echo && echo.overlay) echo.overlay.visible = false;
     if (stage && stage.onFrame === onFrame) { stage.stop(); stage.onFrame = null; }
   },
@@ -138,8 +158,13 @@ export default {
       const lab = fig && fig.querySelector('#windows-label');
       if (lab) lab.textContent = VIEWS[s.view].name;
     }
+    if ('wsec' in ch || 'chapter' in ch) {
+      const l3 = fig && fig.querySelector('#windows-3dlabel');
+      if (l3) l3.textContent = s.wsec ? 'Cross-section' : 'Imaging plane';
+    }
     if (!stage || !echo || !on) return;
     if ('view' in ch) echo.setView(s.view);
+    if ('wsec' in ch) echo.setSection(s.wsec);
     if ('wcine' in ch) stage.opts.beat = s.wcine;
   },
   key_(k, set, s) {
@@ -169,7 +194,7 @@ export default {
     else if (s.view === 'plax' && m && !s.wcine) live += `Calipers at end-diastole, square to the long axis: septum ${(m.ivs / 10).toFixed(1)} cm, cavity ${(m.lvid / 10).toFixed(1)} cm, inferolateral wall ${(m.pw / 10).toFixed(1)} cm. `;
     else if (s.view === 'plax') live += 'Stop the cine to measure the walls and cavity at end-diastole. ';
     else if (v.zoom) live += `A ${v.zoom.w} cm box, magnified. `;
-    live += `<span class="note">Views and measurements: ASE${cite('mitchell2019')}. Lab class: ${v.lab}</span>`;
+    live += `<span class="note">Views and measurements: ASE${cite('mitchell2019')}. Lab class: ${v.lab || 'none in the list'}</span>`;
     return { readouts, live };
   },
 };

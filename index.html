@@ -47,7 +47,7 @@
     <figure class="fig" id="fig-windows">
       <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
       <div class="split">
-        <div class="pane-3d"><div class="gl-host"></div><p class="pane-label">Imaging plane</p><p class="fig-note" id="windows-note">Drag to orbit · Scroll or pinch to zoom</p></div>
+        <div class="pane-3d"><div class="gl-host"></div><div class="overlay" id="windows-overlay"></div><p class="pane-label" id="windows-3dlabel">Imaging plane</p><p class="fig-note" id="windows-note">Drag to orbit · Scroll or pinch to zoom</p></div>
         <div class="pane-2d"><canvas class="fig-canvas" id="windows-canvas" aria-hidden="true"></canvas><p class="pane-label" id="windows-label">Parasternal long axis</p></div>
       </div>
       <figcaption class="sr-only">Left: a three-dimensional heart with the ultrasound sector plane that cuts it. Right: the matching echocardiographic view with the chambers and valves labeled.</figcaption>
@@ -244,6 +244,7 @@
         <div class="toggles">
           <label class="check"><input type="checkbox" id="w-cine" data-key="wcine"> Cine</label>
           <label class="check"><input type="checkbox" id="w-labels" data-key="wlabels"> Labels</label>
+          <label class="check"><input type="checkbox" id="w-sec" data-key="wsec"> Cross-section</label>
         </div>
       </div>
       <dl class="readouts"></dl>
@@ -255,11 +256,12 @@
         <li><b>Parasternal long axis.</b> Third or fourth left intercostal space, marker toward the right shoulder, 9 to 10 o’clock<span class="cite" data-ref="mitchell2019"></span>.</li>
         <li><b>Parasternal short axis.</b> Rotate 90° clockwise from the long axis; the marker points to the left shoulder<span class="cite" data-ref="mitchell2019"></span>. Tilt the beam to step from the great vessels to the mitral valve, the papillary muscles and the apex<span class="cite" data-ref="mitchell2019"></span>.</li>
         <li><b>Apical.</b> At the apical impulse, marker at 4 to 5 o’clock<span class="cite" data-ref="mitchell2019"></span>. From the four-chamber view, rotate about 60° counterclockwise for the two-chamber view and 60° more for the three-chamber view<span class="cite" data-ref="mitchell2019"></span>. Tilt anteriorly for the five-chamber view<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Subcostal.</b> Below the xiphoid. It shows the heart, the pericardium, the RV free wall and the inferior vena cava<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Subcostal.</b> Below the xiphoid. It shows the heart, the pericardium, the RV free wall and the inferior vena cava<span class="cite" data-ref="mitchell2019"></span>; angled a little to the patient's left, the abdominal aorta.</li>
         <li><b>Suprasternal.</b> It shows the ascending aorta, the arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
         <h3>The figure</h3>
-        <p>Left: the heart model with the imaging plane. Right: the echo view that the same plane cuts from the model. Each view carries the class name that the lab uses to annotate it. The model is a normal adult heart; in a patient, the position of the heart changes the angles.</p>
+        <p>Left: the heart model with the imaging plane. With <b>Cross-section</b> on, the heart is cut on that plane and seen square to it, turned as the echo is, with the structures named. Right: the echo view that the same plane cuts from the model. A change of view moves the plane from where it is, as the probe would move.</p>
+        <p>Below the diaphragm, the liver, the inferior vena cava, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views; they are not part of the heart model and the 3D heart does not show them. Each view carries the class name that the lab uses to annotate it, where the lab's list has one. The model is a normal adult heart; in a patient, the position of the heart changes the angles.</p>
         <h3>A good apical view</h3>
         <p>An apical view that is not foreshortened shows about two thirds LV and one third LA along the long axis<span class="cite" data-ref="mitchell2019"></span>. A plane that misses the true apex makes the LV look short and round, and its volumes read low<span class="cite" data-ref="lang2015"></span>.</p>
         <p>The British Society of Echocardiography lists a minimum dataset of views in scanning order, and asks for at least two cardiac cycles for each clip<span class="cite" data-ref="bse2020"></span>.</p>
@@ -294,13 +296,44 @@
         <div class="control">
           <span class="label">Look from</span>
           <div class="seg" role="group" aria-label="Camera" data-key="pcam">
-            <button type="button" data-val="front">Front</button><button type="button" data-val="apex">The apex</button><button type="button" data-val="side">The side</button>
+            <button type="button" data-val="front">Front</button><button type="button" data-val="apex">The apex</button><button type="button" data-val="side">The side</button><button type="button" data-val="plane">Square to the plane</button>
           </div>
         </div>
         <div class="toggles">
           <label class="check"><input type="checkbox" data-key="pheart"> Heart</label>
           <label class="check"><input type="checkbox" data-key="plines"> Where the focused plane crosses</label>
           <label class="check"><input type="checkbox" data-key="pcut"> Cut at the focused plane</label>
+          <label class="check"><input type="checkbox" data-key="pfree"> Free plane</label>
+        </div>
+        <div class="free" id="planes-free" hidden>
+          <p class="free-head"><span>Free plane, from the focused view</span> <output id="pfree-state"></output></p>
+          <div class="row2">
+            <div class="control">
+              <label for="prot">Rotate, + clockwise <output data-for="prot"></output></label>
+              <input type="range" id="prot" data-key="prot" min="-90" max="90" step="1">
+            </div>
+            <div class="control">
+              <label for="ptilt">Tilt <output data-for="ptilt"></output></label>
+              <input type="range" id="ptilt" data-key="ptilt" min="-45" max="45" step="1">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="control">
+              <label for="prock">Rock, + to the right <output data-for="prock"></output></label>
+              <input type="range" id="prock" data-key="prock" min="-40" max="40" step="1">
+            </div>
+            <div class="control">
+              <label for="pslide">Slide <output data-for="pslide"></output></label>
+              <input type="range" id="pslide" data-key="pslide" min="-5" max="5" step="0.1">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="control">
+              <label for="psweep">Sweep <output data-for="psweep"></output></label>
+              <input type="range" id="psweep" data-key="psweep" min="-5" max="5" step="0.1">
+            </div>
+            <div class="control free-reset"><button type="button" class="chip" id="pfree-reset">Back to the focused view</button></div>
+          </div>
         </div>
       </div>
       <dl class="readouts"></dl>
@@ -314,6 +347,8 @@
         <li><b>Long and short axis cross at right angles.</b> The short axis comes from a 90° rotation of the long axis<span class="cite" data-ref="mitchell2019"></span>.</li>
         <li><b>Small tilts make new views.</b> From the parasternal long axis, tilt toward the right hip for RV inflow, and anteriorly for RV outflow. From the four-chamber view, tilt anteriorly to add the LVOT and the aortic valve<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
+        <h3>Free plane</h3>
+        <p>Turn on <b>Free plane</b> to move a plane away from the focused view the way a probe moves: rotate it about the beam, tilt the beam across the plane, rock it within the plane, slide the probe along the plane and sweep it across. The echo pane shows what that plane cuts; <b>Square to the plane</b> turns the 3D heart to face it. The nearest standard view is judged by the angle between the planes and how far its centre lies off the free plane. Within 20° and 3 cm it is marked; within 10° and 1.5 cm the plane settles onto it when you let go of the control.</p>
         <h3>What each view shows</h3>
         <p>The table lists the structures that ASE names for each view on show<span class="cite" data-ref="mitchell2019"></span>. Choose a structure to light the views that contain it. Zoomed and LV-focused views use the plane of their parent view, so the figure shows the parent plane only.</p>
         <h3>Why it matters</h3>

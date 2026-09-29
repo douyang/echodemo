@@ -21,6 +21,15 @@ let st = null, setState = null;
 let group = null, crossLines = null, marker = null, anchors = null, geoms = null;
 const fans = new Map();
 let ink = null, labelBoxes = [], tick = 0, down = null;
+let freeFan = null, nearFan = null, nearInfo = null;
+const FREE_KEYS = ['prot', 'ptilt', 'prock', 'pslide', 'psweep'];
+// labels for a plane that is not a standard view: any structure lying on it
+const GENERIC = [['lv', 'LV'], ['rv', 'RV'], ['la', 'LA'], ['ra', 'RA'], ['ivs', 'IVS'], ['ias', 'IAS'], ['mv', 'MV'], ['tv', 'TV'], ['av', 'AV'], ['pv', 'PV'],
+  ['ao', 'Ao'], ['mpa', 'PA'], ['apex', 'apex'], ['desc', 'desc Ao'], ['arch', 'arch'], ['ivcl', 'IVC'], ['svc', 'SVC']];
+// A plane is judged by the anatomy it holds: the angle between the planes and how far the
+// view's imaged centre lies off the free plane. Near: within 20 degrees and 3 cm; on it (it
+// settles there when let go): within 10 degrees and 1.5 cm.
+const NEAR = { deg: 20, cm: 3.0 }, ON = { deg: 10, cm: 1.5 };
 
 const sel = (s = st) => (s.pviews ? s.pviews.split(',').filter((k) => HAS[k]) : []);
 const winColor = (win) => getComputedStyle(document.documentElement).getPropertyValue(`--w-${win}`).trim() || '#555';
@@ -111,8 +120,10 @@ function fanMaterial(col) {
 }
 
 let probeGeo = null;
-function makeFan(k) {
-  const g = geoms[k], spec = VIEWS[k];
+function makeFan(k) { return fanFor(geoms[k], VIEWS[k], rgb(winColor(VIEWS[k].win))); }
+
+/** A fan (sector, outline, probe) for plane g with the view settings spec, in color col. */
+function fanFor(g, spec, col) {
   const half = (spec.angle * Math.PI) / 360, N = 40;
   const verts = [g.O.x, g.O.y, g.O.z];
   for (let i = 0; i <= N; i++) {
@@ -127,7 +138,6 @@ function makeFan(k) {
   geo.setIndex(idx);
   const lgeo = new T.BufferGeometry();
   lgeo.setAttribute('position', new T.Float32BufferAttribute(verts, 3));
-  const col = rgb(winColor(spec.win));
   const mat = fanMaterial(col);
   const lmat = new T.LineBasicMaterial({ color: new T.Color(...col), transparent: true, opacity: 0.8, depthTest: false });
   const mesh = new T.Mesh(geo, mat);
@@ -178,14 +188,127 @@ function syncCrossings() {
   crossLines.geometry.setAttribute('position', new T.Float32BufferAttribute(pts, 3));
 }
 
+// ---------------------------------------------------------------- free plane
+const quatOf = (g) => new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(g.r, g.d, g.n));
+
+/**
+ * The free plane: the focused view's plane moved as a probe is. Rotate turns it about the
+ * beam (clockwise from the probe for +), tilt turns the beam across the plane, rock turns it
+ * within the plane (toward screen-right for +); slide and sweep move the probe along and
+ * across the plane.
+ */
+function freePose(s = st) {
+  const b = geoms[s.pfocus];
+  if (!b) return null;
+  const rad = (x) => (x * Math.PI) / 180;
+  const d = b.d.clone(), r = b.r.clone().applyAxisAngle(d, rad(s.prot)), n = b.n.clone().applyAxisAngle(d, rad(s.prot));
+  d.applyAxisAngle(r, rad(s.ptilt));
+  n.applyAxisAngle(r, rad(s.ptilt));
+  d.applyAxisAngle(n, rad(-s.prock));
+  r.applyAxisAngle(n, rad(-s.prock));
+  const O = b.O.clone().addScaledVector(b.r, s.pslide).addScaledVector(b.n, s.psweep);
+  return { O, d: d.normalize(), r: r.normalize(), n: n.normalize() };
+}
+const moved = (s = st) => FREE_KEYS.some((k) => Math.abs(s[k] || 0) > 1e-6);
+
+/**
+ * The standard view nearest to plane g: the angle between the planes, and how far the view's
+ * imaged centre lies off g (it must also lie within the sector's reach in g). Where two views
+ * share a plane, the closer beam direction decides.
+ */
+function nearest(g) {
+  if (!g) return null;
+  let best = null;
+  for (const k of PLANE_VIEWS) {
+    const G = geoms[k];
+    if (!G) continue;
+    const depth = VIEWS[k].depth;
+    const deg = (Math.acos(Math.min(1, Math.abs(g.n.dot(G.n)))) * 180) / Math.PI;
+    const q = G.O.clone().addScaledVector(G.d, depth / 2).sub(g.O);
+    const cm = Math.abs(q.dot(g.n));
+    const reach = Math.hypot(q.dot(g.r), q.dot(g.d) - depth / 2);
+    const beam = (Math.acos(Math.max(-1, Math.min(1, g.d.dot(G.d)))) * 180) / Math.PI;
+    const score = deg / NEAR.deg + cm / NEAR.cm + beam / 180 + (reach > depth / 2 ? 2 : 0);
+    if (!best || score < best.score) best = { k, deg, cm, score, reach, depth };
+  }
+  if (best) {
+    const inside = best.reach <= best.depth / 2;
+    best.near = inside && best.deg < NEAR.deg && best.cm < NEAR.cm;
+    best.on = inside && best.deg < ON.deg && best.cm < ON.cm;
+  }
+  return best;
+}
+
+function freeSpec() {
+  const b = VIEWS[st.pfocus] || VIEWS.a4c;
+  const on = nearInfo && nearInfo.on;
+  return { angle: b.angle, depth: b.depth, near: b.near, liver: b.liver, short: on ? VIEWS[nearInfo.k].short : 'FREE', name: 'Free plane',
+    labels: on ? VIEWS[nearInfo.k].labels : GENERIC, strict: !on };
+}
+
+/** Rebuild the free fan on plane g, and the ghost of a near view that is not on show. */
+function drawFree(g) {
+  if (freeFan) { dropFan(freeFan); freeFan = null; }
+  if (nearFan) { dropFan(nearFan); nearFan = null; }
+  if (!st.pfree || !g) return;
+  const css = getComputedStyle(document.documentElement);
+  freeFan = fanFor(g, VIEWS[st.pfocus] || VIEWS.a4c, rgb(css.getPropertyValue('--ink').trim()));
+  freeFan.mat.uniforms.uAlpha.value = 0.2;
+  freeFan.lmat.opacity = 1;
+  freeFan.probe.material.opacity = 0.85;
+  const nb = nearInfo;
+  if (nb && nb.near && !fans.has(nb.k)) {
+    nearFan = fanFor(geoms[nb.k], VIEWS[nb.k], rgb(winColor(VIEWS[nb.k].win)));
+    nearFan.mat.uniforms.uAlpha.value = 0.08;
+    nearFan.lmat.opacity = 0.9;
+    nearFan.probe.visible = false;
+  }
+}
+
+/** The free plane after a change of its controls; animate when it moves onto a view. */
+function syncFree(animate = false) {
+  const box = document.getElementById('planes-free');
+  if (box) box.hidden = !st.pfree;
+  if (!stage || !on || !group) return;
+  const g = st.pfree ? freePose() : null;
+  nearInfo = g ? nearest(g) : null;
+  if (box) {
+    box.classList.toggle('is-near', !!(nearInfo && nearInfo.near && !nearInfo.on));
+    box.classList.toggle('is-on', !!(nearInfo && nearInfo.on));
+    const out = document.getElementById('pfree-state');
+    if (out) {
+      const nb = nearInfo;
+      out.textContent = !nb ? '' : nb.on && nb.deg < 0.05 && nb.cm < 0.01 ? `on ${CODE[nb.k]}` : nb.on ? `${CODE[nb.k]}: let go to settle on it` : nb.near ? `near ${CODE[nb.k]} · ${Math.round(nb.deg)}° · ${nb.cm.toFixed(1)} cm` : 'no standard view near';
+    }
+  }
+  drawFree(g);
+  style();
+  if (echo) {
+    if (g) echo.setGeometry(g, freeSpec(), { animate });
+    else if (geoms[st.pfocus]) echo.setView(st.pfocus, { animate });
+  }
+  if (st.pcam === 'plane') camera(!animate);
+}
+
+/** On letting go of a control: a plane on a standard view settles onto it. */
+function release() {
+  if (!st.pfree) return;
+  const nb = nearest(freePose());
+  if (!nb || !nb.on) return;
+  const list = sel();
+  if (!list.includes(nb.k)) list.push(nb.k);
+  setState({ pviews: list.join(','), pfocus: nb.k, prot: 0, ptilt: 0, prock: 0, pslide: 0, psweep: 0, playing: false });
+}
+
 function style() {
   if (!group) return;
   const S = st.pstruct !== 'none' ? st.pstruct : null;
   for (const [k, f] of fans) {
     const focus = k === st.pfocus;
     const has = S ? HAS[k].includes(S) : true;
-    f.mat.uniforms.uAlpha.value = S ? (has ? (focus ? 0.3 : 0.16) : 0.025) : (focus ? 0.3 : 0.07);
-    f.lmat.opacity = S ? (has ? 0.95 : 0.14) : (focus ? 1 : 0.42);
+    const near = st.pfree && nearInfo && nearInfo.near && nearInfo.k === k;
+    f.mat.uniforms.uAlpha.value = S ? (has ? (focus ? 0.3 : 0.16) : 0.025) : (focus ? 0.3 : near ? 0.2 : 0.07);
+    f.lmat.opacity = S ? (has ? 0.95 : 0.14) : (focus || near ? 1 : 0.42);
     f.probe.material.opacity = S && !has ? 0.1 : focus ? 0.85 : 0.35;
   }
   syncCrossings();
@@ -199,7 +322,7 @@ function style() {
 
 function cut() {
   if (!stage || !on) return;
-  const g = st.pcut ? geoms[st.pfocus] : null;
+  const g = st.pcut ? (st.pfree ? freePose() : geoms[st.pfocus]) : null;
   stage.heart.setCut(g ? new T.Plane().setFromNormalAndCoplanarPoint(g.n.clone(), g.O) : null);
 }
 
@@ -212,12 +335,22 @@ function retheme3d() {
     f.probe.material.color.setRGB(...col);
   }
   const css = getComputedStyle(document.documentElement);
+  if (freeFan) { const c = rgb(css.getPropertyValue('--ink').trim()); freeFan.mat.uniforms.uColor.value.set(...c); freeFan.lmat.color.setRGB(...c); freeFan.probe.material.color.setRGB(...c); }
   crossLines.material.color.setRGB(...rgb(css.getPropertyValue('--ink').trim()));
   marker.material.color.setRGB(...rgb(css.getPropertyValue('--flag').trim()));
 }
 
 function camera(instant = false) {
   const A = model.anat;
+  if (st.pcam === 'plane') {
+    // square to the focused (or free) plane, turned as its echo is: probe at the top
+    const g = st.pfree ? freePose() : geoms[st.pfocus];
+    if (g) {
+      const depth = (VIEWS[st.pfocus] || VIEWS.a4c).depth;
+      stage.view(g.n.clone(), g.d.clone().negate(), 0.16 * depth, g.O.clone().addScaledVector(g.d, depth * 0.5), instant);
+      return;
+    }
+  }
   if (st.pcam === 'apex') stage.view(A.axis.clone(), A.anterior.clone(), 2.6, A.point('lv_eq', 0, 0), instant);
   else if (st.pcam === 'side') stage.view(A.lateral.clone().negate(), A.axis.clone(), 2.9, stage.center, instant);
   else stage.view(new T.Vector3(-0.38, -0.2, -1).normalize(), new T.Vector3(0, 1, 0), 3.1, stage.center, instant);
@@ -320,6 +453,15 @@ function drawInk() {
     tag(CODE[k], p.x, p.y, winColor(spec.win), k === st.pfocus, k);
     ctx.globalAlpha = 1;
   }
+  // the free plane and a near view that is not on show
+  for (const [f, text, color, bold] of [[freeFan, 'Free', css.getPropertyValue('--ink').trim(), true], [nearFan, nearInfo ? CODE[nearInfo.k] : '', nearInfo ? winColor(VIEWS[nearInfo.k].win) : '', false]]) {
+    if (!f || !text) continue;
+    const pos = f.obj.children[1].geometry.attributes.position;
+    const m = (pos.count - 1) >> 1;
+    const O = new T.Vector3(pos.getX(0), pos.getY(0), pos.getZ(0)), E = new T.Vector3(pos.getX(m), pos.getY(m), pos.getZ(m));
+    const p = stage.project(O.lerp(E, 0.8));
+    if (p.z < 1) tag(text, p.x, p.y, color, bold, null);
+  }
   // the structure
   if (S && marker.visible) {
     const p = stage.project(marker.position);
@@ -350,12 +492,19 @@ function drawInk() {
 
 function onFrame(stg) {
   const W = stg.pencil.w * stg.pencil.dpr, H = stg.pencil.h * stg.pencil.dpr;
-  for (const f of fans.values()) f.mat.uniforms.uRes.value.set(W, H);
+  for (const f of [...fans.values(), freeFan, nearFan]) if (f) f.mat.uniforms.uRes.value.set(W, H);
+  // while the free plane settles onto a view, its fan and the cut follow the easing plane
+  if (echo && echo.tr && st.pfree) {
+    echo.advance();
+    drawFree(echo.g);
+    if (freeFan) freeFan.mat.uniforms.uRes.value.set(W, H);
+    if (st.pcut) stage.heart.setCut(new T.Plane().setFromNormalAndCoplanarPoint(echo.g.n.clone(), echo.g.O));
+  }
   drawInk();
   if (tick++ % 2 || !echo) return;
-  if (!echo.canvas.offsetParent) return;   // the echo pane is hidden on phones
+  if (!echo.canvas.offsetParent) { echo.advance(); return; }   // the echo pane is hidden on phones
   echo.labels = true;
-  if (geoms[st.pfocus]) echo.frame({ ...stg.state });
+  if (echo.g) echo.frame({ ...stg.state });
   else echo.drawEmpty();
 }
 
@@ -370,7 +519,8 @@ async function enter() {
   stage.heart.group.visible = st.pheart;
   group.visible = true;
   syncFans();
-  echo.setView(st.pfocus);
+  echo.setView(st.pfocus, { animate: false });
+  syncFree(false);
   stage.onFrame = onFrame;
   fig.classList.add('gl-ready');
   stage.resize();
@@ -457,8 +607,16 @@ export default {
   part: 'physics',
   title: 'Planes',
   dwell: 28,
-  defaults: { pviews: PRESETS.nine.join(','), pfocus: 'a4c', pstruct: 'none', pcam: 'front', pheart: true, pcut: false, plines: true },
-  watch: ['pviews', 'pfocus', 'pstruct', 'pcam', 'pheart', 'pcut', 'plines'],
+  defaults: { pviews: PRESETS.nine.join(','), pfocus: 'a4c', pstruct: 'none', pcam: 'front', pheart: true, pcut: false, plines: true,
+    pfree: false, prot: 0, ptilt: 0, prock: 0, pslide: 0, psweep: 0 },
+  watch: ['pviews', 'pfocus', 'pstruct', 'pcam', 'pheart', 'pcut', 'plines', 'pfree', ...FREE_KEYS],
+  format: {
+    prot: (v) => `${v > 0 ? '+' : ''}${v}°`,
+    ptilt: (v) => `${v > 0 ? '+' : ''}${v}°`,
+    prock: (v) => `${v > 0 ? '+' : ''}${v}°`,
+    pslide: (v) => `${v > 0 ? '+' : ''}${Number(v).toFixed(1)} cm`,
+    psweep: (v) => `${v > 0 ? '+' : ''}${Number(v).toFixed(1)} cm`,
+  },
   figure(f) { fig = f; return null; },
   init({ state, set }) {
     st = state;
@@ -476,6 +634,8 @@ export default {
       if (hit) focusView(hit.key);
     });
     buildChips();
+    for (const k of FREE_KEYS) document.getElementById(k)?.addEventListener('change', release);
+    document.getElementById('pfree-reset')?.addEventListener('click', () => setState({ prot: 0, ptilt: 0, prock: 0, pslide: 0, psweep: 0, playing: false }));
     const seg = document.querySelector('.seg[data-key="pstruct"]');
     if (seg) seg.insertAdjacentHTML('beforeend', STRUCTS.filter((s) => s.id !== 'abd').map((s) => `<button type="button" data-val="${s.id}" title="${s.name}">${s.short}</button>`).join(''));
     syncChips();
@@ -483,6 +643,8 @@ export default {
   enter() { enter(); },
   leave() {
     on = false;
+    if (freeFan) { dropFan(freeFan); freeFan = null; }
+    if (nearFan) { dropFan(nearFan); nearFan = null; }
     if (group) group.visible = false;
     if (stage) {
       stage.heart.group.visible = true;
@@ -502,10 +664,21 @@ export default {
     if ('pviews' in ch || 'pfocus' in ch || 'pstruct' in ch) syncChips();
     const lab = fig && fig.querySelector('#planes-label');
     if (lab && ('pfocus' in ch || 'chapter' in ch)) lab.textContent = VIEWS[s.pfocus] ? VIEWS[s.pfocus].name : 'No view chosen';
+    if (lab && ('pfree' in ch || FREE_KEYS.some((k) => k in ch)) && s.pfree) lab.textContent = 'Free plane';
+    const freeBox = document.getElementById('planes-free');
+    if (freeBox && 'pfree' in ch) freeBox.hidden = !s.pfree;
+    if (fig && ('pfree' in ch || 'chapter' in ch)) {
+      const was = fig.classList.contains('free-on');
+      fig.classList.toggle('free-on', !!s.pfree);
+      if (was !== !!s.pfree && stage && on) { stage.resize(); if (echo) echo.resize(); }
+    }
     if (!stage || !on || !group) return;
     if ('pviews' in ch) syncFans();
     else if ('pfocus' in ch || 'pstruct' in ch || 'plines' in ch || 'pcut' in ch) style();
-    if ('pfocus' in ch && s.pfocus) echo.setView(s.pfocus);
+    if (s.pfree || 'pfree' in ch) {
+      // the free plane: animate when it moves onto a view (a snap or a new focus), follow the controls directly
+      if ('pfree' in ch || 'pfocus' in ch || FREE_KEYS.some((k) => k in ch)) syncFree('pfocus' in ch);
+    } else if ('pfocus' in ch && s.pfocus) echo.setView(s.pfocus);
     if ('pheart' in ch) stage.heart.group.visible = s.pheart;
     if ('pcam' in ch) camera();
   },
@@ -537,7 +710,13 @@ export default {
       { k: 'Window', v: k ? WNAME[VIEWS[k].win] : '–', text: true },
     ];
     if (k) readouts.push({ k: 'How to get there', v: MOVE[k], text: true });
+    const nb = s.pfree && geoms && T ? nearest(freePose(s)) : null;
+    if (nb) readouts.push({ k: 'Free plane', v: nb.on && !moved(s) ? `on ${CODE[nb.k]}` : `${Math.round(nb.deg)}° · ${nb.cm.toFixed(1)} cm off ${CODE[nb.k]}`, text: true });
     let live = '';
+    if (nb) {
+      live += `<b>Free plane.</b> ${nb.on && !moved(s) ? `It lies on ${VIEWS[nb.k].name}.` : nb.near ? `It is ${Math.round(nb.deg)}° from the plane of ${VIEWS[nb.k].name}, whose centre lies ${nb.cm.toFixed(1)} cm off it.` : 'No standard view is near.'} `;
+      live += `Within ${NEAR.deg}° and ${NEAR.cm} cm the nearest view is marked; within ${ON.deg}° and ${ON.cm} cm the plane settles onto it when you let go. `;
+    }
     if (k) {
       live += `<b>${VIEWS[k].name}.</b> Shows ${HAS[k].map((id) => SNAME[id].short).join(', ')}${cite('mitchell2019')}. `;
       if (geoms && geoms[k]) {

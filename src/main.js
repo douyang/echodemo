@@ -191,7 +191,10 @@ function renderText(i) {
 function renderAllText() { for (let i = 0; i < CHAPTERS.length; i++) renderText(i); }
 
 // ---------------------------------------------------------------- quizzes
+// The "Check yourself" questions are off; the questions stay in quiz.js.
+const SHOW_QUIZ = false;
 function buildQuizzes() {
+  if (!SHOW_QUIZ) return;
   for (const c of CHAPTERS) {
     const host = document.querySelector(`#ch-${c.key} .quiz`);
     const quiz = c.quiz || QUIZ[c.key];

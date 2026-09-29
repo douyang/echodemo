@@ -224,6 +224,22 @@ a:hover { text-decoration-color: var(--accent); }
   text-transform: uppercase;
   color: var(--ink-3);
 }
+/* labels on the 3D heart: tags beside it, a leader to the point they name */
+.overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+.overlay svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.tag {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font: 600 1.18rem/1 var(--hand);
+  color: var(--ink);
+  white-space: nowrap;
+  text-shadow: 0 0 3px var(--paper), 0 0 6px var(--paper);
+}
+.tag small { display: block; font: 400 0.9rem/1.1 var(--hand); color: var(--ink-2); }
+.tag.is-flag { color: var(--flag); }
+.tag.is-left { text-align: right; }
+.leader { stroke: var(--ink); stroke-width: 1.1; fill: none; opacity: 0.75; }
+.leader-dot { fill: var(--ink); }
 .split { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
 .split.wide { grid-template-columns: 1.45fr 1fr; }
 .split > div { position: relative; min-width: 0; }
@@ -326,6 +342,16 @@ a:hover { text-decoration-color: var(--accent); }
 
 /* controls */
 .controls { display: grid; gap: 12px; margin: 0 0 18px; }
+/* chapter 04 free plane: its own block, marked when it is near or on a standard view */
+.free { display: grid; gap: 10px; padding: 10px 12px 12px; border: 1px solid var(--rule); border-radius: 8px; }
+.free[hidden] { display: none; }
+.free-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin: 0; font: 500 0.6875rem/1.3 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); }
+.free-head output { font: 500 0.75rem var(--mono); letter-spacing: 0; text-transform: none; color: var(--ink); }
+.free.is-near { border-color: var(--accent); }
+.free.is-near .free-head output { color: var(--accent); }
+.free.is-on { border-color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok); }
+.free.is-on .free-head output { color: var(--ok); }
+.free-reset { display: flex; align-items: flex-end; }
 .control label, .control .label {
   display: flex;
   justify-content: space-between;
@@ -477,6 +503,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 
 /* check yourself */
 .quiz { display: grid; gap: 12px; margin: 6px 0 16px; }
+.quiz:empty { display: none; }
 .q { padding: 10px 12px; border: 1px solid var(--rule); border-radius: 8px; }
 .q p { margin: 0 0 8px; }
 .q .opts { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -681,6 +708,11 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .split { grid-template-columns: 1fr; grid-template-rows: 40% 60%; }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }
   .split.wide .pane-2d { display: none; }
+  /* with the free plane on, its echo shows under the 3D view */
+  .fig.free-on .split.wide { grid-template-rows: 48% 52%; }
+  .fig.free-on .split.wide .pane-2d { display: block; }
+  .tag { font-size: 0.98rem; }
+  .tag small { font-size: 0.78rem; }
   .tools { top: 14px; right: 14px; }
   .tool .t { display: none; }
   .tool { width: 34px; padding: 0; justify-content: center; }

@@ -85,6 +85,116 @@ function muscle(b, d, l, w, into) {
 /** Echogenicity of a valve from its leaflet thickness (cm). */
 const valveDb = (v) => DB.valve + 6 * clamp(((v?.thick ?? 0.12) - 0.12) / 0.3, 0, 1);
 
+// ---------------------------------------------------------------- valve leaflets
+// A leaflet keeps its length through the beat. It swings about its hinge between an open and
+// a shut shape: the direction of each short step along it is blended, not the points, so it
+// turns as a flap does instead of shrinking toward its hinge.
+const NL = 14;
+const plen = (p) => { let s = 0; for (let i = 1; i < p.length; i++) s += len(sub(p[i], p[i - 1])); return s; };
+/** Quadratic curve a -> b, its control point moved h (cm) along bd from the middle. */
+function quad(a, b, bd, h, m = 12) {
+  const c = add(lerp2(a, b, 0.5), mul(bd, h));
+  return Array.from({ length: m + 1 }, (_, i) => {
+    const t = i / m, u = 1 - t;
+    return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]];
+  });
+}
+/**
+ * A leaflet shape from hinge h, length l: a curve to e that bulges along bd as far as the
+ * length needs, then a tail along td (the zone where the leaflets meet). A leaflet shorter
+ * than the distance to e runs straight toward it and stops short.
+ */
+function flap(h, e, l, bd, td = null, tail = 0) {
+  const chord = len(sub(e, h)), arcL = l - (td ? tail : 0);
+  if (arcL <= chord * 1.001) return [h, add(h, mul(unit(sub(e, h)), l))];
+  let lo = 0, hi = arcL;
+  for (let k = 0; k < 18; k++) { const m = (lo + hi) / 2; if (plen(quad(h, e, bd, m)) < arcL) lo = m; else hi = m; }
+  const arc = quad(h, e, bd, (lo + hi) / 2);
+  return td && tail > 0 ? [...arc, add(e, mul(td, tail))] : arc;
+}
+/** Step directions (rad) of a polyline cut into NL equal steps, and its length. */
+function headings(poly) {
+  const cum = [0];
+  for (let i = 1; i < poly.length; i++) cum.push(cum[i - 1] + len(sub(poly[i], poly[i - 1])));
+  const L = cum[cum.length - 1] || 1e-6;
+  const pt = (s) => {
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < s) i++;
+    return lerp2(poly[i - 1], poly[i], clamp((s - cum[i - 1]) / Math.max(1e-9, cum[i] - cum[i - 1]), 0, 1));
+  };
+  const hs = [];
+  let p = poly[0];
+  for (let k = 1; k <= NL; k++) { const q = pt((k / NL) * L); hs.push(Math.atan2(q[1] - p[1], q[0] - p[0])); p = q; }
+  return { hs, L };
+}
+/** The leaflet at fraction f from shape A (0) to shape B (1), walked out from hinge h. */
+function swing(h, A, B, f) {
+  const a = headings(A), b = headings(B), L = mix(a.L, b.L, f) / NL;
+  const out = [h];
+  let p = h;
+  for (let k = 0; k < NL; k++) {
+    const d = b.hs[k] - a.hs[k];
+    const th = a.hs[k] + Math.atan2(Math.sin(d), Math.cos(d)) * f;
+    p = add(p, [Math.cos(th) * L, Math.sin(th) * L]);
+    out.push(p);
+  }
+  return out;
+}
+/** Closed outline of a leaflet: thickness t0 at the hinge to t1 at the free edge, a round tip. */
+function leafOutline(mid, t0, t1) {
+  const n = mid.length, Lf = [], Rt = [];
+  for (let i = 0; i < n; i++) {
+    const nn = unit(perp(sub(mid[Math.min(n - 1, i + 1)], mid[Math.max(0, i - 1)])));
+    const u = i / (n - 1), w = mix(t0, t1, u * u) / 2;
+    Lf.push(add(mid[i], mul(nn, w)));
+    Rt.push(add(mid[i], mul(nn, -w)));
+  }
+  const e = mid[n - 1], d = unit(sub(e, mid[n - 2])), nn = perp(d), w = t1 / 2;
+  const cap = [];
+  for (let k = 1; k < 6; k++) { const a = (k / 6) * Math.PI; cap.push(add(e, add(mul(nn, w * Math.cos(a)), mul(d, w * Math.sin(a))))); }
+  return [...Lf, ...cap, ...Rt.reverse()];
+}
+/** A band of thickness t along an open line (a cusp edge seen in short axis). */
+function band(line, t) {
+  const n = line.length, Lf = [], Rt = [];
+  for (let i = 0; i < n; i++) {
+    const nn = unit(perp(sub(line[Math.min(n - 1, i + 1)], line[Math.max(0, i - 1)])));
+    Lf.push(add(line[i], mul(nn, t / 2)));
+    Rt.push(add(line[i], mul(nn, -t / 2)));
+  }
+  return [...Lf, ...Rt.reverse()];
+}
+/**
+ * Two leaflets from hinges h1, h2 of lengths L1, L2 that meet on the ventricular side
+ * (toward: unit vector into the ventricle). The shut shapes billow a little toward the atrium
+ * and share a zone of contact; gap (cm) keeps the tips apart. open1, open2: the open end
+ * points; bulge1, bulge2: the side each open leaflet bows to.
+ */
+function valvePair(h1, h2, L1, L2, toward, o) {
+  const gap = o.gap ?? 0, tent = o.tent ?? 0.45;
+  const span = unit(sub(h2, h1)), w = len(sub(h2, h1)), back = mul(toward, -1);
+  const cAt = (p) => add(add(h1, mul(span, w * p)), mul(toward, tent + 0.6 * gap));
+  const left = (p, i) => {
+    const c = add(cAt(p), mul(span, i ? gap / 2 : -gap / 2));
+    return (i ? L2 : L1) - 1.03 * len(sub(c, i ? h2 : h1));
+  };
+  // where the tips meet: the longer leaflet covers more of the orifice, both keep the same contact
+  let lo = 0.2, hi = 0.9;
+  for (let k = 0; k < 24; k++) { const m = (lo + hi) / 2; if (left(m, 0) > left(m, 1)) lo = m; else hi = m; }
+  const C = cAt((lo + hi) / 2);
+  const c1 = add(C, mul(span, -gap / 2)), c2 = add(C, mul(span, gap / 2));
+  const tail = gap > 0.02 ? 0 : Math.max(0, Math.min(left((lo + hi) / 2, 0), 0.45));
+  const shut1 = flap(h1, c1, L1, back, toward, tail), shut2 = flap(h2, c2, L2, back, toward, tail);
+  const open1 = flap(h1, o.open1, L1, o.bulge1), open2 = flap(h2, o.open2, L2, o.bulge2);
+  return { shut1, shut2, open1, open2, C };
+}
+
+/** Items for leaflets: each its own fill (its speckle turns with it), then the bright surface. */
+const leaves = (list, refs, e) => [
+  ...list.map((p, i) => ({ polys: [p], refs: refs ? [refs[i]] : null, e })),
+  { borders: list, e, spec: 7, w: 0.05, closed: true },
+];
+
 // ---------------------------------------------------------------- the scanner frame
 /** Panel, sector and cm -> px mapping. deg: sector angle; depth in cm; near: chest wall (cm). */
 export function frame(ctx, box, depthIn, title, o = {}) {
@@ -392,34 +502,31 @@ function a4cShape(g, c, ph) {
   const pmDir = unit(add(mul(nl, -0.85), mul(ax, -0.5)));
   const pm = muscle(pmBase, pmDir, 0.9, 0.8 + 0.25 * c, nl);
   const pmTip = add(pmBase, mul(pmDir, 0.82));
-  // valves
-  const valve = (h1, h2, towardV, gapCm, shut, dome, tipW) => {
-    const mid = lerp2(h1, h2, 0.5), span = unit(sub(h2, h1));
-    const closedTip = add(mid, mul(towardV, 0.45));
-    const c1 = add(closedTip, mul(span, -gapCm / 2)), c2 = add(closedTip, mul(span, gapCm / 2));
-    let o1, o2;
+  // valves. Mitral: anterior leaflet on the septal side (2.5 cm), posterior on the lateral side
+  // (1.5 cm). Tricuspid: septal leaflet (1.5 cm), anterior leaflet on the free wall (2.1 cm).
+  const rot = (d, side, deg) => { const a = (deg * Math.PI) / 180; return unit(add(mul(d, Math.cos(a)), mul(side, Math.sin(a)))); };
+  const valve = (h1, h2, toward, L1, L2, v, shut) => {
+    const span = unit(sub(h2, h1)), out1 = mul(span, -1);
+    let open1 = add(h1, mul(rot(toward, out1, 10), L1 * 0.95)), open2 = add(h2, mul(rot(toward, span, 22), L2 * 0.95));
+    const dome = v?.dome ?? 0;
     if (dome > 0) {
-      // stenotic: tips held close, bodies dome into the ventricle
-      const tip = add(mid, mul(towardV, 1.6 + 0.4 * dome));
-      o1 = add(tip, mul(span, -tipW / 2));
-      o2 = add(tip, mul(span, tipW / 2));
-    } else {
-      o1 = add(add(h1, mul(towardV, 2.2)), mul(span, 0.35));
-      o2 = add(add(h2, mul(towardV, 1.35)), mul(span, -0.3));
+      // rheumatic: the fused tips stay close, a small orifice; the anterior leaflet domes
+      const k = smooth(dome / 0.6), tip = add(lerp2(h1, h2, 0.5), mul(toward, 1.2 + 0.3 * (1 - dome))), tw = v.tip ?? 1.2;
+      open1 = lerp2(open1, add(tip, mul(span, -tw / 2)), k);
+      open2 = lerp2(open2, add(tip, mul(span, tw / 2)), k);
     }
-    const t1 = lerp2(o1, c1, shut), t2 = lerp2(o2, c2, shut);
-    const bow = (h, tp, s) => {
-      const m = lerp2(h, tp, 0.5);
-      const bulge = dome > 0 ? mul(towardV, 0.55 * dome * (1 - shut)) : mul(towardV, 0.15);
-      return spline([h, add(m, add(bulge, mul(span, s * 0.1))), tp], 6);
-    };
-    return { l1: bow(h1, t1, 1), l2: bow(h2, t2, -1), tip: lerp2(t1, t2, 0.5), open: lerp2(o1, o2, 0.5), gapMid: closedTip };
+    const P = valvePair(h1, h2, L1, L2, toward, { gap: v?.gap ?? 0, open1, open2, bulge1: out1, bulge2: span });
+    const l1 = swing(h1, P.open1, P.shut1, shut), l2 = swing(h2, P.open2, P.shut2, shut);
+    const th = v?.thick ?? 0.12, tipTh = th * (1 + 0.4 * dome);
+    return { l1, l2, o1: leafOutline(l1, th * 0.75, tipTh), o2: leafOutline(l2, th * 0.75, tipTh), tip: lerp2(l1[NL], l2[NL], 0.5), gapMid: P.C };
   };
-  const mv = valve(S0, L0, ax, g.mv?.gap ?? 0, ph.mvShut, g.mv?.dome ?? 0, g.mv?.tip ?? 1.2);
+  const mv = valve(S0, L0, ax, 2.5, 1.5, g.mv, ph.mvShut);
   const Tc = lerp2(TS, TL, 0.5);
   const rvAx = unit(sub(Ra, Tc));
-  const tv = valve(TS, TL, rvAx, g.tv?.gap ?? 0, ph.tvShut, 0, 1.2);
-  const chords = [[pmTip, along(mv.l2, 0.9)], [pmTip, along(mv.l1, 0.9)]];
+  const tv = valve(TS, TL, rvAx, 1.5, 2.1, g.tv, ph.tvShut);
+  // chordae fan out from the papillary head to the free edges and the bodies of both leaflets
+  const pmSide = perp(pmDir);
+  const chords = [[pmTip, along(mv.l2, 0.97)], [pmTip, along(mv.l2, 0.6)], [add(pmTip, mul(pmSide, 0.12)), along(mv.l1, 0.97)], [add(pmTip, mul(pmSide, 0.12)), along(mv.l1, 0.72)], [add(pmTip, mul(pmSide, -0.1)), along(mv.l1, 0.5)]];
   // pericardium around the free walls, from the right atrium to the left atrium
   const heartC = centroid([lvC, rvC, laC, raC]);
   const every = (p, k) => p.filter((_, i) => i % k === 0);
@@ -431,7 +538,7 @@ function a4cShape(g, c, ph) {
   const daC = add(laPts[4], add(mul(ldown, 1.45), mul(nl, 0.55)));
   return {
     A, B, S0, L0, TS, TL, Ra, ax, nl, out, lvC, rvC, laC, raC, lvCav, lvCavT, laCav, raCav, rvFree, rvFreeT, rvSep, rvSepEndo,
-    lvOut, rvOut, laOut, raOut, ivsRib, lvRib, rvRib, laRibs, raRib, pvWalls, crux, annuli, pm, mb, mv, tv, chords, peri,
+    lvOut, rvOut, laOut, raOut, ivsRib, lvRib, rvRib, laRibs, raRib, pvWalls, crux, annuli, pm, mb, mv, tv, chords, peri, mvShut: ph.mvShut,
     medi, daRing: ring(daC, 0.95, 1.17, 28), daLumen: ellipse(daC, 0.95, 0.95, 28), lvW, lvL, rvW, laW, laL, raW, raL, ma, ta,
   };
 }
@@ -456,9 +563,9 @@ function a4cItems(S, Sr, g) {
     { borders: [S.laCav, S.raCav], refs: [Sr.laCav, Sr.raCav], e: DB.myo - 2, spec: 6 },
     { borders: [S.lvOut, S.rvOut], refs: [Sr.lvOut, Sr.rvOut], e: DB.myo, spec: 6 },
     { borders: [S.peri], refs: [Sr.peri], e: 7, spec: 10, w: 0.14, all: true },
-    { lines: [S.mv.l1, S.mv.l2], e: valveDb(g.mv), w: g.mv?.thick ?? 0.12 },
-    { lines: [S.tv.l1, S.tv.l2], e: valveDb(g.tv) - 1, w: g.tv?.thick ?? 0.1 },
-    { lines: S.chords, e: DB.chord - 4, w: 0.04 },
+    { lines: S.chords, e: DB.chord - 3 - 14 * (1 - S.mvShut), w: 0.04 },
+    ...leaves([S.mv.o1, S.mv.o2], [Sr.mv.o1, Sr.mv.o2], valveDb(g.mv)),
+    ...leaves([S.tv.o1, S.tv.o2], [Sr.tv.o1, Sr.tv.o2], valveDb(g.tv) - 1),
   ];
 }
 
@@ -473,7 +580,8 @@ export function drawA4C(ctx, box, g, o = {}) {
   const F = frame(ctx, box, o.depth ?? 16, o.title ?? 'APICAL FOUR-CHAMBER', { deg: 80, near: 1.2 });
   const ph = phase(o.t ?? 150);
   const c = ph.c;
-  const S = a4cShape(g, c, ph), Sr = a4cShape(g, 0, ph);
+  // the reference frame: end-diastole with the valves shut, where the speckle is laid down
+  const S = a4cShape(g, c, ph), Sr = a4cShape(g, 0, { ...ph, mvShut: 1, tvShut: 1 });
   scan(ctx, F, a4cItems(S, Sr, g), { t: o.t, gain: o.gain });
   // jets
   const J = o.jets || {};
@@ -541,43 +649,56 @@ function plaxShape(g, c, ph) {
   const periPts = [...pwEpi.filter((_, i) => i % 5 === 0).map((p) => [p[0], p[1] + 0.2 + eff]), [csC[0] + 0.3, csC[1] + 0.62 + eff * 0.5], [xAnn + 2.2, laTop + la + 0.4 + eff * 0.3], [xAnn + 3.8, laTop + la * 0.85 + 0.35]];
   const peri = spline(periPts, 4);
   const post = [...peri, [xAnn + 9, laTop + la], [xAnn + 9, 30], [xL - 2, 30], [xL - 2, peri[0][1]]];
-  // aortic valve: right and non-coronary cusps from the annulus
-  const openW = (g.av?.open ?? 1.9) * ph.avOpen;
+  // aortic valve: right (front) and non-coronary (back) cusps from the annulus. Shut, they meet
+  // in the middle of the root and sag toward the LV; open, they lie along the sinus walls. A
+  // stiff valve opens only to open (cm) and the cusps dome into the aorta.
   const cuspA0 = [xAnn + 0.05, aoTop + 0.05], cuspP0 = [xAnn + 0.05, aoBot - 0.05];
-  const cMid = [xAnn + 1.15, aoMid];
-  const cuspA = spline([cuspA0, lerp2([xAnn + 0.8, aoMid - 0.25], [xAnn + 0.9, aoTop + 0.35], ph.avOpen), [cMid[0] + 0.35 * ph.avOpen, aoMid - Math.max(0.03, openW / 2)]], 6);
-  const cuspP = spline([cuspP0, lerp2([xAnn + 0.8, aoMid + 0.25], [xAnn + 0.9, aoBot - 0.35], ph.avOpen), [cMid[0] + 0.35 * ph.avOpen, aoMid + Math.max(0.03, openW / 2)]], 6);
-  // mitral valve: anterior leaflet from the posterior aortic root, posterior from the groove
+  const openW = g.av?.open ?? 1.9, avGap = g.av?.gap ?? 0;
+  const lc = Math.hypot(0.8, (aoBot - aoTop) / 2 - 0.05) * 1.04 + 0.12;       // cusp length
+  const aoC = [xAnn + 0.85, aoMid];
+  const cusp = (h, sgn) => {
+    const shut = flap(h, add(aoC, [0, sgn * avGap / 2]), lc, [-1, 0], avGap > 0.02 ? null : [1, 0], 0.12);
+    const k = smooth((1.9 - openW) / 0.6);
+    const end = lerp2(add(h, mul(unit([0.97, sgn * 0.12]), lc * 0.96)), [xAnn + 0.35 + lc * 0.55, aoMid + (sgn * openW) / 2], k);
+    const open = flap(h, end, lc, unit(lerp2([0, sgn], [0.5, sgn * 0.85], k)));
+    return swing(h, shut, open, ph.avOpen);
+  };
+  const cuspA = cusp(cuspA0, -1), cuspP = cusp(cuspP0, 1);
+  const avTh = g.av?.thick ?? 0.1;
+  const cuspAo = leafOutline(cuspA, avTh * 0.8, avTh * 1.3), cuspPo = leafOutline(cuspP, avTh * 0.8, avTh * 1.3);
+  // mitral valve: anterior leaflet (2.6 cm) from the back of the aortic root, posterior (1.5 cm)
+  // from the atrioventricular groove. Rheumatic: the tips stay close and the anterior leaflet
+  // domes toward the septum; the short posterior leaflet cannot move.
   const shut = ph.mvShut;
   const dome = g.mv?.dome ?? 0;
-  const coapt = [-0.35, (hingeA[1] + hingeP[1]) / 2 - 0.15];
-  let tipA, tipP, ctrlA, ctrlP;
+  const toLV = unit(perp(sub(hingeP, hingeA)));
+  const toward = toLV[0] < 0 ? toLV : mul(toLV, -1);
+  const up = unit(sub(hingeA, hingeP));
+  const rot = (d, side, deg) => { const r = (deg * Math.PI) / 180; return unit(add(mul(d, Math.cos(r)), mul(side, Math.sin(r)))); };
+  let openA = add(hingeA, mul(rot(toward, up, 38), 2.6 * 0.96)), openP = add(hingeP, mul(rot(toward, mul(up, -1), 25), 1.5 * 0.96));
   if (dome > 0) {
-    const w = g.mv?.tip ?? 1.2;
-    const tipMid = [-1.9, (yLv + yPw) / 2 + 0.3];
-    tipA = lerp2([tipMid[0], tipMid[1] - w / 2], coapt, shut);
-    tipP = lerp2([tipMid[0] + 0.15, tipMid[1] + w / 2], [coapt[0] + 0.05, coapt[1] + 0.05], shut);
-    ctrlA = lerp2([-0.9, yLv + 0.3], [(hingeA[0] + coapt[0]) / 2, (hingeA[1] + coapt[1]) / 2 - 0.3], shut);
-    ctrlP = lerp2([-0.6, yPw - 0.4], [(hingeP[0] + coapt[0]) / 2, (hingeP[1] + coapt[1]) / 2 + 0.2], shut);
-  } else {
-    tipA = lerp2([-2.1, yLv + 0.55], coapt, shut);
-    tipP = lerp2([-0.9, yPw - 0.35], [coapt[0] + 0.05, coapt[1] + 0.08], shut);
-    ctrlA = lerp2([-0.8, yLv + 1.0], [(hingeA[0] + coapt[0]) / 2, (hingeA[1] + coapt[1]) / 2 - 0.15], shut);
-    ctrlP = lerp2([-0.2, yPw - 0.5], [(hingeP[0] + coapt[0]) / 2, (hingeP[1] + coapt[1]) / 2 + 0.1], shut);
+    const k = smooth(dome / 0.6), w = g.mv?.tip ?? 1.2;
+    const tipMid = add(lerp2(hingeA, hingeP, 0.5), mul(toward, 1.25 + 0.3 * (1 - dome)));
+    openA = lerp2(openA, add(tipMid, mul(up, w / 2)), k);
+    openP = lerp2(openP, add(tipMid, mul(up, -w / 2)), k);
   }
-  const aml = spline([hingeA, ctrlA, tipA], 8), pml = spline([hingeP, ctrlP, tipP], 8);
+  const MP = valvePair(hingeA, hingeP, 2.6, 1.5, toward, { gap: g.mv?.gap ?? 0, open1: openA, open2: openP, bulge1: up, bulge2: mul(up, -1) });
+  const aml = swing(hingeA, MP.open1, MP.shut1, shut), pml = swing(hingeP, MP.open2, MP.shut2, shut);
+  const mvTh = g.mv?.thick ?? 0.12, mvTip = mvTh * (1 + 0.4 * dome);
+  const amlO = leafOutline(aml, mvTh * 0.75, mvTip), pmlO = leafOutline(pml, mvTh * 0.75, mvTip);
+  const tipA = aml[NL], tipP = pml[NL];
   // posteromedial papillary muscle rising from the posterior wall, chordae to both leaflets
   const pmX = -4.3, pmBase = [pmX, yPw - 0.22 * lvid * cv(pmX)];
   const pmDir = unit([0.4, -1]);
   const pm = muscle(pmBase, pmDir, 1.0, 0.8 + 0.25 * c, [0, 1]);
   const pmTip = add(pmBase, mul(pmDir, 0.9));
-  const chords = [[pmTip, along(pml, 0.95)], [pmTip, along(aml, 0.95)], [add(pmTip, [0.2, 0]), along(aml, 0.7)]];
+  const chords = [[pmTip, along(pml, 0.97)], [pmTip, along(pml, 0.6)], [add(pmTip, [0.15, 0]), along(aml, 0.97)], [add(pmTip, [0.2, 0.05]), along(aml, 0.72)], [add(pmTip, [0.05, 0.08]), along(aml, 0.5)]];
   const lvCav = [...sepLV.slice(0, -1), [xAnn, aoTop + 0.2], [xAnn, aoBot], hingeP, ...pwEndo.slice().reverse()];
   return {
     ivs, lvid, pw, la, yIvs, yLv, yPw, yEpi, laTop, aoTop, aoBot, aoMid, xAnn, lvot, hingeP, hingeA,
     ivsRib, sepLV, sepRV, rvRib, rvEndoT, pwRib, pwEndo, aoAnt, aoPost, aoAntWall, aoPostWall, laCav, laRib,
     csRing: ring(csC, 0.32, 0.46, 20, 0.9), csLumen: ellipse(csC, 0.32, 0.29, 20), daoRing: ring(daoC, 1.02, 1.25, 28, 0.92), daoLumen: ellipse(daoC, 1.02, 0.94, 28),
-    peri, post, cuspA, cuspP, cuspA0, cuspP0, aml, pml, tipA, tipP, pm, chords, lvCav,
+    peri, post, cuspA, cuspP, cuspA0, cuspP0, cuspAo, cuspPo, aml, pml, amlO, pmlO, tipA, tipP, pm, chords, lvCav,
   };
 }
 
@@ -598,7 +719,7 @@ export function drawPLAX(ctx, box, g, o = {}) {
     return [pivot[0] + d[0] * cs - d[1] * sn - 1.0, pivot[1] + d[0] * sn + d[1] * cs];
   };
   const RP = (poly) => poly.map(R);
-  const S = plaxShape(g, c, ph), Sr = plaxShape(g, 0, ph);
+  const S = plaxShape(g, c, ph), Sr = plaxShape(g, 0, { ...ph, mvShut: 1, avOpen: 0 });
   const two = (key) => ({ polys: [RP(S[key])], refs: [RP(Sr[key])] });
   const items = [
     { polys: [RP(S.post)], e: -26 },
@@ -616,9 +737,9 @@ export function drawPLAX(ctx, box, g, o = {}) {
     { borders: [RP(S.rvEndoT)], refs: [RP(Sr.rvEndoT)], e: DB.myo, spec: 6 },
     { borders: [RP(S.laCav), RP(S.aoAnt), RP(S.aoPost)], refs: [RP(Sr.laCav), RP(Sr.aoAnt), RP(Sr.aoPost)], e: DB.myo, spec: 6 },
     { borders: [RP(S.peri)], refs: [RP(Sr.peri)], e: 8, spec: 10, w: 0.15, all: true },
-    { lines: [RP(S.cuspA), RP(S.cuspP)], e: valveDb(g.av), w: g.av?.thick ?? 0.1 },
-    { lines: [RP(S.aml), RP(S.pml)], e: valveDb(g.mv), w: g.mv?.thick ?? 0.12 },
-    { lines: S.chords.map(RP), e: DB.chord, w: 0.05 },
+    { lines: S.chords.map(RP), e: DB.chord - 3 - 14 * (1 - ph.mvShut), w: 0.04 },
+    ...leaves([RP(S.cuspAo), RP(S.cuspPo)], [RP(Sr.cuspAo), RP(Sr.cuspPo)], valveDb(g.av)),
+    ...leaves([RP(S.amlO), RP(S.pmlO)], [RP(Sr.amlO), RP(Sr.pmlO)], valveDb(g.mv)),
   ];
   const calc = g.av?.calc ?? 0;
   if (calc > 0.05) {
@@ -689,13 +810,18 @@ export function drawPSAXav(ctx, box, g, o = {}) {
   // aortic cusps: closed, the three lines of the "Y"; open, a curved triangle of area AVA
   const area = Math.max(0.02, (g.ava ?? 3) * ph.avOpen);
   const ro = Math.min(r * 0.93, Math.sqrt((4 * area) / (3 * Math.sqrt(3))));
-  const com = [0, 1, 2].map((i) => { const a = -PI / 2 + (i * 2 * PI) / 3 + PI / 3; return add(C, [r * Math.cos(a), r * Math.sin(a)]); });
+  // the cusps' free edges run from one commissure to the next: shut, through the centre (the
+  // three together make a Y); open, along a triangle whose corners point to the commissures
+  const comA = [0, 1, 2].map((i) => -PI / 2 + (i * 2 * PI) / 3 + PI / 3);
+  const dir = (a, d) => add(C, [d * Math.cos(a), d * Math.sin(a)]);
+  const com = comA.map((a) => dir(a, r));
   const cusps = [];
   for (let i = 0; i < 3; i++) {
-    const p = com[i], q = com[(i + 1) % 3];
-    const aMid = -PI / 2 + (i * 2 * PI) / 3 + PI;
-    cusps.push(spline([p, add(C, [ro * 0.5 * Math.cos(aMid), ro * 0.5 * Math.sin(aMid)]), q], 8));
+    const a0 = comA[i], a1 = comA[(i + 1) % 3] + (i === 2 ? 2 * PI : 0), am = (a0 + a1) / 2;
+    cusps.push(spline([com[i], dir(a0, Math.max(0.05, ro * 0.97)), dir(am, ro * 0.62), dir(a1, Math.max(0.05, ro * 0.97)), com[(i + 1) % 3]], 6));
   }
+  const flapOf = (l) => leafOutline(spline(l, 4), 0.07, 0.1);
+  const cTh = g.thick ?? 0.12;
   const items = [
     { polys: [fat], e: DB.fat - 2 },
     { polys: [la, ra], e: DB.blood, blood: true },
@@ -703,10 +829,12 @@ export function drawPSAXav(ctx, box, g, o = {}) {
     { polys: [laRib, raRib], e: DB.myo - 2 },
     { polys: [root], e: DB.fibrous },
     { borders: [rvIn, rvOutC, la, ra], e: DB.myo, spec: 6 },
-    { lines: [...tvL, ...pvL], e: DB.valve - 1, w: 0.09 },
     { lines: pa, e: DB.fibrous - 3, w: 0.18 },
-    { lines: cusps, e: valveDb({ thick: g.thick }), w: g.thick ?? 0.12 },
+    ...leaves([...tvL, ...pvL].map(flapOf), null, DB.valve - 2),
+    // the cusps' free edges; shut, the three meet in a Y with a small nodule at the centre
+    ...leaves(cusps.map((c) => band(c, cTh)), null, valveDb({ thick: g.thick })),
   ];
+  if (ph.avOpen < 0.35) items.push({ polys: [ellipse(C, 0.09 + cTh * 0.3, 0.08 + cTh * 0.3, 12)], e: valveDb({ thick: g.thick }) + 2 });
   if (g.calc > 0.05) items.push({ lines: com.map((p) => [add(p, [-0.12, 0]), add(p, [0.12, 0.05])]), e: DB.calcium - 6 * (1 - g.calc), w: 0.3 * g.calc + 0.08, shadow: 9 * g.calc });
   scan(ctx, F, items, { t: o.t });
   // planimetry of the orifice during ejection
@@ -716,7 +844,7 @@ export function drawPSAXav(ctx, box, g, o = {}) {
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
     for (let i = 0; i <= 3; i++) {
-      const a = -PI / 2 + (i * 2 * PI) / 3;
+      const a = -PI / 2 + (i * 2 * PI) / 3 + PI / 3;
       const q = F.P(add(C, [ro * Math.cos(a) * 0.98, ro * Math.sin(a) * 0.98]));
       if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]);
     }
@@ -743,22 +871,28 @@ export function drawPSAXmv(ctx, box, g, o = {}) {
   };
   const S = shape(ph.c), Sr = shape(0);
   const C = S.C;
-  // leaflets fill the annulus; the orifice is an ellipse (2:1) of the valve area
+  // leaflets fill the annulus; the orifice is an ellipse between the commissures. Its width
+  // stays; it opens front to back, so the shut valve is one line of contact. Fully open it is
+  // 2:1 and has the valve area.
   const open = 1 - ph.mvShut;
-  const area = Math.max(0.03, (g.mva ?? 4) * open);
-  const bAx = Math.sqrt(area / (2 * Math.PI)), aAx = 2 * bAx;
   const annR = Math.min(S.ri * 0.92, 1.8);
+  const aAx = Math.min(annR * 0.9, Math.sqrt((2 * (g.mva ?? 4)) / Math.PI));
+  const bAx = Math.max(0.015, ((g.mva ?? 4) * open) / (Math.PI * aAx));
   const Mc = [C[0], C[1] + 0.2];
   const orifice = ellipse(Mc, aAx, bAx, 40);
   const annulus = ellipse(Mc, annR, annR * 0.86, 40);
   const thick = g.thick ?? 0.12;
+  const rimW = Math.max(0.1, thick);
+  const rim = ribbon([...orifice, orifice[0]], [...ellipse(Mc, aAx + rimW, bAx + rimW, 40), [Mc[0] + aAx + rimW, Mc[1]]]);
   const items = [
     { polys: [S.lv], refs: [Sr.lv], e: DB.myo },
     { polys: [S.rv], refs: [Sr.rv], e: DB.myo - 1 },
     { borders: [S.endo, S.epi, S.rvO], refs: [Sr.endo, Sr.epi, Sr.rvO], e: DB.myo, spec: 7, closed: true },
     // thickened leaflets: the whole fused sheet shows; thin ones, mostly their free edges
-    { polys: [ribbon([...annulus, annulus[0]], [...orifice, orifice[0]])], e: thick > 0.2 ? valveDb({ thick }) - 3 : DB.myo - 9, rule: 'evenodd' },
-    { lines: [orifice], e: valveDb({ thick }), w: Math.max(0.1, thick), closed: true },
+    // the leaflet bodies: cut obliquely when shut, edge-on when open
+    { polys: [ribbon([...annulus, annulus[0]], [...orifice, orifice[0]])], e: (thick > 0.2 ? DB.valve - 5 + 8 * (thick - 0.2) : DB.myo - 9) - 12 * open, rule: 'evenodd' },
+    { polys: [rim], e: valveDb({ thick }), rule: 'evenodd' },
+    { borders: [orifice], e: valveDb({ thick }), spec: 6, w: 0.05, closed: true },
   ];
   scan(ctx, F, items, { t: o.t });
   if (open > 0.7 && o.trace !== false) {

@@ -7,6 +7,8 @@ import { leafletWeights } from './gl/heart.js';
 import { normalGeo } from './model3d.js';
 import { ecg as ecgStrip } from './scope.js';
 import { bmode, DB } from './bmode.js';
+import { reducedMotion } from './state.js';
+import { ABD, buildAbdomen, beneath } from './abdomen.js';
 
 export { VIEWS };
 
@@ -38,6 +40,20 @@ export function viewGeometry(anat, key) {
     const th = THREE.MathUtils.degToRad(132);
     const u = X.clone().multiplyScalar(Math.cos(th)).addScaledVector(Y, Math.sin(th)).normalize();
     return { u, level: eq.clone().lerp(mv, 0.55) };
+  };
+  // tilt the plane about its own screen-right axis r by deg (toward +n), pivoting at the probe
+  const tilt = (deg) => {
+    const q = new THREE.Quaternion().setFromAxisAngle(r.clone().normalize(), THREE.MathUtils.degToRad(deg));
+    d = d.clone().applyQuaternion(q).normalize();
+  };
+  // subcostal: the probe below the xiphoid; each plane holds the beam from there, and the
+  // probe is set back along the beam to the skin, 1.6 cm of abdominal wall outside the liver
+  const SUB = V3(-1.0, -9.8, 12.2);
+  const subcostal = (target, n0, marker) => {
+    const Op = SUB.clone().addScaledVector(n0, -SUB.clone().sub(target).dot(n0));
+    d = target.clone().sub(Op).normalize();
+    r = perp(marker, d);
+    O = beneath(target, d, 1.6);
   };
   switch (spec.plane) {
     case 'a4c': apical(spec.aim ? aims[spec.aim] : mv.clone().lerp(tv, 0.45), mv.clone().sub(tv)); break;
@@ -114,13 +130,29 @@ export function viewGeometry(anat, key) {
       break;
     }
     case 'psax_pa': {
-      // tilted up the pulmonary trunk to its bifurcation
-      const bif = VP('paBif');
-      const n0 = new THREE.Vector3().subVectors(pv, av).cross(new THREE.Vector3().subVectors(bif, av)).normalize();
-      const mid = pv.clone().lerp(bif, 0.45);
-      O = onPlane(mid.clone().addScaledVector(BODY.ant, 7.2), av, n0);
-      d = perp(mid.clone().sub(O), n0);
-      r = perp(perp(BODY.left, n0), d);
+      // the great-vessel plane, tilted 12 degrees toward the head at the probe, the sector
+      // steered onto the pulmonic valve and the trunk: a small pan from the aortic valve
+      const n0 = anat.aorticRoot.clone();
+      d = perp(Y.clone().negate(), n0);
+      r = perp(perp(X, n0), d);
+      O = av.clone().addScaledVector(d, -7.4);
+      tilt(12);
+      const n1 = new THREE.Vector3().crossVectors(r, d).normalize();
+      d = onPlane(pv.clone().lerp(VP('paBif'), 0.2), O, n1).sub(O).normalize();
+      r = perp(r, d);
+      break;
+    }
+    case 'psax_cor': {
+      // through both coronary origins, as square to the aortic root as that allows; the
+      // probe moves onto this plane from the great-vessel position
+      const Lm = VP('lmca'), Rc = VP('rca'), root = anat.aorticRoot.clone();
+      const u = Lm.clone().sub(Rc).normalize();
+      const n0 = root.addScaledVector(u, -root.dot(u)).normalize();
+      const C = Lm.clone().lerp(Rc, 0.5);
+      const d0 = perp(Y.clone().negate(), anat.aorticRoot);
+      O = onPlane(av.clone().addScaledVector(d0, -7.4), C, n0);
+      d = C.clone().sub(O).normalize();
+      r = perp(perp(X, n0), d);
       break;
     }
     case 'psax': {
@@ -133,7 +165,8 @@ export function viewGeometry(anat, key) {
       break;
     }
     case 'sc4c': {
-      // from below the RV, through the RV free wall first
+      // from below the RV, through the RV free wall first. In this model the four-chamber
+      // plane passes above the liver, so the liver is the near-field layer (views.js: liver)
       const r4 = perp(mv.clone().sub(tv), Z);
       const n4 = Z.clone().cross(r4).normalize();
       const center = eq.clone().lerp(mv, 0.4);
@@ -143,16 +176,17 @@ export function viewGeometry(anat, key) {
       r = perp(Z.clone().negate(), d);
       break;
     }
-    case 'sc_ivc': {
-      // sagittal plane through the IVC and the right atrium; the head end on screen-right
-      const ivc = VP('ivc');
-      const mid = ivc.clone().lerp(ra, 0.5);
-      O = mid.clone().addScaledVector(BODY.sup, -4.0).addScaledVector(BODY.ant, 9.0);
-      d = perp(mid.clone().sub(O), BODY.left);
-      r = perp(perp(BODY.sup, BODY.left), d);
+    case 'sc_ivc': case 'sc_aorta': {
+      // long axis of the IVC as it runs through the liver into the right atrium, the head on
+      // screen-right; a small angle to the patient's left finds the aorta behind the liver
+      const P = spec.plane === 'sc_ivc' ? ABD.ivc.pts : ABD.aorta.pts;
+      const A = V3(...P[0]), B = V3(...P[2]);
+      const probe = SUB.clone().addScaledVector(BODY.left, spec.plane === 'sc_ivc' ? -1.2 : 0.6);
+      const n0 = new THREE.Vector3().crossVectors(A.clone().sub(probe), B.clone().sub(probe)).normalize();
+      subcostal(spec.plane === 'sc_ivc' ? A.clone().lerp(B, 0.2).lerp(ra, 0.12) : A.clone().lerp(B, 0.62), n0, BODY.sup);
       break;
     }
-    case 'ssn': {
+    case 'ssn': case 'ssn_sax': {
       // plane of the arch: ascending, top, descending
       const A = VP('ascMid'), T = VP('archTop'), D = VP('desc');
       const n0 = new THREE.Vector3().subVectors(T, A).cross(new THREE.Vector3().subVectors(D, A)).normalize();
@@ -161,6 +195,13 @@ export function viewGeometry(anat, key) {
       O.addScaledVector(n0, -O.clone().sub(mid).dot(n0));
       d = perp(mid.clone().sub(O), n0);
       r = perp(perp(D.clone().sub(A), n0), d);
+      if (spec.plane === 'ssn_sax') {
+        // rotated 90 degrees clockwise on the same beam: the arch in cross-section, the right
+        // PA below it in its length, the left atrium below that; patient's left on screen-right
+        r = n0.clone();
+        if (r.dot(BODY.left) < 0) r.negate();
+        r = perp(r, d);
+      }
       break;
     }
     default: return null;
@@ -183,6 +224,8 @@ class MeshData {
     this.targets = (g.morphAttributes.position || []).map((a) => a.array);
     this.pos = new Float32Array(this.count * 3);
     this.sd = new Float32Array(this.count);
+    // vertices from here on are the centres of a tube's end caps (abdomen.js)
+    this.capFrom = mesh.userData && mesh.userData.capFrom !== undefined ? mesh.userData.capFrom : Infinity;
     mesh.updateMatrixWorld(true);
     this.matrix = mesh.matrixWorld.clone();
     this.identity = this.matrix.equals(new THREE.Matrix4());
@@ -240,7 +283,9 @@ class MeshData {
         const x = pos[3 * a] + (pos[3 * b] - pos[3 * a]) * t - ox;
         const y = pos[3 * a + 1] + (pos[3 * b + 1] - pos[3 * a + 1]) * t - oy;
         const z = pos[3 * a + 2] + (pos[3 * b + 2] - pos[3 * a + 2]) * t - oz;
-        pts.set(key, [x * rx + y * ry + z * rz, x * dx + y * dy + z * dz]);
+        const P = [x * rx + y * ry + z * rz, x * dx + y * dy + z * dz];
+        if (a >= this.capFrom || b >= this.capFrom) P.push(1);   // on the end cap of a tube
+        pts.set(key, P);
         if (withRef) {
           const X = rest[3 * a] + (rest[3 * b] - rest[3 * a]) * t - ox;
           const Y = rest[3 * a + 1] + (rest[3 * b + 1] - rest[3 * a + 1]) * t - oy;
@@ -315,7 +360,16 @@ class MeshData {
 }
 
 // chambers and vessels may sit a little further from the plane than walls and valves and still show
-const ROOMY = new Set(['la', 'ra', 'lv', 'rv', 'rvant', 'rvot', 'mpa', 'ao', 'asc', 'arch', 'desc', 'ivc', 'rpa', 'lpa']);
+const ECHO_ONLY = new Set(['liver', 'hv', 'abdao', 'celiac', 'sma', 'ivcl']);
+// full names for the tags on the cross-section
+const FULL = {
+  LV: 'Left ventricle', RV: 'Right ventricle', LA: 'Left atrium', RA: 'Right atrium', IVS: 'Ventricular septum', IAS: 'Atrial septum',
+  MV: 'Mitral valve', TV: 'Tricuspid valve', AV: 'Aortic valve', PV: 'Pulmonic valve', Ao: 'Aorta', LVOT: 'LV outflow tract', RVOT: 'RV outflow tract',
+  PA: 'Pulmonary artery', 'main PA': 'Main pulmonary artery', RPA: 'Right pulmonary artery', LPA: 'Left pulmonary artery', IVC: 'Inferior vena cava',
+  SVC: 'Superior vena cava', 'desc Ao': 'Descending aorta', 'ascending Ao': 'Ascending aorta', 'descending Ao': 'Descending aorta', arch: 'Aortic arch',
+  LMCA: 'Left main coronary artery', RCA: 'Right coronary artery', 'Ao root': 'Aortic root', SMA: 'Superior mesenteric artery', 'abdominal Ao': 'Abdominal aorta',
+};
+const ROOMY = new Set(['la', 'ra', 'lv', 'rv', 'rvant', 'rvot', 'mpa', 'ao', 'asc', 'arch', 'desc', 'ivc', 'ivcl', 'rpa', 'lpa', 'svc', 'abdao']);
 
 export class EchoView {
   /**
@@ -333,12 +387,20 @@ export class EchoView {
     this.labels = !this.offscreen;
     this.measure = {};
     this.geo = normalGeo(model.doc);
+    // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
+    this.cur = null;
+    this.tr = null;
+    this.section = false;
     const h = model.heart;
     this.myo = new MeshData(h.meshes.Myocardium);
     this.valves = ['MitralValve', 'TricuspidValve', 'AorticValve', 'PulmonaryValve'].filter((n) => h.meshes[n]).map((n) => new MeshData(h.meshes[n]));
     this.chords = ['MitralChordae', 'TricuspidChordae'].filter((n) => h.meshes[n]).map((n) => new MeshData(h.meshes[n]));
     this.pap = h.meshes.Papillary ? new MeshData(h.meshes.Papillary) : null;
     this.peri = h.meshes.Pericardium ? new MeshData(h.meshes.Pericardium) : null;
+    this.cor = h.meshes.Coronaries ? new MeshData(h.meshes.Coronaries) : null;
+    // below the heart: liver, veins, abdominal aorta and spine (they do not move with the beat)
+    this.abd = {};
+    for (const [k, m] of Object.entries(buildAbdomen(h))) { const md = new MeshData(m); md.morph({}); this.abd[k] = md; }
     this.geoms = {};
     for (const k of Object.keys(VIEWS)) { const g = viewGeometry(model.anat, k); if (g) this.geoms[k] = g; }
     if (this.offscreen) {
@@ -385,22 +447,153 @@ export class EchoView {
     this.probe.material.color.setStyle(t.ink);
   }
 
-  setView(key) {
+  /** The view's settings; a chapter may set its own depth and sector width (chapter 02). */
+  specOf(key) {
+    const base = key === 'free' ? this.freeSpec || {} : VIEWS[key] || {};
+    return { ...base, depth: this.depth ?? base.depth, angle: this.angle ?? base.angle };
+  }
+
+  /** The plane now on screen: the eased one during a change, else the view's own. */
+  get g() {
+    return this.cur || this.geoms[this.view] || null;
+  }
+
+  /**
+   * Show a view. With animate (the default once a plane is on screen), the plane moves from
+   * where it is to the new one: it turns along the shortest rotation while the point it
+   * images slides across, the way a probe is tilted, rotated and slid, never from nothing.
+   */
+  setView(key, opts = {}) {
+    const from = this.g;
     this.view = key;
-    const g = this.geoms[key];
-    const spec = VIEWS[key];
+    const g1 = this.geoms[key] || null;
+    const spec = this.specOf(key);
     this.zoomAt = null;
-    if (g && spec.zoom) {
-      const q = this.toPlane(this.anchors(0)[spec.zoom.at], g);
+    if (g1 && spec.zoom && spec.zoom.at) {
+      const q = this.toPlane(this.anchors(0)[spec.zoom.at], g1);
       this.zoomAt = [q[0], q[1]];
-    }
+    } else if (g1 && spec.zoom && spec.zoom.uv) this.zoomAt = spec.zoom.uv;
+    const animate = (opts.animate ?? !this.offscreen) && !reducedMotion && from && g1;
+    if (animate) {
+      const q0 = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(from.r, from.d, from.n));
+      const q1 = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(g1.r, g1.d, g1.n));
+      const depth = spec.depth;
+      const c0 = from.O.clone().addScaledVector(from.d, depth * 0.5), c1 = g1.O.clone().addScaledVector(g1.d, depth * 0.5);
+      const ang = q0.angleTo(q1), dist = c0.distanceTo(c1);
+      if (ang < 1e-4 && dist < 1e-3) { this.tr = null; this.cur = null; }
+      else {
+        const T = Math.min(1300, 380 + 650 * (ang / Math.PI) + 55 * dist);
+        this.tr = { q0, q1, c0, c1, depth, t0: performance.now(), T };
+        this.cur = { O: from.O.clone(), d: from.d.clone(), r: from.r.clone(), n: from.n.clone() };
+      }
+    } else { this.tr = null; this.cur = null; }
     if (!this.stage || !this.fan) return;
-    if (!g) {
+    if (!g1) {
       this.stage.heart.setCut(null);
       this.fan.visible = this.fanLine.visible = this.probe.visible = false;
       return;
     }
     this.fan.visible = this.fanLine.visible = this.probe.visible = true;
+    this._place3d(this.g, spec);
+    this._aim(g1, spec);
+  }
+
+  /**
+   * The 3D camera for plane g: obliquely onto the cut, or square to it (section), turned as
+   * the echo is: the probe at the top, screen-right the same side. It eases there.
+   */
+  _aim(g, spec) {
+    if (!this.stage || !g) return;
+    const target = g.O.clone().addScaledVector(g.d, spec.depth * (this.section ? 0.5 : 0.45));
+    this.stage.opts.labeled = !!this.section;
+    if (this.section) this.stage.view(g.n.clone(), g.d.clone().negate(), 0.137 * spec.depth, target);
+    else {
+      const look = g.n.clone().addScaledVector(g.r, -0.55).addScaledVector(g.d, 0.35).normalize();
+      this.stage.view(look, g.d.clone().negate(), 2.7, target);
+    }
+  }
+
+  /** Show the plane as a cross-section of the heart, square to the screen, or obliquely. */
+  setSection(on) {
+    this.section = !!on;
+    const g = this.geoms[this.view];
+    if (g) this._aim(g, this.specOf(this.view));
+  }
+
+  /**
+   * Label points for the cross-section: the view's structures that lie on the plane and in
+   * the sector, as screen points of the 3D stage. Returns [{ id, x, y, text }].
+   */
+  sectionLabels(s) {
+    const g = this.g;
+    if (!g || !this.stage) return [];
+    const spec = this.specOf(this.view);
+    const an = this.anchors(s || 0);
+    const half = THREE.MathUtils.degToRad(spec.angle / 2);
+    const out = [];
+    for (const [id, txt] of spec.labels || []) {
+      // the liver and the abdominal vessels are drawn in the echo only, not on the 3D heart
+      if (ECHO_ONLY.has(id)) continue;
+      let q;
+      {
+        const P = id === 'wallL' || id === 'wallR' ? this.wallPoint(id === 'wallR' ? 1 : -1, s || 0, g) : an[id];
+        if (!P) continue;
+        q = this.toPlane(P, g);
+        if (Math.abs(q[2]) > (ROOMY.has(id) ? 2.8 : 1.8) || q[1] < 0.5) continue;
+      }
+      if (Math.abs(Math.atan2(q[0], q[1])) > half || Math.hypot(q[0], q[1]) > spec.depth) continue;
+      const p = this.stage.project(g.O.clone().addScaledVector(g.r, q[0]).addScaledVector(g.d, q[1]));
+      if (p.z > 1) continue;
+      out.push({ id, x: p.x, y: p.y, text: FULL[txt] || txt.charAt(0).toUpperCase() + txt.slice(1) });
+    }
+    return out;
+  }
+
+  /** Screen box (px) of the sector on the 3D stage, for the tag columns beside it. */
+  sectorBox() {
+    const g = this.g;
+    if (!g || !this.stage) return null;
+    const spec = this.specOf(this.view), half = THREE.MathUtils.degToRad(spec.angle / 2);
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    const add = (P) => { const p = this.stage.project(P); x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); };
+    add(g.O);
+    for (let i = 0; i <= 8; i++) {
+      const th = -half + (2 * half * i) / 8;
+      add(g.O.clone().addScaledVector(g.d.clone().multiplyScalar(Math.cos(th)).addScaledVector(g.r, Math.sin(th)), spec.depth));
+    }
+    return { x0, y0, x1, y1 };
+  }
+
+  /**
+   * Show any plane g ({ O, d, r, n }) with the settings spec (angle, depth, near, labels, name,
+   * short); animate as setView does.
+   */
+  setGeometry(g, spec, opts = {}) {
+    this.freeSpec = spec;
+    this.geoms.free = g;
+    this.setView('free', opts);
+  }
+
+  /** Move the plane along its change; true while it moves. */
+  advance() {
+    const tr = this.tr;
+    if (!tr) return false;
+    const u = Math.min(1, (performance.now() - tr.t0) / tr.T);
+    const e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+    const q = tr.q0.clone().slerp(tr.q1, e);
+    const m = new THREE.Matrix4().makeRotationFromQuaternion(q);
+    const r = new THREE.Vector3(), d = new THREE.Vector3(), n = new THREE.Vector3();
+    m.extractBasis(r, d, n);
+    const c = tr.c0.clone().lerp(tr.c1, e);
+    this.cur = { O: c.addScaledVector(d, -tr.depth * 0.5), d, r, n };
+    if (u >= 1) { this.tr = null; this.cur = null; }
+    if (this.stage && this.fan) this._place3d(this.g, this.specOf(this.view));
+    return true;
+  }
+
+  /** The sector, the probe and the cut on plane g. */
+  _place3d(g, spec) {
+    if (!g) return;
     const half = THREE.MathUtils.degToRad(spec.angle / 2);
     const verts = [g.O.x, g.O.y, g.O.z];
     const line = [g.O.x, g.O.y, g.O.z];
@@ -412,27 +605,27 @@ export class EchoView {
       verts.push(p.x, p.y, p.z);
       line.push(p.x, p.y, p.z);
     }
-    const idx = [];
-    for (let i = 1; i <= N; i++) idx.push(0, i, i + 1);
+    if (!this.fanIdx) {
+      const idx = [];
+      for (let i = 1; i <= N; i++) idx.push(0, i, i + 1);
+      this.fanIdx = idx;
+    }
     this.fan.geometry.dispose();
     this.fan.geometry = new THREE.BufferGeometry();
     this.fan.geometry.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-    this.fan.geometry.setIndex(idx);
+    this.fan.geometry.setIndex(this.fanIdx);
     this.fanLine.geometry.dispose();
     this.fanLine.geometry = new THREE.BufferGeometry();
     this.fanLine.geometry.setAttribute('position', new THREE.Float32BufferAttribute(line, 3));
     this.probe.position.copy(g.O).addScaledVector(g.d, -1.5);
     this.probe.quaternion.setFromUnitVectors(V3(0, 1, 0), g.d);
-    // 3D: cut on the imaging plane, keep the far side, view obliquely
-    this.stage.heart.setCut(new THREE.Plane().setFromNormalAndCoplanarPoint(g.n.clone(), g.O));
-    const look = g.n.clone().addScaledVector(g.r, -0.55).addScaledVector(g.d, 0.35).normalize();
-    const up = g.d.clone().negate();
-    this.stage.view(look, up, 2.7, g.O.clone().addScaledVector(g.d, spec.depth * 0.45));
+    if (this.cutOn !== false) this.stage.heart.setCut(new THREE.Plane().setFromNormalAndCoplanarPoint(g.n.clone(), g.O));
   }
 
   /** state: { s, v, drive, phase } from the cycle model. */
   frame(state) {
-    const g = this.geoms[this.view];
+    this.advance();
+    const g = this.g;
     if (!g) { this.drawEmpty(); return; }
     const w = { amyloid: 0, systole: state.s, amyloid_systole: 0 };
     this.myo.morph(w);
@@ -443,10 +636,12 @@ export class EchoView {
       vd.morph({ ...w, ...lw(vd) });
       valves.push(...vd.section(g));
     }
-    const chords = [];
+    // chordae: those in the middle of the slice show brightest
+    const chords = [], chordsCore = [];
     for (const cd of this.chords) {
       cd.morph({ ...w, ...lw(cd) });
       chords.push(cd.slab(g, SLICE));
+      chordsCore.push(cd.slab(g, SLICE * 0.45));
     }
     let pap = [];
     if (this.pap) {
@@ -458,15 +653,20 @@ export class EchoView {
       this.peri.morph(w);
       peri = this.peri.section(g, true);
     }
+    let cor = [];
+    if (this.cor) {
+      this.cor.morph(w);
+      cor = this.cor.section(g);
+    }
+    const abd = {};
+    for (const [k, md] of Object.entries(this.abd)) abd[k] = md.section(g);
     this.last = { tissue, valves, peri, chords, pap, state };
-    this.draw(tissue, valves, peri, state, { chords, pap });
+    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd });
   }
 
   /** Screen mapping for the current view and canvas size. */
   mapping() {
-    const base = VIEWS[this.view];
-    // a chapter may set its own depth and sector width (chapter 02)
-    const spec = { ...base, depth: this.depth ?? base.depth, angle: this.angle ?? base.angle };
+    const spec = this.specOf(this.view);
     const off = this.offscreen;
     const W = this.w, H = this.h;
     const top = off ? 4 : (this.top ?? 46), ecgH = off || this.noEcg ? 0 : Math.min(46, H * 0.09);
@@ -504,19 +704,58 @@ export class EchoView {
     const closed = (L) => L.closed && L.pts.length > 2;
     const loops = tissue.filter(closed), open = tissue.filter((L) => !L.closed && L.pts.length > 1);
     const pap = (extra.pap || []).filter(closed);
-    const tris = [];
-    for (const c of extra.chords || []) for (let i = 0; i < c.length; i += 6) tris.push([[c[i], c[i + 1]], [c[i + 2], c[i + 3]], [c[i + 4], c[i + 5]]]);
+    const tri = (list) => {
+      const out = [];
+      for (const c of list || []) for (let i = 0; i < c.length; i += 6) out.push([[c[i], c[i + 1]], [c[i + 2], c[i + 3]], [c[i + 4], c[i + 5]]]);
+      return out;
+    };
     const ref = (list) => (list.every((L) => L.ref) ? list.map((L) => L.ref) : null);
+    // leaflets: the mesh gives each one as a thin closed loop, about 1 mm across
+    const leaf = valves.filter(closed).map((L) => L.pts);
+    // below the diaphragm: the liver with its bright capsule, the veins and arteries in it or
+    // behind it (thin-walled veins, thicker brighter arteries), the vertebral bodies casting
+    // a shadow; the coronary arteries on the heart
+    const A = spec.liver ? {} : extra.abd || {};
+    const loopsOf = (k) => (A[k] || []).filter(closed).map((L) => L.pts);
+    const liver = loopsOf('liver'), spine = loopsOf('spine');
+    const veins = ['ivc', 'mhv', 'rhv'].flatMap(loopsOf), arteries = ['aorta', 'celiac', 'sma'].flatMap(loopsOf);
+    // a vessel's wall, without the flat end where the tube stops
+    const walls = (list) => {
+      const out = [];
+      for (const L of list) {
+        let run = [];
+        for (let i = 0; i <= L.length; i++) {
+          const p = L[i % L.length];
+          if (p[2]) { if (run.length > 1) out.push(run); run = []; } else run.push(p);
+        }
+        if (run.length > 1) out.push(run);
+      }
+      return out;
+    };
+    const cor = (extra.cor || []).filter(closed).map((L) => L.pts);
     const items = [
+      { polys: liver, e: DB.liver },
+      { borders: liver, e: 6, spec: 9, w: 0.12, closed: true, all: true },
+      { polys: spine, e: DB.calcium - 2, shadow: 30 },
+      // walls first, then the lumens: where a vein joins another, its wall does not cross
+      // the lumen it drains into (the walls are drawn twice as wide for the half that stays)
+      { borders: walls(veins), e: DB.fibrous - 3, spec: 6, w: 0.16, all: true },
+      { borders: walls(arteries), e: DB.fibrous + 2, spec: 7, w: 0.28, all: true },
+      { polys: [...veins, ...arteries], e: DB.blood, blood: true },
       { polys: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, rule: 'evenodd' },
       { polys: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo },
       { borders: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, spec: 8, closed: true },
       { borders: open.map((L) => L.pts), refs: ref(open), e: DB.myo, spec: 8 },
       { borders: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, spec: 6, closed: true },
-      { polys: tris, e: DB.chord - 4 },
+      { polys: tri(extra.chords), e: DB.chord - 7 },
+      { polys: tri(extra.chordsCore), e: DB.chord },
       { borders: peri.map((L) => L.pts), refs: ref(peri), e: 8, spec: 10, w: 0.15, all: true },
-      { polys: valves.filter(closed).map((L) => L.pts), e: DB.valve - 2 },
-      { lines: valves.map((L) => L.pts), e: DB.valve, w: 0.1 },
+      { polys: leaf, e: DB.valve },
+      { borders: leaf, e: DB.valve, spec: 7, w: 0.06, closed: true },
+      // coronary arteries run in epicardial fat: a bright sleeve, the wall, the dark lumen
+      { lines: cor, closed: true, e: DB.fat + 4, w: 0.5 },
+      { borders: cor, e: DB.fibrous, spec: 6, w: 0.07, closed: true, all: true },
+      { polys: cor, e: DB.blood, blood: true },
     ];
     const box = m.zoomed ? { x: 8, y: m.boxTop, w: W - 16, h: m.boxH } : { x: 0, y: 0, w: W, h: H };
     const view = { box, cx, top, k: scale, half, depth: spec.depth, near: spec.liver ? 1.5 : spec.near ?? 1.2, liver: spec.liver ? spec.near : 0 };
@@ -576,7 +815,7 @@ export class EchoView {
     ctx.restore();
 
     if (this.labels) this.drawLabels(state, X, Y);
-    if (this.calipers && this.view === 'plax') this.drawCalipers(tissue, X, Y);
+    if (this.calipers && this.view === 'plax' && !this.tr) this.drawCalipers(tissue, X, Y);
     else this.measure = {};
     if (!this.noEcg) {
       const y0 = Math.min(H - 12, top + spec.depth * scale + ecgH / 2 + 18);
@@ -637,6 +876,15 @@ export class EchoView {
     an.arch = V3(...VESSELS.archTop).addScaledVector(BODY.sup, -1.2);
     an.desc = V3(...VESSELS.desc);
     an.ivc = V3(...VESSELS.ivc).addScaledVector(BODY.sup, 1.4);
+    an.svc = V3(...VESSELS.svc);
+    an.lmca = V3(...VESSELS.lmca);
+    an.rca = V3(...VESSELS.rca);
+    an.avroot = V3(...VESSELS.lmca).lerp(V3(...VESSELS.rca), 0.5);
+    an.abdao = V3(...ABD.aorta.pts[1]).lerp(V3(...ABD.aorta.pts[2]), 0.4);
+    an.celiac = V3(...ABD.celiac.pts[1]);
+    an.sma = V3(...ABD.sma.pts[2]);
+    an.hv = V3(...ABD.mhv.pts[1]);
+    an.ivcl = V3(...ABD.ivc.pts[1]);
     const bif = V3(...VESSELS.paBif);
     an.mpa = an.pv.clone().lerp(bif, 0.5);
     an.rpa = bif.clone().addScaledVector(BODY.left, -2.6).addScaledVector(BODY.ant, -0.8);
@@ -645,10 +893,11 @@ export class EchoView {
   }
 
   drawLabels(state, X, Y) {
-    const g = this.geoms[this.view];
+    const g = this.g;
     const an = this.anchors(state.s || 0);
     const ctx = this.ctx;
-    const list = VIEWS[this.view].labels || [];
+    const spec = this.specOf(this.view);
+    const list = spec.labels || [];
     const placed = [];
     ctx.save();
     ctx.font = `600 11px ${SANS}`;
@@ -656,13 +905,16 @@ export class EchoView {
     for (const [id, txt] of list) {
       let x, y;
       if (id === 'liver') {
-        const nr = VIEWS[this.view].near * this.map.scale * 0.55;
-        x = this.map.cx; y = this.map.top + nr;
+        // on the centre line: halfway through a liver layer, or 2.4 cm past the abdominal wall
+        x = this.map.cx; y = this.map.top + (spec.liver ? spec.near * 0.55 : spec.near + 2.4) * this.map.scale;
+        if (!ctx.isPointInPath(this.fanPath, x * this.dpr, y * this.dpr)) continue;
+        if (this.boxPath && !ctx.isPointInPath(this.boxPath, x * this.dpr, y * this.dpr)) continue;
       } else {
         const P = id === 'wallL' || id === 'wallR' ? this.wallPoint(id === 'wallR' ? 1 : -1, state.s || 0, g) : an[id];
         if (!P) continue;
         const q = this.toPlane(P, g);
-        if (Math.abs(q[2]) > (ROOMY.has(id) ? 2.8 : 1.8) || q[1] < 0.5) continue;
+        const far = spec.strict ? (ROOMY.has(id) ? 1.6 : 0.9) : ROOMY.has(id) ? 2.8 : 1.8;
+        if (Math.abs(q[2]) > far || q[1] < 0.5) continue;
         x = X(q[0]); y = Y(q[1]);
         if (!ctx.isPointInPath(this.fanPath, x * this.dpr, y * this.dpr)) continue;
         if (this.boxPath && !ctx.isPointInPath(this.boxPath, x * this.dpr, y * this.dpr)) continue;
@@ -710,7 +962,7 @@ export class EchoView {
     return out;
   }
   drawCalipers(tissue, X, Y) {
-    const g = this.geoms[this.view];
+    const g = this.g;
     const an = this.anchors(0);
     const c = this.toPlane(an.lv.clone().lerp(an.mv, 0.3), g);
     const dir = [0, 1];

@@ -278,7 +278,6 @@ export default {
         { k: 'Stroke volume', v: fmt(L.svm), u: 'mL' },
         { k: 'LVEF', v: fmt(L.ef * 100), u: '%', flag: L.ef * 100 < 52 },
         { k: 'EDV index', v: fmt(edvi), u: 'mL/m²', flag: edvi > 74 },
-        { k: 'If heart failure', v: hfCategory(L.ef * 100).replace(' range', ''), text: true },
       ],
       live: `Biplane disks give an EF of ${fmt(L.ef * 100)}%: ${band === bandF ? band : `${band} for a man, ${bandF} for a woman`}${cite('lang2015')}. In a patient with heart failure, this EF falls in the ${hfCategory(L.ef * 100)}${cite('heidenreich2022')}. ${L.f > 0.02 ? `<span class="k-red">The views are ${s.fore}% foreshortened: EDV reads ${fmt(L.EDm)} mL, not ${fmt(L.edv)} mL.</span> EF barely moves, because both volumes shrink together.` : `EDV index ${fmt(edvi)} mL/m² for a body surface area of ${BSA.toFixed(2)} m².`}`,
     };
