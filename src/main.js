@@ -1,0 +1,406 @@
+// The page engine: chapters, controls, readouts, live sentences, citations, dialogs, tour.
+import { state, set, subscribe, declare, reducedMotion } from './state.js';
+import { REFS } from './refs.js';
+import { CHAPTERS, PARTS } from './chapters.js';
+import { NORM_TABLES } from './norms.js';
+import { QUIZ } from './quiz.js';
+
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const KEYS = CHAPTERS.map((c) => c.key);
+const CH = Object.fromEntries(KEYS.map((k, i) => [k, i]));
+
+for (const c of CHAPTERS) if (c.defaults) declare(c.defaults);
+
+// ---------------------------------------------------------------- theme
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage blocked */ } },
+};
+function currentTheme() {
+  const t = document.documentElement.dataset.theme;
+  if (t) return t;
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+const sheets = {};
+function applyTheme(mode) {
+  if (mode) document.documentElement.dataset.theme = mode;
+  $('#theme-label').textContent = currentTheme() === 'dark' ? 'Paper' : 'Slate';
+  for (const sh of Object.values(sheets)) sh.retheme?.();
+  for (const c of CHAPTERS) c.retheme?.();
+  dirtyAll();
+}
+$('#btn-theme').addEventListener('click', () => {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  store.set('heart-in-sound-theme', next);
+  applyTheme(next);
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme());
+
+// ---------------------------------------------------------------- citations
+function numberCitations() {
+  const order = [];
+  const index = new Map();
+  for (const sup of $$('.cite[data-ref]')) {
+    if (sup.closest('[hidden]')) continue;
+    const ids = sup.dataset.ref.split(',').map((s) => s.trim());
+    const nums = ids.map((id) => {
+      if (!REFS[id]) console.warn('missing reference', id);
+      if (!index.has(id)) { index.set(id, order.length + 1); order.push(id); }
+      return index.get(id);
+    });
+    sup.innerHTML = nums.map((n) => `<a href="#ref-${n}" data-refn="${n}" aria-label="Source ${n}">${n}</a>`).join(',');
+  }
+  $('#reflist').innerHTML = order.map((id, i) => {
+    const r = REFS[id] || { text: id };
+    const links = [];
+    if (r.doi) links.push(`<a href="https://doi.org/${esc(r.doi)}" target="_blank" rel="noopener">doi:${esc(r.doi)}</a>`);
+    if (r.pmid) links.push(`<a href="https://pubmed.ncbi.nlm.nih.gov/${esc(r.pmid)}/" target="_blank" rel="noopener">PMID ${esc(r.pmid)}</a>`);
+    if (r.url) links.push(`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(new URL(r.url).hostname.replace(/^www\./, ''))}</a>`);
+    return `<li id="ref-${i + 1}">${esc(r.text)} <span class="ids">${links.join(' · ')}</span></li>`;
+  }).join('');
+  return index;
+}
+let refIndex = new Map();
+/** Citation markup for text built at run time (live sentences, report). */
+export function cite(ids) {
+  const nums = ids.split(',').map((id) => refIndex.get(id.trim())).filter(Boolean);
+  if (!nums.length) return '';
+  return `<sup class="cite">${nums.map((n) => `<a href="#ref-${n}" data-refn="${n}" aria-label="Source ${n}">${n}</a>`).join(',')}</sup>`;
+}
+
+function openDialog(id) {
+  const d = document.getElementById(id);
+  set({ playing: false });
+  if (!d.open) d.showModal();
+}
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[data-refn]');
+  if (a) {
+    e.preventDefault();
+    openDialog('dlg-refs');
+    const li = document.getElementById(`ref-${a.dataset.refn}`);
+    if (li) {
+      li.scrollIntoView({ block: 'center' });
+      li.style.background = 'color-mix(in srgb, var(--accent) 14%, transparent)';
+      setTimeout(() => { li.style.background = ''; }, 1600);
+    }
+    return;
+  }
+  const go = e.target.closest('a[data-go]');
+  if (go) { e.preventDefault(); goChapter(CH[go.dataset.go] ?? Number(go.dataset.go)); return; }
+  if (e.target.matches('[data-close]')) e.target.closest('dialog').close();
+});
+for (const d of $$('dialog')) d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+$('#btn-refs').addEventListener('click', () => openDialog('dlg-refs'));
+$('#btn-norms').addEventListener('click', () => openDialog('dlg-norms'));
+$('#btn-about')?.addEventListener('click', () => openDialog('dlg-about'));
+
+function fillNorms() {
+  $('#norms-body').innerHTML = NORM_TABLES.map((t) => `
+    <div class="table-wrap"><table class="vt">
+      <caption>${esc(t.title)}</caption>
+      <thead><tr>${t.head.map((h, i) => `<th${i ? ' class="num"' : ''}>${esc(h)}</th>`).join('')}</tr></thead>
+      <tbody>${t.rows.map((r) => `<tr>${r.map((c, i) => `<td${i ? ' class="num"' : ''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table><p class="note">${esc(t.note || '')} <span class="cite" data-ref="${t.ref}"></span></p></div>`).join('');
+}
+
+// ---------------------------------------------------------------- controls
+// Generic bindings, declared in the markup:
+//   <input type="range" data-key="freq">          number
+//   <div class="seg" data-key="mode"><button data-val="pw">  value (numbers parse)
+//   <input type="checkbox" data-key="cine">       boolean
+//   <input type="number" data-key="E">            number (calculator fields)
+//   <output data-for="freq" data-dp="1">           formatted value
+const parse = (v) => (v === 'true' ? true : v === 'false' ? false : v !== '' && !Number.isNaN(Number(v)) ? Number(v) : v);
+function bindControls() {
+  for (const el of $$('input[type="range"][data-key]')) {
+    el.addEventListener('input', () => set({ [el.dataset.key]: Number(el.value), playing: false, anim: false }));
+  }
+  for (const g of $$('.seg[data-key]')) {
+    g.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-val]');
+      if (b) set({ [g.dataset.key]: parse(b.dataset.val), playing: false, anim: false });
+    });
+  }
+  for (const el of $$('input[type="checkbox"][data-key]')) {
+    el.addEventListener('change', () => set({ [el.dataset.key]: el.checked, playing: false, anim: false }));
+  }
+  for (const el of $$('input[type="number"][data-key]')) {
+    el.addEventListener('input', () => {
+      const v = parseFloat(el.value);
+      if (Number.isFinite(v)) set({ [el.dataset.key]: v, playing: false, anim: false });
+    });
+  }
+}
+function syncControls(changed) {
+  const has = (k) => !changed || k in changed;
+  for (const el of $$('input[type="range"][data-key]')) {
+    const k = el.dataset.key;
+    if (!has(k)) continue;
+    const v = state[k];
+    if (Number(el.value) !== v) el.value = v;
+    const min = Number(el.min), max = Number(el.max);
+    el.style.setProperty('--fill', `${((v - min) / (max - min)) * 100}%`);
+  }
+  for (const g of $$('.seg[data-key]')) {
+    const k = g.dataset.key;
+    if (!has(k)) continue;
+    for (const b of $$('button[data-val]', g)) b.setAttribute('aria-pressed', String(String(parse(b.dataset.val)) === String(state[k])));
+  }
+  for (const el of $$('input[type="checkbox"][data-key]')) if (has(el.dataset.key)) el.checked = !!state[el.dataset.key];
+  for (const el of $$('input[type="number"][data-key]')) {
+    const k = el.dataset.key;
+    if (!has(k) || document.activeElement === el) continue;
+    const dp = Number(el.dataset.dp ?? 1);
+    el.value = Number.isFinite(state[k]) ? Number(state[k].toFixed(dp)) : '';
+  }
+  for (const o of $$('output[data-for]')) {
+    const k = o.dataset.for;
+    if (!has(k)) continue;
+    const c = CHAPTERS.find((ch) => ch.format && ch.format[k]);
+    o.textContent = c ? c.format[k](state[k], state) : String(state[k]);
+  }
+  // conditional controls: data-show-<key>="value1 value2"
+  for (const el of $$('[data-show-view],[data-show-side],[data-show-sten],[data-show-regv]')) {
+    for (const a of el.attributes) {
+      if (!a.name.startsWith('data-show-')) continue;
+      const k = a.name.slice(10);
+      el.hidden = !a.value.split(' ').includes(String(state[k]));
+    }
+  }
+}
+
+// ---------------------------------------------------------------- readouts and live text
+function readouts(host, items) {
+  host.innerHTML = items.map((it) => `<div class="readout${it.flag ? ' is-flag' : ''}${it.text ? ' text' : ''}"><dt>${it.k}</dt><dd>${it.v}${it.u ? `<small>${it.u}</small>` : ''}</dd></div>`).join('');
+}
+function renderText(i) {
+  const c = CHAPTERS[i];
+  if (!c.text) return;
+  const out = c.text(state, { cite });
+  const art = document.getElementById(`ch-${c.key}`);
+  if (out.readouts) readouts($('.readouts', art), out.readouts);
+  if (out.live !== undefined) $('.live', art).innerHTML = out.live;
+  if (out.extra) out.extra(art);
+}
+function renderAllText() { for (let i = 0; i < CHAPTERS.length; i++) renderText(i); }
+
+// ---------------------------------------------------------------- quizzes
+function buildQuizzes() {
+  for (const c of CHAPTERS) {
+    const host = document.querySelector(`#ch-${c.key} .quiz`);
+    const quiz = c.quiz || QUIZ[c.key];
+    if (!host || !quiz) continue;
+    host.innerHTML = `<h3 class="quiz-head">Check yourself</h3>` + quiz.map((it, i) => `
+      <div class="q" data-q="${i}">
+        <p>${it.q}</p>
+        <div class="opts">${it.opts.map((o, j) => `<button type="button" data-o="${j}">${o}</button>`).join('')}</div>
+        <p class="why" hidden>${it.why}</p>
+      </div>`).join('');
+    host.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-o]');
+      if (!b) return;
+      const q = b.closest('.q');
+      const it = quiz[Number(q.dataset.q)];
+      const j = Number(b.dataset.o);
+      b.classList.add(j === it.right ? 'right' : 'wrong');
+      if (j === it.right) q.querySelector('.why').hidden = false;
+    });
+  }
+}
+
+// ---------------------------------------------------------------- figures
+function ensureFigure(i) {
+  const c = CHAPTERS[i];
+  if (sheets[c.key] || !c.figure) return sheets[c.key];
+  const fig = document.getElementById(`fig-${c.key}`);
+  sheets[c.key] = c.figure(fig, () => state);
+  return sheets[c.key];
+}
+function dirtyAll() { for (const sh of Object.values(sheets)) if (sh) sh.dirty = true; }
+
+// ---------------------------------------------------------------- chapters
+function goChapter(i) {
+  i = Math.max(0, Math.min(CHAPTERS.length - 1, i));
+  tourDone = false;
+  set({ chapter: i });
+}
+$('#chapters').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-go]');
+  if (b) goChapter(Number(b.dataset.go));
+});
+
+const trackX = (i, w) => ((i + 0.08) / CHAPTERS.length) * w;
+function trackPath(x0, x1) {
+  let d = `M${x0.toFixed(1)},6`;
+  for (let s = x0 + 18; s < x1; s += 18) d += ` L${Math.min(s, x1).toFixed(1)},${(6 + Math.sin(s * 0.13) * 0.9).toFixed(2)}`;
+  return `${d} L${x1.toFixed(1)},6`;
+}
+function drawTrack() {
+  const svg = $('#track');
+  const w = svg.clientWidth || 600;
+  svg.setAttribute('viewBox', `0 0 ${w} 12`);
+  svg.innerHTML = `<path class="line" d="${trackPath(trackX(0, w), trackX(CHAPTERS.length - 1, w))}"/><path class="done"/><circle class="dot" cy="6" r="4.5"/>`;
+  dotX = -1;
+  moveDot();
+}
+let dotX = -1;
+function moveDot() {
+  const svg = $('#track');
+  const dot = svg.querySelector('.dot');
+  if (!dot) return;
+  const w = svg.clientWidth || 600, i = state.chapter;
+  const f = state.playing && i < CHAPTERS.length - 1 ? Math.min(1, tourT / CHAPTERS[i].dwell) : 0;
+  const x = trackX(i, w) + (trackX(Math.min(i + 1, CHAPTERS.length - 1), w) - trackX(i, w)) * f;
+  if (Math.abs(x - dotX) < 0.3) return;
+  dotX = x;
+  dot.setAttribute('cx', x.toFixed(1));
+  svg.querySelector('.done').setAttribute('d', trackPath(trackX(0, w), x));
+}
+new ResizeObserver(() => drawTrack()).observe($('#track'));
+
+let active = -1;
+function showChapter() {
+  const i = state.chapter;
+  const c = CHAPTERS[i];
+  document.documentElement.dataset.ch = c.key;
+  tourT = 0;
+  if (active >= 0 && active !== i) CHAPTERS[active].leave?.();
+  active = i;
+  $$('.chapter').forEach((a, k) => a.classList.toggle('is-active', k === i));
+  $$('.fig').forEach((f) => f.classList.toggle('is-active', f.id === `fig-${c.key}`));
+  $$('#chapters button[data-go]').forEach((b, k) => (k === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
+  $$('#groups li').forEach((li) => li.classList.toggle('is-cur', li.dataset.part === c.part));
+  drawTrack();
+  $('#panel').scrollTop = 0;
+  if (matchMedia('(max-width: 820px)').matches) {
+    const top = $('.masthead').offsetHeight;
+    if (window.scrollY > top) window.scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }
+  try { history.replaceState(null, '', `${location.pathname}${location.search}#${c.key}`); } catch (e) { /* sandboxed */ }
+  const sh = ensureFigure(i);
+  if (sh && sh.resize) { sh.resize(); sh.dirty = true; }
+  c.enter?.({ state, set, playing: state.playing });
+  if (state.playing) c.tourEnter?.(set, state);
+  renderText(i);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.closest('input, textarea, select, dialog[open]')) return;
+  if (e.key === 'ArrowRight') { goChapter(state.chapter + 1); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft') { goChapter(state.chapter - 1); e.preventDefault(); }
+  else if (e.key === ' ' && !e.target.closest('button')) { togglePlay(); e.preventDefault(); }
+  else CHAPTERS[state.chapter].key_?.(e.key, set, state);
+});
+
+// ---------------------------------------------------------------- tour
+const play = $('#play');
+let tourT = 0;
+let tourDone = false;
+function tourTick(dt) {
+  const i = state.chapter, c = CHAPTERS[i];
+  if (c.ready && !c.ready()) return;   // a 3D chapter counts only while its model is on screen
+  tourT += dt;
+  c.tourTick?.(tourT, set, state);
+  if (tourT >= c.dwell) {
+    if (i < CHAPTERS.length - 1) { set({ chapter: i + 1 }); return; }
+    tourT = c.dwell;
+    tourDone = true;
+    set({ playing: false });
+  }
+  moveDot();
+}
+function togglePlay() {
+  if (state.playing) { set({ playing: false }); return; }
+  if (tourDone) {
+    tourDone = false;
+    set({ playing: true });
+    if (state.chapter === 0) CHAPTERS[0].tourEnter?.(set, state); else set({ chapter: 0 });
+    return;
+  }
+  set({ playing: true });
+  if (tourT === 0) CHAPTERS[state.chapter].tourEnter?.(set, state);
+}
+play.addEventListener('click', togglePlay);
+
+// ---------------------------------------------------------------- state -> view
+subscribe((s, changed) => {
+  if ('chapter' in changed) showChapter();
+  if ('playing' in changed) {
+    play.setAttribute('aria-pressed', String(s.playing));
+    play.setAttribute('aria-label', s.playing ? 'Pause' : 'Play all chapters');
+    dotX = -1;
+    moveDot();
+  }
+  syncControls(changed);
+  // re-render the text of every chapter whose keys changed
+  for (let i = 0; i < CHAPTERS.length; i++) {
+    const c = CHAPTERS[i];
+    const keys = c.watch || Object.keys(c.defaults || {});
+    if (Object.keys(changed).some((k) => keys.includes(k) || k === 'chapter')) {
+      if (i === s.chapter || c.alwaysRender) renderText(i);
+      const sh = sheets[c.key];
+      if (sh) sh.dirty = true;
+    }
+  }
+  CHAPTERS[s.chapter].onState?.(s, changed);
+});
+
+// ---------------------------------------------------------------- loop
+let lastT = performance.now();
+function frame(now) {
+  const raw = (now - lastT) / 1000;
+  const dt = Math.min(0.1, raw);
+  lastT = now;
+  const tdt = Math.min(0.25, raw);
+  if (state.playing) tourTick(tdt);
+  const c = CHAPTERS[state.chapter];
+  if (c.anim) c.anim(state.playing ? tdt : dt, state, set);
+  const sh = sheets[c.key];
+  if (sh && sh.render) sh.render();
+  requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------- start
+function buildTransport() {
+  const nav = $('#chapters');
+  const track = nav.querySelector('.track');
+  CHAPTERS.forEach((c, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<button type="button" data-go="${i}" aria-label="${String(i + 1).padStart(2, '0')} ${esc(c.title)}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${esc(c.title)}</span></button>`;
+    nav.insertBefore(li, track);
+  });
+  nav.style.setProperty('--n-ch', CHAPTERS.length);
+  const groups = $('#groups');
+  groups.style.setProperty('--n-ch', CHAPTERS.length);
+  groups.innerHTML = PARTS.map((p) => `<li data-part="${p.key}" style="--span: ${CHAPTERS.filter((c) => c.part === p.key).length}"><span>${p.num}</span>${esc(p.name)}</li>`).join('');
+}
+
+function start() {
+  const saved = store.get('heart-in-sound-theme');
+  if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
+  buildTransport();
+  fillNorms();
+  for (const c of CHAPTERS) c.init?.({ state, set, subscribe, $, $$, cite: (ids) => cite(ids) });
+  bindControls();
+  buildQuizzes();
+  refIndex = numberCitations();
+  applyTheme();
+  syncControls();
+  const h = (location.hash || '').slice(1);
+  const fromHash = KEYS.indexOf(h);
+  renderAllText();
+  if (fromHash > 0) set({ chapter: fromHash }); else showChapter();
+  window.addEventListener('resize', () => {
+    for (const s of Object.values(sheets)) s?.resize?.();
+    CHAPTERS[state.chapter].resize?.();
+  });
+  document.fonts?.ready?.then(() => dirtyAll());
+  document.fonts?.addEventListener?.('loadingdone', () => dirtyAll());
+  requestAnimationFrame(frame);
+  const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1200));
+  idle(() => { for (const c of CHAPTERS) c.warm?.(); });
+}
+start();
