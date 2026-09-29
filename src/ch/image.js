@@ -6,7 +6,10 @@ import { scanner } from '../scanner.js';
 import { PHYS } from '../physics.js';
 
 const C = PHYS.c;
-let sheet = null, st = null, setState = null, scan = null, ev = null, frameKey = '', clock = 0;
+let sheet = null, st = null, setState = null, scan = null, ev = null, frameKey = '', phase = 0;
+// the sweep on screen runs this many times slower than the real one, so it keeps pace with the
+// frame rate: a deeper image or more lines slow it, a shallower or sparser one speeds it up
+const SLOW = 125;
 
 export function timing(s) {
   const lines = Math.max(8, Math.round(s.sector * s.density));
@@ -56,8 +59,7 @@ function draw(sh, t) {
   const Xp = (u) => x0 + m.X(u), Yp = (v) => y0 + m.Y(v);
 
   // the sweep: lines to the left of the current line belong to the new frame
-  const period = 2.6;                 // s per frame on screen (the real frame takes T.frameMs)
-  const u = reducedMotion ? 1 : (clock % period) / period;
+  const u = reducedMotion ? 1 : phase;   // how far through the frame the sweep is
   const aNow = -half + u * 2 * half;  // angle of the line being fired, from the beam axis
   // the rest of the sector still shows the previous frame, dimmed
   ctx.drawImage(E.canvas, x0, y0, sw, sh0);
@@ -164,6 +166,7 @@ function drawTiming(sh, t, T, x, y, w, narrow) {
   ctx.restore();
   sh.text(`${n} lines × ${T.tLine.toFixed(0)} µs = ${T.frameMs.toFixed(1)} ms`, x, by + bh + 20, { family: MONO, weight: 500, size: narrow ? 11 : 12 });
   sh.text(`${T.fps.toFixed(0)} frames per second`, x, by + bh + (narrow ? 38 : 44), { size: narrow ? 16 : 20, color: T.fps < 30 ? t.flag : t.ink });
+  if (!reducedMotion) sh.text(`the sweep is shown ${SLOW}× slower: ${((SLOW * T.frameMs) / 1000).toFixed(1)} s a frame`, x, by + bh + (narrow ? 54 : 64), { family: MONO, weight: 400, size: narrow ? 10 : 11, color: t.ink3 });
 }
 
 function drawBeam(sh, t, x, y, w, h) {
@@ -332,7 +335,9 @@ export default {
   warm() { ensure(); },
   anim(dt) {
     if (reducedMotion) return;
-    clock += dt;
+    // the phase moves at the current frame rate, so a change of depth or lines changes its speed
+    // without a jump
+    phase = (phase + dt / ((SLOW * timing(st).frameMs) / 1000)) % 1;
     if (sheet) sheet.dirty = true;
   },
   onState(s, ch) {

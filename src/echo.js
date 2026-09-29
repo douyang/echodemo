@@ -500,7 +500,7 @@ export class EchoView {
       const ang = q0.angleTo(q1), dist = c0.distanceTo(c1);
       if (ang < 1e-4 && dist < 1e-3) { this.tr = null; this.cur = null; }
       else {
-        const T = Math.min(1300, 380 + 650 * (ang / Math.PI) + 55 * dist);
+        const T = opts.T ?? Math.min(1300, 380 + 650 * (ang / Math.PI) + 55 * dist);
         this.tr = { q0, q1, c0, c1, depth, t0: performance.now(), T };
         this.cur = { O: from.O.clone(), d: from.d.clone(), r: from.r.clone(), n: from.n.clone() };
       }

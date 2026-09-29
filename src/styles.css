@@ -769,3 +769,6 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .occl-label { letter-spacing: 0.1em; }
   .occl .seg button { padding: 7px 12px; font-size: 0.8125rem; }
 }
+
+/* chapter 04: the view the free plane goes to */
+.free-goto select { width: 100%; max-width: 100%; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper-2); color: var(--ink); font: 500 0.8125rem var(--sans); }

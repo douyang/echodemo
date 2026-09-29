@@ -4,6 +4,7 @@ import { VIEWS, WINDOWS, STRUCTS, HAS, PLANE_VIEWS, CODE, MOVE } from '../views.
 import { loadModel } from '../model3d.js';
 import { sharedStage } from '../gl/shared.js';
 import { SANS } from '../sketch.js';
+import { reducedMotion } from '../state.js';
 
 const PRESETS = {
   nine: ['plax', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a2c', 'a3c', 'sc4c', 'ssn'],
@@ -292,10 +293,89 @@ function syncFree(animate = false) {
   drawFree(g);
   style();
   if (echo) {
-    if (g) echo.setGeometry(g, freeSpec(), { animate });
-    else if (geoms[st.pfocus]) echo.setView(st.pfocus, { animate });
+    // a move to another window takes longer: the probe lifts and crosses the chest
+    const T = crossMove ? 2600 : undefined;
+    if (g) echo.setGeometry(g, freeSpec(), { animate, T });
+    else if (geoms[st.pfocus]) echo.setView(st.pfocus, { animate, T });
   }
   if (st.pcam === 'plane') camera(!animate);
+}
+
+// ---------------------------------------------------------------- moving the probe to a view
+// A move to a view goes in steps: the probe slides and sweeps back over the skin first, then
+// the beam is tilted and rocked, and the probe turns last, when the beam is again on the view's
+// axis. Each control eases over its own stretch of the move, and the stretches overlap; the
+// sliders move with it.
+const STRETCH = { pslide: [0, 0.45], psweep: [0, 0.45], ptilt: [0.28, 0.76], prock: [0.28, 0.76], prot: [0.52, 1] };
+const RANGE = { prot: 180, ptilt: 45, prock: 40, pslide: 5, psweep: 5 };
+const ease = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
+let glide = null, gliding = false, crossMove = false;
+
+/** Ease the probe controls from where they are to `to` (zero: the focused view itself). */
+function startGlide(to = {}, then = null) {
+  const from = Object.fromEntries(FREE_KEYS.map((k) => [k, st[k] || 0]));
+  const target = Object.fromEntries(FREE_KEYS.map((k) => [k, to[k] ?? 0]));
+  const turn = ['prot', 'ptilt', 'prock'].reduce((a, k) => a + Math.abs(from[k] - target[k]), 0);
+  const move = Math.abs(from.pslide - target.pslide) + Math.abs(from.psweep - target.psweep);
+  if (turn < 0.5 && move < 0.05) {
+    glide = null;
+    set0(target);
+    if (then) then();
+    return;
+  }
+  // slow enough to follow: about 1.4 s for a small correction, up to 4 s for a large one.
+  // The move runs on the clock, so a slow frame rate does not stretch it.
+  glide = { from, to: target, t0: performance.now(), T: Math.min(4, 1.4 + turn / 60 + move / 3), then };
+}
+function set0(vals) {
+  gliding = true;
+  setState({ ...vals, playing: false });
+  gliding = false;
+}
+function stepGlide() {
+  if (!glide) return;
+  const u = reducedMotion ? 1 : Math.min(1, (performance.now() - glide.t0) / (glide.T * 1000)), vals = {};
+  for (const k of FREE_KEYS) {
+    const [a, b] = STRETCH[k];
+    vals[k] = glide.from[k] + (glide.to[k] - glide.from[k]) * ease((u - a) / (b - a));
+  }
+  set0(vals);
+  if (u >= 1) { const then = glide.then; glide = null; if (then) then(); }
+}
+
+/**
+ * The probe controls that put view b's plane where plane g is: the turn of g against b as
+ * rotate, tilt and rock (the order freePose applies them), and the probe's shift over the
+ * skin as slide and sweep. A shift along b's beam has no control and is left out.
+ */
+function controlsFor(g, b) {
+  const deg = (x) => (x * 180) / Math.PI;
+  const tilt = Math.asin(Math.max(-1, Math.min(1, -b.d.dot(g.n))));
+  const rot = Math.atan2(b.r.dot(g.n), b.n.dot(g.n));
+  const rock = -Math.atan2(b.d.dot(g.r), b.d.dot(g.d));
+  const dO = g.O.clone().sub(b.O);
+  return { prot: deg(rot), ptilt: deg(tilt), prock: deg(rock), pslide: dO.dot(b.r), psweep: dO.dot(b.n) };
+}
+
+/**
+ * Take the free plane to view k. In the same window the present pose is first counted from k,
+ * then the controls ease back to k itself. For another window the probe comes back to the
+ * focused view, then moves over to the new window.
+ */
+function goTo(k) {
+  if (!geoms || !geoms[k] || !st.pfree) return;
+  const list = sel();
+  if (!list.includes(k)) list.push(k);
+  if (k === st.pfocus) { startGlide(); return; }
+  const g = freePose();
+  const c = g && site(k) === site(st.pfocus) ? controlsFor(g, geoms[k]) : null;
+  if (c && FREE_KEYS.every((key) => Math.abs(c[key]) <= RANGE[key])) {
+    glide = null;
+    set0({ pviews: list.join(','), pfocus: k, ...c });
+    startGlide();
+  } else {
+    startGlide({}, () => { crossMove = true; set0({ pviews: list.join(','), pfocus: k }); crossMove = false; });
+  }
 }
 
 /** On letting go of a control: a plane on a standard view settles onto it. */
@@ -619,9 +699,9 @@ export default {
     pfree: false, prot: 0, ptilt: 0, prock: 0, pslide: 0, psweep: 0 },
   watch: ['pviews', 'pfocus', 'pstruct', 'pcam', 'pheart', 'pcut', 'plines', 'pfree', ...FREE_KEYS],
   format: {
-    prot: (v) => `${v > 0 ? '+' : ''}${v}°`,
-    ptilt: (v) => `${v > 0 ? '+' : ''}${v}°`,
-    prock: (v) => `${v > 0 ? '+' : ''}${v}°`,
+    prot: (v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}°`,
+    ptilt: (v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}°`,
+    prock: (v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}°`,
     pslide: (v) => `${v > 0 ? '+' : ''}${Number(v).toFixed(1)} cm`,
     psweep: (v) => `${v > 0 ? '+' : ''}${Number(v).toFixed(1)} cm`,
   },
@@ -643,7 +723,16 @@ export default {
     });
     buildChips();
     for (const k of FREE_KEYS) document.getElementById(k)?.addEventListener('change', release);
-    document.getElementById('pfree-reset')?.addEventListener('click', () => setState({ prot: 0, ptilt: 0, prock: 0, pslide: 0, psweep: 0, playing: false }));
+    document.getElementById('pfree-reset')?.addEventListener('click', () => startGlide());
+    const pick = document.getElementById('pgoto');
+    if (pick) {
+      pick.innerHTML = WINDOWS.map((w) => {
+        const ks = PLANE_VIEWS.filter((k) => VIEWS[k].win === w.key);
+        return ks.length ? `<optgroup label="${w.name}">${ks.map((k) => `<option value="${k}">${VIEWS[k].name}</option>`).join('')}</optgroup>` : '';
+      }).join('');
+      pick.value = st.pfocus;
+      pick.addEventListener('change', () => goTo(pick.value));
+    }
     const seg = document.querySelector('.seg[data-key="pstruct"]');
     if (seg) seg.insertAdjacentHTML('beforeend', STRUCTS.filter((s) => s.id !== 'abd').map((s) => `<button type="button" data-val="${s.id}" title="${s.name}">${s.short}</button>`).join(''));
     syncChips();
@@ -661,6 +750,7 @@ export default {
     }
   },
   warm() { ensure().catch(() => {}); },
+  anim() { stepGlide(); },
   ready() { return failed || (on && stage && stage.running && stage.onFrame === onFrame); },
   resize() {
     if (!stage || !on) return;
@@ -669,6 +759,9 @@ export default {
   },
   retheme() { retheme3d(); if (echo) echo.retheme(); },
   onState(s, ch) {
+    if (!gliding && glide && (FREE_KEYS.some((k) => k in ch) || 'pfocus' in ch || 'pfree' in ch)) glide = null;
+    const pick = document.getElementById('pgoto');
+    if (pick && ('pfocus' in ch || 'chapter' in ch) && PLANE_VIEWS.includes(s.pfocus)) pick.value = s.pfocus;
     if ('pviews' in ch || 'pfocus' in ch || 'pstruct' in ch) syncChips();
     const lab = fig && fig.querySelector('#planes-label');
     if (lab && ('pfocus' in ch || 'chapter' in ch)) lab.textContent = VIEWS[s.pfocus] ? VIEWS[s.pfocus].name : 'No view chosen';
