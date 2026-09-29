@@ -10,14 +10,14 @@ An illustrated, interactive study of echocardiography for trainees: ultrasound p
 | --- | --- | --- |
 | I Physics and views | 01 Pulse | One scan line: pulse, echoes, A-mode, wavelength and axial resolution, attenuation by tissue |
 | | 02 Image | A sector image built line by line; frame rate; four artifacts |
-| | 03 Windows | 35 standard views: the heart with the imaging plane or its labeled cross-section, and the echo view that plane cuts from the same mesh; the plane moves from view to view as a probe does |
+| | 03 Windows | 35 standard views: the heart cut on the imaging plane and labeled (or whole, with the plane through it), and the echo view that plane cuts from the same mesh; the plane moves from view to view as a probe does |
 | | 04 Planes | All standard view planes in one heart: crossings, parallel stacks, which views show a structure, and a free plane that settles onto the nearest standard view |
 | II Physiology | 05 Cycle | Wiggers diagram with ECG, heart sounds, mitral and LVOT Doppler, and the four-chamber frame at the cursor |
 | | 06 Loop | Pressure–volume loop: ESPVR, EDPVR, arterial elastance, EF = Ees ÷ (Ees + Ea) |
 | III Doppler | 07 Shift | Doppler equation, beam angle, Nyquist limit, pulsed, continuous and color Doppler |
 | | 08 Pressure | Stroke volume from LVOT area × VTI; RV systolic pressure from the TR jet and the IVC |
 | IV Function | 09 Eject | Biplane method of disks and foreshortening; TAPSE, S′ and fractional area change |
-| | 10 Segments | 17-segment bull's-eye, the three apical views, coronary territories, wall motion score index |
+| | 10 Segments | 17-segment bull's-eye and the three apical views: pick an occluded artery, or tap any segment to score it hypokinetic, akinetic or dyskinetic; territories and the wall motion score index follow |
 | | 11 Fill | Diastolic dysfunction, normal to restrictive: four-chamber view with the LA to scale, mitral inflow, tissue Doppler, pulmonary veins, LA strain, TR jet, and the 2025 ASE algorithm run live |
 | V Valves | 12 Aortic stenosis | Normal valve to severe stenosis, then LV failure and low flow: PLAX with hypertrophy, short-axis orifice to scale, CW and LVOT Doppler, mitral inflow |
 | | 13 Mitral stenosis | Normal valve to severe rheumatic stenosis: doming leaflets, LA size, pressure half-time, the gradient at any heart rate, PA pressure, planimetry |
@@ -40,8 +40,9 @@ On a phone the figure sits above the text and stays in view while the text scrol
 
 Chapter 03 covers the ASE comprehensive transthoracic views (Mitchell 2019, Tables 2.1–2.27). Each view carries the class name from the lab's annotation list (`lab` in `src/views.js`), for example `PLAX_IVS_LVPW_LVIDD`, `PSAX_(level_great_vessels)_focus_on_PV_and_PA`, `Subcostal_IVC`, `SSN_aortic_arch`. Six views have no class in that list: the coronary artery origins, the zoomed tricuspid valve, LV apex and aortic valve (apical), the zoomed atrial septum (subcostal) and the suprasternal short axis.
 
-- **The plane moves between views.** A change of view turns the plane along the shortest rotation while the point it images slides across, so neighbouring views are small moves: the pulmonic valve, tricuspid valve and zoomed aortic valve views are small tilts, steers or zooms of the great-vessel short axis, and the abdominal aorta is 7° from the IVC plane.
-- **Cross-section.** With it on, the 3D heart is cut on the view plane and seen square to it, turned as the echo is (probe at the top), with the structures named in the margin, as in *The Amyloid Heart*.
+- **The plane moves between views.** A change of view turns the plane along the shortest rotation while the point it images slides across, so neighbouring views are small moves: the tricuspid valve and zoomed aortic valve views are steers or zooms of the great-vessel short axis, the pulmonic valve view a 12° turn of it toward the valve, and the abdominal aorta is 7° from the IVC plane.
+- **Cross-section.** On by default: the 3D heart is cut on the view plane and seen square to it, turned as the echo is (probe at the top), with the structures named in the margin, as in *The Amyloid Heart*. Turned off, the whole heart shows with the plane through it.
+- **The pulmonic valve.** The RV outflow view runs along the valve's own axis (the principal axis of the valve mesh), turned 10° about it and 3 mm to one side, so it crosses two cusps and the line where they meet: shut, they meet in the middle; open, they lie along the walls of the trunk, which runs on toward the bifurcation. In this model the pulmonary trunk runs 42° out of the aortic short axis, so the great-vessel view for the valve turns 12° toward the valve's axis, where the shut cusps show as a Y. The model's left main runs through a gap in the mesh beside the valve, so the RV outflow view leaves the coronary arteries out, and any coronary section that lies inside a blood pool, clear of the walls, is dropped in every view.
 - **Below the diaphragm.** The heart model ends at the diaphragm. For the subcostal views, `src/abdomen.js` adds simple shapes to the echo only: a liver moulded to the underside of the heart, the IVC down through it, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine. The subcostal four-chamber plane in this model passes above the liver, so that view keeps a liver layer in the near field.
 
 Chapter 04 shows the planes together. The apical views share the LV long axis; the model places the two-chamber plane about 60° from the four- and three-chamber planes, as the ASE rotation describes. The short-axis levels form a parallel stack. The structure table lists what ASE names for each view.

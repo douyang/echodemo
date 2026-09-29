@@ -30,7 +30,8 @@ export const VIEWS = {
     labels: [['asc', 'ascending Ao'], ['av', 'AV'], ['lv', 'LV'], ['la', 'LA']] }),
   rv_in: V({ win: 'plax', short: 'RVIT', name: 'RV inflow', lab: 'PLAX_RV_inflow', plane: 'rv_in', depth: 16,
     labels: [['rv', 'RV'], ['tv', 'TV'], ['ra', 'RA'], ['ivc', 'IVC']] }),
-  rv_out: V({ win: 'plax', short: 'RVOT', name: 'RV outflow', lab: 'PLAX_RV_outflow', plane: 'rv_out', depth: 16,
+  // cor: false, the model's left main runs through a gap in the mesh beside the valve here
+  rv_out: V({ win: 'plax', short: 'RVOT', name: 'RV outflow', lab: 'PLAX_RV_outflow', plane: 'rv_out', depth: 13, cor: false,
     labels: [['rvot', 'RVOT'], ['pv', 'PV'], ['mpa', 'main PA']] }),
   // ---- parasternal short axis
   psax_av: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, aortic valve level', lab: 'PSAX_(level_great_vessels)', plane: 'psax_av', depth: 14,

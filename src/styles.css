@@ -471,6 +471,26 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 .seg button:hover:not([aria-pressed="true"]) { color: var(--ink); }
+/* chapter 10: one button per segment, filled by its wall motion score */
+.segpick { display: flex; flex-direction: column; gap: 3px; }
+.segpick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.segpick-level { width: 3.6em; font: 500 0.625rem/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.segpick button {
+  min-width: 32px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font: 500 0.75rem/1 var(--mono);
+  cursor: pointer;
+}
+.segpick button[data-score="2"] { background: color-mix(in srgb, var(--flag-2) 72%, var(--paper-2)); }
+.segpick button[data-score="3"] { background: color-mix(in srgb, var(--flag) 78%, var(--paper-2)); color: var(--paper); }
+.segpick button[data-score="4"] { background: repeating-linear-gradient(45deg, var(--flag) 0 4px, color-mix(in srgb, var(--flag) 55%, var(--paper-2)) 4px 7px); color: var(--paper); }
+.segpick button:hover { border-color: var(--ink-2); }
+.segpick button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .toggles { display: flex; flex-wrap: wrap; gap: 8px 14px; }
 .check { display: inline-flex; align-items: center; gap: 7px; font: 500 0.75rem/1 var(--sans); color: var(--ink-2); cursor: pointer; }
 .check input { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; }

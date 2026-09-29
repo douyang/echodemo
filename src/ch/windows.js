@@ -123,7 +123,7 @@ export default {
   part: 'physics',
   title: 'Windows',
   dwell: 30,
-  defaults: { win: 'plax', view: 'plax', wcine: true, wlabels: true, wsec: false, wmeas: '' },
+  defaults: { win: 'plax', view: 'plax', wcine: true, wlabels: true, wsec: true, wmeas: '' },
   watch: ['win', 'view', 'wcine', 'wlabels', 'wsec', 'wmeas'],
   figure(f) { fig = f; return null; },
   init({ state, set }) {

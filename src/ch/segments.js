@@ -1,5 +1,6 @@
 // 10 Segments: regional wall motion. The 17-segment model as a bull's-eye and as the three
-// apical views that show it; an occluded coronary artery sets the motion of its territory.
+// apical views that show it. An occluded coronary artery sets the motion of its territory,
+// and each segment can be scored by hand: tap it on the bull's-eye or on an apical view.
 import { Sheet, clamp, mix, MONO, SANS } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { cycleAt, RR } from '../cyclemodel.js';
@@ -19,14 +20,33 @@ const VIEWS = {
 const WM = { 1: 'normal', 2: 'hypokinetic', 3: 'akinetic', 4: 'dyskinetic' };
 const EXC = { 1: 1, 2: 0.45, 3: 0, 4: -0.35 };   // inward motion in systole, as a fraction of normal
 
-export function scores(s) {
+// The scores live in one state key, `segs`: 17 digits, segment 1 first. A preset (an artery
+// and a score) writes its territory; a tap on a segment moves it on to the next score.
+const preset = (culprit, wm) => {
+  const a = Array(17).fill(1);
+  if (TERRITORY[culprit]) for (const k of TERRITORY[culprit]) a[k - 1] = wm;
+  return a.join('');
+};
+const parse = (segs) => {
   const sc = Array(18).fill(1);
-  if (s.culprit !== 'none') for (const k of TERRITORY[s.culprit]) sc[k] = s.wm;
+  for (let k = 1; k <= 17; k++) sc[k] = clamp(Number(segs?.[k - 1]) || 1, 1, 4);
+  return sc;
+};
+/** The preset a pattern matches: { culprit, wm }, or culprit 'custom'. */
+function match(segs) {
+  if (segs === preset('none')) return { culprit: 'none' };
+  for (const c of Object.keys(TERRITORY)) for (const w of [2, 3, 4]) if (segs === preset(c, w)) return { culprit: c, wm: w };
+  return { culprit: 'custom' };
+}
+
+export function scores(s) {
+  const sc = parse(s.segs);
   const sixteen = sc.slice(1, 17);
   return { sc, wmsi: sixteen.reduce((a, b) => a + b, 0) / 16, abnormal: sixteen.filter((x) => x > 1).length };
 }
 
-let sheet = null, st = null, clock = 0;
+let sheet = null, st = null, setState = null, clock = 0, hover = 0;
+let layout = null;   // where the last frame put the bull's-eye and the apical walls, for taps
 
 function fillFor(t, score) {
   return score === 1 ? null : score === 2 ? t.flag2 : t.flag;
@@ -64,8 +84,8 @@ function bullseye(sh, t, cx, cy, R, sc) {
         if (sc[seg] === 4) sh.hatch(p, 0.8, 4, t.ink, 0.8, seg, 0.5);
       }
       ctx.save();
-      ctx.strokeStyle = t.ink;
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = seg === hover ? t.accent : t.ink;
+      ctx.lineWidth = seg === hover ? 2.5 : 1;
       ctx.stroke(p);
       ctx.restore();
       const am = (mid * Math.PI) / 180, rm = ((ring.r0 + ring.r1) / 2) * R;
@@ -76,7 +96,7 @@ function bullseye(sh, t, cx, cy, R, sc) {
   cap.arc(cx, cy, 0.14 * R, 0, Math.PI * 2);
   const f = fillFor(t, sc[17]);
   if (f) { ctx.save(); ctx.fillStyle = f; ctx.globalAlpha = 0.75; ctx.fill(cap); ctx.restore(); }
-  ctx.save(); ctx.strokeStyle = t.ink; ctx.stroke(cap); ctx.restore();
+  ctx.save(); ctx.strokeStyle = hover === 17 ? t.accent : t.ink; ctx.lineWidth = hover === 17 ? 2.5 : 1; ctx.stroke(cap); ctx.restore();
   sh.text('17', cx, cy + 4, { family: MONO, weight: 500, size: 11, align: 'center' });
   // orientation
   sh.text('anterior', cx, cy - R - 10, { size: 16, align: 'center', color: t.ink2 });
@@ -105,15 +125,18 @@ function apicalView(sh, t, box, name, sc, sys) {
     return pts;
   };
   const L = side(-1, v.left), Rr = side(1, v.right);
+  // the middle of each wall band, for taps
+  if (layout) for (const [pts, sign] of [[L, -1], [Rr, 1]]) for (const p of pts) layout.walls.push({ x: p.x + sign * 7, y: p.y, seg: p.seg });
   // colored wall bands
   const band = (pts, sign) => {
     for (let i = 0; i < pts.length - 1; i++) {
       const a = pts[i], b = pts[i + 1];
       const f = fillFor(t, sc[a.seg]);
+      const on = a.seg === hover;
       ctx.save();
-      ctx.strokeStyle = f || t.ink3;
-      ctx.globalAlpha = f ? 0.9 : 0.5;
-      ctx.lineWidth = 11;
+      ctx.strokeStyle = f || (on ? t.accent : t.ink3);
+      ctx.globalAlpha = f || on ? 0.9 : 0.5;
+      ctx.lineWidth = on ? 15 : 11;
       ctx.lineCap = 'butt';
       ctx.beginPath();
       ctx.moveTo(a.x + sign * 7, a.y);
@@ -148,16 +171,19 @@ function draw(sh, t) {
   const narrow = W < 700;
   const S = scores(st);
   const sys = reducedMotion ? 1 : clamp(cycleAt((clock * 1000) % RR).s, 0, 1);
+  layout = { bull: null, walls: [] };
   if (narrow) {
     const R = Math.min(W * 0.26, H * 0.2);
+    layout.bull = { cx: W * 0.5, cy: R + 30, R };
     bullseye(sh, t, W * 0.5, R + 30, R, S.sc);
     const bw = (W - 24) / 3, by = 2 * R + 80;
     ['A4C', 'A2C', 'A3C'].forEach((n, i) => apicalView(sh, t, { x: 8 + i * (bw + 4), y: by, w: bw, h: H - by - 8 }, n, S.sc, sys));
     return;
   }
   const R = Math.min(W * 0.2, H * 0.3);
+  layout.bull = { cx: W * 0.27, cy: H * 0.42, R };
   bullseye(sh, t, W * 0.27, H * 0.42, R, S.sc);
-  sh.text('17 segments, seen from the apex', W * 0.27, H * 0.42 + R + 52, { size: 18, align: 'center', color: t.ink2 });
+  sh.text('17 segments, seen from the apex; tap one to score it', W * 0.27, H * 0.42 + R + 52, { size: 18, align: 'center', color: t.ink2 });
   const bw = W * 0.15, bx = W * 0.52, bh = H * 0.62;
   ['A4C', 'A2C', 'A3C'].forEach((n, i) => apicalView(sh, t, { x: bx + i * (bw + 10), y: H * 0.14, w: bw, h: bh }, n, S.sc, sys));
   sh.text('the apical views, systole in motion', bx, H * 0.14 + bh + 34, { size: 18, color: t.ink2 });
@@ -179,18 +205,93 @@ function draw(sh, t) {
 
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 
+/** The segment under a pointer event on the figure, or 0. */
+function segAt(e) {
+  if (!layout || !sheet) return 0;
+  const r = sheet.canvas.getBoundingClientRect(), z = sheet.z || 1;
+  const x = (e.clientX - r.left) / z, y = (e.clientY - r.top) / z;
+  const B = layout.bull;
+  if (B) {
+    const dx = x - B.cx, dy = y - B.cy, rho = Math.hypot(dx, dy) / B.R;
+    if (rho <= 1.02) {
+      if (rho < 0.14) return 17;
+      const ring = rho < 0.36 ? [13, 14, 15, 16] : rho < 0.66 ? [7, 8, 9, 10, 11, 12] : [1, 2, 3, 4, 5, 6];
+      const step = 360 / ring.length, a = (Math.atan2(-dy, dx) * 180) / Math.PI;
+      return ring[(((Math.round((a - 90) / step)) % ring.length) + ring.length) % ring.length];
+    }
+  }
+  let best = 0, bd = 13;
+  for (const p of layout.walls) {
+    const d = Math.hypot(x - p.x, y - p.y);
+    if (d < bd) { bd = d; best = p.seg; }
+  }
+  return best;
+}
+
+/** Move segment k on to the next score: normal, hypokinetic, akinetic, dyskinetic, normal. */
+function cycle(k) {
+  const a = [...parse(st.segs).slice(1)];
+  a[k - 1] = (a[k - 1] % 4) + 1;
+  const segs = a.join('');
+  setState({ segs, ...match(segs), playing: false, anim: false });
+}
+
+// the segment buttons under the controls: the keyboard's way to score, and a key to the colors
+function fillPick() {
+  const host = document.getElementById('seg-pick');
+  if (!host || host.childElementCount) return;
+  const rows = [[1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12], [13, 14, 15, 16, 17]];
+  host.innerHTML = rows.map((r, i) => `<span class="segpick-row"><span class="segpick-level">${['Basal', 'Mid', 'Apical'][i]}</span>${r.map((k) => `<button type="button" data-seg="${k}">${k}</button>`).join('')}</span>`).join('');
+  host.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-seg]');
+    if (b) cycle(Number(b.dataset.seg));
+  });
+}
+function syncPick(s) {
+  const host = document.getElementById('seg-pick');
+  if (!host) return;
+  const sc = parse(s.segs);
+  for (const b of host.querySelectorAll('button[data-seg]')) {
+    const k = Number(b.dataset.seg);
+    b.dataset.score = String(sc[k]);
+    b.setAttribute('aria-label', `Segment ${k}, ${SEG_NAMES[k - 1]}: ${WM[sc[k]]}. Press for the next score.`);
+    b.title = `${SEG_NAMES[k - 1]}: ${WM[sc[k]]}`;
+  }
+}
+
 export default {
   key: 'segments',
   part: 'function',
   title: 'Segments',
   dwell: 14,
-  defaults: { culprit: 'lad', wm: 3 },
-  watch: ['culprit', 'wm'],
+  defaults: { culprit: 'lad', wm: 3, segs: preset('lad', 3) },
+  watch: ['culprit', 'wm', 'segs'],
   figure(fig) {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
+    const cv = sheet.canvas;
+    cv.addEventListener('click', (e) => { const k = segAt(e); if (k) cycle(k); });
+    cv.addEventListener('pointermove', (e) => {
+      const k = e.pointerType === 'mouse' ? segAt(e) : 0;
+      if (k !== hover) { hover = k; cv.style.cursor = k ? 'pointer' : ''; sheet.dirty = true; }
+    });
+    cv.addEventListener('pointerleave', () => { if (hover) { hover = 0; cv.style.cursor = ''; sheet.dirty = true; } });
     return sheet;
   },
-  init({ state }) { st = state; },
+  init({ state, set }) {
+    st = state;
+    setState = set;
+    fillPick();
+    syncPick(state);
+  },
+  onState(s, ch) {
+    // an artery or a score from the buttons writes the pattern; with a pattern made by hand,
+    // a new score goes to every abnormal segment
+    if (('culprit' in ch || 'wm' in ch) && !('segs' in ch)) {
+      const segs = s.culprit === 'custom' ? [...s.segs].map((c) => (c !== '1' ? String(s.wm) : c)).join('') : preset(s.culprit, s.wm);
+      if (segs !== s.segs) { setState({ segs, ...(s.culprit === 'custom' ? match(segs) : {}) }); return; }
+    }
+    if ('segs' in ch || 'chapter' in ch) syncPick(s);
+  },
   anim(dt) {
     if (reducedMotion) return;
     clock += dt / 1.5;
@@ -203,17 +304,29 @@ export default {
   },
   text(s, { cite }) {
     const S = scores(s);
-    const segs = s.culprit === 'none' ? [] : TERRITORY[s.culprit];
-    const seen = Object.entries(VIEWS).filter(([, v]) => [...v.left, ...v.right].some((k) => segs.includes(k))).map(([n]) => n);
+    const bad = [];
+    for (let k = 1; k <= 17; k++) if (S.sc[k] > 1) bad.push(k);
+    const seen = Object.entries(VIEWS).filter(([, v]) => [...v.left, ...v.right].some((k) => bad.includes(k))).map(([n]) => n);
+    const by = Object.keys(TERRITORY).map((c) => ({ c, n: TERRITORY[c].filter((k) => S.sc[k] > 1).length, of: TERRITORY[c].length })).filter((x) => x.n);
+    const listBy = [2, 3, 4].map((w) => ({ w, ks: bad.filter((k) => S.sc[k] === w) })).filter((x) => x.ks.length)
+      .map((x) => `${WM[x.w]} (${x.w}): ${x.ks.join(', ')}`).join('; ');
+    const territory = s.culprit === 'none' ? 'none' : TERRITORY[s.culprit] ? ANAME[s.culprit] : by.length ? by.map((x) => `${x.c === 'lcx' ? 'Cx' : x.c.toUpperCase()} ${x.n} of ${x.of}`).join(' · ') : 'none';
+    const tail = `The index is the mean of the 16 scores: ${fmt(S.wmsi, 2)}${cite('lang2015')}.`;
+    let live;
+    if (!bad.length) live = `All 16 segments score 1 (normal): the wall motion score index is 1.00${cite('lang2015')}. Tap a segment to score it.`;
+    else if (TERRITORY[s.culprit]) {
+      const segs = TERRITORY[s.culprit];
+      live = `A ${ANAME[s.culprit]} territory that is ${WM[s.wm]} scores ${s.wm} in segments ${segs.filter((k) => k < 17).join(', ')}${segs.includes(17) ? ' (and the apical cap, which the index leaves out)' : ''}. Views that show it: ${seen.join(', ')}. ${tail} The map is the standard one; in one CT study, 72% of patients had at least one segment supplied by a different artery${cite('javadi2010')}.`;
+    } else {
+      live = `Scored by hand: ${listBy}. Views that show them: ${seen.join(', ') || 'none'}. By the standard map, the abnormal segments lie in the territory of ${by.map((x) => `the ${ANAME[x.c]} (${x.n} of ${x.of})`).join(', ')}${cite('javadi2010')}. ${tail}${bad.includes(17) ? ' The apical cap counts only in the 17-segment model.' : ''}`;
+    }
     return {
       readouts: [
         { k: 'Wall motion score index', v: fmt(S.wmsi, 2), flag: S.wmsi > 1 },
         { k: 'Abnormal segments', v: `${S.abnormal} of 16`, flag: S.abnormal > 0 },
-        { k: 'Territory', v: s.culprit === 'none' ? 'none' : ANAME[s.culprit], text: true },
+        { k: 'Territory', v: territory, text: true },
       ],
-      live: s.culprit === 'none'
-        ? `All 16 segments score 1 (normal): the wall motion score index is 1.00${cite('lang2015')}.`
-        : `A ${ANAME[s.culprit]} territory that is ${WM[s.wm]} scores ${s.wm} in segments ${segs.filter((k) => k < 17).join(', ')}${segs.includes(17) ? ' (and the apical cap, which the index leaves out)' : ''}. Views that show it: ${seen.join(', ')}. The index is the mean of the 16 scores: ${fmt(S.wmsi, 2)}${cite('lang2015')}. The map is the standard one; in one CT study, 72% of patients had at least one segment supplied by a different artery${cite('javadi2010')}.`,
+      live,
     };
   },
 };

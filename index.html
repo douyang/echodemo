@@ -47,7 +47,7 @@
     <figure class="fig" id="fig-windows">
       <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
       <div class="split">
-        <div class="pane-3d"><div class="gl-host"></div><div class="overlay" id="windows-overlay"></div><p class="pane-label" id="windows-3dlabel">Imaging plane</p><p class="fig-note" id="windows-note">Drag to orbit · Scroll or pinch to zoom</p></div>
+        <div class="pane-3d"><div class="gl-host"></div><div class="overlay" id="windows-overlay"></div><p class="pane-label" id="windows-3dlabel">Cross-section</p><p class="fig-note" id="windows-note">Drag to orbit · Scroll or pinch to zoom</p></div>
         <div class="pane-2d"><canvas class="fig-canvas" id="windows-canvas" aria-hidden="true"></canvas><p class="pane-label" id="windows-label">Parasternal long axis</p></div>
       </div>
       <figcaption class="sr-only">Left: a three-dimensional heart with the ultrasound sector plane that cuts it. Right: the matching echocardiographic view with the chambers and valves labeled.</figcaption>
@@ -82,7 +82,7 @@
     </figure>
     <figure class="fig" id="fig-segments">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Seventeen-segment bullseye and the three apical views, colored by wall motion for the chosen coronary artery, with segmental strain curves.</figcaption>
+      <figcaption class="sr-only">Seventeen-segment bullseye and the three apical views, colored by the wall motion score of each segment. The numbered segment buttons under the controls change the scores.</figcaption>
     </figure>
     <figure class="fig" id="fig-fill">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -260,7 +260,7 @@
         <li><b>Suprasternal.</b> It shows the ascending aorta, the arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
         <h3>The figure</h3>
-        <p>Left: the heart model with the imaging plane. With <b>Cross-section</b> on, the heart is cut on that plane and seen square to it, turned as the echo is, with the structures named. Right: the echo view that the same plane cuts from the model. A change of view moves the plane from where it is, as the probe would move.</p>
+        <p>Left: the heart model cut on the imaging plane and seen square to it, turned as the echo is, with the structures named. Turn off <b>Cross-section</b> to see the whole heart with the plane through it. Right: the echo view that the same plane cuts from the model. A change of view moves the plane from where it is, as the probe would move.</p>
         <p>Below the diaphragm, the liver, the inferior vena cava, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views; they are not part of the heart model and the 3D heart does not show them. Each view carries the class name that the lab uses to annotate it, where the lab's list has one. The model is a normal adult heart; in a patient, the position of the heart changes the angles.</p>
         <h3>A good apical view</h3>
         <p>An apical view that is not foreshortened shows about two thirds LV and one third LA along the long axis<span class="cite" data-ref="mitchell2019"></span>. A plane that misses the true apex makes the LV look short and round, and its volumes read low<span class="cite" data-ref="lang2015"></span>.</p>
@@ -680,10 +680,14 @@
           </div>
         </div>
         <div class="control">
-          <span class="label">Wall motion in that territory</span>
+          <span class="label">Wall motion of the affected segments</span>
           <div class="seg" role="group" aria-label="Wall motion" data-key="wm">
             <button type="button" data-val="2">Hypokinetic</button><button type="button" data-val="3">Akinetic</button><button type="button" data-val="4">Dyskinetic</button>
           </div>
+        </div>
+        <div class="control">
+          <span class="label">Each segment: tap for the next score</span>
+          <div class="segpick" id="seg-pick" role="group" aria-label="Segment scores"></div>
         </div>
       </div>
       <dl class="readouts"></dl>
@@ -693,7 +697,7 @@
         <p>Start at the anterior junction of the septum and the RV free wall and go counterclockwise: anteroseptal, inferoseptal, inferior, inferolateral, anterolateral, anterior<span class="cite" data-ref="lang2015"></span>. The basal and mid levels have six segments each, the apical level four, and the apical cap is segment 17<span class="cite" data-ref="lang2015"></span>.</p>
         <ul>
         <li>Use 16 segments to score wall motion, and 17 for perfusion or to compare with other modalities<span class="cite" data-ref="lang2015"></span>.</li>
-        <li>Score each segment: 1 normal or hyperkinetic, 2 hypokinetic, 3 akinetic, 4 dyskinetic<span class="cite" data-ref="lang2015"></span>. The 2025 reporting guideline adds 5, aneurysmal<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Score each segment: 1 normal or hyperkinetic, 2 hypokinetic, 3 akinetic, 4 dyskinetic<span class="cite" data-ref="lang2015"></span>. The 2025 reporting guideline adds 5, aneurysmal<span class="cite" data-ref="taub2025"></span>. In the figure, tap a segment on the bull's-eye or on an apical view, or use its numbered button, to move it to the next score.</li>
         <li>The wall motion score index is the mean of the scores; 1.00 is normal<span class="cite" data-ref="lang2015"></span>.</li>
         </ul>
         <h3>Views and walls</h3>

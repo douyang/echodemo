@@ -189,6 +189,19 @@ function valvePair(h1, h2, L1, L2, toward, o) {
   return { shut1, shut2, open1, open2, C };
 }
 
+/**
+ * Two leaflets seen edge-on across a tube, from hinges h1 and h2 on its walls; dir points
+ * downstream. Shut, they meet a little downstream of the hinges (tent, cm) and bow back
+ * upstream; open (f = 1), each lies along its own wall. Midlines, hinge first.
+ */
+function tubeValve(h1, h2, dir, f, tent = 0.3) {
+  const mid = lerp2(h1, h2, 0.5), L = Math.hypot(len(sub(h2, h1)) / 2, tent) * 1.02 + 0.06;
+  const out1 = unit(sub(h1, mid)), out2 = unit(sub(h2, mid));
+  const along = (h, out) => add(h, mul(unit(add(mul(dir, 0.97), mul(out, 0.14))), L * 0.96));
+  const P = valvePair(h1, h2, L, L, dir, { tent, open1: along(h1, out1), open2: along(h2, out2), bulge1: out1, bulge2: out2 });
+  return [swing(h1, P.shut1, P.open1, f), swing(h2, P.shut2, P.open2, f)];
+}
+
 /** Items for leaflets: each its own fill (its speckle turns with it), then the bright surface. */
 const leaves = (list, refs, e) => [
   ...list.map((p, i) => ({ polys: [p], refs: refs ? [refs[i]] : null, e })),
@@ -800,12 +813,12 @@ export function drawPSAXav(ctx, box, g, o = {}) {
   const root = ring(C, r, r + 0.22, 48);
   // tricuspid leaflets across the left end of the outflow band, pulmonary cusps at the right end
   const tvH1 = rvIn[0], tvH2 = rvOutC[0], tvDir = unit(sub(rvIn[3], rvIn[0]));
-  const tvMid = lerp2(tvH1, tvH2, 0.5), tvOpen = 1 - ph.tvShut;
-  const tvL = [[tvH1, add(lerp2(tvH1, tvMid, 0.9), mul(tvDir, 0.9 * tvOpen))], [tvH2, add(lerp2(tvH2, tvMid, 0.9), mul(tvDir, 0.9 * tvOpen))]];
+  // each pair swings open to lie along its own walls, the tricuspid into the right ventricle,
+  // the pulmonic cusps into the pulmonary artery
+  const tvL = tubeValve(tvH1, tvH2, tvDir, 1 - ph.tvShut, 0.25);
   const n = rvIn.length - 1;
   const pvH1 = rvIn[n], pvH2 = rvOutC[n], pvDir = unit(sub(rvIn[n], rvIn[n - 3]));
-  const pvMid = lerp2(pvH1, pvH2, 0.5);
-  const pvL = [[pvH1, add(lerp2(pvH1, pvMid, 0.9), mul(pvDir, 0.9 * ph.avOpen))], [pvH2, add(lerp2(pvH2, pvMid, 0.9), mul(pvDir, 0.9 * ph.avOpen))]];
+  const pvL = tubeValve(pvH1, pvH2, pvDir, ph.avOpen, 0.3);
   const pa = [[pvH1, add(pvH1, mul(add(pvDir, [0.3, 0.9]), 1.6))], [pvH2, add(pvH2, mul(add(pvDir, [0.2, 0.9]), 1.8))]];
   // aortic cusps: closed, the three lines of the "Y"; open, a curved triangle of area AVA
   const area = Math.max(0.02, (g.ava ?? 3) * ph.avOpen);
@@ -820,7 +833,7 @@ export function drawPSAXav(ctx, box, g, o = {}) {
     const a0 = comA[i], a1 = comA[(i + 1) % 3] + (i === 2 ? 2 * PI : 0), am = (a0 + a1) / 2;
     cusps.push(spline([com[i], dir(a0, Math.max(0.05, ro * 0.97)), dir(am, ro * 0.62), dir(a1, Math.max(0.05, ro * 0.97)), com[(i + 1) % 3]], 6));
   }
-  const flapOf = (l) => leafOutline(spline(l, 4), 0.07, 0.1);
+  const flapOf = (l) => leafOutline(l, 0.07, 0.1);
   const cTh = g.thick ?? 0.12;
   const items = [
     { polys: [fat], e: DB.fat - 2 },

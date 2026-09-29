@@ -16,6 +16,9 @@ const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const SLICE = 0.25;   // half the thickness of the imaging slice, cm: chordae inside it show
 const BODY = { left: V3(1, 0, 0), sup: V3(0, 1, 0), ant: V3(0, 0, 1) };   // world axes of the model
 const VP = (k) => V3(...VESSELS[k]);
+// the long axis of the pulmonic valve, toward the PA (the principal axes of the valve mesh);
+// the trunk leaves the valve along it
+const PV_AXIS = V3(0.348, 0.87, -0.348).normalize();
 
 /** Transducer origin O, beam axis d, screen-right r, plane normal n (world, cm). */
 export function viewGeometry(anat, key) {
@@ -40,11 +43,6 @@ export function viewGeometry(anat, key) {
     const th = THREE.MathUtils.degToRad(132);
     const u = X.clone().multiplyScalar(Math.cos(th)).addScaledVector(Y, Math.sin(th)).normalize();
     return { u, level: eq.clone().lerp(mv, 0.55) };
-  };
-  // tilt the plane about its own screen-right axis r by deg (toward +n), pivoting at the probe
-  const tilt = (deg) => {
-    const q = new THREE.Quaternion().setFromAxisAngle(r.clone().normalize(), THREE.MathUtils.degToRad(deg));
-    d = d.clone().applyQuaternion(q).normalize();
   };
   // subcostal: the probe below the xiphoid; each plane holds the beam from there, and the
   // probe is set back along the beam to the skin, 1.6 cm of abdominal wall outside the liver
@@ -106,13 +104,18 @@ export function viewGeometry(anat, key) {
       break;
     }
     case 'rv_out': {
-      // tilted toward the left shoulder: RVOT, pulmonic valve and main PA along the plane
+      // tilted toward the left shoulder: RVOT, pulmonic valve and main PA along the plane. The
+      // plane runs along the valve's own axis, turned 10 degrees about it from the straight
+      // front-to-back plane so the trunk runs on toward the bifurcation, and 3 mm to one side
+      // of it: there it crosses two cusps and the line where they meet, so the shut valve is
+      // two thin cusps meeting in the middle (through the axis it would graze a commissure).
+      // The cusps hinge on the walls and open along them; the aortic root lies behind.
       const bif = VP('paBif');
-      const rvo = pv.clone().lerp(av, 0.35).addScaledVector(Z, -1.2);
-      const n0 = new THREE.Vector3().subVectors(pv, rvo).cross(new THREE.Vector3().subVectors(bif, rvo)).normalize();
-      O = onPlane(pv.clone().addScaledVector(BODY.ant, 7.6).addScaledVector(BODY.sup, -1.4), pv, n0);
+      const e = perp(BODY.ant.clone().negate(), PV_AXIS).applyAxisAngle(PV_AXIS, THREE.MathUtils.degToRad(10));
+      const n0 = PV_AXIS.clone().cross(e).normalize();
+      O = pv.clone().addScaledVector(e, -7.8).addScaledVector(n0, 0.3);
       d = perp(pv.clone().lerp(bif, 0.3).sub(O), n0);
-      r = perp(perp(bif.clone().sub(rvo), n0), d);
+      r = perp(perp(bif.clone().sub(pv), n0), d);
       break;
     }
     case 'psax_av': case 'psax_tv': {
@@ -130,16 +133,20 @@ export function viewGeometry(anat, key) {
       break;
     }
     case 'psax_pa': {
-      // the great-vessel plane, tilted 12 degrees toward the head at the probe, the sector
-      // steered onto the pulmonic valve and the trunk: a small pan from the aortic valve
+      // the great-vessel plane moved up onto the centre of the pulmonic valve and turned 12
+      // degrees toward the valve's long axis (the probe slides about 2 cm), the sector steered
+      // onto the valve and the trunk: a small move from the aortic valve level. In this model
+      // the trunk runs 42 degrees out of the aortic short axis, so the closed valve shows its
+      // three cusps meeting, and the trunk turns back toward the bifurcation.
       const n0 = anat.aorticRoot.clone();
       d = perp(Y.clone().negate(), n0);
       r = perp(perp(X, n0), d);
       O = av.clone().addScaledVector(d, -7.4);
-      tilt(12);
-      const n1 = new THREE.Vector3().crossVectors(r, d).normalize();
-      d = onPlane(pv.clone().lerp(VP('paBif'), 0.2), O, n1).sub(O).normalize();
-      r = perp(r, d);
+      const nPV = perp(n0, PV_AXIS);
+      const n1 = n0.clone().applyAxisAngle(n0.clone().cross(nPV).normalize(), Math.min(n0.angleTo(nPV), THREE.MathUtils.degToRad(12)));
+      O = onPlane(O, pv, n1);
+      d = perp(pv.clone().lerp(VP('paBif'), 0.2).sub(O), n1);
+      r = perp(perp(r, n1), d);
       break;
     }
     case 'psax_cor': {
@@ -654,7 +661,7 @@ export class EchoView {
       peri = this.peri.section(g, true);
     }
     let cor = [];
-    if (this.cor) {
+    if (this.cor && this.specOf(this.view).cor !== false) {
       this.cor.morph(w);
       cor = this.cor.section(g);
     }
@@ -732,7 +739,37 @@ export class EchoView {
       }
       return out;
     };
-    const cor = (extra.cor || []).filter(closed).map((L) => L.pts);
+    // the coronary mesh crosses the RV outflow tract in places; an artery runs on the heart,
+    // never through a cavity, so a section inside a blood pool and clear of the walls is dropped
+    const inside = (P, x, y) => {
+      let c = false;
+      for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+        const [xi, yi] = P[i], [xj, yj] = P[j];
+        if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+      }
+      return c;
+    };
+    const wallGap = (C) => {
+      let best = Infinity;
+      for (const L of tissue) {
+        const P = L.pts;
+        for (let i = 1; i < P.length + (L.closed ? 1 : 0); i++) {
+          const [ax, ay] = P[i - 1], [bx, by] = P[i % P.length];
+          const ux = bx - ax, uy = by - ay, l2 = ux * ux + uy * uy || 1e-9;
+          for (const [px, py] of C) {
+            const t = Math.max(0, Math.min(1, ((px - ax) * ux + (py - ay) * uy) / l2));
+            best = Math.min(best, Math.hypot(px - ax - t * ux, py - ay - t * uy));
+          }
+        }
+      }
+      return best;
+    };
+    const inBlood = (C) => {
+      const x = C.reduce((s, p) => s + p[0], 0) / C.length, y = C.reduce((s, p) => s + p[1], 0) / C.length;
+      const k = loops.reduce((s, L) => s + (inside(L.pts, x, y) ? 1 : 0), 0);
+      return k > 0 && k % 2 === 0 && wallGap(C) > 0.12;
+    };
+    const cor = (extra.cor || []).filter(closed).map((L) => L.pts).filter((C) => !inBlood(C));
     const items = [
       { polys: liver, e: DB.liver },
       { borders: liver, e: 6, spec: 9, w: 0.12, closed: true, all: true },
@@ -866,7 +903,7 @@ export class EchoView {
     an.ilw = on(0.87, -0.5);
     an.pw = an.ilw;
     an.ivs = an.septum;
-    an.rvot = an.pv.clone().lerp(an.av, 0.35);
+    an.rvot = an.pv.clone().addScaledVector(PV_AXIS, -1.4);   // the infundibulum, below the valve
     an.ao = an.av.clone().addScaledVector(A.aorticRoot, 1.6);
     an.apex = A.point('apex_endo', 0, s).lerp(eq, 0.12);
     an.lvc = eq.clone().lerp(an.mv, 0.25);
