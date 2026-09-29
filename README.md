@@ -52,6 +52,8 @@ Chapter 07 covers the ASE comprehensive transthoracic views (Mitchell 2019, Tabl
 
 ![Chapter 07, parasternal short axis at the aortic valve level: the RVOT in front, the valve in the middle, the right atrium and tricuspid valve on the left, the left atrium below, the pulmonic valve on the right](docs/screenshots/psax.webp)
 
+![Chapter 07, Probe and body: the whole heart from the front with the apical four-chamber plane and the probe below the apex; the body key shows the probe over the apex beat and its beam toward the heart](docs/screenshots/body.webp)
+
 
 Chapter 08 shows the planes together. The apical views share the LV long axis; the model places the two-chamber plane about 60° from the four- and three-chamber planes, as the ASE rotation describes. The short-axis levels form a parallel stack. The structure table lists what ASE names for each view.
 
