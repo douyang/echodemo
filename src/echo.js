@@ -1,11 +1,12 @@
 // Echo views as live cross-sections of the heart mesh. The same code draws the
 // on-screen view beside the 3D heart (chapter 03) and offscreen frames for other chapters.
 import * as THREE from '../vendor/three.bundle.min.js';
-import { tokens, rng, MONO, SANS } from './sketch.js';
+import { tokens, MONO, SANS } from './sketch.js';
 import { VIEWS, VESSELS } from './views.js';
 import { leafletWeights } from './gl/heart.js';
 import { normalGeo } from './model3d.js';
 import { ecg as ecgStrip } from './scope.js';
+import { bmode, DB } from './bmode.js';
 
 export { VIEWS };
 
@@ -185,6 +186,17 @@ class MeshData {
     mesh.updateMatrixWorld(true);
     this.matrix = mesh.matrixWorld.clone();
     this.identity = this.matrix.equals(new THREE.Matrix4());
+    // the rest shape in world space: where each section point sat at end-diastole
+    this.rest = new Float32Array(this.base);
+    if (!this.identity) {
+      const e = this.matrix.elements, r = this.rest;
+      for (let k = 0; k < r.length; k += 3) {
+        const x = r[k], y = r[k + 1], z = r[k + 2];
+        r[k] = e[0] * x + e[4] * y + e[8] * z + e[12];
+        r[k + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
+        r[k + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+      }
+    }
   }
   morph(w) {
     const { base, pos, targets, dict } = this;
@@ -205,16 +217,19 @@ class MeshData {
       }
     }
   }
-  /** Closed and open polylines in plane coordinates [u (right), v (depth)]. */
-  section(g) {
-    const { pos, sd, index, count } = this;
+  /**
+   * Closed and open polylines in plane coordinates [u (right), v (depth)]. withRef: each loop
+   * also carries `ref`, the same material points in the rest shape, projected on the plane.
+   */
+  section(g, withRef = false) {
+    const { pos, sd, index, count, rest } = this;
     const nx = g.n.x, ny = g.n.y, nz = g.n.z;
     const k0 = nx * g.O.x + ny * g.O.y + nz * g.O.z;
     for (let i = 0; i < count; i++) {
       const s = nx * pos[3 * i] + ny * pos[3 * i + 1] + nz * pos[3 * i + 2] - k0;
       sd[i] = s === 0 ? 1e-6 : s;
     }
-    const pts = new Map();
+    const pts = new Map(), refs = new Map();
     const adj = new Map();
     const rx = g.r.x, ry = g.r.y, rz = g.r.z, dx = g.d.x, dy = g.d.y, dz = g.d.z;
     const ox = g.O.x, oy = g.O.y, oz = g.O.z;
@@ -226,6 +241,12 @@ class MeshData {
         const y = pos[3 * a + 1] + (pos[3 * b + 1] - pos[3 * a + 1]) * t - oy;
         const z = pos[3 * a + 2] + (pos[3 * b + 2] - pos[3 * a + 2]) * t - oz;
         pts.set(key, [x * rx + y * ry + z * rz, x * dx + y * dy + z * dz]);
+        if (withRef) {
+          const X = rest[3 * a] + (rest[3 * b] - rest[3 * a]) * t - ox;
+          const Y = rest[3 * a + 1] + (rest[3 * b + 1] - rest[3 * a + 1]) * t - oy;
+          const Z = rest[3 * a + 2] + (rest[3 * b + 2] - rest[3 * a + 2]) * t - oz;
+          refs.set(key, [X * rx + Y * ry + Z * rz, X * dx + Y * dy + Z * dz]);
+        }
       }
       return key;
     };
@@ -250,12 +271,13 @@ class MeshData {
     const used = new Set();
     for (const start of adj.keys()) {
       if (used.has(start)) continue;
-      const line = [];
+      const line = [], rline = [];
       let cur = start, prev = -1;
       let closed = false;
       for (let guard = 0; guard < 200000; guard++) {
         used.add(cur);
         line.push(pts.get(cur));
+        if (withRef) rline.push(refs.get(cur));
         const nb = adj.get(cur);
         let next = -1;
         for (const q of nb) if (q !== prev && !used.has(q)) { next = q; break; }
@@ -263,7 +285,7 @@ class MeshData {
         prev = cur;
         cur = next;
       }
-      if (line.length > 1) loops.push({ pts: line, closed });
+      if (line.length > 1) loops.push({ pts: line, closed, ref: withRef ? rline : null });
     }
     return loops;
   }
@@ -414,7 +436,7 @@ export class EchoView {
     if (!g) { this.drawEmpty(); return; }
     const w = { amyloid: 0, systole: state.s, amyloid_systole: 0 };
     this.myo.morph(w);
-    const tissue = this.myo.section(g);
+    const tissue = this.myo.section(g, true);
     const lw = (md) => (md.dict.leaflets_mid !== undefined ? leafletWeights(md.mesh.name, state.v, state.drive, 0, state.s) : { leaflets: state.v });
     const valves = [];
     for (const vd of this.valves) {
@@ -429,12 +451,12 @@ export class EchoView {
     let pap = [];
     if (this.pap) {
       this.pap.morph(w);
-      pap = this.pap.section(g);
+      pap = this.pap.section(g, true);
     }
     let peri = [];
     if (this.peri) {
       this.peri.morph(w);
-      peri = this.peri.section(g);
+      peri = this.peri.section(g, true);
     }
     this.last = { tissue, valves, peri, chords, pap, state };
     this.draw(tissue, valves, peri, state, { chords, pap });
@@ -472,130 +494,46 @@ export class EchoView {
     const { X, Y, scale, cx, top, half, ecgH, spec } = m;
     this.map = m;
     const off = this.offscreen;
-    const tex = this.textures();
 
     const R = spec.depth * scale;
+    const fan = new Path2D();
+    fan.moveTo(cx, top);
+    fan.arc(cx, top, R, Math.PI / 2 + half, Math.PI / 2 - half, true);
+    fan.closePath();
+    // the image: plane coordinates are cm from the probe, as bmode.js takes them
+    const closed = (L) => L.closed && L.pts.length > 2;
+    const loops = tissue.filter(closed), open = tissue.filter((L) => !L.closed && L.pts.length > 1);
+    const pap = (extra.pap || []).filter(closed);
+    const tris = [];
+    for (const c of extra.chords || []) for (let i = 0; i < c.length; i += 6) tris.push([[c[i], c[i + 1]], [c[i + 2], c[i + 3]], [c[i + 4], c[i + 5]]]);
+    const ref = (list) => (list.every((L) => L.ref) ? list.map((L) => L.ref) : null);
+    const items = [
+      { polys: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, rule: 'evenodd' },
+      { polys: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo },
+      { borders: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, spec: 8, closed: true },
+      { borders: open.map((L) => L.pts), refs: ref(open), e: DB.myo, spec: 8 },
+      { borders: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, spec: 6, closed: true },
+      { polys: tris, e: DB.chord - 4 },
+      { borders: peri.map((L) => L.pts), refs: ref(peri), e: 8, spec: 10, w: 0.15, all: true },
+      { polys: valves.filter(closed).map((L) => L.pts), e: DB.valve - 2 },
+      { lines: valves.map((L) => L.pts), e: DB.valve, w: 0.1 },
+    ];
+    const box = m.zoomed ? { x: 8, y: m.boxTop, w: W - 16, h: m.boxH } : { x: 0, y: 0, w: W, h: H };
+    const view = { box, cx, top, k: scale, half, depth: spec.depth, near: spec.liver ? 1.5 : spec.near ?? 1.2, liver: spec.liver ? spec.near : 0 };
+    ctx.save();
+    if (m.zoomed) {
+      ctx.beginPath();
+      ctx.rect(box.x, box.y, box.w, box.h);
+      ctx.clip();
+    }
+    bmode(ctx, view, items, { t: (state.phase ?? 0) * 857 });
+    ctx.restore();
     if (m.zoomed) {
       ctx.save();
       ctx.beginPath();
       ctx.rect(8, m.boxTop, W - 16, m.boxH);
       ctx.clip();
     }
-    const fan = new Path2D();
-    fan.moveTo(cx, top);
-    fan.arc(cx, top, R, Math.PI / 2 + half, Math.PI / 2 - half, true);
-    fan.closePath();
-    ctx.save();
-    ctx.fillStyle = '#101315';
-    ctx.fill(fan);
-    ctx.clip(fan);
-    ctx.fillStyle = tex.blood;
-    ctx.fill(fan);
-
-    const grad = ctx.createRadialGradient(cx, top, 0, cx, top, R);
-    grad.addColorStop(0, 'rgba(255,255,255,0.78)');
-    grad.addColorStop(0.55, 'rgba(255,255,255,0.62)');
-    grad.addColorStop(1, 'rgba(255,255,255,0.36)');
-    // near field: chest wall (or liver from below the ribs)
-    const nearPath = new Path2D();
-    nearPath.moveTo(cx, top);
-    nearPath.arc(cx, top, spec.near * scale, Math.PI / 2 + half, Math.PI / 2 - half, true);
-    nearPath.closePath();
-    ctx.save();
-    ctx.clip(nearPath);
-    ctx.fillStyle = grad;
-    ctx.globalAlpha = spec.liver ? 0.22 : 0.3;
-    ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = spec.liver ? 0.75 : 0.95;
-    ctx.fillStyle = tex.speckle;
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
-
-    const tissuePath = new Path2D();
-    for (const L of tissue) {
-      if (!L.closed || L.pts.length < 3) continue;
-      tissuePath.moveTo(X(L.pts[0][0]), Y(L.pts[0][1]));
-      for (let i = 1; i < L.pts.length; i++) tissuePath.lineTo(X(L.pts[i][0]), Y(L.pts[i][1]));
-      tissuePath.closePath();
-    }
-    ctx.save();
-    ctx.clip(tissuePath, 'evenodd');
-    ctx.fillStyle = '#101315';
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = grad;
-    ctx.globalAlpha = 0.28;
-    ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 0.9;
-    ctx.fillStyle = tex.speckle;
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-    ctx.lineWidth = 1.1;
-    ctx.stroke(tissuePath);
-
-    const pap = (extra.pap || []).filter((L) => L.closed && L.pts.length > 2);
-    if (pap.length) {
-      const papPath = new Path2D();
-      for (const L of pap) {
-        papPath.moveTo(X(L.pts[0][0]), Y(L.pts[0][1]));
-        for (let i = 1; i < L.pts.length; i++) papPath.lineTo(X(L.pts[i][0]), Y(L.pts[i][1]));
-        papPath.closePath();
-      }
-      const outside = new Path2D();
-      outside.rect(0, 0, W, H);
-      outside.addPath(tissuePath);
-      ctx.save();
-      ctx.clip(outside, 'evenodd');
-      ctx.stroke(papPath);
-      ctx.clip(papPath);
-      ctx.fillStyle = '#101315';
-      ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = grad;
-      ctx.globalAlpha = 0.28;
-      ctx.fillRect(0, 0, W, H);
-      ctx.globalAlpha = 0.9;
-      ctx.fillStyle = tex.speckle;
-      ctx.fillRect(0, 0, W, H);
-      ctx.restore();
-    }
-    const chords = extra.chords || [];
-    if (chords.some((c) => c.length)) {
-      ctx.beginPath();
-      for (const c of chords) {
-        for (let i = 0; i < c.length; i += 6) {
-          ctx.moveTo(X(c[i]), Y(c[i + 1]));
-          ctx.lineTo(X(c[i + 2]), Y(c[i + 3]));
-          ctx.lineTo(X(c[i + 4]), Y(c[i + 5]));
-          ctx.closePath();
-        }
-      }
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    }
-    for (const L of valves) {
-      ctx.beginPath();
-      L.pts.forEach((p, i) => (i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))));
-      if (L.closed) ctx.closePath();
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
-    }
-    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-    ctx.lineWidth = 2.2;
-    for (const L of peri) {
-      ctx.beginPath();
-      L.pts.forEach((p, i) => (i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))));
-      if (L.closed) ctx.closePath();
-      ctx.stroke();
-    }
-    ctx.restore();
-
     ctx.save();
     ctx.strokeStyle = t.ink2;
     ctx.lineWidth = 1;
@@ -656,36 +594,6 @@ export class EchoView {
     ctx.textAlign = 'center';
     ctx.fillText('Below the diaphragm: outside the heart model.', this.w / 2, this.h * 0.42);
     this.measure = {};
-  }
-
-  textures() {
-    if (this.tex) return this.tex;
-    const mk = (size, fn) => {
-      const c = document.createElement('canvas');
-      c.width = c.height = size;
-      fn(c.getContext('2d'), size);
-      return c;
-    };
-    const R = rng(11);
-    const speckle = mk(256, (x, n) => {
-      for (let i = 0; i < 2600; i++) {
-        const px = R() * n, py = R() * n;
-        x.globalAlpha = 0.18 + 0.55 * R();
-        x.fillStyle = '#ffffff';
-        x.beginPath();
-        x.ellipse(px, py, 1.2 + 2.6 * R(), 0.6 + 0.8 * R(), 0, 0, Math.PI * 2);
-        x.fill();
-      }
-    });
-    const blood = mk(128, (x, n) => {
-      for (let i = 0; i < 380; i++) {
-        x.globalAlpha = 0.05 + 0.1 * R();
-        x.fillStyle = '#ffffff';
-        x.fillRect(R() * n, R() * n, 1 + R() * 2, 1);
-      }
-    });
-    this.tex = { speckle: this.ctx.createPattern(speckle, 'repeat'), blood: this.ctx.createPattern(blood, 'repeat') };
-    return this.tex;
   }
 
   toPlane(P, g) {

@@ -1,5 +1,5 @@
 // Scanner panels: the black screen of the echo machine, drawn the same way in both themes.
-// Spectral Doppler (with aliasing), B-mode tissue from outlines, color flow, calipers, ECG.
+// Spectral Doppler (with aliasing), color flow, calipers, ECG. The B-mode image is in bmode.js.
 import { rng } from './sketch.js';
 import { MONO } from './sketch.js';
 
@@ -262,40 +262,7 @@ export function colorBar(ctx, x, y, h, nyq, o = {}) {
   ctx.restore();
 }
 
-// ---------------------------------------------------------------- B-mode
-const texCache = new WeakMap();
-export function textures(ctx) {
-  let t = texCache.get(ctx);
-  if (t) return t;
-  const mk = (size, fn) => {
-    const c = document.createElement('canvas');
-    c.width = c.height = size;
-    fn(c.getContext('2d'), size);
-    return c;
-  };
-  const R = rng(11);
-  const speckle = mk(256, (x, n) => {
-    for (let i = 0; i < 2600; i++) {
-      const px = R() * n, py = R() * n;
-      x.globalAlpha = 0.18 + 0.55 * R();
-      x.fillStyle = '#ffffff';
-      x.beginPath();
-      x.ellipse(px, py, 1.2 + 2.6 * R(), 0.6 + 0.8 * R(), 0, 0, Math.PI * 2);
-      x.fill();
-    }
-  });
-  const blood = mk(128, (x, n) => {
-    for (let i = 0; i < 380; i++) {
-      x.globalAlpha = 0.05 + 0.1 * R();
-      x.fillStyle = '#ffffff';
-      x.fillRect(R() * n, R() * n, 1 + R() * 2, 1);
-    }
-  });
-  t = { speckle: ctx.createPattern(speckle, 'repeat'), blood: ctx.createPattern(blood, 'repeat') };
-  texCache.set(ctx, t);
-  return t;
-}
-
+// ---------------------------------------------------------------- sector
 /** Sector path with apex (cx, top), radius R px and full angle deg. */
 export function sectorPath(cx, top, R, deg) {
   const half = (deg * Math.PI) / 360;
@@ -306,69 +273,6 @@ export function sectorPath(cx, top, R, deg) {
   return p;
 }
 
-/**
- * Draw tissue into a sector: loops are closed polylines in px ([[x, y], ...]), filled even-odd.
- * o.valves: open or closed polylines drawn as bright lines; o.lines: extra bright lines (pericardium).
- */
-export function bmode(ctx, sect, loops, o = {}) {
-  const tex = textures(ctx);
-  const fan = sectorPath(sect.cx, sect.top, sect.R, sect.deg);
-  ctx.save();
-  ctx.fillStyle = SC.bg;
-  ctx.fill(fan);
-  ctx.clip(fan);
-  ctx.fillStyle = tex.blood;
-  ctx.globalAlpha = o.bloodAlpha ?? 1;
-  ctx.fill(fan);
-  ctx.globalAlpha = 1;
-  const path = new Path2D();
-  for (const L of loops) {
-    if (!L || L.length < 3) continue;
-    path.moveTo(L[0][0], L[0][1]);
-    for (let i = 1; i < L.length; i++) path.lineTo(L[i][0], L[i][1]);
-    path.closePath();
-  }
-  const grad = ctx.createRadialGradient(sect.cx, sect.top, 0, sect.cx, sect.top, sect.R);
-  const g = o.gain ?? 1;
-  grad.addColorStop(0, `rgba(255,255,255,${0.78 * g})`);
-  grad.addColorStop(0.55, `rgba(255,255,255,${0.62 * g})`);
-  grad.addColorStop(1, `rgba(255,255,255,${(o.tgc ? 0.6 : 0.34) * g})`);
-  ctx.save();
-  ctx.clip(path, 'evenodd');
-  ctx.fillStyle = grad;
-  ctx.globalAlpha = 0.28;
-  ctx.fillRect(sect.cx - sect.R, sect.top, 2 * sect.R, sect.R);
-  ctx.globalAlpha = 0.9 * Math.min(1, g);
-  ctx.fillStyle = tex.speckle;
-  ctx.fillRect(sect.cx - sect.R, sect.top, 2 * sect.R, sect.R);
-  ctx.restore();
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-  ctx.lineWidth = 1.1;
-  ctx.stroke(path);
-  for (const L of o.valves || []) {
-    ctx.beginPath();
-    L.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-    ctx.lineWidth = 1.6;
-    ctx.stroke();
-  }
-  for (const L of o.lines || []) {
-    ctx.beginPath();
-    L.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-    ctx.lineWidth = 2.2;
-    ctx.stroke();
-  }
-  ctx.restore();
-  // outline
-  ctx.save();
-  ctx.strokeStyle = o.outline || '#6a747a';
-  ctx.lineWidth = 1;
-  ctx.stroke(fan);
-  ctx.restore();
-  return fan;
-}
 
 /** Depth ticks along the right edge of a sector (1 cm minor, 5 cm labeled). */
 export function depthTicks(ctx, sect, depthCm, o = {}) {

@@ -50,6 +50,21 @@ Chapter 04 shows the planes together. The apical views share the LV long axis; t
 - **Grades and stages.** Regurgitation follows ASE 2017 (Zoghbi), with EACVI 2022 for massive and torrential TR; aortic stenosis follows Baumgartner 2017; mitral stenosis follows ASE 2023 (Pandian); diastolic function follows ASE 2025 (Nagueh). The LV and atrial consequences follow the ACC/AHA 2020 stages (Otto), for example stage C2 in MR at LVEF ≤60% or end-systolic diameter ≥40 mm.
 - **What the model is.** The orifice or valve area drives the numbers (PISA, continuity equation, pressure half-time = 220 ÷ area); the chamber sizes, vein flows and pressures follow illustrative tracks set inside the guideline bands. They are teaching values, not patient data.
 
+## The echo images
+
+Every echo image is simulated. The anatomy comes from sections of the heart mesh (chapters 02 to 05) or from parametric views drawn to scale (chapters 11 to 16). One renderer, `src/bmode.js`, turns either into a scanner frame:
+
+- **Echogenicity.** Each structure has a level in dB against myocardium: blood about −60, valve +9 and more when thickened, pericardium +16, calcium +22 with an acoustic shadow behind it.
+- **Specular surfaces.** A surface is brightest where the beam meets it head-on (cos⁴ of the angle). Walls that run along the beam, such as the atrial septum in the four-chamber view, stay faint.
+- **Speckle.** Random scatterers ride with each structure from end-diastole, and the beam blur comes after, each frame. The speckle moves with the wall, and the grain keeps its size while the wall shortens and thickens.
+- **Beam blur.** 0.8 mm along the beam. Across it, 0.9 mm near the probe, then 0.45 mm × depth ÷ 2 cm (2.25 mm at 10 cm): a 2 cm aperture at 3.4 MHz harmonic.
+- **Near field and noise.** Chest-wall layers, reverberation clutter over the first 2 cm below them, and electronic noise that rises with depth and changes each frame while the cine runs.
+- **Display.** Mild speckle reduction, time-gain with a small loss left at depth, darker sector edges, log compression over 56 dB, then scan conversion. The views draw about 30 frames a second.
+- **Anatomy in the parametric views.** Papillary muscles and chordae, apical trabeculae, the moderator band, pulmonary vein openings, the pericardium, the coronary sinus and the descending aorta. The walls stay at the model's values on the measuring line, so the calipers read what the page reports.
+- **Color Doppler.** Velocity along the beam inside a color box: red toward the probe, aliasing at the set velocity, a green variance tag in turbulent jets, and a flow-convergence shell sized from the flow rate.
+
+*The Amyloid Heart* got its realistic views from the sculpted mesh; it drew them with flat textures and white outlines. This site keeps the mesh and adds the image formation above.
+
 ## Sources and data
 
 - Guideline values come from ASE, EACVI, ACC/AHA, ESC/ERS and IAC documents; the main ones are Lang 2015 (chamber quantification), Mitchell 2019 (comprehensive TTE), Zoghbi 2017 (regurgitation), Baumgartner 2017 (aortic stenosis), Otto 2020 (valve disease), Pandian 2023 (rheumatic mitral stenosis), Nagueh 2025 (diastolic function), Mukherjee 2025 (right heart), Thomas 2025 (strain) and Taub 2025 (reporting). The full list, with DOI and PubMed links, opens from **Sources** on the page (`src/refs.js`).
@@ -59,16 +74,17 @@ Chapter 04 shows the planes together. The apical views share the LV long axis; t
 
 ## How it is built
 
-A static site with no build step: ES modules, a canvas sketch layer (`src/sketch.js`, rough.js) and a WebGL pencil renderer for the 3D heart (three.js). Echo views are live cross-sections of the heart mesh (`src/echo.js`). The heart mesh, pencil renderer and 3D stage are adapted from *The Amyloid Heart*. Vendored libraries and their licenses are in `vendor/`.
+A static site with no build step: ES modules, a canvas sketch layer (`src/sketch.js`, rough.js) and a WebGL pencil renderer for the 3D heart (three.js). Echo views are live cross-sections of the heart mesh (`src/echo.js`) or parametric views (`src/echo2d.js`), imaged by `src/bmode.js`. The heart mesh, pencil renderer and 3D stage are adapted from *The Amyloid Heart*. Vendored libraries and their licenses are in `vendor/`.
 
 ```
 index.html          page, chapter text, dialogs
 src/main.js         chapter engine: controls, readouts, citations, tour, keyboard
 src/ch/*.js         one module per chapter
 src/sev.js          severity pages: keyframe tracks, grade bands, Play, measurement strip
-src/echo2d.js       parametric echo views drawn to scale: A4C, PLAX, short-axis insets, IVC M-mode
+src/bmode.js        B-mode and M-mode image formation for every echo view
+src/echo2d.js       parametric echo views drawn to scale (A4C, PLAX, three short-axis levels, IVC M-mode) and color Doppler jets
 src/views.js        view catalog: planes, lab classes, structures, probe moves
-src/echo.js         plane geometry and the echo-view renderer
+src/echo.js         plane geometry and the echo views cut from the heart mesh
 src/cyclemodel.js   one heartbeat (pressures, volume, valve events)
 src/norms.js        normal values and cut-offs
 src/refs.js         references
@@ -91,6 +107,7 @@ Keys: ← → change chapter, space plays the tour, 1–5 and [ ] step the views
 
 - `node --check` on every module.
 - Screenshots of all 17 chapters at 1440 × 900 and 390 × 844, and of the main chapters in the dark theme; no console errors.
+- Echo images at 1× and 2× device scale in every chapter that has one, including the zoomed and subcostal views. Frame rate on the test machine (headless Chromium, software rendering): 57–61 fps with the cine running; 40–53 fps with Play running too, against 55–60 fps before this change.
 - Every chapter's tour steps run, and the Play button advances chapters. On the severity pages, Play moves the slider and any control stops it.
 - Each severity model swept across its slider: the grade bands come out in order; in MR, AR and TR the EROA, volume, fraction and vena contracta cross their severe cut-offs at the same point.
 - Citation audit: every cited id resolves to a reference, and every id used in live text also appears in the static text, so it gets a number.

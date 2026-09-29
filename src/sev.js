@@ -94,6 +94,9 @@ export function playSeverity(dt, s, set, key, list, o = {}) {
   if (q !== v) set({ [key]: q });
 }
 
+/** Whether the cine of the page being drawn runs: Beat.at() sets it, the echo views read it. */
+export const cine = { live: false };
+
 /** The beat: ms since the R wave, advanced while the cine runs. */
 export class Beat {
   constructor(rr = 857) { this.rr = rr; this.ms = 150; }
@@ -101,7 +104,7 @@ export class Beat {
   /** ms within the current beat */
   get t() { return this.ms % this.rr; }
   /** the frame to draw: the running beat, or a fixed moment when the cine is off */
-  at(run, still) { return run && !reducedMotion ? this.ms % this.rr : still; }
+  at(run, still) { cine.live = run && !reducedMotion; return cine.live ? this.ms % this.rr : still; }
   /** position of the sweep across a two-beat strip, 0..1 */
   get sweep() { return this.ms / (2 * this.rr); }
 }
