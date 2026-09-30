@@ -16,7 +16,12 @@ import msPage from './ch/ms.js';
 import mrPage from './ch/mr.js';
 import trPage from './ch/tr.js';
 import periPage from './ch/peri.js';
+import amyloidPage from './ch/amyloid.js';
 import report from './ch/report.js';
+
+// The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come
+// back as chapter 19 when this is true.
+const SHOW_REPORT = false;
 
 export const PARTS = [
   { key: 'physics', num: 'I', name: 'Physics' },
@@ -25,7 +30,8 @@ export const PARTS = [
   { key: 'function', num: 'IV', name: 'Function' },
   { key: 'valves', num: 'V', name: 'Valves' },
   { key: 'pericardium', num: 'VI', name: 'Pericardium' },
-  { key: 'report', num: 'VII', name: 'Report' },
+  { key: 'cardiomyopathy', num: 'VII', name: 'Cardiomyopathy' },
+  ...(SHOW_REPORT ? [{ key: 'report', num: 'VIII', name: 'Report' }] : []),
 ];
 
-export const CHAPTERS = [pulse, image, shift, pressure, cycle, loop, windows, planes, eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, report];
+export const CHAPTERS = [pulse, image, shift, pressure, cycle, loop, windows, planes, eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, ...(SHOW_REPORT ? [report] : [])];

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart in Sound</title>
-<meta name="description" content="An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and the final report.">
+<meta name="description" content="An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and cardiac amyloidosis.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&display=swap">
@@ -16,7 +16,7 @@
   <header class="masthead">
     <p class="eyebrow"><span class="eyebrow-long">An illustrated study · </span>Echocardiography</p>
     <h1 class="title">The Heart in <em>Sound.</em></h1>
-    <p class="subtitle">From a sound pulse to the final report</p>
+    <p class="subtitle">From a sound pulse to a diagnosis</p>
   </header>
 
   <div class="tools">
@@ -115,7 +115,7 @@
     </figure>
     <figure class="fig" id="fig-ms">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Mitral stenosis from a normal valve to severe stenosis: a parasternal long-axis view with doming leaflets and a large left atrium, the short-axis orifice to scale, continuous-wave mitral inflow with the pressure half-time, the tricuspid jet, and the measurements against their cut-offs.</figcaption>
+      <figcaption class="sr-only">Mitral stenosis from a normal valve to severe stenosis: an apical four-chamber view with doming leaflets, a large left atrium and the color inflow jet with its flow convergence, the short-axis orifice to scale, continuous-wave mitral inflow with the pressure half-time, the tricuspid jet, and the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-mr">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -129,7 +129,11 @@
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Pericardial effusion from none to tamponade: an apical four-chamber view with the fluid round the heart and, in tamponade, the right atrium and right ventricle folding in; mitral inflow, tricuspid inflow and hepatic vein flow over a breath; a parasternal long-axis view with the fluid in front of the descending aorta; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
     </figure>
-    <figure class="fig" id="fig-report">
+    <figure class="fig" id="fig-amyloid">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Cardiac amyloidosis from a normal heart to advanced disease: a parasternal long-axis view at end-diastole with calipers on the septum, the cavity and the inferolateral wall, and an apical four-chamber view, both cut from the heart model; mitral inflow and septal tissue Doppler; the 17-segment longitudinal strain bull's-eye; and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-report" hidden>
       <div class="sheet-host" id="report-host"></div>
       <figcaption class="sr-only">A structured echocardiography report built from the values on this page.</figcaption>
     </figure>
@@ -1094,9 +1098,70 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== Report -->
-    <article class="chapter" id="ch-report">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">The study comes together</p></div></div>
+    <!-- ======================================================== Cardiomyopathy -->
+    <article class="chapter" id="ch-amyloid">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Cardiac amyloidosis</h2><p class="ch-kicker">The echo signs</p></div></div>
+      <p class="dek" data-part="dek">Amyloid fibrils collect between the heart muscle cells. The walls thicken round a small cavity, filling becomes restrictive, and the base stops shortening before the apex. The echo raises the suspicion.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="amyS">Amyloid burden <output data-for="amyS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="amyS" data-key="amyS" min="0" max="1" step="0.02">
+          <div class="grades" id="amy-grades" aria-hidden="true"></div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt" id="amy-table"></table></div>
+      <div class="table-wrap"><table class="vt" id="amy-table2"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>Signs on the echo</h3>
+        <ul>
+        <li><b>Walls.</b> An LV wall of 12 mm or more with no other cause, such as aortic valve disease or hypertension<span class="cite" data-ref="moody2023"></span>. Alone, this cut-off has high sensitivity and low specificity<span class="cite" data-ref="moody2023"></span>.</li>
+        <li><b>Cavity.</b> The cavity is small and the relative wall thickness is high. In 1,187 patients, concentric remodeling was among the best single signs<span class="cite" data-ref="boldrini2020"></span>.</li>
+        <li><b>Atria and septum.</b> Both atria enlarge; an LA volume index above 34 mL/m² is abnormal<span class="cite" data-ref="lang2015"></span>. An interatrial septum thicker than 5 mm is characteristic, and the valve leaflets thicken<span class="cite" data-ref="moody2023"></span>.</li>
+        <li><b>Right ventricle.</b> Measure the free wall at end-diastole in the parasternal long-axis or subcostal view<span class="cite" data-ref="moody2023"></span>. Above 5 mm is hypertrophy<span class="cite" data-ref="rudski2010"></span>. With a thick LV, it points to an infiltrative disease<span class="cite" data-ref="moody2023"></span>.</li>
+        <li><b>Pericardium.</b> An effusion occurs in more than half of patients. It is not specific<span class="cite" data-ref="moody2023"></span>.</li>
+        <li><b>Texture.</b> A granular, “sparkling” or “speckled” myocardium was long described. BSE advises against the term: other diseases show it, and harmonic imaging confounds it<span class="cite" data-ref="moody2023"></span>.</li>
+        </ul>
+        <h3>Doppler</h3>
+        <ul>
+        <li>Relaxation slows first: E/A 0.8 or less with a normal filling pressure (grade 1). As the pressure rises, E/A increases (grade 2). At E/A 2 or more, filling is restrictive (grade 3)<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>A clear restrictive pattern seldom appears before the late stages<span class="cite" data-ref="moody2023"></span>. Then the deceleration time falls below 150 ms and the annular e′ falls to 3–4 cm/s<span class="cite" data-ref="nagueh2016"></span>.</li>
+        <li>Septal s′, e′ and a′ all below 5 cm/s, the “5-5-5” sign, is one of the three ESC findings<span class="cite" data-ref="esc2021"></span>.</li>
+        <li>A small A wave suggests poor atrial function and a higher risk of thrombus<span class="cite" data-ref="moody2023"></span>.</li>
+        </ul>
+        <h3>Strain</h3>
+        <ul>
+        <li>Longitudinal strain falls most at the base. On the bull’s-eye the apex stays red while the base turns pale: relative apical sparing<span class="cite" data-ref="phelan2012"></span>.</li>
+        <li>Relative apical LS is the mean apical strain divided by the sum of the mean basal and mean mid strain. In the first study, 1.0 or more separated amyloidosis from hypertrophic cardiomyopathy and aortic stenosis: sensitivity 93%, specificity 82%<span class="cite" data-ref="phelan2012"></span>.</li>
+        <li>A multicentre study found apical sparing in 32% of patients in whom amyloidosis was suspected and then excluded, and in 6% of healthy people<span class="cite" data-ref="cotella2024"></span>.</li>
+        <li>The gradient follows the total amyloid mass, which is largest at the base<span class="cite" data-ref="bravo2019"></span>.</li>
+        <li>An EF ÷ |GLS| above 4.1 separated amyloidosis from other thick hearts: sensitivity 89.7%, specificity 91.7%<span class="cite" data-ref="pagourelias2017"></span>. A normal EF can hide poor long-axis function.</li>
+        <li>Normal GLS is near −20%; the lower limit depends on the vendor<span class="cite" data-ref="lang2015"></span>.</li>
+        </ul>
+        <h3>The ESC 2021 echo criteria</h3>
+        <p>An unexplained LV wall of 12 mm or more, plus two of the three findings in the first table, or a score of 8 or more in the second<span class="cite" data-ref="esc2021"></span>. The score gives points for a thick wall round a small cavity, a high E/e′, a low TAPSE, a low GLS and a spared septal apex<span class="cite" data-ref="boldrini2020"></span>. The criteria raise the suspicion. The ESC diagnostic pathways use them together with other tests<span class="cite" data-ref="esc2021"></span>.</p>
+        <h3>Measuring</h3>
+        <ul>
+        <li>Measure the walls at end-diastole, square to the LV long axis, at the tips of the mitral leaflets<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>The score uses (IVS + PW) ÷ LVIDd<span class="cite" data-ref="esc2021"></span>. ASE uses 2 × PW ÷ LVIDd, with a cut-off of 0.42<span class="cite" data-ref="lang2015"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>A wall of 12 mm or more with no cause, a small cavity and two large atria: think of amyloid.</li>
+        <li>Restrictive filling, septal s′, e′ and a′ below 5 cm/s and a spared apex support it.</li>
+        <li>The echo criteria raise the suspicion. They do not make the diagnosis alone.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Report (hidden: SHOW_REPORT in src/chapters.js) -->
+    <article class="chapter" id="ch-report" hidden>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">The study comes together</p></div></div>
       <p class="dek" data-part="dek">The report changes the study into a decision. The summary statement comes first; each structure follows, structure before function; every number is called normal or abnormal.</p>
       <div class="controls">
         <div class="control">
@@ -1172,8 +1237,8 @@
   <div class="dlg-head"><h2 id="refs-title">Sources</h2><button class="tool" type="button" data-close>Close</button></div>
   <div class="dlg-body">
     <div class="about">
-      <p>Each guideline value on this page carries its source. Cut-offs come from the American Society of Echocardiography (ASE), the European Association of Cardiovascular Imaging (EACVI), the ACC/AHA and the ESC/ERS.</p>
-      <p>The figures run simple models, set to agree with these sources. The diastolic values and the report cases are illustrative, not patient data. All images are simulated: the drawings, the heart model and the echo views.</p>
+      <p>Each guideline value on this page carries its source. Cut-offs come from the American Society of Echocardiography (ASE), the European Association of Cardiovascular Imaging (EACVI), the British Society of Echocardiography (BSE), the ACC/AHA, the ESC and the ESC/ERS.</p>
+      <p>The figures run simple models, set to agree with these sources. The diastolic values and the Doppler and strain values of the amyloid heart are illustrative, not patient data. All images are simulated: the drawings, the heart model and the echo views.</p>
     </div>
     <h3 class="dlg-sub">Sources, in reading order</h3>
     <ol class="reflist" id="reflist"></ol>

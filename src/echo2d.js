@@ -421,6 +421,8 @@ const at = (pair, c) => (Array.isArray(pair) ? mix(pair[0], pair[1], c) : pair);
 // convergence; cflow.js makes the color image. C, from the page:
 //   lo, hi (cm/s): the displayed range, hi - lo twice the Nyquist limit; variance (bool);
 //   roi: the color box: 'la', 'ra', 'mv', 'tv' (A4C), 'lvot', 'aorta', 'mitral' (PLAX);
+//   'mvin' (A4C): the LA within 3.5 cm of the mitral annulus and the inflow; reach (cm): how far it
+//     runs into the LV (5);
 //   zoom (A4C): { at: 'mv' | 'tv', span (cm) };
 //   E, A (m/s): mitral inflow; Et, At: tricuspid inflow; lvot (m/s): peak outflow;
 //   pvS, pvD (m/s, into the LA): pulmonary veins; hvS, hvD (m/s, negative forward): hepatic veins;
@@ -506,7 +508,7 @@ function a4cFlows(S, t, C) {
   if (!cfDebug.jetOnly) {
     // mitral and tricuspid inflow, E then A
     const vm = mitralV(t, C.E ?? 0.8, C.A ?? 0.55) * 100, vt = mitralV(t - 6, C.Et ?? 0.5, C.At ?? 0.4) * 100;
-    if (vm > 2) fl.push(inflow(Hm, S.mv.tip, S.ax, len(sub(S.mv.l1[NL], S.mv.l2[NL])), vm, S.lvL * 0.45, 21));
+    if (vm > 2 && !C.ms) fl.push(inflow(Hm, S.mv.tip, S.ax, len(sub(S.mv.l1[NL], S.mv.l2[NL])), vm, S.lvL * 0.45, 21));
     if (vt > 2) fl.push(inflow(Ht, S.tv.tip, rvAx, len(sub(S.tv.l1[NL], S.tv.l2[NL])), vt, 3.2, 23));
     // the LV vortex: the inflow turns near mid-ventricle and runs back along both walls
     const vv = 0.3 * mitralV(t - 70, C.E ?? 0.8, C.A ?? 0.55) * 100;
@@ -543,6 +545,8 @@ function a4cFlows(S, t, C) {
   }
   if (C.mr?.a > 0.02) fl.push(...lesion(S.mv.gapMid, C.mr.dir ?? ldown, C.mr, S.laCav));
   if (C.tr?.a > 0.02) fl.push(...lesion(S.tv.gapMid, rdown, C.tr, S.raCav));
+  // the stenotic jet leaves the domed leaflets along the axis of their funnel, toward the apex
+  if (C.ms?.a > 0.02) fl.push(...lesion(S.mv.tip, unit(sub(S.mv.tip, Hm)), C.ms, S.lvCav));
   return fl;
 }
 // The color box depends only on the heart's sizes and the page's setting: made once for each.
@@ -561,6 +565,12 @@ function a4cBox(shapes, C, half) {
   const pts = [];
   for (const T of shapes) {
     if (C.roi === 'la') pts.push(add(T.S0, mul(T.ax, 2.4)), add(T.L0, mul(T.ax, 2.4)), ...T.laCav);
+    else if (C.roi === 'mvin') {
+      // the LA and the inflow below the valve, along the valve's axis: points across the LV near
+      // the probe would open the sector over the right heart at every depth
+      const H = lerp2(T.S0, T.L0, 0.5), n = perp(T.ax), E = add(H, mul(T.ax, C.reach ?? 5));
+      pts.push(...T.laCav.filter((p) => len(sub(p, H)) < 3.5), T.S0, T.L0, add(E, mul(n, 0.8)), add(E, mul(n, -0.8)));
+    }
     else if (C.roi === 'ra') {
       const ax = unit(sub(T.Ra, lerp2(T.TS, T.TL, 0.5)));
       pts.push(add(T.TS, mul(ax, 2.4)), add(T.TL, mul(ax, 2.4)), ...T.raCav);
@@ -881,7 +891,7 @@ export function drawA4C(ctx, box, g, o = {}) {
   scan(ctx, F, a4cItems(S, Sr, g), { t: o.t, gain: o.gain });
   if (C) {
     // the color box keeps still through the beat: it covers the chambers at both ends of it
-    const key = `a4c|${HEART}|${C.roi}|${F.view.half}|${JSON.stringify(g)}`;
+    const key = `a4c|${HEART}|${C.roi}|${C.reach ?? ''}|${F.view.half}|${JSON.stringify(g)}`;
     colorFlow(ctx, F, {
       box: cachedBox(key, () => a4cBox([Sr, a4cShape(g, 1, { ...ph, mvShut: 1, tvShut: 1 })], C, F.view.half)), lo: C.lo, hi: C.hi, variance: C.variance,
       blood: [S.lvCav, S.laCav, S.raCav, [...S.rvSepEndo, ...S.rvFree]],

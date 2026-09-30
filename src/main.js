@@ -314,7 +314,7 @@ function showChapter() {
   // Under a disease heart the page opens at that heart's grade instead.
   const autoplay = !state.playing && !reducedMotion && state.pheno === 'normal' && !!$(`#ch-${c.key} button[data-anim]`);
   if (!!state.anim !== autoplay) set({ anim: autoplay });
-  $$('.chapter').forEach((a, k) => a.classList.toggle('is-active', k === i));
+  $$('.chapter').forEach((a) => a.classList.toggle('is-active', a.id === `ch-${c.key}`));
   $$('.fig').forEach((f) => f.classList.toggle('is-active', f.id === `fig-${c.key}`));
   $$('#chapters button[data-go]').forEach((b, k) => (k === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
   $$('#groups li').forEach((li) => li.classList.toggle('is-cur', li.dataset.part === c.part));

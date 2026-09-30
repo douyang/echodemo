@@ -6,7 +6,8 @@ import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV } from '../cyclemodel.js';
 import { msGrade } from '../norms.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit } from '../sev.js';
-import { drawPLAX, drawPSAXmv, measures, shownMitralThick } from '../echo2d.js';
+import { drawA4C, drawPSAXmv, measures, shownMitralThick } from '../echo2d.js';
+import { BSA } from './pressure.js';
 
 const KEY = 'msS';
 const mean = (fn, n = 400) => { let a = 0; for (let i = 0; i < n; i++) a += fn((i + 0.5) / n); return a / n; };
@@ -62,22 +63,36 @@ let sheet = null, st = null;
 const beat = new Beat(RR);
 const q2 = (v) => Math.round(v * 50) / 50;
 
-function plax(ctx, box, m, t) {
+/** LA width and length (cm) of an ellipsoid of volume vol (mL) and width/length ratio r. */
+function laDims(vol, r) {
+  const L = Math.cbrt(vol / (0.524 * r * r));
+  return [r * L, L];
+}
+
+function a4c(ctx, box, m, t) {
+  // the LA stays large through diastole: the narrow valve keeps it from emptying
+  const laMax = m.lavi * BSA, laMin = laMax * (0.6 + 0.25 * m.s);
+  const [wMax, lMax] = laDims(laMax, 0.8 + 0.1 * m.s), [wMin, lMin] = laDims(laMin, 0.8 + 0.1 * m.s);
   const g = {
-    ivs: [0.9, 1.3], pw: [0.9, 1.3], lvid: [m.lvid, m.lvid * 0.64], rvd: 2.6 + 0.6 * m.s,
-    la: [m.la * 0.9, m.la], root: 3.0, lvot: 2.0, mv: { thick: m.thick, dome: m.dome, tip: Math.min(2.4, m.tip) },
+    lvL: [8.2, 7.05], lvW: [m.lvid, m.lvid * 0.64], lvWall: [0.9, 1.25], ivs: [0.9, 1.2],
+    rvW: [m.rvb, m.rvb - 0.6], laW: [wMin, wMax], laL: [lMin, lMax],
+    raW: [3.2 + 0.7 * m.s, 3.8 + 0.8 * m.s], raL: [3.9 + 0.5 * m.s, 4.5 + 0.6 * m.s], ma: 3.1, ta: 3.0 + 0.4 * m.s,
+    mv: { thick: m.thick, dome: m.dome, tip: Math.min(2.4, m.tip) },
   };
-  const t0 = EV.mvo;
+  // the jet runs from mitral opening to mitral closure and follows the inflow velocity: it
+  // fades in diastasis through a mild stenosis and stays through a severe one
+  const t0 = EV.mvo, fill = RR - t0 + EV.mvc;
   const since = t >= t0 ? t - t0 : t + RR - t0;
-  const a = since < RR - t0 + EV.mvc ? Math.min(1, since / 40) * (m.s > 0.08 ? 1 : 0) : 0;
-  // the flow converges on the domed leaflets from the LA (a funnel, not a flat valve)
-  drawPLAX(ctx, box, g, {
-    t, title: fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 40 cm/s', 'PLAX · COLOR 40'),
+  const a = since < fill && m.s > 0.08 ? Math.min(1, since / 40) * clamp(m.env((since / fill) * m.dfp), 0.3, 1) : 0;
+  const jl = 2.5 + 2.5 * m.s;
+  drawA4C(ctx, box, g, {
+    t, depth: 16 + m.s, title: fit(box.w, 'APICAL FOUR-CHAMBER · COLOR 40 cm/s', 'A4C · COLOR 40'),
     color: {
-      roi: 'mitral', lo: -40, hi: 40, variance: true,
-      ms: m.s > 0.08 ? { q: (70 / (m.dfp / 1000)) * 1.1, u0: m.v0 * 100, vc: m.tip * 0.6, jl: 2.5 + 2.5 * m.s, jw: 0.9 + m.tip * 0.4, a, half: 0.9, soft: 0.35 } : null,
+      roi: 'mvin', reach: 1.6 + jl, lo: -40, hi: 40, variance: true, pvS: 0.5, pvD: 0.4 - 0.15 * m.s,
+      // the flow converges on the domed leaflets from the LA (a funnel, not a flat valve)
+      ms: m.s > 0.08 ? { q: (70 / (m.dfp / 1000)) * 1.1, u0: m.v0 * 100, vc: m.tip * 0.6, jl, jw: 0.9 + m.tip * 0.4, a, half: 0.9, soft: 0.35 } : null,
     },
-    after: (c, F) => measures(c, F, [`LA ${m.la.toFixed(1)} cm`, `leaflets ${(shownMitralThick(m.thick) * 10).toFixed(0)} mm`]),
+    after: (c, F) => measures(c, F, [[`LA volume index ${Math.round(m.lavi)} mL/m²`, `LAVi ${Math.round(m.lavi)} mL/m²`], `leaflets ${(shownMitralThick(m.thick) * 10).toFixed(0)} mm`]),
   });
 }
 
@@ -142,7 +157,7 @@ function draw(sh, t) {
   const tt = beat.at(st.msCine, 600);
   if (W < 700) {
     const [a, b] = cols({ x: 6, y: 6, w: W - 12, h: H - 12 }, [1.25, 1], 8);
-    plax(ctx, a, m, tt);
+    a4c(ctx, a, m, tt);
     const [p1, p2] = rows(b, [1.2, 1], 8);
     const r = inflowCW(ctx, p1, m);
     cursor(ctx, r.bx, beat.sweep);
@@ -152,7 +167,7 @@ function draw(sh, t) {
   const colL = { x: 16, y: 36, w: W * 0.45 - 16, h: H - 48 };
   const colR = { x: W * 0.465, y: 36, w: W * 0.535 - 18, h: H - 48 };
   const vh = Math.min(colL.w * 1.12, colL.h * 0.62);
-  plax(ctx, { x: colL.x, y: colL.y, w: colL.w, h: vh }, m, tt);
+  a4c(ctx, { x: colL.x, y: colL.y, w: colL.w, h: vh }, m, tt);
   meters(sh, t, { x: colL.x, y: colL.y + vh + 16, w: colL.w, h: colL.h - vh - 16 }, meterItems(m), { row: 32 });
   const [p1, p2, p3] = rows(colR, [1.2, 0.9, 1.05], 10);
   const r = inflowCW(ctx, p1, m);

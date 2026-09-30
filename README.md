@@ -1,6 +1,6 @@
 # The Heart in Sound
 
-An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and the final report. Eighteen chapters in seven parts. Chapters 11 to 17 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. A menu in the header changes the heart that every chapter shows: normal, cardiac amyloidosis, ischemic cardiomyopathy, a Barlow mitral valve with severe regurgitation, or a bicuspid aortic valve with severe stenosis. Every guideline value carries its source.
+An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and cardiac amyloidosis. Eighteen chapters in seven parts. Chapters 11 to 18 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. A menu in the header changes the heart that every chapter shows: normal, cardiac amyloidosis, ischemic cardiomyopathy, a Barlow mitral valve with severe regurgitation, or a bicuspid aortic valve with severe stenosis. Every guideline value carries its source.
 
 ![Chapter 08, Planes: the standard views as planes through one heart, with the mitral valve selected](docs/screenshots/planes.webp)
 
@@ -21,11 +21,13 @@ An illustrated, interactive study of echocardiography for trainees: ultrasound p
 | | 11 Fill | Diastolic dysfunction, normal to restrictive: four-chamber view with the LA to scale, mitral inflow, tissue Doppler, pulmonary veins, LA strain, TR jet, and the 2025 ASE algorithm run live |
 | Valves | 12 Aortic stenosis | Normal valve to severe stenosis, then LV failure and low flow: PLAX with hypertrophy, short-axis orifice to scale, CW and LVOT Doppler, mitral inflow |
 | | 13 Aortic regurgitation | Mild to severe with LV dysfunction: jet width in the LVOT, pressure half-time, descending aorta reversal, LVOT VTI, LV dilation |
-| | 14 Mitral stenosis | Normal valve to severe rheumatic stenosis: doming leaflets, LA size, pressure half-time, the gradient at any heart rate, PA pressure, planimetry |
+| | 14 Mitral stenosis | Normal valve to severe rheumatic stenosis: apical four-chamber view with doming leaflets, the LA to scale and the color inflow jet with its flow convergence at 40 cm/s; pressure half-time, the gradient at any heart rate, PA pressure, planimetry |
 | | 15 Mitral regurgitation | Mild to severe with LV dysfunction: color jet at 60 cm/s, or the PISA zoomed with the baseline shifted; CW jet, pulmonary vein flow reversal, E wave, LV and LA dilation. Under the Barlow heart the leak starts in mid-systole until it is severe |
 | | 16 Tricuspid regurgitation | Mild to torrential: color jet at 60 cm/s or the PISA at 28 cm/s; RV, annulus and RA dilation, hepatic vein reversal, IVC, septal flattening, a jet that slows and turns laminar at the torrential end |
 | Pericardium | 17 Pericardium | No effusion through mild, moderate and severe (large) effusion to tamponade: four-chamber view with the fluid round the heart, the RA and RV folding in and the septum moving with each breath; mitral, tricuspid and hepatic vein Doppler over a breath; PLAX with the fluid in front of the descending aorta; IVC M-mode |
-| Report | 18 Report | Four simulated cases, and one for each disease heart, written up in the ASE 2025 report structure, with sex-specific ranges |
+| Cardiomyopathy | 18 Cardiac amyloidosis | Normal heart to advanced amyloid cardiomyopathy: the parasternal long axis at end-diastole with calipers and the apical four-chamber view, both cut from the heart mesh at the chosen amyloid burden; mitral inflow and septal tissue Doppler; the 17-segment strain bull's-eye; the ESC 2021 echo criteria and the multiparametric score, run live |
+
+The report chapter (four simulated cases in the ASE 2025 structure) is hidden: `SHOW_REPORT` in `src/chapters.js`. Its module and markup stay, and it comes back as chapter 19.
 
 | | | |
 | --- | --- | --- |
@@ -33,7 +35,7 @@ An illustrated, interactive study of echocardiography for trainees: ultrasound p
 | ![06 Loop](docs/screenshots/loop.webp) | ![07 Windows](docs/screenshots/windows.webp) | ![09 Eject](docs/screenshots/eject.webp) |
 | ![10 Segments](docs/screenshots/segments.webp) | ![11 Fill](docs/screenshots/fill.webp) | ![12 Aortic stenosis](docs/screenshots/as.webp) |
 | ![13 Aortic regurgitation](docs/screenshots/ar.webp) | ![14 Mitral stenosis](docs/screenshots/ms.webp) | ![15 Mitral regurgitation](docs/screenshots/mr.webp) |
-| ![16 Tricuspid regurgitation](docs/screenshots/tr.webp) | ![17 Pericardium](docs/screenshots/peri.webp) | ![18 Report](docs/screenshots/report.webp) |
+| ![16 Tricuspid regurgitation](docs/screenshots/tr.webp) | ![17 Pericardium](docs/screenshots/peri.webp) | ![18 Cardiac amyloidosis](docs/screenshots/amyloid.webp) |
 
 On a phone the figure sits above the text and stays in view while the text scrolls:
 
@@ -43,13 +45,13 @@ On a phone the figure sits above the text and stays in view while the text scrol
 
 The **Heart** menu in the header sets the heart for the whole page, and the page keeps the choice between visits. A note under the title says what the heart shows.
 
-- **The mesh changes shape.** The 3D heart, and every echo view cut from it (chapters 02, 05, 07, 08 and 10), take the chosen heart. Amyloidosis is the model's own amyloid state. The other three are built from the normal mesh the first time they are chosen (`src/gl/phenomesh.js`, a few seconds; the note says so while it runs): each moves the walls, valves and chambers and scales the systolic motion by segment.
+- **The mesh changes shape.** The 3D heart, and every echo view cut from it (chapters 02, 05, 07, 08 and 10), take the chosen heart. Chapter 18 cuts its views from the model's own normal-to-amyloid shape at the page's burden, whatever heart the menu shows (`setBurden` in `src/echo.js`). Amyloidosis is the model's own amyloid state. The other three are built from the normal mesh the first time they are chosen (`src/gl/phenomesh.js`, a few seconds; the note says so while it runs): each moves the walls, valves and chambers and scales the systolic motion by segment.
   - **Ischemic cardiomyopathy**: a large LAD infarct. The LV dilates to 222 mL with an EF of 25%, the LAD territory is thin and akinetic, the apex bulges a little in systole, the rest is hypokinetic, and the mitral leaflets are pulled toward the apex.
   - **Barlow mitral valve**: thick, redundant leaflets that billow into the LA, a wide annulus, a large LA, and an LV of 183 mL with an EF of 67%.
   - **Bicuspid aortic valve**: the right and left cusps fused along a raphe; the valve domes and opens as a slit. The LV walls thicken to 12.5 mm and the ascending aorta widens to 3.9 cm.
 - **The 2D views draw the heart's valves** (`setHeart` in `src/echo2d.js`). Under the bicuspid heart the short axis shows two cusps, a raphe and a slit, and the long axis closes off-centre. Under the Barlow heart the mitral leaflets are 3 mm thick and 30% longer, and in systole they billow up to 1 cm past the annulus. Walls and chamber sizes stay each page's own.
-- **Chapters open at the heart's values** (`src/pheno.js`). Eject opens at the heart's volumes and EF, Segments at the LAD occlusion, Fill at the heart's diastolic grade, and the heart's own valve page at its severity (aortic valve area 0.76 cm²; mitral EROA 0.46 cm²). The pericardium page opens at a 7 mm effusion under amyloidosis. The other valve pages open with no lesion, and no page plays on its own.
-- **The report** has a case for each heart, with its button next to the four standard cases.
+- **Chapters open at the heart's values** (`src/pheno.js`). Eject opens at the heart's volumes and EF, Segments at the LAD occlusion, Fill at the heart's diastolic grade, and the heart's own valve page at its severity (aortic valve area 0.76 cm²; mitral EROA 0.46 cm²). The pericardium page opens at a 7 mm effusion and the amyloid page at full burden under amyloidosis. The other valve pages open with no lesion, the amyloid page opens normal under the other disease hearts, and no page plays on its own.
+- **The report** (hidden) has a case for each heart, with its button next to the four standard cases.
 - **Sizes.** The LV volumes come from 50 short-axis slices of each shape. The slices read 6% over the model's own normal volumes (118 and 42 mL against 112 and 39), so each heart's values are scaled by 0.945.
 - **Limits.** The severity pages keep their own LV models, so a page can show values that differ from the heart's (the MR page gives an EF of 64% under the Barlow heart, the mesh 67%).
 
@@ -81,17 +83,17 @@ Chapter 08 shows the planes together. The apical views share the LV long axis; t
 
 ![Chapter 08, a free plane rotated 50° counterclockwise from the four-chamber view, marked as near the two-chamber view](docs/screenshots/free.webp)
 
-## The severity pages (chapters 11 to 17)
+## The severity pages (chapters 11 to 18)
 
 - **One slider per disease.** It runs from normal to the end stage. The bands under it show where the grade changes; the page computes them from its own model, so a band starts where the values cross the guideline cut-off.
 - **Play** moves the slider through the whole course and starts again. It starts when the page opens; any control stops it. The beat runs all the time; there is no cine switch.
 - **Several views change together.** A 2D view drawn to scale (a caliper on the screen reads the value in the text), three or four Doppler strips with a cursor at the same moment of the beat, a strip of measurements against their cut-offs, and the guideline table with the current column marked.
-- **Grades and stages.** Regurgitation follows ASE 2017 (Zoghbi), with EACVI 2022 for massive and torrential TR; aortic stenosis follows Baumgartner 2017; mitral stenosis follows ASE 2023 (Pandian); diastolic function follows ASE 2025 (Nagueh). The LV and atrial consequences follow the ACC/AHA 2020 stages (Otto), for example stage C2 in MR at LVEF ≤60% or end-systolic diameter ≥40 mm. Effusion size follows ESC 2015 and 2025 (<10, 10–20, >20 mm at end-diastole); the echo signs of tamponade follow ASE 2013 (Klein) and ESC 2025 (Schulz-Menger).
-- **What the model is.** The orifice or valve area drives the numbers (PISA, continuity equation, pressure half-time = 220 ÷ area); the chamber sizes, vein flows and pressures follow illustrative tracks set inside the guideline bands. In the pericardium page the effusion drives the pressure in the sac; tamponade starts where that pressure reaches the RA pressure, and the right heart then folds in during its relaxation. They are teaching values, not patient data.
+- **Grades and stages.** Regurgitation follows ASE 2017 (Zoghbi), with EACVI 2022 for massive and torrential TR; aortic stenosis follows Baumgartner 2017; mitral stenosis follows ASE 2023 (Pandian); diastolic function follows ASE 2025 (Nagueh). The LV and atrial consequences follow the ACC/AHA 2020 stages (Otto), for example stage C2 in MR at LVEF ≤60% or end-systolic diameter ≥40 mm. Effusion size follows ESC 2015 and 2025 (<10, 10–20, >20 mm at end-diastole); the echo signs of tamponade follow ASE 2013 (Klein) and ESC 2025 (Schulz-Menger). The amyloid bands follow the ESC 2021 echo criteria (Garcia-Pavia): an unexplained wall of 12 mm or more, plus two of three findings (grade 2 or worse diastolic dysfunction; septal s′, e′ and a′ all below 5 cm/s; GLS below 15% in absolute value) or a multiparametric score of 8 or more (Boldrini 2020).
+- **What the model is.** The orifice or valve area drives the numbers (PISA, continuity equation, pressure half-time = 220 ÷ area); the chamber sizes, vein flows and pressures follow illustrative tracks set inside the guideline bands. In the pericardium page the effusion drives the pressure in the sac; tamponade starts where that pressure reaches the RA pressure, and the right heart then folds in during its relaxation. In the amyloid page the burden blends the heart mesh from its normal to its amyloid corner: the walls, cavity, atria, valves, atrial septum, RV wall and pericardial space come from the mesh (the calipers measure IVSd 9.0 to 16.8 mm, LVIDd 46.8 to 39.8 mm and PWd 8.9 to 15.0 mm), and the Doppler, strain and filling values follow a track from normal to grade 3 filling set inside the cited ranges. They are teaching values, not patient data.
 
 ## The echo images
 
-Every echo image is simulated. The anatomy comes from sections of the heart mesh (chapters 02, 05, 07, 08 and 10) or from parametric views drawn to scale (chapters 09 and 11 to 17). One renderer, `src/bmode.js`, turns either into a scanner frame:
+Every echo image is simulated. The anatomy comes from sections of the heart mesh (chapters 02, 05, 07, 08, 10 and 18) or from parametric views drawn to scale (chapters 09 and 11 to 17). One renderer, `src/bmode.js`, turns either into a scanner frame:
 
 - **Echogenicity.** Each structure has a level in dB against myocardium: blood about −60, leaflets +15 (to +21 when thickened), chordae +4, pericardium +16, calcium +22 with an acoustic shadow behind it; the coronary arteries sit in bright epicardial fat.
 - **Specular surfaces.** A surface is brightest where the beam meets it head-on (cos⁴ of the angle). Walls that run along the beam, such as the atrial septum in the four-chamber view, stay faint.
@@ -113,9 +115,9 @@ Every echo image is simulated. The anatomy comes from sections of the heart mesh
 
 ## Sources and data
 
-- Guideline values come from ASE, EACVI, ACC/AHA, ESC, ESC/ERS and IAC documents; the main ones are Lang 2015 (chamber quantification), Mitchell 2019 (comprehensive TTE), Zoghbi 2017 (regurgitation), Baumgartner 2017 (aortic stenosis), Otto 2020 (valve disease), Pandian 2023 (rheumatic mitral stenosis), Nagueh 2025 (diastolic function), Mukherjee 2025 (right heart), Thomas 2025 (strain), Klein 2013, Adler 2015 and Schulz-Menger 2025 (pericardium) and Taub 2025 (reporting). The full list, with DOI and PubMed links, opens from **Sources** on the page (`src/refs.js`).
+- Guideline values come from ASE, EACVI, BSE, ACC/AHA, ESC and ESC/ERS documents; the main ones are Lang 2015 (chamber quantification), Mitchell 2019 (comprehensive TTE), Zoghbi 2017 (regurgitation), Baumgartner 2017 (aortic stenosis), Otto 2020 (valve disease), Pandian 2023 (rheumatic mitral stenosis), Nagueh 2025 (diastolic function), Mukherjee 2025 (right heart), Thomas 2025 (strain), Klein 2013, Adler 2015 and Schulz-Menger 2025 (pericardium), Garcia-Pavia 2021 and Moody 2023 (cardiac amyloidosis) and Taub 2025 (reporting). The full list, with DOI and PubMed links, opens from **Sources** on the page (`src/refs.js`).
 - Each reference was checked against PubMed and Crossref before use. Where sources disagree, the page follows the current guideline.
-- The figures run simple models set to agree with these sources. The diastolic values and the four report cases are illustrative, not patient data. All images are simulated; there are no patient images.
+- The figures run simple models set to agree with these sources. The diastolic values and the Doppler and strain values of the amyloid page are illustrative, not patient data. All images are simulated; there are no patient images.
 - Normal values for the **Normal values** dialog and the grading helpers live in one place: `src/norms.js`.
 
 ## How it is built
@@ -147,9 +149,9 @@ Serve the folder with any static server, for example:
 python3 -m http.server 8000
 ```
 
-Then open <http://localhost:8000/>. A chapter can be opened directly: `#planes`, `#fill`, `#report`.
+Then open <http://localhost:8000/>. A chapter can be opened directly: `#planes`, `#fill`, `#amyloid`.
 
-Keys: ← → change chapter, space plays the tour, [ and ] step the views in chapters 07 and 08. In chapter 07 they run through every view of every window: after a window's last view comes the next window's first. A chapter opens directly by its key, for example `#as`, `#mr`, `#tr`, `#peri`.
+Keys: ← → change chapter, space plays the tour, [ and ] step the views in chapters 07 and 08. In chapter 07 they run through every view of every window: after a window's last view comes the next window's first. A chapter opens directly by its key, for example `#as`, `#mr`, `#tr`, `#peri`, `#amyloid`.
 
 ## Checks run before this commit
 
