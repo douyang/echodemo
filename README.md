@@ -139,6 +139,8 @@ src/cyclemodel.js   one heartbeat (pressures, volume, valve events)
 src/norms.js        normal values and cut-offs
 src/refs.js         references
 assets/             heart mesh (JSON), anatomy landmarks, poster image
+video/              the views video: page, cuts, timing, fonts
+tools/              video tools: render, soundtrack, storyboard
 ```
 
 ## Run it
@@ -153,6 +155,31 @@ Then open <http://localhost:8000/>. A chapter can be opened directly: `#planes`,
 
 Keys: ← → change chapter, space plays the tour, [ and ] step the views in chapters 07 and 08. In chapter 07 they run through every view of every window: after a window's last view comes the next window's first. A chapter opens directly by its key, for example `#as`, `#mr`, `#tr`, `#peri`, `#amyloid`.
 
+## The views video
+
+`video/index.html` plays the standard views of chapter 07 as a video, drawn by the site's own code. Three panes show the probe on the body and on the heart, the cross-section, and the echo image. The plane moves smoothly from view to view in all three. A caption names each view, the probe position and the structures it shows. The zoomed and depth-focused views are left out.
+
+- The heart beats at 70 per minute. The soundtrack (`tools/make-audio.mjs`, synthesized, original) runs at the same 70 BPM, with a kick on each heartbeat at mitral closure.
+- Between windows the probe travels round the heart, over the front of the chest, with its beam on the heart. Inside a window the plane moves as the site moves it.
+- The probe is drawn in the page's accent blue (`Pencil.setToolInk`), so it stands apart from the graphite heart. The site keeps it in graphite.
+
+| Cut | Format | Theme | Views | Length |
+|---|---|---|---|---|
+| A, Full tour | 1920 × 1080 | dark | 20 | 2:24 |
+| B, Core views | 1920 × 1080 | light | 12 | 1:09 |
+| C, Quick cut | 1920 × 1080 | dark | 10 | 0:38 |
+| D, Vertical | 1080 × 1920 | dark | 12 | 1:06 |
+
+To render a cut (Node 22, Playwright with Chromium, ffmpeg), serve the repository root on port 8790, then:
+
+```
+node tools/make-audio.mjs --cut=A                  # video/out/echo-views-A.wav
+node tools/render-video.mjs --cut=A --jobs=3 --audio=video/out/echo-views-A.wav
+node tools/storyboard.mjs --cut=A --moves          # one frame of each view on one sheet
+```
+
+The videos go to `video/out/`, which git ignores. Each frame depends on its time alone, so parallel jobs join without a seam. The cuts, their timing and the captions are in `video/cuts.js` and `video/timeline.js`.
+
 ## Checks run before this commit
 
 - Every module parsed as an ES module (`node --experimental-default-type=module --check`). Plain `node --check` treats these files as CommonJS and passes them without parsing them fully; it missed a duplicate declaration during this change, which the module-mode check caught.
@@ -162,6 +189,7 @@ Keys: ← → change chapter, space plays the tour, [ and ] step the views in ch
 - Amyloid page: at every 2% step of the burden the calipers on the mesh read within 0.047 mm of the page's IVSd, LVIDd and PWd. Over the burden the wall reaches 12 mm at 40%, the ESC criteria are met from 55% (grade 2 filling and GLS below 15%), the 5-5-5 sign appears from 80% and the score reaches 10 at 100%. Under the amyloid heart the page opens at 100% and holds; under the other disease hearts at 0%. Layout audit of the page and of the MS page at all 14 sizes: no findings.
 - Mitral stenosis in four chambers: frames over a beat at four grades. The color box covers the LA within 3.5 cm of the annulus and the inflow, not the right heart.
 - The probe and the body key in pencil: all 18 chapters at 1440 × 900 and 390 × 844 with no page errors, and chapter 07 in both themes, with Probe and body in the parasternal, apical and subcostal windows; the probe leaves the shared stage when chapter 07 closes, so chapter 08 shows none.
+- Views video: frames through every window change of cut A, 11 a move, in all three panes: the plane and the body camera move without a jump, and the probe stays in frame and outside the heart. Stills of cuts B (light) and D (vertical). In a test render with its soundtrack, every kick landed within 2 ms of its beat. The site's chapter 07 and 08 frames are byte-identical with and without the pencil change (reduced motion, 1440 × 900).
 - Chapter order and labels: the valve chapters run aortic stenosis, aortic regurgitation, mitral stenosis, mitral regurgitation, tricuspid regurgitation (12 to 16), and every chapter header's number matches its place in the navigation. The part labels carry no numerals; a part of one chapter shows only its rule, so no label is cut off at 1024 or 1440 px. The page text names no chapter outside the chapter headers (the report's links to chapters are off, `SHOW_LINKS` in `src/ch/report.js`).
 - Segments: the page opens normal. The LAD, RCA and LCX buttons on the figure set their territories (segments 1, 2, 7, 8, 13, 14, 17; 3, 4, 9, 10, 15; 5, 6, 11, 12, 16), and the text names the walls per view (for the RCA: A4C, the basal and mid inferoseptal segments; A2C, the whole inferior wall; A3C, normal). A tap on the bull's-eye scores a segment at desktop and phone width. 47 fps on the desktop layout and 60 on the phone layout (headless, software rendering). Dark theme checked.
 - Pericardium against myocardium, measured point by point. In the parametric four-chamber view, before this change the line ran 0.4 cm inside the apical wall; now no point of it lies inside a wall at any contraction, effusion (none to 2.2 cm), RV collapse or septal shift, and it stays at least 1.0 mm from the epicardium. With the swing the pericardium page pairs with each effusion (up to 0.7 cm at 2.3 cm of fluid), the walls stay at least 3.5 mm inside the sac. In the long axis, no point lies inside the posterior wall, the coronary sinus, the LA wall or the descending aorta, with at least 1.3 mm of clearance. In the mesh views (A4C, A2C, A3C, PLAX, PSAX, subcostal four-chamber) at eight moments of the beat, the overlap fell from up to 0.27 cm (normal) and 0.40 cm (dyskinetic segments in chapter 10) to at most 0.06 cm, below the beam's lateral resolution.
