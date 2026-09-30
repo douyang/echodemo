@@ -83,13 +83,21 @@ function sectionTags(stg) {
   if (!labels) return;
   if (st.wbody || !st.wlabels) { labels.update([], null, 1, 1); return; }
   const host = fig.querySelector('.pane-3d').getBoundingClientRect();
-  labels.update(echo.sectionLabels(stg.state.s), echo.sectorBox(), host.width, host.height);
+  // the pane's name and its note stay clear of the tags
+  const keep = ['#windows-3dlabel', '#windows-note'].map((q) => fig.querySelector(q)).filter((e) => e && e.offsetParent).map((e) => {
+    const r = e.getBoundingClientRect();
+    return { x0: r.left - host.left, y0: r.top - host.top, x1: r.right - host.left, y1: r.bottom - host.top };
+  });
+  labels.update(echo.sectionLabels(stg.state.s), echo.sectorBox(), host.width, host.height, keep);
 }
 
 function onFrame(stg) {
   if (!echo) return;
   sectionTags(stg);
   if (tick++ % 2) return;   // about 30 frames a second is enough for the echo
+  // the scanner line sits under the view's name, which takes two lines on a phone
+  const lab = fig.querySelector('#windows-label');
+  if (lab && lab.offsetParent) echo.top = 32 + Math.max(10, lab.offsetHeight);
   echo.labels = false;      // the labels name the structures on the model, not on the echo
   echo.calipers = !st.wcine;
   echo.frame({ ...stg.state });

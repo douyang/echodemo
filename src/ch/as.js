@@ -84,7 +84,7 @@ function plax(ctx, box, m, t) {
     root: 3.1, lvot: LVOT_D, av: { thick: m.cusp, open: Math.min(1.9, 2 * Math.sqrt(m.ava / Math.PI) * 0.9), calc: m.calc },
   };
   const ej = t >= EV.avo && t <= EV.avc;
-  const a = ej ? Math.pow(Math.sin(Math.PI * (t - EV.avo) / (EV.avc - EV.avo)), 0.4) : 0;
+  const a = ej ? Math.pow(Math.max(0, Math.sin(Math.PI * (t - EV.avo) / (EV.avc - EV.avo))), 0.4) : 0;
   const jets = m.vmax > 2.2 ? { as: { q: m.sv / ET, va: 60, vc: Math.sqrt(m.ava), jl: 2 + m.vmax * 0.6, jw: 1.4 + m.vmax * 0.18, a } } : {};
   drawPLAX(ctx, box, g, {
     t, jets, title: fit(box.w, 'PARASTERNAL LONG AXIS', 'PLAX'),
@@ -109,7 +109,7 @@ function avCW(ctx, P, m) {
   const k = (bx.h * 0.93) / vs, yb = bx.y + bx.h * 0.07;
   const xpk = bx.x + ((EV.avo + bu * ET * 1000) / (2 * RR)) * bx.w;
   caliper(ctx, xpk - 12, yb + vmax * k, xpk + 12, yb + vmax * k, { solid: true });
-  note(ctx, bx, fit(P.w, `Vmax ${m.vmax.toFixed(1)} m/s · mean ${Math.round(m.mg)} mmHg · peak at ${Math.round(bu * 100)}% of ejection`, `${m.vmax.toFixed(1)} m/s · ${Math.round(m.mg)} mmHg`), 'bottom');
+  note(ctx, bx, [`Vmax ${m.vmax.toFixed(1)} m/s · mean ${Math.round(m.mg)} mmHg · peak at ${Math.round(bu * 100)}% of ejection`, `${m.vmax.toFixed(1)} m/s · ${Math.round(m.mg)} mmHg`], 'bottom');
   return bx;
 }
 
@@ -119,7 +119,7 @@ function lvotPW(ctx, P, m) {
   const vL = q2(m.vL);
   spectral(ctx, bx, { fn: (u) => { const t = (u * 2 * RR) % RR; return -vL * lvotShape((t - EV.avo) / (ET * 1000)); }, scale: 1.5, base: 0.12, mode: 'pw', broad: 0.08, key: `aslvot|${vL}`, seed: 2 });
   vscale(ctx, bx, 1.5, 0.12, 0.5);
-  note(ctx, bx, fit(P.w, `VTI ${m.vtiL.toFixed(0)} cm · velocity ratio ${m.dvi.toFixed(2)} · SVi ${Math.round(m.svi)} mL/m²`, `ratio ${m.dvi.toFixed(2)}`), 'bottom');
+  note(ctx, bx, [`VTI ${m.vtiL.toFixed(0)} cm · velocity ratio ${m.dvi.toFixed(2)} · SVi ${Math.round(m.svi)} mL/m²`, `ratio ${m.dvi.toFixed(2)}`], 'bottom');
   return bx;
 }
 
@@ -129,7 +129,7 @@ function inflowPW(ctx, P, m) {
   const E = q2(m.E), A = q2(m.A);
   spectral(ctx, bx, { fn: (u) => mitralV((u * 2 * RR) % RR, E, A, 200), scale: 1.4, base: 0.92, mode: 'pw', broad: 0.1, key: `asin|${E}|${A}`, seed: 22 });
   vscale(ctx, bx, 1.4, 0.92, 0.5);
-  note(ctx, bx, `E/A ${(m.E / m.A).toFixed(1)} · e′ ${m.ePrime.toFixed(1)} cm/s · E/e′ ${m.ee.toFixed(0)}`, 'top');
+  note(ctx, bx, [`E/A ${(m.E / m.A).toFixed(1)} · e′ ${m.ePrime.toFixed(1)} cm/s · E/e′ ${m.ee.toFixed(0)}`, `E/A ${(m.E / m.A).toFixed(1)} · E/e′ ${m.ee.toFixed(0)}`], 'top');
   return bx;
 }
 

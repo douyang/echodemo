@@ -151,7 +151,7 @@ function daoPW(ctx, P, m) {
     const X = (ms) => bx.x + (ms / (2 * RR)) * bx.w;
     if (edv > 0.02) caliper(ctx, X(RR - 6), y0, X(RR - 6), y0 - edv * k, { solid: true, size: 3 });
   }
-  note(ctx, bx, m.eroa <= 0.005 ? 'no diastolic reversal' : fit(P.w, m.edv >= 20 ? `holodiastolic reversal · end-diastolic ${Math.round(m.edv)} cm/s` : m.edv >= 8 ? `diastolic reversal · end-diastolic ${Math.round(m.edv)} cm/s` : 'brief early diastolic reversal', `end-diastolic ${Math.round(m.edv)} cm/s`), 'top');
+  note(ctx, bx, m.eroa <= 0.005 ? 'no diastolic reversal' : [m.edv >= 20 ? `holodiastolic reversal · end-diastolic ${Math.round(m.edv)} cm/s` : m.edv >= 8 ? `diastolic reversal · end-diastolic ${Math.round(m.edv)} cm/s` : 'brief early diastolic reversal', `end-diastolic ${Math.round(m.edv)} cm/s`], 'top');
   return bx;
 }
 
@@ -170,7 +170,7 @@ function lvotPW(ctx, P, m) {
   };
   spectral(ctx, bx, { fn, scale: 3, base: 0.1, mode: 'pw', broad: 0.1, key: `arlvot|${vti}`, seed: 33 });
   vscale(ctx, bx, 3, 0.1, 1);
-  note(ctx, bx, `VTI ${vti} cm · peak ${(vpk / 100).toFixed(1)} m/s`, 'bottom');
+  note(ctx, bx, [`VTI ${vti} cm · peak ${(vpk / 100).toFixed(1)} m/s`, `VTI ${vti} cm`], 'bottom');
   return bx;
 }
 

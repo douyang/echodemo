@@ -131,6 +131,35 @@ export class Sheet {
     if (o.rotate) { ctx.translate(x, y); ctx.rotate(o.rotate); ctx.fillText(str, 0, 0); } else ctx.fillText(str, x, y);
     ctx.restore();
   }
+  /** Width of str as text() would draw it. */
+  measure(str, o = {}) {
+    const { ctx } = this;
+    const family = o.family ?? HAND;
+    let size = o.size ?? 20, weight = o.weight ?? 600;
+    if (STYLE === 'line' && family === HAND) { size *= LINE_SCALE; weight = Math.min(weight, 500); }
+    ctx.save();
+    ctx.font = `${weight} ${size}px ${family}`;
+    const w = ctx.measureText(str).width;
+    ctx.restore();
+    return w;
+  }
+  /** The first form that fits maxW at a size from o.size down to min × o.size: { str, size }. */
+  fit(forms, maxW, o = {}, min = 0.75) {
+    const { ctx } = this, list = [].concat(forms);
+    const family = o.family ?? HAND, base = o.size ?? 20;
+    let size = base, weight = o.weight ?? 600;
+    if (STYLE === 'line' && family === HAND) { size *= LINE_SCALE; weight = Math.min(weight, 500); }
+    ctx.save();
+    try {
+      for (const str of list) {
+        for (let k = 1; k >= min - 1e-6; k -= 0.05) {
+          ctx.font = `${weight} ${size * k}px ${family}`;
+          if (ctx.measureText(str).width <= maxW) return { str, size: base * k };
+        }
+      }
+    } finally { ctx.restore(); }
+    return { str: list[list.length - 1], size: base * min };
+  }
   label(str, x, y, tx, ty, o = {}) {
     // leader line from (x,y) to the text anchor (tx,ty)
     this.line(x, y, tx, ty, { width: 0.9, rough: 0.6, stroke: o.color ?? this.t.ink2, single: true, seed: o.seed ?? 3 });

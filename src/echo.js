@@ -1149,12 +1149,16 @@ export class EchoView {
         if (this.boxPath && !ctx.isPointInPath(this.boxPath, x * this.dpr, y * this.dpr)) continue;
       }
       const w = ctx.measureText(txt).width + 10;
-      // nudge down until it does not overlap a placed label
-      let yy = y;
-      for (let k = 0; k < 6; k++) {
-        if (!placed.some((p) => Math.abs(p.x - x) < (p.w + w) / 2 && Math.abs(p.y - yy) < 16)) break;
-        yy += 16;
+      // inside the image, and off the labels already placed: down, then up; no room, no label
+      x = Math.max(w / 2 + 2, Math.min(this.w - w / 2 - 2, x));
+      const inFan = (py) => ctx.isPointInPath(this.fanPath, x * this.dpr, py * this.dpr) && (!this.boxPath || ctx.isPointInPath(this.boxPath, x * this.dpr, py * this.dpr));
+      let yy = null;
+      for (const dy of [0, 16, -16, 32, -32, 48, -48]) {
+        const c = Math.max(10, Math.min(this.h - 10, y + dy));
+        if (!inFan(c)) continue;
+        if (!placed.some((p) => Math.abs(p.x - x) < (p.w + w) / 2 && Math.abs(p.y - c) < 16)) { yy = c; break; }
       }
+      if (yy === null) continue;
       placed.push({ x, y: yy, w });
       ctx.fillStyle = 'rgba(8,10,12,0.62)';
       ctx.fillRect(x - w / 2, yy - 8, w, 16);

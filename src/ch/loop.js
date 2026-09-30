@@ -109,17 +109,61 @@ function draw(sh, t) {
   // end-systolic relation: slope Ees from V0 = 0
   const vTop = Math.min(VMAX, PMAX / st.ees);
   sh.line(X(0), Y(0), X(vTop), Y(st.ees * vTop), { width: 1.6, rough: 0.5, seed: 21, stroke: t.accent });
-  sh.text(`ESPVR · Ees ${st.ees.toFixed(2)}`, X(vTop) + (narrow ? -4 : 6), Y(st.ees * vTop) + (narrow ? 14 : 4), { size: 17 * s, color: t.accent, align: narrow ? 'right' : 'left' });
+  // the equation card, top right on a desktop: the labels keep off it
+  const cardX = x1 - 250, cardY = y0 + 4;
+  const card = narrow ? null : { x0: cardX - 2, y0: cardY - 2, x1: cardX + 250, y1: cardY + 58 };
+  const hit = (a, b) => b && a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
+  // the ESPVR label by the line's end, or lower along the line where it has room: left of the
+  // line on a phone, right of it on a desktop; never across the axis, the edge or the card
+  const esT = `ESPVR · Ees ${st.ees.toFixed(2)}`, esW = sh.measure(esT, { size: 17 * s });
+  let es = null;
+  for (const f of [1, 0.9, 0.8, 0.7, 0.6, 0.5]) {
+    const px = X(vTop * f), py = Y(st.ees * vTop * f);
+    const right = { x: px + 6, y: py + 4, align: 'left', box: { x0: px + 6, y0: py - 10, x1: px + 6 + esW, y1: py + 6 } };
+    const left = { x: px - 4, y: py + 14, align: 'right', box: { x0: px - 4 - esW, y0: py, x1: px - 4, y1: py + 16 } };
+    es = (narrow ? [left, right] : [right, left]).find((c) => c.box.x0 >= x0 + 4 && c.box.x1 <= W - 8 && c.box.y0 >= 2 && !hit(c.box, card));
+    if (es) break;
+  }
+  if (!es) es = { x: Math.max(X(vTop) - 4, x0 + 4 + esW), y: Y(st.ees * vTop) + 14, align: 'right' };
+  sh.text(esT, es.x, es.y, { size: 17 * s, color: t.accent, align: es.align });
   // end-diastolic relation
   const ed = [];
   for (let v = 0; v <= VMAX; v += 4) { const p = edpvr(v, st.stiff); if (p > 70) break; ed.push([X(v), Y(p)]); }
   if (ed.length > 2) sh.curve(ed, { width: 1.5, rough: 0.4, seed: 22, stroke: t.ink2 });
   const lastEd = ed[ed.length - 1];
-  if (lastEd) sh.text('EDPVR', lastEd[0] + 4, lastEd[1] - 2, { size: 17 * s, color: t.ink2 });
+  if (lastEd) {
+    // at the curve's end; pulled back inside the figure, and up off the curve, when the curve
+    // runs to the right edge
+    const edW = sh.measure('EDPVR', { size: 17 * s }), edX = Math.min(lastEd[0] + 4, W - 8 - edW);
+    sh.text('EDPVR', edX, lastEd[1] - (edX < lastEd[0] + 4 ? 12 : 2), { size: 17 * s, color: t.ink2 });
+  }
   // arterial elastance line: from EDV on the volume axis through the end-systolic point
   const vEa = Math.max(0, L.edv - PMAX / st.ea);
   sh.line(X(L.edv), Y(0), X(vEa), Y(st.ea * (L.edv - vEa)), { width: 1.3, rough: 0.4, seed: 23, stroke: t.flag, dash: [6, 5] });
-  sh.text(`Ea ${st.ea.toFixed(2)}`, X(L.edv) + 6, Y(14), { size: 17 * s, color: t.flag });
+  // the stroke volume label: its short name on a small loop, left of the EDV corner
+  const by = y1 - 18, sv = Math.round(L.sv);
+  const svT = sh.fit([`stroke volume ${sv} mL`, `SV ${sv} mL`], X(L.edv) - X(L.esv) + 40, { size: 16 * s }, 1).str;
+  const svW = sh.measure(svT, { size: 16 * s });
+  const svX = Math.max(x0 + 4 + svW / 2, Math.min((X(L.esv) + X(L.edv)) / 2, X(L.edv) - 2 - svW / 2));
+  // Ea beside the EDV corner, clear of the stroke volume label and, on a desktop, of the
+  // end-diastole label there: low on the corner, else right of that label, else above the
+  // stroke volume label
+  const eaT = `Ea ${st.ea.toFixed(2)}`, eaW = sh.measure(eaT, { size: 17 * s });
+  const svBox = { x0: svX - svW / 2, y0: by - 7 - 13, x1: svX + svW / 2, y1: by - 3 };
+  let edBox = null;
+  if (!narrow) {
+    ctx.save();
+    ctx.font = `500 11px ${SANS}`;
+    const w = ctx.measureText('end-diastole').width;
+    ctx.restore();
+    edBox = { x0: X(L.edv) + 8, y0: Y(L.edp) + 14 - 9, x1: X(L.edv) + 8 + w, y1: Y(L.edp) + 14 + 3 };
+  }
+  const eaAt = (x, y) => ({ x, y, box: { x0: x, y0: y - 13, x1: x + eaW, y1: y + 4 } });
+  const eaTries = [eaAt(X(L.edv) + 6, Y(14))];
+  if (edBox) eaTries.push(eaAt(edBox.x1 + 8, Y(L.edp) + 14));
+  eaTries.push(eaAt(X(L.edv) + 6, Math.min(Y(14), by - 7 - 16 * s - 4)));
+  const ea = eaTries.find((c) => c.box.x1 <= W - 8 && !hit(c.box, svBox) && !hit(c.box, edBox)) || eaTries[eaTries.length - 1];
+  sh.text(eaT, ea.x, ea.y, { size: 17 * s, color: t.flag });
 
   // the normal loop, faint
   const ghost = loopPath(N).map(([v, p]) => [X(v), Y(p)]);
@@ -143,11 +187,10 @@ function draw(sh, t) {
   dot(L.edv, L.pao, 'aortic valve opens', 8, 4);
   dot(L.esv, L.pmin, 'mitral valve opens', -8, -8, 'right');
   // stroke volume bracket
-  const by = y1 - 18;
   sh.line(X(L.esv), by, X(L.edv), by, { width: 1.2, rough: 0.3, seed: 40, stroke: t.ink });
   sh.line(X(L.esv), by - 4, X(L.esv), by + 4, { width: 1.2, rough: 0.2, seed: 41 });
   sh.line(X(L.edv), by - 4, X(L.edv), by + 4, { width: 1.2, rough: 0.2, seed: 42 });
-  sh.text(`stroke volume ${Math.round(L.sv)} mL`, (X(L.esv) + X(L.edv)) / 2, by - 7, { size: 16 * s, align: 'center' });
+  sh.text(svT, svX, by - 7, { size: 16 * s, align: 'center' });
 
   // the moving point, one beat at a time
   const [v, p] = loopAt(L, reducedMotion ? EV.avc : (clock * 1000) / 2.2);
@@ -160,7 +203,7 @@ function draw(sh, t) {
 
   // equation card
   if (!narrow) {
-    const cx = x1 - 250, cy = y0 + 4;
+    const cx = cardX, cy = cardY;
     sh.text('EF = SV / EDV = Ees / (Ees + Ea)', cx, cy + 12, { family: MONO, weight: 500, size: 12, color: t.ink });
     sh.text(`${Math.round(L.ef * 100)}% = ${st.ees.toFixed(2)} / (${st.ees.toFixed(2)} + ${st.ea.toFixed(2)})`, cx, cy + 30, { family: MONO, weight: 400, size: 12, color: t.ink2 });
     sh.text('grey loop: normal', cx, cy + 52, { family: SANS, weight: 400, size: 11, color: t.ink3 });

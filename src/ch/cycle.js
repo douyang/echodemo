@@ -41,7 +41,7 @@ function draw(sh, t) {
   const c = cycleAt(st.tcycle);
   // left: the diagram; right: the echo frame (below on phones)
   const dx = narrow ? 44 : 56, dw = narrow ? W - dx - 14 : W * 0.62 - dx;
-  const top = narrow ? 22 : 54, bottom = narrow ? H * 0.64 : H - 36;
+  const top = narrow ? 36 : 54, bottom = narrow ? H * 0.64 : H - 36;
   const X = (ms) => dx + (ms / RR) * dw;
   const hP = (bottom - top) * 0.42, hV = (bottom - top) * 0.16, hE = (bottom - top) * 0.1, hS = (bottom - top) * 0.07, hD = (bottom - top) * 0.2;
   const gap = (bottom - top - hP - hV - hE - hS - hD) / 4;
@@ -70,7 +70,8 @@ function draw(sh, t) {
   // pressures
   const PY = (p) => yP + hP - (p / 130) * hP;
   sh.line(dx, yP + hP, dx + dw, yP + hP, { width: 1, rough: 0.3, seed: 3, stroke: t.ink2 });
-  for (const p of [0, 40, 80, 120]) {
+  // a narrow diagram leaves out the 0: the volume scale starts just under it
+  for (const p of narrow ? [40, 80, 120] : [0, 40, 80, 120]) {
     sh.text(String(p), dx - 6, PY(p) + 4, { family: MONO, weight: 400, size: 9, align: 'right', color: t.ink2 });
   }
   sh.text('mmHg', dx - 6, yP - 4, { family: MONO, weight: 400, size: 9, align: 'right', color: t.ink2 });
@@ -86,9 +87,9 @@ function draw(sh, t) {
   // volume
   const VY = (v) => yV + hV - ((v - 40) / 90) * hV;
   sh.curve(curve((ms) => VY(cycleAt(ms).vol)), { width: 1.8, stroke: t.ink, seed: 8, rough: 0.4 });
-  sh.text('LV volume', dx + 4, yV + 12, { size: fs * 0.95, color: t.ink2 });
+  // the label sits over the ejection, where the volume is low
+  sh.text('LV volume, mL', X(330), yV + 12, { size: fs * 0.95, color: t.ink2, align: 'center' });
   for (const v of [50, 120]) sh.text(String(v), dx - 6, VY(v) + 4, { family: MONO, weight: 400, size: 9, align: 'right', color: t.ink2 });
-  sh.text('mL', dx - 6, yV + 6, { family: MONO, weight: 400, size: 9, align: 'right', color: t.ink2 });
 
   // ECG, one beat from the R wave
   ecgStrip(ctx, dx, dx + dw, yE + hE * 0.72, hE * 0.62, 1, null, { color: t.ink, offset: 0 });
@@ -125,7 +126,9 @@ function draw(sh, t) {
   ctx.textAlign = 'center';
   ctx.fillText('E', X(EV.mvo + 70), dY(0.8) - 4);
   ctx.fillText('A', X(815), dY(0.55) - 4);
-  ctx.fillText('LVOT', X(170), dY(-1.1) + 12);
+  // under the outflow envelope; in a short strip, beside its tail where no flow is drawn
+  if (dY(-1.1) + 12 <= box.y + box.h - 3) ctx.fillText('LVOT', X(170), dY(-1.1) + 12);
+  else { ctx.textAlign = 'left'; ctx.fillText('LVOT', X(EV.avc) + 4, Math.min(dY(-0.5) + 4, box.y + box.h - 4)); ctx.textAlign = 'center'; }
   // IVRT: end of outflow to start of inflow
   ctx.strokeStyle = SC.cal;
   ctx.setLineDash([2, 3]);

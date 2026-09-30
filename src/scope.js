@@ -211,8 +211,12 @@ export function vscale(ctx, box, scale, base, step, unit = 'm/s', o = {}) {
   ctx.strokeStyle = SC.dim;
   ctx.textAlign = 'left';
   const x = box.x + box.w + 3;
-  // ticks on whole multiples of the step, both sides of the baseline
+  // the unit goes in the half without ticks: above a high baseline, below a low one
+  const uy = base < 0.5 ? box.y + 10 : box.y + box.h - 2;
+  // ticks on whole multiples of the step, both sides of the baseline; on a short strip only
+  // every second or third tick has a number, and none sits on the unit
   const n = Math.floor(scale / step + 1e-9);
+  const every = Math.max(1, Math.ceil(12 / (step * k)));
   for (let i = -n; i <= n; i++) {
     const v = i * step;
     const y = by - v * k;
@@ -221,10 +225,9 @@ export function vscale(ctx, box, scale, base, step, unit = 'm/s', o = {}) {
     ctx.moveTo(x - 3, y);
     ctx.lineTo(x + 1, y);
     ctx.stroke();
-    if (i !== 0) ctx.fillText(`${o.cm ? Math.round(v * 100) : v.toFixed(step < 1 ? 1 : 0)}`, x + 3, y + 3.5);
+    if (i !== 0 && i % every === 0 && Math.abs(y + 3.5 - uy) > 10) ctx.fillText(`${o.cm ? Math.round(v * 100) : v.toFixed(step < 1 ? 1 : 0)}`, x + 3, y + 3.5);
   }
-  // the unit goes in the half without ticks: above a high baseline, below a low one
-  ctx.fillText(unit, x + 3, base < 0.5 ? box.y + 10 : box.y + box.h - 2);
+  ctx.fillText(unit, x + 3, uy);
   ctx.restore();
 }
 

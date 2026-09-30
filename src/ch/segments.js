@@ -261,7 +261,17 @@ function echoView(sh, t, box, v, sc) {
   }
   ctx.restore();
   sh.text(v.name, box.x + 4, box.y + 16, { size: w < 200 ? 15 : 19, color: t.ink });
-  if (w >= 200) sh.text(`${spec.lname} · ${spec.rname}`, box.x + 4, box.y + 32, { family: SANS, weight: 400, size: 10.5, color: t.ink3 });
+  if (w < 200) return;
+  // the walls, left of the sector's edge and its segment numbers: on one line, or one wall a
+  // line, or not at all
+  const o = { family: SANS, weight: 400, size: 10.5, color: t.ink3 }, both = `${spec.lname} · ${spec.rname}`;
+  const room = (yb) => mp.cx - Math.max(0, yb + 3 - mp.top) * Math.tan(mp.half) - 14;
+  if (sh.fit([both, ''], room(32), o, 1).str === both) sh.text(both, box.x + 4, box.y + 32, o);
+  else {
+    const a = sh.fit([spec.lname, ''], room(32), o, 0.85), b = sh.fit([spec.rname, ''], room(45), o, 0.85);
+    const size = Math.min(a.size, b.size);
+    if (a.str && b.str) { sh.text(a.str, box.x + 4, box.y + 32, { ...o, size }); sh.text(b.str, box.x + 4, box.y + 45, { ...o, size }); }
+  }
 }
 
 function fillFor(t, score) {
@@ -270,7 +280,9 @@ function fillFor(t, score) {
 
 function bullseye(sh, t, cx, cy, R, sc, small = false, over = null) {
   const ctx = sh.ctx;
-  const num = small ? 9.5 : 11;
+  // a small map: the apical ring's numbers sit a quarter radius from the centre, so the type
+  // shrinks to keep them off the 17
+  const num = small ? clamp((0.25 * R - 1) / 1.2, 7.5, 9.5) : 11;
   const names = [];
   const rings = [
     { r0: 0.66, r1: 1, segs: [1, 2, 3, 4, 5, 6], a0: 60, n: 6 },
@@ -485,23 +497,39 @@ function draw(sh, t) {
   if (live) syncEcho();
   // the occlusion buttons sit over the top of the figure. Below them, two by two: the
   // bull's-eye, then the four-, two- and three-chamber views
-  const top = narrow ? 50 : 66, pad = narrow ? 6 : 14, gap = narrow ? 6 : 14;
+  // below the buttons, which wrap to two rows on a phone
+  const oc = sh.canvas.closest('figure')?.querySelector('.occl');
+  const ob = oc && oc.offsetParent ? (oc.getBoundingClientRect().bottom - sh.canvas.getBoundingClientRect().top) / (sh.z || 1) : 0;
+  const top = Math.max(narrow ? 50 : 66, Math.ceil(ob) + 8), pad = narrow ? 6 : 14, gap = narrow ? 6 : 14;
   const cw = (W - 2 * pad - gap) / 2, chh = (H - top - pad - gap) / 2;
   const cell = (i) => ({ x: pad + (i % 2) * (cw + gap), y: top + Math.floor(i / 2) * (chh + gap), w: cw, h: chh });
   const b = cell(0);
-  const R = narrow ? Math.min(b.w * 0.3, (b.h - 34) / 2) : Math.min(b.w * 0.3, (b.h - 116) / 2);
-  const cx = b.x + b.w / 2, cy = narrow ? b.y + b.h / 2 : b.y + 22 + R;
+  // the caption and the color key take 116 px; a short cell gives the whole of it to the map
+  // (the segment buttons under the controls carry the same colors)
+  const roomy = !narrow && (b.h - 116) / 2 >= 70;
+  const R = roomy ? Math.min(b.w * 0.3, (b.h - 116) / 2) : Math.min(b.w * 0.3, (b.h - 34) / 2);
+  const cx = b.x + b.w / 2, cy = roomy ? b.y + 22 + R : b.y + b.h / 2;
+  const small = !roomy && R < 90;
   layout.bull = { cx, cy, R };
-  bullseye(sh, t, cx, cy, R, S.sc, narrow, () => arteries(sh, t, cx, cy, R, st.culprit, narrow));
+  bullseye(sh, t, cx, cy, R, S.sc, small, () => arteries(sh, t, cx, cy, R, st.culprit, small));
   if (live) echo.views.forEach((v, i) => echoView(sh, t, cell(i + 1), v, S.sc));
   else ['A4C', 'A2C', 'A3C'].forEach((n, i) => apicalView(sh, t, cell(i + 1), n, S.sc, sys));
-  if (narrow) return;
-  sh.text('17 segments, seen from the apex; tap one to score it', cx, b.y + b.h - 30, { size: 15, align: 'center', color: t.ink2 });
-  // legend
-  const ly = b.y + b.h - 4, step = Math.min(124, b.w / 4);
-  [[1, 'normal'], [2, 'hypokinetic'], [3, 'akinetic'], [4, 'dyskinetic']].forEach(([k, name], i) => {
-    const lx = cx - 2 * step + 8 + i * step;
-    const ctx = sh.ctx;
+  if (!roomy) return;
+  const cap = sh.fit(['17 segments, seen from the apex; tap one to score it', '17 segments, seen from the apex'], b.w, { size: 15 }, 0.85);
+  sh.text(cap.str, cx, b.y + b.h - 30, { size: cap.size, align: 'center', color: t.ink2 });
+  // legend: one row, centred, its type smaller when the cell is narrow
+  const ctx = sh.ctx, keys = [[1, 'normal'], [2, 'hypokinetic'], [3, 'akinetic'], [4, 'dyskinetic']];
+  let fs = 12, widths = [];
+  for (; fs >= 10; fs -= 0.5) {
+    ctx.save();
+    ctx.font = `400 ${fs}px ${SANS}`;
+    widths = keys.map(([k, name]) => 22 + ctx.measureText(`${k} ${name}`).width);
+    ctx.restore();
+    if (widths.reduce((a, c) => a + c, 0) + 3 * 14 <= b.w) break;
+  }
+  const ly = b.y + b.h - 4;
+  let lx = cx - (widths.reduce((a, c) => a + c, 0) + 3 * 14) / 2;
+  keys.forEach(([k, name], i) => {
     ctx.save();
     ctx.fillStyle = fillFor(t, k) || t.paper2;
     ctx.fillRect(lx, ly - 10, 16, 12);
@@ -509,7 +537,8 @@ function draw(sh, t) {
     ctx.strokeRect(lx, ly - 10, 16, 12);
     ctx.restore();
     if (k === 4) { const p = new Path2D(); p.rect(lx, ly - 10, 16, 12); sh.hatch(p, 0.8, 4, t.ink, 0.8, 9, 0.6); }
-    sh.text(`${k} ${name}`, lx + 22, ly, { family: SANS, weight: 400, size: 12, color: t.ink2 });
+    sh.text(`${k} ${name}`, lx + 22, ly, { family: SANS, weight: 400, size: fs, color: t.ink2 });
+    lx += widths[i] + 14;
   });
 }
 

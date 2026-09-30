@@ -107,19 +107,25 @@ function burst(ctx, x, y, len, amp, cycles, color, alpha, vertical = true) {
 
 export function drawPulse(sh, t, st) {
   const W = sh.w, H = sh.h, ctx = sh.ctx;
-  const narrow = W < 700;
+  // the magnified pulse goes right of the scope only when there is room for it; else below
+  const narrow = W < 860 || H < 480;
   const P = physics(st);
   const s = narrow ? 0.9 : Math.max(0.9, Math.min(1.1, W / 1000));
 
   // geometry: the tissue column and the A-mode share one depth axis
   const top = narrow ? 46 : 96, bottom = narrow ? H - 126 : H - 44;
   const Y = (d) => top + (d / DMAX) * (bottom - top);
-  const colX = narrow ? 34 : 64, colW = narrow ? W * 0.34 : Math.min(210, W * 0.2);
+  const colW = narrow ? Math.min(W * 0.34, 250) : Math.min(210, W * 0.2);
   const gutter = narrow ? 14 : 112;               // room for the layer names
-  const aX = colX + colW + gutter, aW = narrow ? W - aX - 40 : Math.min(230, W * 0.22);
+  const aW = narrow ? Math.min(W - 34 - colW - gutter - 40, 340) : Math.min(230, W * 0.22);
+  // a wide narrow-layout figure keeps its column and scope at a readable size, centred
+  const ox = narrow ? Math.max(0, (W - 34 - colW - gutter - 40 - aW) / 2) : 0;
+  const colX = (narrow ? 34 : 64) + ox;
+  const aX = colX + colW + gutter;
   const bX = aX + aW + 8, bW = narrow ? 14 : 18;
 
-  if (!narrow) sh.text('one scan line', colX - 4, top - 50, { size: 22 * s });
+  // above the probe cable
+  if (!narrow) sh.text('one scan line', colX - 4, top - 74, { size: 22 * s });
 
   // depth ruler
   for (let d = 0; d <= DMAX; d++) {
@@ -147,7 +153,10 @@ export function drawPulse(sh, t, st) {
         ctx.restore();
         sh.text(L.name, colX + 6, (y0 + y1) / 2 + 3, { size: 13 * s, color: t.ink });
       }
-    } else sh.text(L.name, colX + colW + 8, (y0 + y1) / 2 + 5, { size: 16 * s, color: t.ink2 });
+    } else {
+      const f = sh.fit(L.name, gutter - 14, { size: 16 * s });
+      sh.text(f.str, colX + colW + 8, (y0 + y1) / 2 + 5, { size: f.size, color: t.ink2 });
+    }
   });
   sh.rect(colX, Y(0), colW, Y(DMAX) - Y(0), { width: 1.2, seed: 99, rough: 0.7 });
   transducer(sh, colX + colW / 2, Y(0) - 2, Math.min(56, colW * 0.4), t);
@@ -174,7 +183,16 @@ export function drawPulse(sh, t, st) {
     burst(ctx, cx + 16, Y(dBack), 18, 3 + 7 * a, st.cycles * 1.5, t.flag, 0.25 + 0.7 * a);
   }
   if (!reducedMotion && dPulse < DMAX) {
-    sh.text('pulse', cx - 16, Y(dPulse) + 4, { size: 15 * s, align: 'right', color: t.accent });
+    // narrow: the layer names fill the left of the column, so the tag goes right of the echoes
+    if (narrow) {
+      const tw = sh.measure('pulse', { size: 15 * s });
+      ctx.save();
+      ctx.fillStyle = t.paper2;
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(cx + 28, Y(dPulse) - 8, tw + 6, 15);
+      ctx.restore();
+      sh.text('pulse', cx + 31, Y(dPulse) + 4, { size: 15 * s, color: t.accent });
+    } else sh.text('pulse', cx - 16, Y(dPulse) + 4, { size: 15 * s, align: 'right', color: t.accent });
   }
 
   // ---------------- A-mode (scanner panel), filled as echoes arrive
@@ -235,7 +253,7 @@ export function drawPulse(sh, t, st) {
   if (!narrow) sh.label(lost ? 'posterior wall: lost in noise' : 'posterior wall echo', ax1 - 20, Y(PW_DEPTH), aX + aW + bW + 40, Y(PW_DEPTH) + 44, { size: 15 * s, color: lost ? t.flag : t.ink });
 
   // ---------------- zoom: the pulse to scale
-  if (narrow) drawZoomStrip(sh, t, st, P, { x: 16, y: bottom + 34, w: W - 32, h: H - bottom - 44 });
+  if (narrow) drawZoomStrip(sh, t, st, P, { x: 16 + ox, y: bottom + 34, w: W - 32 - 2 * ox, h: H - bottom - 44 });
   else {
     const zx = bX + bW + 70, zw = W - zx - 24, zh = Math.min(420, (bottom - top) * 0.72);
     if (zw > 160) drawZoom(sh, t, st, P, { x: zx, y: top, w: zw, h: zh }, s);
@@ -273,20 +291,27 @@ function drawZoomStrip(sh, t, st, P, B) {
   pulsePath(ctx, X2, y, P.lambda, st.cycles, amp * 0.8, 0.1, { sep: 2 * gap });
   ctx.restore();
   sh.text(`λ ${P.lambda.toFixed(2)} mm`, B.x, B.y + B.h - 6, { size: 14 });
-  sh.text(`reflectors 0.5 mm apart`, B.x + half + 16, B.y - 10, { size: 15, color: t.ink2 });
+  const rt = sh.fit(['reflectors 0.5 mm apart', '0.5 mm apart'], B.x + B.w + 8 - (B.x + half + 16), { size: 15 });
+  sh.text(rt.str, B.x + half + 16, B.y - 10, { size: rt.size, color: t.ink2 });
   sh.text(ok ? 'resolved' : 'one blur', B.x + half + 16, B.y + B.h - 6, { size: 14, color: ok ? t.ink : t.flag });
 }
 
 function drawZoom(sh, t, st, P, B, s) {
   const ctx = sh.ctx;
-  sh.text('the pulse, magnified', B.x, B.y - 8, { size: 20 * s });
+  const room = B.w + 16;                          // text may run into the right margin
+  const put = (forms, x, y, o, max = room) => { const f = sh.fit(forms, max, o, 0.8); sh.text(f.str, x, y, { ...o, size: f.size }); };
+  put('the pulse, magnified', B.x, B.y - 8, { size: 20 * s });
   const mm = 4;                                   // mm across the box
   const X = (x) => B.x + (x / mm) * B.w;
+  // rows: fixed gaps for the text, the waves take what height is left
+  const amp = clamp((B.h - 178) / 4, 12, 34);
+  const extra = Math.max(0, B.h - (4 * amp + 178));
+  const y1 = B.y + amp + 31 + extra * 0.3;
+  const y2 = y1 + 2 * amp + 78 + extra * 0.4;
   // scale bar
   sh.line(X(0), B.y + B.h - 6, X(1), B.y + B.h - 6, { width: 1.6, seed: 31, rough: 0.3 });
   sh.text('1 mm', X(0.5), B.y + B.h - 12, { family: MONO, weight: 400, size: 10, align: 'center', color: t.ink2 });
   // the transmitted pulse
-  const y1 = B.y + B.h * 0.24, amp = Math.min(34, B.h * 0.1);
   const wave = (x0, lam, n, a, col, alpha) => {
     const pts = [];
     const L = n * lam;
@@ -310,17 +335,17 @@ function drawZoom(sh, t, st, P, B, s) {
   const c1 = x0 + P.lambda * 0.25, c2 = c1 + P.lambda;
   if (st.cycles >= 2) {
     sh.line(X(c1), y1 - amp - 10, X(c2), y1 - amp - 10, { width: 1, seed: 32, rough: 0.3, stroke: t.ink2 });
-    sh.text(`λ ${P.lambda.toFixed(2)} mm`, (X(c1) + X(c2)) / 2, y1 - amp - 16, { size: 16 * s, align: 'center' });
+    const lx = Math.max(B.x + 20, (X(c1) + X(c2)) / 2);
+    put(`λ ${P.lambda.toFixed(2)} mm`, lx, y1 - amp - 16, { size: 16 * s, align: 'center' });
   } else {
-    sh.text(`λ ${P.lambda.toFixed(2)} mm`, X(x0), y1 - amp - 16, { size: 16 * s });
+    put(`λ ${P.lambda.toFixed(2)} mm`, X(x0), y1 - amp - 16, { size: 16 * s });
   }
   sh.line(X(x0), y1 + amp + 12, X(x0 + P.spl), y1 + amp + 12, { width: 1, seed: 33, rough: 0.3, stroke: t.ink2 });
-  sh.text(`pulse length ${P.spl.toFixed(2)} mm`, X(x0), y1 + amp + 30, { size: 16 * s });
+  put(`pulse length ${P.spl.toFixed(2)} mm`, X(x0), y1 + amp + 30, { size: 16 * s }, B.x + room - X(x0));
 
   // two reflectors 0.5 mm apart and their echoes
   const gap = 0.5;
-  const y2 = B.y + B.h * 0.66;
-  sh.text(`two reflectors ${gap} mm apart`, B.x, y2 - amp - 26, { size: 17 * s, color: t.ink2 });
+  put([`two reflectors ${gap} mm apart`, `reflectors ${gap} mm apart`], B.x, y2 - amp - 26, { size: 17 * s, color: t.ink2 });
   // echoes are spaced by twice the gap in the round-trip path
   const sep = 2 * gap;
   const ok = gap >= P.axial;
@@ -338,8 +363,9 @@ function drawZoom(sh, t, st, P, B, s) {
   pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
   ctx.stroke();
   ctx.restore();
-  sh.text(ok ? 'two separate echoes' : 'the echoes overlap: one blur', X(x0), y2 + amp + 20, { size: 17 * s, color: ok ? t.ink : t.flag });
-  sh.text(`axial resolution = pulse length ÷ 2 = ${P.axial.toFixed(2)} mm`, B.x, y2 + amp + 44, { family: SANS, weight: 400, size: 12, color: t.ink2 });
+  put(ok ? ['two separate echoes', 'two echoes'] : ['the echoes overlap: one blur', 'overlap: one blur'], X(x0), y2 + amp + 20, { size: 17 * s, color: ok ? t.ink : t.flag }, B.x + room - X(x0));
+  const ax = P.axial.toFixed(2);
+  put([`axial resolution = pulse length ÷ 2 = ${ax} mm`, `axial resolution = ${ax} mm`], B.x, y2 + amp + 44, { family: SANS, weight: 400, size: 12, color: t.ink2 });
 }
 
 // ---------------------------------------------------------------- chapter

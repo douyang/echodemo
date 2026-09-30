@@ -5,7 +5,7 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { RR, EV } from '../cyclemodel.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit } from '../sev.js';
+import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, waveLetter } from '../sev.js';
 import { drawA4C, drawIVC, drawPSAXpm, cal, measures } from '../echo2d.js';
 import { rapFromIvc } from '../norms.js';
 import { BSA } from './pressure.js';
@@ -71,7 +71,8 @@ function a4c(ctx, box, m, t) {
     ma: 3.1, ta: m.ta, tv: { gap: m.gap, thick: 0.1 },
   };
   const sys = t >= EV.mvc && t <= EV.mvo + 10;
-  const a = sys ? Math.pow(Math.sin(Math.PI * (t - EV.mvc) / (EV.mvo + 10 - EV.mvc)), 0.3) : 0;
+  // the sine at the closing instant can round below zero, and a fractional power of that is NaN
+  const a = sys ? Math.pow(Math.max(0, Math.sin(Math.PI * (t - EV.mvc) / (EV.mvo + 10 - EV.mvc))), 0.3) : 0;
   const raArea = (Math.PI / 4) * rwMax * rlMax;
   const jA = Math.min(m.jetA, raArea * 0.8);
   const jl = Math.min(rlMax * 0.95, Math.sqrt((jA / 0.55) * 1.2));
@@ -85,7 +86,7 @@ function a4c(ctx, box, m, t) {
         const l = Math.hypot(ax[0], ax[1]) || 1;
         cal(c, F, O, [O[0] + (ax[0] / l) * m.r, O[1] + (ax[1] / l) * m.r], '', { solid: true });
       }
-      measures(c, F, [`RV base ${m.rvb.toFixed(1)} cm`, `annulus ${m.ta.toFixed(1)} cm`, `VC ${m.vc.toFixed(2)} cm`]);
+      measures(c, F, [`RV base ${m.rvb.toFixed(1)} cm`, [`annulus ${m.ta.toFixed(1)} cm`, `TA ${m.ta.toFixed(1)} cm`], `VC ${m.vc.toFixed(2)} cm`]);
     },
   });
 }
@@ -116,7 +117,7 @@ function trCW(ctx, P, m) {
     ctx.restore();
   }
   vscale(ctx, bx, 3.5, 0.06, 1);
-  note(ctx, bx, m.eroa > 0.005 ? fit(P.w, `peak ${m.v.toFixed(1)} m/s · RVSP ${Math.round(m.rvsp)} mmHg${tri > 0.5 ? ' · triangular' : ''}`, `${m.v.toFixed(1)} m/s`) : 'no regurgitation', 'bottom');
+  note(ctx, bx, m.eroa > 0.005 ? [`peak ${m.v.toFixed(1)} m/s · RVSP ${Math.round(m.rvsp)} mmHg${tri > 0.5 ? ' · triangular' : ''}`, `${m.v.toFixed(1)} m/s`] : 'no regurgitation', 'bottom');
   return bx;
 }
 
@@ -139,10 +140,12 @@ function hvPW(ctx, P, m) {
   ctx.font = `500 11px ${MONO}`;
   ctx.fillStyle = SC.cal;
   ctx.textAlign = 'center';
-  ctx.fillText('S', X(230), S <= 0 ? y0 - S * k + 13 : y0 - S * k - 5);
-  ctx.fillText('D', X(540), y0 - D * k + 13);
+  const letters = [
+    waveLetter(ctx, 'S', X(230), S <= 0 ? y0 - S * k + 13 : y0 - S * k - 5),
+    waveLetter(ctx, 'D', X(540), y0 - D * k + 13),
+  ];
   ctx.restore();
-  note(ctx, bx, S > 0.02 ? 'systolic flow reversal' : Math.abs(S) < Math.abs(D) ? 'systolic blunting' : 'systolic dominance', 'top');
+  note(ctx, bx, S > 0.02 ? ['systolic flow reversal', 'S reversed'] : Math.abs(S) < Math.abs(D) ? ['systolic blunting', 'S blunted'] : 'systolic dominance', 'auto', letters);
   return bx;
 }
 

@@ -4,7 +4,7 @@
 // systolic function (TAPSE, tissue Doppler S′, fractional area change).
 import { Sheet, clamp, mix, MONO, SANS } from '../sketch.js';
 import { reducedMotion } from '../state.js';
-import { panel, spectral, vscale, SC, caliper } from '../scope.js';
+import { panel, spectral, vscale, SC, caliper, tagBox } from '../scope.js';
 import { cycleAt, RR, EV } from '../cyclemodel.js';
 import { lvefBand, hfCategory, tapseGrade, sPrimeGrade, facGrade } from '../norms.js';
 import { drawA4C, drawA2C, lvTrace, lvWidth, phase, measures } from '../echo2d.js';
@@ -210,10 +210,9 @@ function drawRV(sh, t, W, H, narrow) {
     // caliper from end-diastole to peak systole in the first beat
     const xb = bx.x + (EV_ES / (2.2 * RR)) * bx.w;
     caliper(ctx, xb, y0, xb, y0 + st.tapse * pxmm, { solid: true });
-    ctx.font = `500 11px ${MONO}`;
-    ctx.fillStyle = SC.cal;
-    ctx.fillText(`${st.tapse.toFixed(1)} mm`, xb + 8, y0 + st.tapse * pxmm / 2 + 4);
     ctx.restore();
+    // on a dark box, as on the scanner: the trace runs behind it
+    tagBox(ctx, xb + 6, y0 + st.tapse * pxmm / 2, [`${st.tapse.toFixed(1)} mm`], { size: 11 });
   }
   // tissue Doppler S′
   {
@@ -236,7 +235,7 @@ function drawRV(sh, t, W, H, narrow) {
     ctx.save();
     ctx.font = `500 11px ${MONO}`;
     ctx.fillStyle = SC.cal;
-    ctx.fillText(`S′ ${st.sPrime.toFixed(1)} cm/s`, xs + 20, yb - sP * k + 4);
+    ctx.fillText(`S′ ${st.sPrime.toFixed(1)} cm/s`, xs + 23, yb - sP * k + 4);
     ctx.fillText('e′', bx.x + (535 / (2 * RR)) * bx.w - 4, yb + eP * k + 14);
     ctx.fillText('a′', bx.x + (815 / (2 * RR)) * bx.w - 4, yb + aP * k + 14);
     ctx.restore();
@@ -260,7 +259,8 @@ function drawRV(sh, t, W, H, narrow) {
     sh.poly(rvPath(1), { width: 1.6, rough: 0.5, seed: 91, stroke: t.ink });
     sh.poly(rvPath(kEs * kEs), { width: 1.6, rough: 0.5, seed: 92, stroke: t.flag, fill: t.flag2, fillStyle: 'hachure', gap: 5 });
     sh.text('end-diastole', cx + 1.6 * sc, cy - 2.2 * sc, { size: 15, color: t.ink });
-    sh.text('end-systole', cx + 1.2 * sc, cy + 0.2 * sc, { size: 15, color: t.flag });
+    // right of both outlines; the color ties it to its shape
+    sh.text('end-systole', cx + 1.6 * sc, cy + 0.2 * sc, { size: 15, color: t.flag });
     sh.text(`FAC = (EDA − ESA) / EDA = ${st.fac}%`, x + 8, y + bh - 10, { family: MONO, weight: 500, size: 11, color: t.ink2 });
   }
   if (!narrow) sh.text('Right ventricle, apical four-chamber, RV focused', 24, 44, { size: 22 });

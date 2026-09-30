@@ -135,7 +135,7 @@ function a4c(ctx, box, v, tt) {
   };
   drawA4C(ctx, box, g, {
     t: tt, depth: 16, title: fit(box.w, 'APICAL FOUR-CHAMBER', 'A4C'),
-    after: (c, F) => measures(c, F, [`LA volume index ${Math.round(v.lavi)} mL/m²`]),
+    after: (c, F) => measures(c, F, [[`LA volume index ${Math.round(v.lavi)} mL/m²`, `LAVi ${Math.round(v.lavi)} mL/m²`]]),
   });
 }
 
@@ -144,7 +144,7 @@ function inflowPanel(ctx, P, v) {
   const bx = inner(P);
   spectral(ctx, bx, { fn: (u) => inflow(v)(u * 2 * RR), scale: 1.4, base: 0.92, mode: 'pw', broad: 0.1, key: `inflow|${st.fstate.toFixed(2)}`, seed: 2 });
   vscale(ctx, bx, 1.4, 0.92, 0.5);
-  note(ctx, bx, fit(P.w, `E ${v.E.toFixed(2)} · A ${v.A.toFixed(2)} m/s · E/A ${v.ea.toFixed(2)} · DT ${Math.round(v.DT)} ms`, `E/A ${v.ea.toFixed(2)}`), 'top');
+  note(ctx, bx, [`E ${v.E.toFixed(2)} · A ${v.A.toFixed(2)} m/s · E/A ${v.ea.toFixed(2)} · DT ${Math.round(v.DT)} ms`, `E/A ${v.ea.toFixed(2)}`], 'top');
   return bx;
 }
 
@@ -156,7 +156,7 @@ function tdiPanel(ctx, P, v) {
   for (const [i, eP, name] of [[0, v.sep, 'septal'], [1, v.lat, 'lateral']]) {
     const bx = { x: bx0.x + i * (hw + 8), y: bx0.y, w: hw, h: bx0.h };
     spectral(ctx, bx, { fn: (u) => tissue(v, eP)(u * RR), scale: 0.18, base: 0.4, mode: 'pw', broad: 0.25, key: `tdi|${name}|${eP.toFixed(2)}`, seed: 6 + i });
-    note(ctx, bx, fit(P.w, `e′ ${eP.toFixed(1)} · E/e′ ${((v.E * 100) / eP).toFixed(1)}`, `e′ ${eP.toFixed(1)}`), 'bottom');
+    note(ctx, bx, [`e′ ${eP.toFixed(1)} · E/e′ ${((v.E * 100) / eP).toFixed(1)}`, `e′ ${eP.toFixed(1)}`], 'bottom');
     out.push(bx);
   }
   return out;
@@ -174,7 +174,7 @@ function pvPanel(ctx, P, v) {
   };
   spectral(ctx, bx, { fn, scale: 1.0, base: 0.62, mode: 'pw', broad: 0.12, key: `fpv|${S}|${D}|${Ar}`, seed: 21 });
   vscale(ctx, bx, 1.0, 0.62, 0.5, '');
-  note(ctx, bx, `S/D ${v.sd.toFixed(2)} · Ar ${Math.round(v.ar * 100)} cm/s`, 'top');
+  note(ctx, bx, [`S/D ${v.sd.toFixed(2)} · Ar ${Math.round(v.ar * 100)} cm/s`, `S/D ${v.sd.toFixed(2)}`], 'top');
   return bx;
 }
 
@@ -229,7 +229,8 @@ function draw(sh, t) {
   }
   const colL = { x: 16, y: 36, w: W * 0.45 - 16, h: H - 48 };
   const colR = { x: W * 0.465, y: 36, w: W * 0.535 - 18, h: H - 48 };
-  const vh = Math.min(colL.w * 1.05, colL.h * 0.54);
+  // the flowchart needs about 210 px; a short figure takes it from the echo view
+  const vh = Math.min(colL.w * 1.05, colL.h * 0.54, colL.h - 212);
   a4c(ctx, { x: colL.x, y: colL.y, w: colL.w, h: vh }, v, tt);
   flowchart(sh, t, colL.x, colL.y + vh + 18, colL.w, colL.h - vh - 22, r);
   const [p1, p2, p3, p4] = rows(colR, [1, 0.95, 1, 0.95], 10);

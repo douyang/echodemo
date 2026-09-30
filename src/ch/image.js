@@ -47,7 +47,8 @@ function draw(sh, t) {
   const narrow = W < 700;
   const T = timing(st);
   const sw = narrow ? W - 24 : Math.min(W * 0.6, (H - 70) * 1.35);
-  const sh0 = narrow ? H * 0.64 : H - 70;
+  // narrow: the frame timing goes under the image and needs 124 px
+  const sh0 = narrow ? Math.min(H * 0.64, H - 124) : H - 70;
   const x0 = narrow ? 12 : 16, y0 = narrow ? 8 : 30;
   const E = frame(Math.round(sw), Math.round(sh0));
   if (!E) {
@@ -124,7 +125,8 @@ function draw(sh, t) {
     ctx.moveTo(x + 2, y);
     ctx.lineTo(x + 2 + (d % 5 ? 3.5 : 7), y);
     ctx.stroke();
-    if (d % 5 === 0) ctx.fillText(String(d), x + 12, y + 3.5);
+    // the focus marker takes the place of a number it would cover
+    if (d % 5 === 0 && Math.abs(d - st.focus) * Math.cos(half) * m.scale > 9) ctx.fillText(String(d), x + 12, y + 3.5);
   }
   const fy = top + Math.cos(half) * st.focus * m.scale, fx = cx + Math.sin(half) * st.focus * m.scale;
   ctx.fillStyle = t.accent;
@@ -164,9 +166,13 @@ function drawTiming(sh, t, T, x, y, w, narrow) {
   ctx.globalAlpha = 0.35;
   ctx.fillRect(x, by, w / n, bh);
   ctx.restore();
-  sh.text(`${n} lines × ${T.tLine.toFixed(0)} µs = ${T.frameMs.toFixed(1)} ms`, x, by + bh + 20, { family: MONO, weight: 500, size: narrow ? 11 : 12 });
-  sh.text(`${T.fps.toFixed(0)} frames per second`, x, by + bh + (narrow ? 38 : 44), { size: narrow ? 16 : 20, color: T.fps < 30 ? t.flag : t.ink });
-  if (!reducedMotion) sh.text(`the sweep is shown ${SLOW}× slower: ${((SLOW * T.frameMs) / 1000).toFixed(1)} s a frame`, x, by + bh + (narrow ? 54 : 64), { family: MONO, weight: 400, size: narrow ? 10 : 11, color: t.ink3 });
+  // each line fits the width, up to the figure's right margin
+  const room = sh.w - 8 - x;
+  const put = (forms, yy, o) => { const f = sh.fit(forms, room, o, 0.8); sh.text(f.str, x, yy, { ...o, size: f.size }); };
+  put([`${n} lines × ${T.tLine.toFixed(0)} µs = ${T.frameMs.toFixed(1)} ms`, `${n} × ${T.tLine.toFixed(0)} µs = ${T.frameMs.toFixed(1)} ms`], by + bh + 20, { family: MONO, weight: 500, size: narrow ? 11 : 12 });
+  put(`${T.fps.toFixed(0)} frames per second`, by + bh + (narrow ? 38 : 44), { size: narrow ? 16 : 20, color: T.fps < 30 ? t.flag : t.ink });
+  const slow = ((SLOW * T.frameMs) / 1000).toFixed(1);
+  if (!reducedMotion) put([`the sweep is shown ${SLOW}× slower: ${slow} s a frame`, `shown ${SLOW}× slower: ${slow} s a frame`, `${SLOW}× slower: ${slow} s a frame`], by + bh + (narrow ? 54 : 64), { family: MONO, weight: 400, size: narrow ? 10 : 11, color: t.ink3 });
 }
 
 function drawBeam(sh, t, x, y, w, h) {
@@ -186,9 +192,10 @@ function drawBeam(sh, t, x, y, w, h) {
   sh.hatch(path, -0.8, 4.5, t.accent, 0.8, 21, 0.5);
   sh.curve(L, { width: 1.3, seed: 22, rough: 0.5 });
   sh.curve(Rr, { width: 1.3, seed: 23, rough: 0.5 });
-  sh.text('narrowest at the focus:', cxb + half(F) + 12, Y(F) - 4, { size: 16 });
-  sh.text('sharpest side-to-side detail', cxb + half(F) + 12, Y(F) + 14, { size: 16, color: t.ink2 });
-  if (D - F > D * 0.25) sh.text('wider beam, more blur', cxb + half(D) + 10, Y(D) - 4, { size: 16, color: t.ink2 });
+  const put = (forms, xx, yy, o) => { const f = sh.fit(forms, sh.w - 8 - xx, o, 0.8); sh.text(f.str, xx, yy, { ...o, size: f.size }); };
+  put(['narrowest at the focus:', 'narrowest at focus:'], cxb + half(F) + 12, Y(F) - 4, { size: 16 });
+  put(['sharpest side-to-side detail', 'sharpest lateral detail'], cxb + half(F) + 12, Y(F) + 14, { size: 16, color: t.ink2 });
+  if (D - F > D * 0.25) put(['wider beam, more blur', 'wider, more blur'], cxb + half(D) + 10, Y(D) - 4, { size: 16, color: t.ink2 });
   ctx.save();
   ctx.fillStyle = t.accent;
   ctx.beginPath();
@@ -202,10 +209,12 @@ function drawBeam(sh, t, x, y, w, h) {
 }
 
 // ---------------------------------------------------------------- artifacts
-function chip(ctx, t, text, x, y) {
+/** A label on the image, kept inside the figure and left of maxX (the depth scale). */
+function chip(ctx, t, text, x, y, maxX = Infinity) {
   ctx.save();
   ctx.font = `600 12px ${SANS}`;
-  const w = ctx.measureText(text).width + 12;
+  const w = chipW(ctx, text), cw = ctx.canvas.width / (ctx.getTransform().a || 1);
+  x = Math.max(w / 2 + 4, Math.min(cw - w / 2 - 4, maxX - w / 2, x));
   ctx.fillStyle = 'rgba(8,10,12,0.72)';
   ctx.fillRect(x - w / 2, y - 9, w, 18);
   ctx.fillStyle = '#ffe89a';
@@ -213,6 +222,13 @@ function chip(ctx, t, text, x, y) {
   ctx.textBaseline = 'middle';
   ctx.fillText(text, x, y + 0.5);
   ctx.restore();
+}
+function chipW(ctx, text) {
+  ctx.save();
+  ctx.font = `600 12px ${SANS}`;
+  const w = ctx.measureText(text).width + 12;
+  ctx.restore();
+  return w;
 }
 
 function drawArtifact(ctx, t, E, x0, y0, cx, top, R, half, Xp, Yp, narrow) {
@@ -302,15 +318,27 @@ function drawArtifact(ctx, t, E, x0, y0, cx, top, R, half, Xp, Yp, narrow) {
       }
       ctx.restore();
       ctx.restore();
-      chip(ctx, t, 'mirror image', Xp(0), Yp(vm + 2.6));
+      chip(ctx, t, 'mirror image', Xp(0), Yp(vm + 2.6), cx + Math.tan(half) * Math.max(0, Yp(vm + 2.6) + 9 - top));
       return;
     }
   }
   ctx.restore();
-  const [lx, ly] = pt(rv + (kind === 'lobe' ? 0 : 2.4), kind === 'lobe' ? av - 0.5 : av);
-  chip(ctx, t, { shadow: 'acoustic shadow', reverb: 'reverberations', lobe: 'side-lobe arc' }[kind], lx, ly);
-  const [mx, my] = pt(rv - 0.9, av);
-  chip(ctx, t, 'mechanical valve', mx, my);
+  // the valve's label above the ring; the artifact's where it shows, moved under the valve's
+  // label when the two would touch
+  const text = { shadow: 'acoustic shadow', reverb: 'reverberations', lobe: 'side-lobe arc' }[kind];
+  // the sector's right edge at a height: the depth scale starts there
+  const edge = (y) => cx + Math.tan(half) * Math.max(0, y + 9 - top);
+  const cw = ctx.canvas.width / (ctx.getTransform().a || 1);
+  const clampX = (s, x, y) => { const w = chipW(ctx, s); return Math.max(w / 2 + 4, Math.min(cw - w / 2 - 4, edge(y) - w / 2, x)); };
+  let [mx, my] = pt(rv - 0.9, av), [lx, ly] = kind === 'lobe' ? pt(rv + 1.1, av - 0.5) : pt(rv + 2.4, av);
+  mx = clampX('mechanical valve', mx, my);
+  lx = clampX(text, lx, ly);
+  if (Math.abs(lx - mx) < (chipW(ctx, text) + chipW(ctx, 'mechanical valve')) / 2 + 4 && Math.abs(ly - my) < 22) {
+    ly = my + 22;
+    lx = clampX(text, mx, ly);
+  }
+  chip(ctx, t, text, lx, ly, edge(ly));
+  chip(ctx, t, 'mechanical valve', mx, my, edge(my));
 }
 
 export default {

@@ -352,12 +352,14 @@ export class Labels {
   }
   /**
    * Tags sit in two columns beside the heart, like an anatomy plate.
-   * items: [{id, x, y, text, sub, flag, side?}] in px; box: screen box of the heart.
+   * items: [{id, x, y, text, sub, flag, side?}] in px, the most important first; box: screen box
+   * of the heart; keep: boxes {x0, y0, x1, y1} (px) the tags must leave clear, such as the pane's
+   * name and note. A column too short for all its tags shows the most important ones.
    */
-  update(items, box, w, h) {
+  update(items, box, w, h, keep = []) {
     const seen = new Set();
     const tags = [];
-    for (const it of items) {
+    for (const [order, it] of items.entries()) {
       seen.add(it.id);
       let n = this.nodes.get(it.id);
       if (!n) {
@@ -402,7 +404,7 @@ export class Labels {
         n.html = html;
         n.cur = 0;
       }
-      tags.push({ it, n });
+      tags.push({ it, n, order });
     }
     if (!box) box = { x0: w * 0.3, x1: w * 0.7, y0: 0, y1: h };
 
@@ -430,25 +432,41 @@ export class Labels {
       t.hh = n.vars[k].h / 2 + 3;
     }
     for (const col of [true, false]) {
-      const list = tags.filter((t) => t.left === col).sort((a, b) => a.it.y - b.it.y);
+      let list = tags.filter((t) => t.left === col).sort((a, b) => a.it.y - b.it.y);
       for (const t of list) {
         const cx = col ? box.x0 - 16 - t.hw : box.x1 + 16 + t.hw;
         t.x = Math.max(pad + t.hw, Math.min(w - pad - t.hw, cx));
         t.y = t.it.y;
       }
-      // stack without overlap, top to bottom, then pull back inside the figure
+      // the column's room: below what it must leave clear at the top, above it at the bottom
+      const cx0 = Math.min(...list.map((t) => t.x - t.hw)), cx1 = Math.max(...list.map((t) => t.x + t.hw));
+      let top = pad, bottom = h - pad;
+      for (const k of keep) {
+        if (k.x1 < cx0 || k.x0 > cx1) continue;
+        if ((k.y0 + k.y1) / 2 < h / 2) top = Math.max(top, k.y1 + 4);
+        else bottom = Math.min(bottom, k.y0 - 4);
+      }
+      // too many for the room: the least important go
+      const height = (l) => l.reduce((s, t) => s + 2 * t.hh, 0);
+      while (list.length > 1 && height(list) > bottom - top) {
+        const drop = list.reduce((a, b) => (b.order > a.order ? b : a));
+        drop.hidden = true;
+        list = list.filter((t) => t !== drop);
+      }
+      // stack without overlap, top to bottom, then pull back inside the room
       for (let i = 0; i < list.length; i++) {
-        const lo = i ? list[i - 1].y + list[i - 1].hh + list[i].hh : pad + list[i].hh;
+        const lo = i ? list[i - 1].y + list[i - 1].hh + list[i].hh : top + list[i].hh;
         list[i].y = Math.max(list[i].y, lo);
       }
       for (let i = list.length - 1; i >= 0; i--) {
-        const hi = i < list.length - 1 ? list[i + 1].y - list[i + 1].hh - list[i].hh : h - pad - list[i].hh;
+        const hi = i < list.length - 1 ? list[i + 1].y - list[i + 1].hh - list[i].hh : bottom - list[i].hh;
         list[i].y = Math.min(list[i].y, hi);
       }
     }
 
     for (const t of tags) {
       const { it, n } = t;
+      if (t.hidden) { n.tag.style.display = n.path.style.display = n.dot.style.display = 'none'; continue; }
       n.tag.classList.toggle('is-left', t.left);
       n.tag.style.left = `${t.x}px`;
       n.tag.style.top = `${t.y}px`;

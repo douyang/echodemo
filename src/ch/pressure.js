@@ -77,7 +77,8 @@ function draw(sh, t) {
   const hm = (F.dm / 2) * pxcm;
   caliper(ctx, cx, yc - hm, cx, yc + hm, { color: t.flag, solid: true, size: 5 });
   sh.text(`${F.dm.toFixed(2)} cm`, cx - 8, yc + 5, { family: MONO, weight: 500, size: 12, color: t.flag, align: 'right' });
-  if (Math.abs(st.calErr) > 0.01) sh.text(`true ${F.d.toFixed(2)} cm`, cx + 8, yc + 5, { family: MONO, weight: 400, size: 11, color: t.ink2 });
+  // under the measured value, inside the tract: to the right it would run into the valve
+  if (Math.abs(st.calErr) > 0.01) sh.text(`true ${F.d.toFixed(2)} cm`, cx - 8, yc + 19, { family: MONO, weight: 400, size: 11, color: t.ink2, align: 'right' });
   // the two areas
   const ay = narrow ? yc : yc + half + 70;
   const ar = (dd) => (dd / 2) * (narrow ? 26 : 34);
@@ -123,8 +124,12 @@ function draw(sh, t) {
     ctx.stroke();
     ctx.font = `500 11px ${MONO}`;
     ctx.fillStyle = SC.cal;
-    ctx.fillText(`VTI ${F.vti.toFixed(1)} cm`, x0 + span * 0.42, yb + F.vpk * k * 0.6);
-    ctx.fillText(`peak ${F.vpk.toFixed(2)} m/s`, x0 + span * 0.42, yb + F.vpk * k * 0.6 + 15);
+    // a short strip takes the two readings on one line, beside the envelope
+    if (box.h < 60) ctx.fillText(`VTI ${F.vti.toFixed(1)} cm · peak ${F.vpk.toFixed(2)} m/s`, x0 + span * 0.42, box.y + box.h * 0.55 + 4);
+    else {
+      ctx.fillText(`VTI ${F.vti.toFixed(1)} cm`, x0 + span * 0.42, yb + F.vpk * k * 0.6);
+      ctx.fillText(`peak ${F.vpk.toFixed(2)} m/s`, x0 + span * 0.42, yb + F.vpk * k * 0.6 + 15);
+    }
     ctx.restore();
   }
 
@@ -146,7 +151,9 @@ function draw(sh, t) {
   ctx.save();
   ctx.font = `500 11px ${MONO}`;
   ctx.fillStyle = SC.cal;
-  ctx.fillText(`${st.trV.toFixed(2)} m/s → 4V² = ${F.grad.toFixed(0)} mmHg`, pkx + 48, tyb + st.trV * tk + 4);
+  // the reading on the panel's title line, clear of both beats' spectra
+  ctx.textAlign = 'right';
+  ctx.fillText(`${st.trV.toFixed(2)} m/s → 4V² = ${F.grad.toFixed(0)} mmHg`, rx + rw - 10, ry + 17);
   ctx.restore();
 
   // IVC with a sniff every four seconds
@@ -164,9 +171,13 @@ function draw(sh, t) {
   sh.text('RA', ivx + ivw + 8, icy + 5, { size: 16 * s, color: t.ink2 });
   const ix = ivx + ivw - 1.5 * ipx;
   caliper(ctx, ix, icy - (dNow / 2) * ipx, ix, icy + (dNow / 2) * ipx, { color: t.flag, solid: true });
-  if (narrow) sh.text(`${dNow.toFixed(2)} cm${sniff > 0.3 ? ' · sniff' : ''}`, ix - 8, icy + 4, { family: MONO, weight: 500, size: 11, color: t.flag, align: 'right' });
+  if (narrow) sh.text(`${dNow.toFixed(2)} cm${sniff > 0.3 ? ' · sniff' : ''}`, ix - 8, icy - (dNow / 2) * ipx - 5, { family: MONO, weight: 500, size: 11, color: t.flag, align: 'right' });
   else sh.text(`${dNow.toFixed(2)} cm${sniff > 0.3 ? ' · sniff' : ''}`, ix - 8, icy + (dNow / 2) * ipx + 18, { family: MONO, weight: 500, size: 12, color: t.flag, align: 'right' });
-  sh.text(`RA pressure ${F.rap} mmHg  ·  RVSP ${F.grad.toFixed(0)} + ${F.rap} = ${F.rvsp.toFixed(0)} mmHg`, ivx - 30, iy + ih - 4, { family: MONO, weight: 500, size: 12, color: t.ink });
+  const sum = sh.fit([
+    `RA pressure ${F.rap} mmHg  ·  RVSP ${F.grad.toFixed(0)} + ${F.rap} = ${F.rvsp.toFixed(0)} mmHg`,
+    `RAP ${F.rap} · RVSP ${F.grad.toFixed(0)} + ${F.rap} = ${F.rvsp.toFixed(0)} mmHg`,
+  ], W - 8 - (ivx - 30), { family: MONO, weight: 500, size: 12 }, 0.85);
+  sh.text(sum.str, ivx - 30, iy + ih - 4, { family: MONO, weight: 500, size: sum.size, color: t.ink });
 }
 
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');

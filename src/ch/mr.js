@@ -4,7 +4,7 @@
 import { Sheet, clamp, MONO, SANS } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { mitralV, RR, EV } from '../cyclemodel.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit } from '../sev.js';
+import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, waveLetter } from '../sev.js';
 import { drawA4C, cal, measures } from '../echo2d.js';
 import { BSA } from './pressure.js';
 
@@ -81,7 +81,7 @@ function a4c(ctx, box, m, t) {
     ma: m.ma, ta: 3.0, mv: { gap: m.gap, thick: 0.13 },
   };
   const sys = t >= EV.mvc && t <= EV.mvo;
-  const a = sys ? Math.pow(Math.sin(Math.PI * (t - EV.mvc) / (EV.mvo - EV.mvc)), 0.35) : 0;
+  const a = sys ? Math.pow(Math.max(0, Math.sin(Math.PI * (t - EV.mvc) / (EV.mvo - EV.mvc))), 0.35) : 0;
   const laArea = (Math.PI / 4) * wMax * lMax;
   const jA = m.jetF * laArea;
   const jl = Math.min(lMax * 0.92, Math.sqrt(jA / 0.55 * 1.3));
@@ -95,7 +95,7 @@ function a4c(ctx, box, m, t) {
         const O = geo.mv.gapMid;
         cal(c, F, O, [O[0] + geo.ax[0] * m.r, O[1] + geo.ax[1] * m.r], '', { solid: true });
       }
-      measures(c, F, [`PISA r ${m.r.toFixed(2)} cm`, `VC ${m.vc.toFixed(2)} cm`, `jet ${Math.round(m.jetF * 100)}% of LA`]);
+      measures(c, F, [`PISA r ${m.r.toFixed(2)} cm`, `VC ${m.vc.toFixed(2)} cm`, [`jet ${Math.round(m.jetF * 100)}% of LA`, `jet ${Math.round(m.jetF * 100)}% LA`]]);
     },
   });
 }
@@ -127,7 +127,7 @@ function mrCW(ctx, P, m) {
   }
   vscale(ctx, bx, 6, 0.06, 2);
   const dn = m.rvol >= 60 ? 'dense' : m.rvol >= 30 ? 'dense, partial' : 'faint';
-  note(ctx, bx, m.eroa > 0.005 ? fit(P.w, `peak ${VMAX.toFixed(1)} m/s · ${dn}${m.tri > 0.5 ? ', triangular' : ''}`, dn) : 'no regurgitation', 'bottom');
+  note(ctx, bx, m.eroa > 0.005 ? [`peak ${VMAX.toFixed(1)} m/s · ${dn}${m.tri > 0.5 ? ', triangular' : ''}`, dn] : 'no regurgitation', 'bottom');
   return bx;
 }
 
@@ -150,11 +150,13 @@ function pvPW(ctx, P, m) {
   ctx.font = `500 11px ${MONO}`;
   ctx.fillStyle = SC.cal;
   ctx.textAlign = 'center';
-  ctx.fillText('S', X(250), S >= 0 ? y0 - S * k - 5 : y0 - S * k + 13);
-  ctx.fillText('D', X(540), y0 - D * k - 5);
-  ctx.fillText('Ar', X(835), y0 - Ar * k + 13);
+  const letters = [
+    waveLetter(ctx, 'S', X(250), S >= 0 ? y0 - S * k - 5 : y0 - S * k + 13),
+    waveLetter(ctx, 'D', X(540), y0 - D * k - 5),
+    waveLetter(ctx, 'Ar', X(835), y0 - Ar * k + 13),
+  ];
   ctx.restore();
-  note(ctx, bx, S < -0.02 ? fit(P.w, 'systolic flow reversal', 'S reversed') : S < 0.05 ? fit(P.w, 'no systolic flow', 'no S') : fit(P.w, `S/D ${m.sd.toFixed(1)}${m.sd < 1 ? ' · systolic blunting' : ''}`, `S/D ${m.sd.toFixed(1)}`), 'top');
+  note(ctx, bx, S < -0.02 ? ['systolic flow reversal', 'S reversed'] : S < 0.05 ? ['no systolic flow', 'no S'] : [`S/D ${m.sd.toFixed(1)}${m.sd < 1 ? ' · systolic blunting' : ''}`, `S/D ${m.sd.toFixed(1)}`], 'auto', letters);
   return bx;
 }
 
@@ -164,7 +166,7 @@ function inflowPW(ctx, P, m) {
   const E = q2(m.E), A = q2(m.A);
   spectral(ctx, bx, { fn: (u) => mitralV((u * 2 * RR) % RR, E, A, 190 - 30 * m.s), scale: 1.8, base: 0.92, mode: 'pw', broad: 0.1, key: `mrin|${E}|${A}|${q2(m.s)}`, seed: 22 });
   vscale(ctx, bx, 1.8, 0.92, 0.5);
-  note(ctx, bx, `E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)} m/s${m.E >= 1.2 ? ' · E-wave dominant' : m.E < m.A ? ' · A-wave dominant' : ''}`, 'top');
+  note(ctx, bx, [`E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)} m/s${m.E >= 1.2 ? ' · E-wave dominant' : m.E < m.A ? ' · A-wave dominant' : ''}`, `E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)} m/s`, `E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)}`], 'top');
   return bx;
 }
 

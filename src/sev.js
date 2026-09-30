@@ -50,14 +50,33 @@ export function bands(gradeOf, n = 500) {
   return out;
 }
 
-/** Grade bands under a slider. levels: grade name -> 0 (normal) .. 4 (beyond severe). */
+/**
+ * Grade bands under a slider. levels: grade name -> 0 (normal) .. 4 (beyond severe); short:
+ * a shorter name for a narrow band ('' for none).
+ */
 export function paintBands(host, list, levels, short = {}) {
   if (!host) return;
   host.innerHTML = list.map(({ a, b, g }) => {
-    const w = b - a;
-    const name = w < 0.2 && short[g] !== undefined ? short[g] : w < 0.1 ? '' : g;
-    return `<i style="--a:${a.toFixed(4)};--w:${w.toFixed(4)}" data-l="${levels[g] ?? 0}"></i>${name ? `<span style="--a:${a.toFixed(4)};--w:${w.toFixed(4)}">${name}</span>` : ''}`;
+    const pos = `--a:${a.toFixed(4)};--w:${(b - a).toFixed(4)}`;
+    return `<i style="${pos}" data-l="${levels[g] ?? 0}"></i><span style="${pos}" title="${g}" data-full="${g}" data-short="${short[g] ?? g}"></span>`;
   }).join('');
+  fitBands(host);
+  if (!host.fitting) {
+    host.fitting = new ResizeObserver(() => fitBands(host));
+    host.fitting.observe(host);
+  }
+}
+/** Each band's label as long as its band allows: the grade, its short name, or none. */
+function fitBands(host) {
+  for (const s of host.querySelectorAll('span')) {
+    s.textContent = '';
+    for (const t of new Set([s.dataset.full, s.dataset.short])) {
+      if (!t) continue;
+      s.textContent = t;
+      if (s.scrollWidth <= s.clientWidth + 0.5) break;
+      s.textContent = '';
+    }
+  }
 }
 
 // ---------------------------------------------------------------- Play and the beat
@@ -234,15 +253,56 @@ export function gradeTable(host, rowsIn, cap, colsIn = ['Mild', 'Moderate', 'Sev
     <tbody>${rowsIn.map(([name, cells, cur]) => `<tr><td>${name}</td>${cells.map((c, i) => `<td class="${i === cur ? 'cur' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
 }
 
-/** A line of scanner text at the top or bottom of a spectral box. */
-export function note(ctx, bx, text, where = 'bottom') {
+/**
+ * A line of scanner text at the top or bottom of a spectral box. text: a string, or its forms
+ * from long to short, the first that fits the box winning; the type shrinks to 9 px before
+ * anything is cut. where: 'top', 'bottom', or 'auto': the first corner that covers none of the
+ * boxes in avoid ({x0, y0, x1, y1}, px), in the order top left, bottom left, top right, bottom
+ * right, trying smaller type and then shorter forms; when every corner covers a box, the
+ * shortest form in the corner where it covers least.
+ */
+export function note(ctx, bx, text, where = 'bottom', avoid = []) {
+  const forms = Array.isArray(text) ? text : [text];
+  const room = bx.w - 14, yTop = bx.y + 14, yBot = bx.y + bx.h - 8;
   ctx.save();
-  ctx.font = `500 11px ${MONO}`;
+  // every form at every size that fits the box (11, 10, 9 px), longest and largest first
+  const tries = [];
+  for (const f of forms) {
+    for (const px of [11, 10, 9]) {
+      ctx.font = `500 ${px}px ${MONO}`;
+      const w = ctx.measureText(f).width;
+      if (w <= room) tries.push({ f, px, w });
+    }
+  }
+  if (!tries.length) { ctx.font = `500 9px ${MONO}`; const f = forms[forms.length - 1]; tries.push({ f, px: 9, w: Math.min(room, ctx.measureText(f).width) }); }
+  const spots = ({ w }) => {
+    const xl = bx.x + 8, xr = bx.x + bx.w - 6 - w;
+    return where === 'auto' ? [[xl, yTop], [xl, yBot], [xr, yTop], [xr, yBot]] : [[xl, where === 'top' ? yTop : yBot]];
+  };
+  const cover = ({ w, px }, [x, y]) => avoid.reduce((sum, a) => sum + Math.max(0, Math.min(a.x1, x + w) - Math.max(a.x0, x)) * Math.max(0, Math.min(a.y1, y + 3) - Math.max(a.y0, y - px)), 0);
+  // the first try that covers nothing; else the smallest try where it covers least
+  let pick = null;
+  for (const t of where === 'auto' ? tries : tries.slice(0, 1)) {
+    const at = spots(t).find((p) => cover(t, p) === 0);
+    if (at) { pick = { ...t, at }; break; }
+  }
+  if (!pick) {
+    const t = tries[tries.length - 1];
+    pick = { ...t, at: spots(t).reduce((b, p) => (cover(t, p) < cover(t, b) ? p : b)) };
+  }
+  ctx.font = `500 ${pick.px}px ${MONO}`;
   ctx.fillStyle = SC.cal;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText(text, bx.x + 8, where === 'top' ? bx.y + 14 : bx.y + bx.h - 8);
+  ctx.fillText(pick.f, pick.at[0], pick.at[1], room);
   ctx.restore();
+}
+
+/** A wave's letter (S, D, Ar) centred at x, baseline y; returns its box, for note(…, 'auto'). */
+export function waveLetter(ctx, text, x, y) {
+  ctx.fillText(text, x, y);
+  const w = ctx.measureText(text).width;
+  return { x0: x - w / 2 - 2, x1: x + w / 2 + 2, y0: y - 10, y1: y + 2 };
 }
 
 export { clamp, mix };

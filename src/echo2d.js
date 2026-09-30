@@ -315,18 +315,34 @@ export function finish(ctx, F) {
     ctx.moveTo(x, y);
     ctx.lineTo(x + l, y);
     ctx.stroke();
-    if (d % 5 === 0) ctx.fillText(String(d), x + 8, y + 3.5);
+    if (d % 5 === 0 && !(F.barEnd && y - 6 < F.barEnd)) ctx.fillText(String(d), x + 8, y + 3.5);
   }
   ctx.restore();
 }
 
-/** Measurement box in the panel's lower left corner, as on the scanner. */
+/**
+ * Measurement box in the panel's lower left corner, as on the scanner. A line may be an array of
+ * forms, longest first; the box shrinks its type, then takes the short forms, to keep clear of
+ * the depth scale.
+ */
 export function measures(ctx, F, lines) {
   if (!lines.length) return;
-  tagBox(ctx, F.box.x + 8, F.box.y + F.box.h - 8 - (lines.length * 14 + 8) / 2, lines, { size: 10.5 });
+  const room = F.box.w - 8 - 34;
+  ctx.save();
+  let out = null, size = 9;
+  search: for (const pick of [0, 1]) {
+    const arr = lines.map((l) => { const f = [].concat(l); return f[Math.min(pick, f.length - 1)]; });
+    for (const sz of [10.5, 9.5, 9]) {
+      ctx.font = `500 ${sz}px ${MONO}`;
+      out = arr; size = sz;
+      if (Math.max(...arr.map((q) => ctx.measureText(q).width)) + 12 <= room) break search;
+    }
+  }
+  ctx.restore();
+  F.meas = tagBox(ctx, F.box.x + 8, F.box.y + F.box.h - 8 - (out.length * (size + 3) + 8) / 2, out, { size });
 }
 
-/** Small white chamber labels. */
+/** Small white chamber labels, kept inside the image when the chamber runs past its edge. */
 function tag(ctx, F, text, p, o = {}) {
   const q = F.P(p);
   ctx.save();
@@ -334,8 +350,26 @@ function tag(ctx, F, text, p, o = {}) {
   ctx.fillStyle = o.color || 'rgba(214,222,226,0.92)';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, q[0], q[1]);
+  const b = F.view.box, hw = ctx.measureText(text).width / 2 + 5;
+  let x = clamp(q[0], b.x + hw, b.x + b.w - hw), y = clamp(q[1], b.y + 10, b.y + b.h - 10);
+  // clear of the color bar and its legend at the right edge, and of the measurement box
+  if (F.barEnd && y - 8 < F.barEnd && x + hw > F.box.x + F.box.w - 34) x = F.box.x + F.box.w - 34 - hw;
+  const m = F.meas;
+  if (m && x + hw > m.x && x - hw < m.x + m.w && y + 8 > m.y && y - 8 < m.y + m.h) y = m.y - 10;
+  // a dark outline keeps the tag legible over a color jet
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(8,10,12,0.8)';
+  ctx.strokeText(text, x, y);
+  ctx.fillText(text, x, y);
   ctx.restore();
+}
+/** A color bar at the image's right edge; its legend ends above the depth scale's 5 cm number. */
+function barFor(ctx, F, nyq) {
+  const { box, sect, k } = F;
+  const h = clamp(sect.top + 5 * k - 12 - (box.y + 34) - 24, 24, 90);
+  colorBar(ctx, box.x + box.w - 20, box.y + 34, h, nyq, { w: 7 });
+  F.barEnd = box.y + 34 + h + 24;
 }
 
 /** Caliper between two cm points with a label. */
@@ -383,7 +417,7 @@ function blob(i, j, step, f) {
  * over the cycle; laminar: a slow jet without the mosaic.
  */
 export function jet(ctx, F, j) {
-  if (!j || j.a <= 0.02 || j.q <= 0) return;
+  if (!j || !(j.a > 0.02) || !(j.q > 0)) return;   // a NaN strength draws nothing
   const { k, box, sect } = F;
   const O = j.O, d = unit(j.dir), n = perp(d);
   const va = j.va, L = j.jl * Math.min(1, j.a * 1.15), Wd = j.jw, w0 = Math.max(0.12, j.vc / 2);
@@ -394,7 +428,7 @@ export function jet(ctx, F, j) {
   const pts = [add(O, mul(n, Wd / 2 + 0.2)), add(O, mul(n, -Wd / 2 - 0.2)), add(add(O, mul(d, L + 0.2)), mul(n, Wd / 2 + 0.2)), add(add(O, mul(d, L + 0.2)), mul(n, -Wd / 2 - 0.2)), add(O, mul(d, -Rp - 0.1)), add(add(O, mul(d, -0.1)), mul(n, Rp + 0.1)), add(add(O, mul(d, -0.1)), mul(n, -Rp - 0.1))].map(F.P);
   const x0 = Math.max(box.x, Math.min(...pts.map((p) => p[0]))), x1 = Math.min(box.x + box.w - 30, Math.max(...pts.map((p) => p[0])));
   const y0 = Math.max(box.y + 20, Math.min(...pts.map((p) => p[1]))), y1 = Math.min(box.y + box.h, Math.max(...pts.map((p) => p[1])));
-  if (x1 <= x0 || y1 <= y0) return;
+  if (!(x1 > x0 && y1 > y0)) return;
   const cell = Math.max(2, k * 0.09);                        // color pixels about 1 mm
   const W = Math.ceil((x1 - x0) / cell), H = Math.ceil((y1 - y0) / cell);
   if (!JC) JC = document.createElement('canvas');
@@ -644,7 +678,7 @@ function a4cShape(g, c, ph, dyn = {}) {
   if (eff > 0.01) {
     // the sac, pushed out along lines from the middle of the heart (they never cross)
     const n = peri.length - 1;
-    peri = peri.map((p, i) => add(p, mul(unit(sub(p, heartC)), eff * (0.2 + 0.8 * Math.pow(Math.sin((Math.PI * i) / n), 0.6)))));
+    peri = peri.map((p, i) => add(p, mul(unit(sub(p, heartC)), eff * (0.2 + 0.8 * Math.pow(Math.max(0, Math.sin((Math.PI * i) / n)), 0.6)))));
   }
   // outside the sac: lung and fat, grey, so that the fluid shows as the dark band inside it
   const outer = g.effusion === undefined ? null : ribbon(peri, offsetAway(peri, 1.6, heartC));
@@ -732,14 +766,15 @@ export function drawA4C(ctx, box, g, o = {}) {
   if (J.mr) jet(ctx, F, { ...J.mr, O: S.mv.gapMid, dir: ldown, clip: S.laCav });
   if (J.tr) jet(ctx, F, { ...J.tr, O: S.tv.gapMid, dir: rdown, clip: S.raCav });
   if (J.ms) jet(ctx, F, { ...J.ms, O: S.mv.tip, dir: S.ax, clip: S.lvCav });
-  if (J.mr || J.tr || J.ms) colorBar(ctx, box.x + box.w - 20, box.y + 34, Math.min(90, box.h * 0.25), (J.mr || J.tr || J.ms).va / 100, { w: 7 });
+  if (J.mr || J.tr || J.ms) barFor(ctx, F, (J.mr || J.tr || J.ms).va / 100);
+  const geo = { ...S, F, c, ph };
+  // the hook first: the tags keep clear of the measurement box it draws
+  if (o.after) o.after(ctx, F, geo);
   const want = (k) => (Array.isArray(o.labels) ? o.labels.includes(k) : o.labels !== false);
   if (want('LV')) tag(ctx, F, 'LV', add(S.lvC, mul(S.ax, 0.8)));
   if (want('RV')) tag(ctx, F, 'RV', add(centroid(S.rvFree), mul(S.out, -0.2)));
   if (want('LA')) tag(ctx, F, 'LA', S.laC);
   if (want('RA')) tag(ctx, F, 'RA', S.raC);
-  const geo = { ...S, F, c, ph };
-  if (o.after) o.after(ctx, F, geo);
   finish(ctx, F);
   return geo;
 }
@@ -810,7 +845,7 @@ function a2cShape(g, c, ph) {
   let peri = offsetAway(hull, 0.13, lvC);
   if (eff > 0.01) {
     const n = peri.length - 1;
-    peri = peri.map((p, i) => add(p, mul(unit(sub(p, lvC)), eff * (0.2 + 0.8 * Math.pow(Math.sin((Math.PI * i) / n), 0.6)))));
+    peri = peri.map((p, i) => add(p, mul(unit(sub(p, lvC)), eff * (0.2 + 0.8 * Math.pow(Math.max(0, Math.sin((Math.PI * i) / n)), 0.6)))));
   }
   const outer = g.effusion === undefined ? null : ribbon(peri, offsetAway(peri, 1.6, lvC));
   const yDeep = Math.max(...laCav.map((p) => p[1]));
@@ -848,11 +883,11 @@ export function drawA2C(ctx, box, g, o = {}) {
   const c = ph.c;
   const S = a2cShape(g, c, ph), Sr = a2cShape(g, 0, { ...ph, mvShut: 1 });
   scan(ctx, F, a2cItems(S, Sr, g), { t: o.t, gain: o.gain });
+  const geo = { ...S, F, c, ph };
+  if (o.after) o.after(ctx, F, geo);
   const want = (k) => (Array.isArray(o.labels) ? o.labels.includes(k) : o.labels !== false);
   if (want('LV')) tag(ctx, F, 'LV', add(S.lvC, mul(S.ax, 0.8)));
   if (want('LA')) tag(ctx, F, 'LA', S.laC);
-  const geo = { ...S, F, c, ph };
-  if (o.after) o.after(ctx, F, geo);
   finish(ctx, F);
   return geo;
 }
@@ -1081,15 +1116,15 @@ export function drawPLAX(ctx, box, g, o = {}) {
   if (J.as) jet(ctx, F, { ...J.as, O: R([xAnn + 1.2, aoMid]), dir: unit(sub(R([xAnn + 6, aoMid - 0.3]), R([xAnn + 1.2, aoMid]))), clip: aoCav, pisa: false });
   if (J.ms) jet(ctx, F, { ...J.ms, O: R(lerp2(tipA, tipP, 0.5)), dir: unit(sub(R([-6, (yLv + yPw) / 2 + 0.6]), R(lerp2(tipA, tipP, 0.5)))), clip: lvCav });
   const anyJet = J.ar || J.as || J.ms;
-  if (anyJet) colorBar(ctx, box.x + box.w - 20, box.y + 34, Math.min(90, box.h * 0.25), anyJet.va / 100, { w: 7 });
+  if (anyJet) barFor(ctx, F, anyJet.va / 100);
+  const geo = { F, R, yIvs: S.yIvs, yLv, yPw, yEpi: S.yEpi, ivs: S.ivs, lvid: S.lvid, pw: S.pw, la: S.la, laTop: S.laTop, aoTop, aoBot, aoMid, xAnn, c, ph, lvot: S.lvot };
+  if (o.after) o.after(ctx, F, geo);
   if (o.labels !== false) {
     tag(ctx, F, 'RV', R([-1.2, (S.yIvs + 2.15) / 2]));
     tag(ctx, F, 'LV', R([-4.5, (yLv + yPw) / 2]));
     tag(ctx, F, 'Ao', R([xAnn + 3.6, aoMid]));
     tag(ctx, F, 'LA', R([xAnn + 2.1, S.laTop + S.la * 0.55]));
   }
-  const geo = { F, R, yIvs: S.yIvs, yLv, yPw, yEpi: S.yEpi, ivs: S.ivs, lvid: S.lvid, pw: S.pw, la: S.la, laTop: S.laTop, aoTop, aoBot, aoMid, xAnn, c, ph, lvot: S.lvot };
-  if (o.after) o.after(ctx, F, geo);
   finish(ctx, F);
   return geo;
 }
@@ -1318,8 +1353,15 @@ export function drawIVC(ctx, box, g, o = {}) {
   const x1 = B.x + B.w * 0.2, x2 = B.x + B.w * 0.55;
   caliper(ctx, x1, mid - (dAt(0.2) / 2) * pxcm, x1, mid + (dAt(0.2) / 2) * pxcm, { size: 3.5 });
   caliper(ctx, x2, mid - (dAt(0.55) / 2) * pxcm, x2, mid + (dAt(0.55) / 2) * pxcm, { size: 3.5 });
-  tagBox(ctx, x1 + 6, mid, [`${g.d.toFixed(1)} cm`], { size: 10.5, bounds: B });
-  tagBox(ctx, x2 + 6, mid, [`sniff ${(g.d * (1 - g.collapse)).toFixed(1)} cm`], { size: 10.5, bounds: B });
+  // the two readings side by side, or one above the other when the strip is short
+  const t1 = `${g.d.toFixed(1)} cm`, t2 = `sniff ${(g.d * (1 - g.collapse)).toFixed(1)} cm`;
+  ctx.save();
+  ctx.font = `500 10.5px ${MONO}`;
+  const w1 = ctx.measureText(t1).width + 12, w2 = ctx.measureText(t2).width + 12;
+  ctx.restore();
+  const clash = x1 + 6 + w1 + 4 > Math.min(B.x + B.w - w2 - 4, x2 + 6);
+  tagBox(ctx, x1 + 6, clash ? mid - 13 : mid, [t1], { size: 10.5, bounds: B });
+  tagBox(ctx, x2 + 6, clash ? mid + 13 : mid, [t2], { size: 10.5, bounds: B });
   // depth scale
   ctx.save();
   ctx.font = `400 10px ${MONO}`;

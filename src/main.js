@@ -427,6 +427,34 @@ function buildTransport() {
     const n = CHAPTERS.filter((c) => c.part === p.key).length;
     return `<li data-part="${p.key}" style="--span: ${n}" title="${esc(p.name)}">${n > 1 ? esc(p.name) : ''}</li>`;
   }).join('');
+  fitTransport();
+  document.fonts?.ready.then(fitTransport);
+  new ResizeObserver(fitTransport).observe($('.transport'));
+}
+
+/** The width of an element's own text as drawn (0 when it is hidden). */
+function textWidth(el) {
+  const r = document.createRange();
+  r.selectNodeContents(el);
+  return r.getBoundingClientRect().width;
+}
+/**
+ * Columns of the chapter bar: each as wide as its chapter's name needs (its number where names
+ * are hidden), and each part's columns together as wide as the part's name, so that no name is
+ * cut short. The two rows share the columns.
+ */
+function fitTransport() {
+  const need = $$('#chapters button[data-go]').map((b) => Math.max(textWidth(b.querySelector('.n')), textWidth(b.querySelector('.t'))) + 10);
+  if (!need.some((w) => w > 10)) return;   // the bar is not laid out yet
+  let k = 0;
+  for (const li of $('#groups').children) {
+    const span = Number(li.style.getPropertyValue('--span')) || 1, sum = need.slice(k, k + span).reduce((a, b) => a + b, 0);
+    const want = li.textContent ? textWidth(li) + 16 : 0;   // with its right margin
+    if (want > sum) for (let j = k; j < k + span; j++) need[j] *= want / sum;
+    k += span;
+  }
+  const cols = need.map((w) => `minmax(0, ${w.toFixed(1)}fr)`).join(' ');
+  for (const el of [$('#chapters'), $('#groups')]) if (el.style.gridTemplateColumns !== cols) el.style.gridTemplateColumns = cols;
 }
 
 function start() {

@@ -101,7 +101,7 @@ function inflowCW(ctx, P, m) {
   ctx.stroke();
   ctx.restore();
   caliper(ctx, x0, yb - m.v0 * k - 10, x1, yb - m.v0 * k - 10, { solid: true });
-  note(ctx, bx, fit(P.w, `PHT ${Math.round(m.pht)} ms · mean gradient ${m.mg.toFixed(1)} mmHg · peak ${m.v0.toFixed(1)} m/s`, `PHT ${Math.round(m.pht)} · MG ${m.mg.toFixed(1)}`), 'top');
+  note(ctx, bx, [`PHT ${Math.round(m.pht)} ms · mean gradient ${m.mg.toFixed(1)} mmHg · peak ${m.v0.toFixed(1)} m/s`, `PHT ${Math.round(m.pht)} · MG ${m.mg.toFixed(1)}`], 'top');
   return { bx, span };
 }
 
@@ -116,7 +116,7 @@ function trCW(ctx, P, m) {
   };
   spectral(ctx, bx, { fn, scale: 4.5, base: 0.06, mode: 'cw', broad: 0.5, key: `mstr|${v}`, seed: 9 });
   vscale(ctx, bx, 4.5, 0.06, 1);
-  note(ctx, bx, `TR ${m.trv.toFixed(1)} m/s · PA systolic ${Math.round(m.pasp)} mmHg (RA ${m.rap})`, 'bottom');
+  note(ctx, bx, [`TR ${m.trv.toFixed(1)} m/s · PA systolic ${Math.round(m.pasp)} mmHg (RA ${m.rap})`, `TR ${m.trv.toFixed(1)} · PASP ${Math.round(m.pasp)}`], 'bottom');
   return bx;
 }
 

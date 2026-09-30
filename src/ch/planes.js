@@ -491,17 +491,23 @@ function drawInk() {
   const css = getComputedStyle(document.documentElement);
   const paper = css.getPropertyValue('--paper').trim(), inkc = css.getPropertyValue('--ink').trim();
   const S = st.pstruct !== 'none' ? st.pstruct : null;
+  // what a tag must not cover: the tags already down, and the pane's name and note
   const placed = [];
+  const host = ink.getBoundingClientRect();
+  for (const e of fig.querySelectorAll('.pane-3d .pane-label, #planes-note')) {
+    if (!e.offsetParent) continue;
+    const r = e.getBoundingClientRect();
+    placed.push({ x: (r.left + r.right) / 2 - host.left, y: (r.top + r.bottom) / 2 - host.top, w: r.width, h: r.height });
+  }
   labelBoxes = [];
   const tag = (text, x, y, color, bold, key) => {
     ctx.font = `${bold ? 700 : 600} ${bold ? 13 : 12}px ${SANS}`;
     const tw = ctx.measureText(text).width;
-    let yy = y;
-    for (let k = 0; k < 8; k++) {
-      if (!placed.some((p) => Math.abs(p.x - x) < (p.w + tw) / 2 + 4 && Math.abs(p.y - yy) < 15)) break;
-      yy += 15;
-    }
-    if (x < 4 || x > w - 4 || yy < 10 || yy > h - 10) return;
+    const free = (yy) => !placed.some((p) => Math.abs(p.x - x) < (p.w + tw) / 2 + 4 && Math.abs(p.y - yy) < ((p.h || 15) + 15) / 2);
+    // the nearest free place above or below
+    let yy = null;
+    for (const dy of [0, 15, -15, 30, -30, 45, -45, 60, -60]) if (free(y + dy)) { yy = y + dy; break; }
+    if (yy === null || x < 4 || x > w - 4 || yy < 10 || yy > h - 10) return;
     placed.push({ x, y: yy, w: tw });
     ctx.lineJoin = 'round';
     ctx.lineWidth = 3.5;
@@ -603,6 +609,9 @@ function onFrame(stg) {
   drawInk();
   if (tick++ % 2 || !echo) return;
   if (!echo.canvas.offsetParent) { echo.advance(); return; }   // the echo pane is hidden on phones
+  // the scanner line sits under the view's name, which can take two lines
+  const lab = fig.querySelector('#planes-label');
+  if (lab && lab.offsetParent) echo.top = 32 + Math.max(10, lab.offsetHeight);
   echo.labels = true;
   if (echo.g) echo.frame({ ...stg.state });
   else echo.drawEmpty();

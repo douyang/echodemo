@@ -139,7 +139,7 @@ function inflowPW(ctx, P, m, side) {
   spectral(ctx, bx, { fn: inflowFn({ ...m, hr, rr: 60000 / hr, mvVar: Math.round(m.mvVar), tvVar: Math.round(m.tvVar) }, side), scale: 1.2, base: 0.82, mode: 'pw', broad: 0.1, key: `peri${side}|${hr}|${Math.round(V)}|${q2(m.tamp)}`, seed: mv ? 71 : 72 });
   vscale(ctx, bx, 1.2, 0.82, 0.5);
   resp(ctx, bx);
-  note(ctx, bx, `E ${mv ? 'falls' : 'rises'} ${Math.round(V)}% with inspiration`, 'top');
+  note(ctx, bx, [`E ${mv ? 'falls' : 'rises'} ${Math.round(V)}% with inspiration`, `E ${mv ? '−' : '+'}${Math.round(V)}% inspiration`, `E ${mv ? '−' : '+'}${Math.round(V)}%`], 'top');
   return bx;
 }
 
@@ -165,7 +165,7 @@ function hvPW(ctx, P, m) {
   spectral(ctx, bx, { fn: hvFn({ ...m, rr: 60000 / hr }), scale: 0.8, base: 0.42, mode: 'pw', broad: 0.14, key: `perihv|${hr}|${q2(m.tamp)}|${q2(m.hvRev)}`, seed: 73 });
   vscale(ctx, bx, 0.8, 0.42, 0.5, '');
   resp(ctx, bx);
-  note(ctx, bx, m.hvRev > 0.1 ? 'diastolic reversal in expiration' : m.tamp > 0.3 ? 'diastolic forward flow lost' : 'systolic and diastolic forward flow', 'top');
+  note(ctx, bx, m.hvRev > 0.1 ? ['diastolic reversal in expiration', 'D reversal, expiration'] : m.tamp > 0.3 ? ['diastolic forward flow lost', 'D flow lost'] : ['systolic and diastolic forward flow', 'S and D forward'], 'top');
   return bx;
 }
 

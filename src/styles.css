@@ -256,9 +256,13 @@ a:hover { text-decoration-color: var(--accent); }
 .fig.gl-ready .poster { opacity: 0; }
 .fig-note {
   position: absolute;
-  left: var(--gutter);
-  bottom: 12px;
-  margin: 0;
+  left: calc(var(--gutter) - 6px);
+  bottom: 10px;
+  margin: 0 6px 0 0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  /* legible where it crosses the drawing */
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
   font: 500 0.625rem/1.3 var(--sans);
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -273,7 +277,8 @@ a:hover { text-decoration-color: var(--accent); }
   font: 600 1.18rem/1 var(--hand);
   color: var(--ink);
   white-space: nowrap;
-  text-shadow: 0 0 3px var(--paper), 0 0 6px var(--paper);
+  /* a halo of paper, stacked so it holds over the sketch lines */
+  text-shadow: 0 0 1px var(--paper), 0 0 2px var(--paper), 0 0 3px var(--paper), 0 0 6px var(--paper);
 }
 .tag small { display: block; font: 400 0.9rem/1.1 var(--hand); color: var(--ink-2); }
 .tag.is-flag { color: var(--flag); }
@@ -782,12 +787,19 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .heart-pick select { flex: 1; min-width: 0; font-size: 0.72rem; }
   .sheet { padding: 18px 16px 20px; }
 }
-@media (max-width: 480px) {
-  .masthead { padding-top: 14px; padding-bottom: 8px; padding-right: 132px; }
-  .eyebrow { margin-bottom: 4px; }
+/* the long eyebrow wraps under 560 px: keep the short one */
+@media (max-width: 560px) {
   .eyebrow-long { display: none; }
-  .title { font-size: clamp(1.3rem, 8.4vw, 1.75rem); }
-  .subtitle { margin-top: 4px; }
+}
+@media (max-width: 480px) {
+  /* three rows: the eyebrow beside the three icons, the title across the full width, the
+     subtitle beside the heart picker */
+  :root { --title-size: clamp(1.3rem, 8.4vw, 1.75rem); }
+  .masthead { padding-top: 14px; padding-bottom: 8px; padding-right: var(--gutter); }
+  .eyebrow { display: flex; align-items: center; min-height: 34px; margin-bottom: 4px; padding-right: 128px; }
+  .title { font-size: var(--title-size); }
+  .subtitle { display: flex; align-items: center; min-height: 30px; margin-top: 4px; padding-right: 140px; }
+  .tool.heart-pick { position: absolute; right: 0; top: calc(42px + 0.98 * var(--title-size)); width: 132px; }
   .row2 { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 420px) {
@@ -813,6 +825,19 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .occl-label { letter-spacing: 0.1em; }
   .occl .seg button { padding: 7px 12px; font-size: 0.8125rem; }
 }
+/* the smallest phones keep the buttons on one row over the figure; the label stays for screen
+   readers */
+@media (max-width: 380px) {
+  .occl-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .occl .seg button { padding: 7px 10px; }
+}
 
 /* chapter 08: the view the free plane goes to */
 .free-goto select { width: 100%; max-width: 100%; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper-2); color: var(--ink); font: 500 0.8125rem var(--sans); }
+
+/* a short stage: 07 drops its orbit note, and the tags on the heart get smaller */
+@container (max-height: 480px) {
+  #windows-note { display: none; }
+  .tag { font-size: 0.9rem; }
+  .tag small { font-size: 0.72rem; }
+}
