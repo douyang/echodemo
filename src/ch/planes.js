@@ -19,7 +19,7 @@ const WNAME = Object.fromEntries(WINDOWS.map((w) => [w.key, w.name]));
 let T = null;                  // three.js, loaded with the stage
 let stage = null, echo = null, model = null, ready = null, failed = false, fig = null, on = false;
 let st = null, setState = null;
-let group = null, crossLines = null, marker = null, anchors = null, geoms = null;
+let group = null, crossLines = null, marker = null, anchors = null, geoms = null, EM = null, pv = -1;
 const fans = new Map();
 let ink = null, labelBoxes = [], tick = 0, down = null;
 let freeFan = null, nearFan = null, nearInfo = null;
@@ -451,19 +451,11 @@ async function ensure() {
     ready = (async () => {
       T = await import('../../vendor/three.bundle.min.js');
       model = await loadModel();
-      const e = await import('../echo.js');
+      const e = (EM = await import('../echo.js'));
       stage = await sharedStage();
-      geoms = {};
-      for (const k of PLANE_VIEWS) { const g = e.viewGeometry(model.anat, k); if (g) geoms[k] = g; }
       echo = new e.EchoView(model, fig.querySelector('#planes-canvas'), {});
       echo.top = 42;
-      anchors = echo.anchors(0);
-      // papillary muscles: the middle of their mesh
-      const pap = model.heart.meshes.Papillary;
-      if (pap) {
-        pap.updateMatrixWorld(true);
-        anchors.lvc = new T.Box3().setFromObject(pap).getCenter(new T.Vector3());
-      }
+      takeHeart();
       group = new T.Group();
       group.visible = false;
       crossLines = new T.LineSegments(new T.BufferGeometry(), new T.LineBasicMaterial({ color: 0x22272b, transparent: true, opacity: 0.9, depthTest: false }));
@@ -578,7 +570,27 @@ function drawInk() {
   ctx.globalAlpha = 1;
 }
 
+/** The planes and structure points of the heart shown (a new heart: model3d.js). */
+function takeHeart() {
+  pv = model.pheno.version;
+  geoms = {};
+  for (const k of PLANE_VIEWS) { const g = EM.viewGeometry(model.anat, k); if (g) geoms[k] = g; }
+  anchors = echo.anchors(0);
+  // papillary muscles: the middle of their mesh
+  const pap = model.heart.meshes.Papillary;
+  if (pap) {
+    pap.updateMatrixWorld(true);
+    anchors.lvc = new T.Box3().setFromObject(pap).getCenter(new T.Vector3());
+  }
+  if (!group) return;
+  for (const f of fans.values()) dropFan(f);
+  fans.clear();
+  syncFans();
+  if (st.pfree) syncFree(false);
+}
+
 function onFrame(stg) {
+  if (model.pheno.version !== pv) takeHeart();
   const W = stg.pencil.w * stg.pencil.dpr, H = stg.pencil.h * stg.pencil.dpr;
   for (const f of [...fans.values(), freeFan, nearFan]) if (f) f.mat.uniforms.uRes.value.set(W, H);
   // while the free plane settles onto a view, its fan and the cut follow the easing plane

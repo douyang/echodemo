@@ -233,7 +233,14 @@ export class Stage3D {
     const cyc = cycleAt(this.phase * RR);
     const s = cyc.s, v = cyc.v, drive = cyc.drive;
     this.heart.setState(o.a, s, v, drive);
-    this.state = { a: o.a, s, v, phase: this.phase, drive, t: cyc.t };
+    const a = this.heart.state.a;   // with the amyloid heart's own burden
+    this.state = { a, s, v, phase: this.phase, drive, t: cyc.t };
+    const P = this.heart.pheno;
+    if (P && P.version !== this.pv) {
+      // a new heart: its LV centre for the presets
+      this.pv = P.version;
+      this.lvCenter = this.anat.point('lv_eq', 0, 0).lerp(this.anat.point('mv', 0, 0), 0.25);
+    }
 
     if (this.tween) {
       const tw = this.tween;
@@ -252,7 +259,7 @@ export class Stage3D {
     const boil = reducedMotion ? 0 : Math.floor(this.clock * 7) * 1.37;
     this.pencil.render(this.scene, this.camera, this.heart, {
       boil,
-      amyloid: o.a,
+      amyloid: a,
       look: o.look,
       time: this.clock,
       groundUp: o.groundUp,
@@ -270,12 +277,13 @@ export class Stage3D {
 
   /**
    * Screen box (px) of the heart on the kept side of the cut: the end-diastolic
-   * shape at the current burden (the largest frame of the beat), every other vertex.
+   * shape of the heart shown (the largest frame of the beat), every other vertex.
    */
   screenBox() {
     if (!this.heart) return null;
-    const a = Math.round(this.opts.a * 100) / 100;
-    if (!this.sample || this.sample.a !== a) {
+    const P = this.heart.pheno;
+    const a = Math.round(Math.max(this.opts.a, P ? P.a : 0) * 100) / 100, key = `${a}|${P ? P.version : 0}`;
+    if (!this.sample || this.sample.key !== key) {
       const heart = [], peri = [];
       const v = new THREE.Vector3(), t = new THREE.Vector3();
       this.heart.group.updateMatrixWorld(true);
@@ -283,20 +291,21 @@ export class Stage3D {
         if (!m.geometry) continue;
         const g = m.geometry;
         const pos = g.attributes.position;
-        const k = m.morphTargetDictionary ? m.morphTargetDictionary.amyloid : undefined;
-        const d = k !== undefined && g.morphAttributes.position ? g.morphAttributes.position[k] : null;
+        const dict = m.morphTargetDictionary || {}, MP = g.morphAttributes.position || [];
+        // the targets that make end-diastole: the amyloid burden, a disease heart's own shape
+        const use = [[dict.amyloid, a], [P && P.mesh ? dict[`ph_${P.mesh}`] : undefined, 1]].filter(([k, w]) => k !== undefined && MP[k] && w > 0);
         const out = name === 'Pericardium' ? peri : heart;
         for (let i = 0; i < pos.count; i += 2) {
           v.fromBufferAttribute(pos, i);
-          if (d && a > 0) {
-            t.fromBufferAttribute(d, i);
-            if (g.morphTargetsRelative) v.addScaledVector(t, a); else v.lerp(t, a);
+          for (const [k, w] of use) {
+            t.fromBufferAttribute(MP[k], i);
+            if (g.morphTargetsRelative) v.addScaledVector(t, w); else v.lerp(t, w);
           }
           v.applyMatrix4(m.matrixWorld);
           out.push(v.x, v.y, v.z);
         }
       }
-      this.sample = { a, heart: new Float32Array(heart), peri: new Float32Array(peri) };
+      this.sample = { key, heart: new Float32Array(heart), peri: new Float32Array(peri) };
     }
     const M = new THREE.Matrix4().multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse).elements;
     const plane = this.heart.clip.length ? this.heart.clipPlane : null;

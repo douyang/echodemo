@@ -20,6 +20,22 @@ const lerp2 = (a, b, t) => [mix(a[0], b[0], t), mix(a[1], b[1], t)];
 const perp = (a) => [-a[1], a[0]];
 const smooth = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
 
+// ---------------------------------------------------------------- the heart shown
+// The heart the page shows (pheno.js) changes the valves in every view drawn here: a bicuspid
+// aortic valve (right and left cusps fused) closes off-centre in the long axis and opens as a
+// slit in the short axis; a Barlow mitral valve has thick, long leaflets that billow past the
+// annulus into the atrium. Walls and chamber sizes stay each page's own.
+let HEART = 'normal';
+export function setHeart(k) { HEART = k || 'normal'; }
+const BARLOW = { len: 1.3, thick: 0.3, tent: -0.5 };
+/** The mitral leaflet thickness (cm) the views draw for a page's thickness t. */
+export function shownMitralThick(t) { return HEART === 'barlow' ? Math.max(t, BARLOW.thick) : t; }
+/** The mitral settings v and leaflet-length factor k for the heart shown. */
+function mitralOf(v, k) {
+  if (HEART !== 'barlow') return [v, k];
+  return [{ ...v, thick: Math.max(v?.thick ?? 0.12, BARLOW.thick), tent: BARLOW.tent }, k * BARLOW.len];
+}
+
 /** Catmull-Rom spline through points; closed or open. */
 function spline(pts, n = 10, closed = false) {
   const out = [];
@@ -227,7 +243,8 @@ function valvePair(h1, h2, L1, L2, toward, o) {
   for (let k = 0; k < 24; k++) { const m = (lo + hi) / 2; if (left(m, 0) > left(m, 1)) lo = m; else hi = m; }
   const C = cAt((lo + hi) / 2);
   const c1 = add(C, mul(span, -gap / 2)), c2 = add(C, mul(span, gap / 2));
-  const tail = gap > 0.02 ? 0 : Math.max(0, Math.min(left((lo + hi) / 2, 0), 0.45));
+  // the length the leaflets have left over goes first into the zone where they meet (up to 8 mm)
+  const tail = gap > 0.02 ? 0 : Math.max(0, Math.min(left((lo + hi) / 2, 0), o.coapt ?? 0.8));
   const shut1 = flap(h1, c1, L1, back, toward, tail), shut2 = flap(h2, c2, L2, back, toward, tail);
   const open1 = flap(h1, o.open1, L1, o.bulge1), open2 = flap(h2, o.open2, L2, o.bulge2);
   return { shut1, shut2, open1, open2, C };
@@ -465,7 +482,7 @@ function apValve(h1, h2, toward, L1, L2, v, shut) {
     open1 = lerp2(open1, add(tip, mul(span, -tw / 2)), k);
     open2 = lerp2(open2, add(tip, mul(span, tw / 2)), k);
   }
-  const P = valvePair(h1, h2, L1, L2, toward, { gap: v?.gap ?? 0, open1, open2, bulge1: out1, bulge2: span });
+  const P = valvePair(h1, h2, L1, L2, toward, { gap: v?.gap ?? 0, tent: v?.tent, open1, open2, bulge1: out1, bulge2: span });
   const l1 = swing(h1, P.open1, P.shut1, shut), l2 = swing(h2, P.open2, P.shut2, shut);
   const th = v?.thick ?? 0.12, tipTh = th * (1 + 0.4 * dome);
   return { l1, l2, o1: leafOutline(l1, th * 0.75, tipTh), o2: leafOutline(l2, th * 0.75, tipTh), tip: lerp2(l1[NL], l2[NL], 0.5), gapMid: P.C };
@@ -605,8 +622,8 @@ function a4cShape(g, c, ph, dyn = {}) {
   // valves. Mitral: anterior leaflet on the septal side (2.5 cm), posterior on the lateral side
   // (1.5 cm). Tricuspid: septal leaflet (1.5 cm), anterior leaflet on the free wall (2.1 cm).
   const valve = apValve;
-  const mvK = g.mvK ?? 1;   // leaflet length factor: longer leaflets span a dilated annulus
-  const mv = valve(S0, L0, ax, 2.5 * mvK, 1.5 * mvK, g.mv, ph.mvShut);
+  const [mvV, mvK] = mitralOf(g.mv, g.mvK ?? 1);   // mvK: longer leaflets span a dilated annulus
+  const mv = valve(S0, L0, ax, 2.5 * mvK, 1.5 * mvK, mvV, ph.mvShut);
   const Tc = lerp2(TS, TL, 0.5);
   const rvAx = unit(sub(Ra, Tc));
   const tv = valve(TS, TL, rvAx, 1.5, 2.1, g.tv, ph.tvShut);
@@ -782,8 +799,8 @@ function a2cShape(g, c, ph) {
   const pm = [muscle(pmI, dI, 0.9, 0.75 + 0.25 * c, mul(nl, -1)), muscle(pmA, dA, 0.9, 0.75 + 0.25 * c, nl)];
   const tipI = add(pmI, mul(dI, 0.82)), tipA = add(pmA, mul(dA, 0.82));
   // mitral valve: the posterior leaflet on the inferior side (1.5 cm), the anterior on the anterior side (2.3 cm)
-  const mvK = g.mvK ?? 1;
-  const mv = apValve(S0, L0, ax, 1.5 * mvK, 2.3 * mvK, g.mv, ph.mvShut);
+  const [mvV, mvK] = mitralOf(g.mv, g.mvK ?? 1);
+  const mv = apValve(S0, L0, ax, 1.5 * mvK, 2.3 * mvK, mvV, ph.mvShut);
   const chords = [[tipI, along(mv.l1, 0.97)], [tipI, along(mv.l1, 0.6)], [tipA, along(mv.l2, 0.97)], [tipA, along(mv.l2, 0.7)], [add(tipA, mul(nl, -0.12)), along(mv.l2, 0.5)]];
   // pericardium round the LV, from one atrioventricular groove to the other
   const wallsOut = [add(S0, mul(nl, -(wall + 0.25))), ...lvOut, add(L0, mul(nl, wall + 0.25))];
@@ -886,8 +903,11 @@ function plaxShape(g, c, ph) {
   // the walls converge toward the apex, off the left of the image; not at all at the tips
   const cv = (x) => (x >= xM ? 0 : smooth((xM - x) / (xM - xL)));
   const aoTop = yLv - 0.05, aoBot = aoTop + lvot, aoMid = (aoTop + aoBot) / 2;
-  const hingeP = [xAnn + 0.35, yPw - 0.1];          // posterior mitral hinge (AV groove)
-  const hingeA = [xAnn + 0.1, aoBot + 0.08];        // anterior mitral hinge (aortic-mitral curtain)
+  // mitral hinges: anterior on the aortic-mitral curtain, posterior in the AV groove. The annulus
+  // narrows about 15% in systole: the basal posterior wall moves less than the wall below it
+  const hA = aoBot + 0.08, dA0 = yLv + at(g.lvid, 0) - 0.1 - hA;
+  const hingeP = [xAnn + 0.35, hA + dA0 * (1 - 0.15 * c)];
+  const hingeA = [xAnn + 0.1, hA];
   const xs = (a, b, n = 40) => Array.from({ length: n + 1 }, (_, i) => mix(a, b, i / n));
   // septum: thinner toward the membranous part, where it meets the anterior aortic wall
   const sepTh = (x) => ivs * (x < -1.6 ? 1 : mix(1, 0.55, smooth((x + 1.6) / (xAnn + 1.25))));
@@ -900,7 +920,8 @@ function plaxShape(g, c, ph) {
   const rvEndoT = trabeculate(rvEndo, (u) => 0.1 * (1 - smooth(u / 0.35)), [xL + 2, yIvs], 0.4);
   const rvRib = ribbon(rvEndoT, rvEpi);
   // posterior (inferolateral) wall, rising to the AV groove
-  const pwEndo = xs(xL, hingeP[0]).map((x) => [x, yPw - 0.22 * lvid * cv(x) - 0.1 * smooth((x + 1.2) / (hingeP[0] + 1.2))]);
+  const lag = hingeP[1] - (yPw - 0.1);   // how far the groove stays behind the contracting wall
+  const pwEndo = xs(xL, hingeP[0]).map((x) => [x, yPw - 0.22 * lvid * cv(x) - 0.1 * smooth((x + 1.2) / (hingeP[0] + 1.2)) + lag * smooth((x + 2) / (hingeP[0] + 2))]);
   const pwTh = (x) => pw * (x > -0.8 ? mix(1, 0.75, smooth((x + 0.8) / (hingeP[0] + 0.8))) : 1);
   const pwEpi = pwEndo.map((p) => [p[0], p[1] + pwTh(p[0])]);
   const pwRib = ribbon(pwEndo, pwEpi);
@@ -948,11 +969,14 @@ function plaxShape(g, c, ph) {
   // aortic valve: right (front) and non-coronary (back) cusps from the annulus. Shut, they meet
   // in the middle of the root and sag toward the LV; open, they lie along the sinus walls. A
   // stiff valve opens only to open (cm) and the cusps dome into the aorta.
+  // A bicuspid valve closes off-centre: the larger, fused cusp in front reaches past the middle.
   const cuspA0 = [xAnn + 0.05, aoTop + 0.05], cuspP0 = [xAnn + 0.05, aoBot - 0.05];
   const openW = g.av?.open ?? 1.9, avGap = g.av?.gap ?? 0;
-  const lc = Math.hypot(0.8, (aoBot - aoTop) / 2 - 0.05) * 1.04 + 0.12;       // cusp length
-  const aoC = [xAnn + 0.85, aoMid];
+  const ecc = g.av?.ecc ?? (HEART === 'bav' ? 0.35 : 0);
+  const aoC = [xAnn + 0.85, aoMid + (ecc * (aoBot - aoTop)) / 2];
+  const lcOf = (sgn) => Math.hypot(0.8, Math.abs((sgn < 0 ? aoTop : aoBot) - aoC[1]) - 0.05) * 1.04 + 0.12;   // cusp length
   const cusp = (h, sgn) => {
+    const lc = lcOf(sgn);
     const shut = flap(h, add(aoC, [0, sgn * avGap / 2]), lc, [-1, 0], avGap > 0.02 ? null : [1, 0], 0.12);
     const k = smooth((1.9 - openW) / 0.6);
     const end = lerp2(add(h, mul(unit([0.97, sgn * 0.12]), lc * 0.96)), [xAnn + 0.35 + lc * 0.55, aoMid + (sgn * openW) / 2], k);
@@ -966,21 +990,22 @@ function plaxShape(g, c, ph) {
   // from the atrioventricular groove. Rheumatic: the tips stay close and the anterior leaflet
   // domes toward the septum; the short posterior leaflet cannot move.
   const shut = ph.mvShut;
-  const dome = g.mv?.dome ?? 0;
+  const [mvV, mvK] = mitralOf(g.mv, 1);
+  const dome = mvV?.dome ?? 0;
   const toLV = unit(perp(sub(hingeP, hingeA)));
   const toward = toLV[0] < 0 ? toLV : mul(toLV, -1);
   const up = unit(sub(hingeA, hingeP));
   const rot = (d, side, deg) => { const r = (deg * Math.PI) / 180; return unit(add(mul(d, Math.cos(r)), mul(side, Math.sin(r)))); };
-  let openA = add(hingeA, mul(rot(toward, up, 38), 2.6 * 0.96)), openP = add(hingeP, mul(rot(toward, mul(up, -1), 25), 1.5 * 0.96));
+  let openA = add(hingeA, mul(rot(toward, up, 38 - 14 * (mvK - 1)), 2.6 * mvK * 0.96)), openP = add(hingeP, mul(rot(toward, mul(up, -1), 25), 1.5 * mvK * 0.96));
   if (dome > 0) {
-    const k = smooth(dome / 0.6), w = g.mv?.tip ?? 1.2;
+    const k = smooth(dome / 0.6), w = mvV?.tip ?? 1.2;
     const tipMid = add(lerp2(hingeA, hingeP, 0.5), mul(toward, 1.25 + 0.3 * (1 - dome)));
     openA = lerp2(openA, add(tipMid, mul(up, w / 2)), k);
     openP = lerp2(openP, add(tipMid, mul(up, -w / 2)), k);
   }
-  const MP = valvePair(hingeA, hingeP, 2.6, 1.5, toward, { gap: g.mv?.gap ?? 0, open1: openA, open2: openP, bulge1: up, bulge2: mul(up, -1) });
+  const MP = valvePair(hingeA, hingeP, 2.6 * mvK, 1.5 * mvK, toward, { gap: mvV?.gap ?? 0, tent: mvV?.tent, open1: openA, open2: openP, bulge1: up, bulge2: mul(up, -1) });
   const aml = swing(hingeA, MP.open1, MP.shut1, shut), pml = swing(hingeP, MP.open2, MP.shut2, shut);
-  const mvTh = g.mv?.thick ?? 0.12, mvTip = mvTh * (1 + 0.4 * dome);
+  const mvTh = mvV?.thick ?? 0.12, mvTip = mvTh * (1 + 0.4 * dome);
   const amlO = leafOutline(aml, mvTh * 0.75, mvTip), pmlO = leafOutline(pml, mvTh * 0.75, mvTip);
   const tipA = aml[NL], tipP = pml[NL];
   // posteromedial papillary muscle rising from the posterior wall, chordae to both leaflets
@@ -1079,7 +1104,10 @@ export function plaxLV(ctx, geo) {
 }
 
 // ---------------------------------------------------------------- short-axis insets
-/** Parasternal short axis at the aortic valve: three cusps, orifice drawn to its area (cm²). */
+/**
+ * Parasternal short axis at the aortic valve: three cusps, or two when the valve is bicuspid
+ * (g.bicuspid, or the bicuspid heart); the orifice drawn to its area (cm²).
+ */
 export function drawPSAXav(ctx, box, g, o = {}) {
   const F = frame(ctx, box, o.depth ?? 9, o.title ?? 'PSAX · AORTIC VALVE', { deg: 72, near: 1.3 });
   const ph = phase(o.t ?? 150);
@@ -1111,13 +1139,29 @@ export function drawPSAXav(ctx, box, g, o = {}) {
   const ro = Math.min(r * 0.93, Math.sqrt((4 * area) / (3 * Math.sqrt(3))));
   // the cusps' free edges run from one commissure to the next: shut, through the centre (the
   // three together make a Y); open, along a triangle whose corners point to the commissures
-  const comA = [0, 1, 2].map((i) => -PI / 2 + (i * 2 * PI) / 3 + PI / 3);
+  const bic = g.bicuspid ?? HEART === 'bav';
   const dir = (a, d) => add(C, [d * Math.cos(a), d * Math.sin(a)]);
-  const com = comA.map((a) => dir(a, r));
   const cusps = [];
-  for (let i = 0; i < 3; i++) {
-    const a0 = comA[i], a1 = comA[(i + 1) % 3] + (i === 2 ? 2 * PI : 0), am = (a0 + a1) / 2;
-    cusps.push(spline([com[i], dir(a0, Math.max(0.05, ro * 0.97)), dir(am, ro * 0.62), dir(a1, Math.max(0.05, ro * 0.97)), com[(i + 1) % 3]], 6));
+  let com, orifice, raphe = null;
+  if (bic) {
+    // right and left cusps fused: two commissures, at about 10 and 5 o'clock, and a raphe where
+    // the third one was (2 o'clock). Shut, the two free edges meet in one line from commissure to
+    // commissure; open, they part as a slit whose area (a lens, 4/3 x length x half-width) is AVA
+    com = [dir(PI * 0.39, r), dir(PI * 1.28, r)];
+    const Lc = len(sub(com[1], com[0])), w = Math.min(r * 0.8, (3 * area) / (4 * Lc));
+    const nrm = unit(perp(sub(com[1], com[0])));
+    const edge = (sg) => spline([com[0], add(lerp2(com[0], com[1], 0.22), mul(nrm, sg * w * 0.62)), add(lerp2(com[0], com[1], 0.5), mul(nrm, sg * w)), add(lerp2(com[0], com[1], 0.78), mul(nrm, sg * w * 0.62)), com[1]], 8);
+    cusps.push(edge(1), edge(-1));
+    orifice = [...edge(1), ...edge(-1).slice().reverse()];
+    raphe = [dir(-PI / 6, r), dir(-PI / 6, r * 0.5)];
+  } else {
+    const comA = [0, 1, 2].map((i) => -PI / 2 + (i * 2 * PI) / 3 + PI / 3);
+    com = comA.map((a) => dir(a, r));
+    for (let i = 0; i < 3; i++) {
+      const a0 = comA[i], a1 = comA[(i + 1) % 3] + (i === 2 ? 2 * PI : 0), am = (a0 + a1) / 2;
+      cusps.push(spline([com[i], dir(a0, Math.max(0.05, ro * 0.97)), dir(am, ro * 0.62), dir(a1, Math.max(0.05, ro * 0.97)), com[(i + 1) % 3]], 6));
+    }
+    orifice = [0, 1, 2, 3].map((i) => dir(-PI / 2 + (i * 2 * PI) / 3 + PI / 3, ro * 0.98));
   }
   const flapOf = (l) => leafOutline(l, 0.07, 0.1);
   const cTh = g.thick ?? 0.12;
@@ -1130,11 +1174,13 @@ export function drawPSAXav(ctx, box, g, o = {}) {
     { borders: [rvIn, rvOutC, la, ra], e: DB.myo, spec: 6 },
     { lines: pa, e: DB.fibrous - 3, w: 0.18 },
     ...leaves([...tvL, ...pvL].map(flapOf), null, DB.valve - 2),
-    // the cusps' free edges; shut, the three meet in a Y with a small nodule at the centre
+    // the cusps' free edges; shut, three meet in a Y with a small nodule at the centre, two in a line
     ...leaves(cusps.map((c) => band(c, cTh)), null, valveDb({ thick: g.thick })),
   ];
-  if (ph.avOpen < 0.35) items.push({ polys: [ellipse(C, 0.09 + cTh * 0.3, 0.08 + cTh * 0.3, 12)], e: valveDb({ thick: g.thick }) + 2 });
-  if (g.calc > 0.05) items.push({ lines: com.map((p) => [add(p, [-0.12, 0]), add(p, [0.12, 0.05])]), e: DB.calcium - 6 * (1 - g.calc), w: 0.3 * g.calc + 0.08, shadow: 9 * g.calc });
+  if (raphe) items.push({ lines: [raphe], e: valveDb({ thick: g.thick }) + 3, w: cTh * 1.8 });
+  if (ph.avOpen < 0.35 && !bic) items.push({ polys: [ellipse(C, 0.09 + cTh * 0.3, 0.08 + cTh * 0.3, 12)], e: valveDb({ thick: g.thick }) + 2 });
+  const calcAt = raphe ? [...com, raphe[1]] : com;
+  if (g.calc > 0.05) items.push({ lines: calcAt.map((p) => [add(p, [-0.12, 0]), add(p, [0.12, 0.05])]), e: DB.calcium - 6 * (1 - g.calc), w: 0.3 * g.calc + 0.08, shadow: 9 * g.calc });
   scan(ctx, F, items, { t: o.t });
   // planimetry of the orifice during ejection
   if (ph.avOpen > 0.6 && o.trace !== false) {
@@ -1142,11 +1188,8 @@ export function drawPSAXav(ctx, box, g, o = {}) {
     ctx.strokeStyle = SC.cal;
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
-    for (let i = 0; i <= 3; i++) {
-      const a = -PI / 2 + (i * 2 * PI) / 3 + PI / 3;
-      const q = F.P(add(C, [ro * Math.cos(a) * 0.98, ro * Math.sin(a) * 0.98]));
-      if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]);
-    }
+    orifice.forEach((p, i) => { const q = F.P(p); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); });
+    ctx.closePath();
     ctx.stroke();
     ctx.restore();
   }
@@ -1180,7 +1223,7 @@ export function drawPSAXmv(ctx, box, g, o = {}) {
   const Mc = [C[0], C[1] + 0.2];
   const orifice = ellipse(Mc, aAx, bAx, 40);
   const annulus = ellipse(Mc, annR, annR * 0.86, 40);
-  const thick = g.thick ?? 0.12;
+  const thick = shownMitralThick(g.thick ?? 0.12);
   const rimW = Math.max(0.1, thick);
   const rim = ribbon([...orifice, orifice[0]], [...ellipse(Mc, aAx + rimW, bAx + rimW, 40), [Mc[0] + aAx + rimW, Mc[1]]]);
   const items = [

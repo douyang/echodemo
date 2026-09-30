@@ -24,6 +24,22 @@ export function leafletWeights(name, v, drive, a = 0, s = 0) {
   };
 }
 
+/**
+ * Weights of a disease heart's shape targets (gl/phenomesh.js) among a mesh's target names: the
+ * end-diastolic shape ph_<key> (1), its systolic change ph_<key>_sys (s; 0 with noSys, where a
+ * chapter sets the wall motion itself) and its leaflet shapes ph_<key>_mid and ph_<key>_far
+ * (the leaflet weights lw). P: the heart the page shows ({ mesh }), or null.
+ */
+export function phenoWeights(names, P, s, lw = null, noSys = false) {
+  const out = {};
+  const k = P && P.mesh ? `ph_${P.mesh}` : null;
+  for (const n of names) {
+    if (!n.startsWith('ph_')) continue;
+    out[n] = n === k ? 1 : n === `${k}_sys` ? (noSys ? 0 : s) : n === `${k}_mid` ? (lw ? lw.leaflets_mid : 0) : n === `${k}_far` ? (lw ? lw.leaflets : 0) : 0;
+  }
+  return out;
+}
+
 // Lambert shading packed into (tone, region, flag, 1) for the pencil composite.
 function dataMaterial(flag, vertexColors, clipping) {
   const m = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors, side: THREE.DoubleSide });
@@ -163,6 +179,7 @@ export class Heart {
     this.items = [];           // {mesh, data, normal}
     this.meshes = {};
     this.state = { a: 0, s: 0, v: 0 };
+    this.pheno = null;         // the disease heart shown ({ key, a, mesh }), set by model3d.js
     root.updateMatrixWorld(true);
     root.traverse((o) => {
       if (!o.isMesh) return;
@@ -226,8 +243,11 @@ export class Heart {
   /**
    * a = amyloid burden, s = systolic phase, v = leaflet phase (valves);
    * drive = {mv, tv, av, pv} for the detailed valves (null: v moves them all).
+   * The disease heart (this.pheno) adds its amyloid burden or its own shape targets.
    */
   setState(a, s, v = s, drive = null) {
+    const P = this.pheno;
+    a = Math.max(a, P ? P.a : 0);
     this.state = { a, s, v, drive };
     for (const [name, mesh] of Object.entries(this.meshes)) {
       const dict = mesh.morphTargetDictionary;
@@ -236,11 +256,14 @@ export class Heart {
       if (dict.amyloid !== undefined) inf[dict.amyloid] = a;
       if (dict.systole !== undefined) inf[dict.systole] = s;
       if (dict.amyloid_systole !== undefined) inf[dict.amyloid_systole] = a * s;
+      let lw = null;
       if (dict.leaflets_mid !== undefined) {
-        for (const [key, w] of Object.entries(leafletWeights(name, v, drive, a, s))) {
+        lw = leafletWeights(name, v, drive, a, s);
+        for (const [key, w] of Object.entries(lw)) {
           if (dict[key] !== undefined) inf[dict[key]] = w;
         }
       } else if (dict.leaflets !== undefined) inf[dict.leaflets] = VALVES.includes(name) ? v : 0;
+      for (const [key, w] of Object.entries(phenoWeights(Object.keys(dict), P, s, lw))) inf[dict[key]] = w;
     }
   }
 
@@ -280,8 +303,23 @@ export class Anatomy {
     this.lateral = new THREE.Vector3(...f.lateral).normalize();
     this.anterior = new THREE.Vector3(...f.anterior).normalize();
     this.aorticRoot = new THREE.Vector3(...f.aortic_root).normalize();
+    // the disease heart the page shows: { a (amyloid burden), landmark(name, s) (a shape of
+    // phenomesh.js) }, or null (model3d.js sets it)
+    this.pheno = null;
   }
+  /** A landmark of the heart shown: the disease heart's own point, or the corners at a. */
   point(name, a, s) {
+    const P = this.pheno;
+    if (P && P.landmark) return P.landmark(name, s);
+    return this.raw(name, Math.max(a, P ? P.a : 0), s);
+  }
+  /** The same anatomy with the normal heart's landmarks, whatever heart is shown. */
+  normal() {
+    if (!this._normal) { this._normal = Object.create(this); this._normal.pheno = null; }
+    return this._normal;
+  }
+  /** A landmark of the model's own four corners: normal or amyloid (a), end-diastole to end-systole (s). */
+  raw(name, a, s) {
     const c = this.doc.corners;
     const get = (k) => new THREE.Vector3(...c[k].landmarks[name]);
     const n = get('normal_ed').multiplyScalar((1 - a) * (1 - s))

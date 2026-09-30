@@ -195,6 +195,46 @@ a:hover { text-decoration-color: var(--accent); }
 }
 .tool:hover { border-color: var(--ink-2); }
 .tool svg { width: 15px; height: 15px; }
+/* the heart the page shows: a select inside a pill */
+.heart-pick { position: relative; padding-right: 26px; }
+.heart-pick select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 600 0.75rem/1 var(--sans);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.heart-pick select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+.heart-pick select option { color: var(--ink); background: var(--paper); }
+.heart-pick::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border: solid currentColor;
+  border-width: 0 1.3px 1.3px 0;
+  transform: translate(0, -70%) rotate(45deg);
+  pointer-events: none;
+}
+.heart-pick.is-disease { border-color: var(--accent); }
+.heart-pick.is-disease svg path { fill: color-mix(in srgb, var(--accent) 30%, transparent); }
+.pheno-note {
+  margin: 12px 0 0;
+  padding: 7px 10px;
+  border-left: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--paper-2) 70%, transparent);
+  font: 400 0.8125rem/1.45 var(--sans);
+  color: var(--ink-2);
+}
+.pheno-note b { color: var(--ink); font-weight: 600; }
+.pheno-busy { color: var(--accent); font-style: italic; }
 
 /* ------------------------------------------------------------------ stage */
 .fig { position: absolute; inset: 0; margin: 0; display: none; }
@@ -681,6 +721,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 }
 @media (max-width: 1180px) {
   :root { --panel-w: clamp(320px, 38vw, 410px); }
+  .heart-pick .t { display: none; }
   .chapters .t { font-size: 0.8125rem; }
   .groups li { letter-spacing: 0.14em; }
 }
@@ -733,9 +774,12 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .fig.free-on .split.wide .pane-2d { display: block; }
   .tag { font-size: 0.98rem; }
   .tag small { font-size: 0.78rem; }
-  .tools { top: 14px; right: 14px; }
+  .tools { top: 14px; right: 14px; width: 132px; flex-wrap: wrap; justify-content: flex-end; }
   .tool .t { display: none; }
   .tool { width: 34px; padding: 0; justify-content: center; }
+  /* the heart picker takes a second row under the three icons */
+  .tool.heart-pick { order: 9; width: 100%; height: 30px; padding: 0 24px 0 10px; justify-content: flex-start; }
+  .heart-pick select { flex: 1; min-width: 0; font-size: 0.72rem; }
   .sheet { padding: 18px 16px 20px; }
 }
 @media (max-width: 480px) {

@@ -6,7 +6,7 @@ import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV } from '../cyclemodel.js';
 import { msGrade } from '../norms.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit } from '../sev.js';
-import { drawPLAX, drawPSAXmv, measures } from '../echo2d.js';
+import { drawPLAX, drawPSAXmv, measures, shownMitralThick } from '../echo2d.js';
 
 const KEY = 'msS';
 const mean = (fn, n = 400) => { let a = 0; for (let i = 0; i < n; i++) a += fn((i + 0.5) / n); return a / n; };
@@ -73,7 +73,7 @@ function plax(ctx, box, m, t) {
   const jets = m.s > 0.08 ? { ms: { q: (70 / (m.dfp / 1000)) * 1.1, va: 40, vc: m.tip * 0.6, jl: 2.5 + 2.5 * m.s, jw: 0.9 + m.tip * 0.4, a } } : {};
   drawPLAX(ctx, box, g, {
     t, jets, title: fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 40 cm/s', 'PLAX · COLOR 40'),
-    after: (c, F) => measures(c, F, [`LA ${m.la.toFixed(1)} cm`, `leaflets ${(m.thick * 10).toFixed(0)} mm`]),
+    after: (c, F) => measures(c, F, [`LA ${m.la.toFixed(1)} cm`, `leaflets ${(shownMitralThick(m.thick) * 10).toFixed(0)} mm`]),
   });
 }
 

@@ -6,12 +6,13 @@ import { Sheet, clamp, mix, MONO, SANS } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { cycleAt, RR } from '../cyclemodel.js';
 import { loadModel } from '../model3d.js';
+import { TERRITORY, segmentOf, apicalTurn } from '../aha.js';
 
 export const SEG_NAMES = ['basal anterior', 'basal anteroseptal', 'basal inferoseptal', 'basal inferior', 'basal inferolateral', 'basal anterolateral',
   'mid anterior', 'mid anteroseptal', 'mid inferoseptal', 'mid inferior', 'mid inferolateral', 'mid anterolateral',
   'apical anterior', 'apical septal', 'apical inferior', 'apical lateral', 'apex'];
-// Standard AHA assignment (Javadi 2010, Figure 2); supply varies between patients.
-export const TERRITORY = { lad: [1, 2, 7, 8, 13, 14, 17], rca: [3, 4, 9, 10, 15], lcx: [5, 6, 11, 12, 16] };
+// Standard AHA assignment (Javadi 2010, Figure 2; aha.js); supply varies between patients.
+export { TERRITORY };
 const ANAME = { lad: 'left anterior descending', rca: 'right coronary', lcx: 'circumflex' };
 // Segments along each apical view, screen-left base to apex to screen-right base (Lang 2015, Figure 4).
 const VIEWS = {
@@ -57,15 +58,6 @@ let layout = null;   // where the last frame put the bull's-eye and the apical w
 const ECHO = [['A4C', 'a4c'], ['A2C', 'a2c'], ['A3C', 'a3c']];
 let echo = null;
 
-/** The segment at level h (0 apex .. 1 mitral annulus) and angle th (deg; 90 anterior, 180 septal). */
-function segmentOf(h, th) {
-  if (h < 0.06) return 17;
-  const a = ((th % 360) + 360) % 360;
-  if (h < 0.36) return [13, 14, 15, 16][(Math.round((a - 90) / 90) % 4 + 4) % 4];
-  const i = (Math.round((a - 90) / 60) % 6 + 6) % 6;
-  return h < 0.66 ? 7 + i : 1 + i;
-}
-
 /**
  * Each LV vertex's segments (the neighbourhood is sampled, so borders blend), and where to put
  * the segment numbers in each view. Angles are turned so that the model's own apical planes
@@ -76,18 +68,10 @@ export function segmentMap(m, geoms) {
   const mesh = m.heart.meshes.Myocardium;
   mesh.updateMatrixWorld(true);
   const e = mesh.matrixWorld.elements, P = mesh.geometry.attributes.position, C = mesh.geometry.attributes.color;
-  const A = m.anat, ax = A.axis, la = A.lateral, an = A.anterior;
+  // a vertex keeps its segment whatever heart is shown: found on the normal heart
+  const A = m.anat.normal(), ax = A.axis, la = A.lateral, an = A.anterior;
   const apex = A.point('apex_endo', 0, 0), L = A.point('mv', 0, 0).sub(apex).dot(ax);
-  const flat = (v) => v.clone().addScaledVector(ax, -v.dot(ax)).normalize();
-  const angle = (v) => (Math.atan2(v.dot(an), v.dot(la)) * 180) / Math.PI;
-  let sx = 0, sy = 0;
-  [['a4c', 210], ['a2c', 270], ['a3c', 330]].forEach(([k, std]) => {
-    const g = geoms[k];
-    if (!g) return;
-    const d = ((std - angle(flat(g.r.clone().negate()))) * Math.PI) / 180;
-    sx += Math.cos(d); sy += Math.sin(d);
-  });
-  const turn = (Math.atan2(sy, sx) * 180) / Math.PI;
+  const turn = apicalTurn(A, geoms);
   const n = P.count, H = new Float32Array(n), TH = new Float32Array(n), R = new Float32Array(n), REG = new Uint8Array(n), X = new Float32Array(3 * n);
   for (let i = 0; i < n; i++) {
     const x0 = P.getX(i), y0 = P.getY(i), z0 = P.getZ(i);
@@ -113,20 +97,6 @@ export function segmentMap(m, geoms) {
     const cnt = new Map();
     for (const dh of [-0.04, 0, 0.04]) for (const dt of [-8, 0, 8]) { const s = segmentOf(H[i] + dh, TH[i] + dt); cnt.set(s, (cnt.get(s) || 0) + 1); }
     mem[i] = [...cnt.entries()];
-  }
-  // the middle of the wall by level: the median distance of the LV's vertices from the axis
-  const rMid = (h) => { const l = lists[bin(h)]; return l.length ? l[Math.floor(l.length * 0.5)] : 2.5; };
-  // the numbers: on each view's two walls at the basal, mid and apical levels, and at the apex
-  const labels = {};
-  for (const [k, g] of Object.entries(geoms)) {
-    const out = [];
-    for (const side of [-1, 1]) {
-      const dir = flat(g.r.clone().multiplyScalar(side));
-      const th = angle(dir) + turn;
-      for (const h of [0.83, 0.51, 0.21]) out.push({ k: segmentOf(h, th), p: apex.clone().addScaledVector(ax, h * L).addScaledVector(dir, rMid(h)) });
-    }
-    out.push({ k: 17, p: apex.clone().addScaledVector(ax, -0.45) });
-    labels[k] = out;
   }
   // the pericardium moves with the wall under it: each of its vertices takes the scale of the
   // nearest LV wall vertex within 1.5 cm (a grid of 1.5 cm cells keeps the search short)
@@ -157,7 +127,50 @@ export function segmentMap(m, geoms) {
       near[j] = best;
     }
   }
-  return { mem, labels, turn, near };
+  return { mem, turn, near };
+}
+
+/**
+ * Where the segment numbers sit in each view (geoms: the planes of the heart shown): on its two
+ * walls at the basal, mid and apical levels, and at the apex, in the middle of the wall of the
+ * heart shown at end-diastole.
+ */
+export function segmentLabels(m, map, geoms) {
+  const mesh = m.heart.meshes.Myocardium, geo = mesh.geometry, P = geo.attributes.position, C = geo.attributes.color;
+  const e = mesh.matrixWorld.elements;
+  const A = m.anat, ax = A.axis, la = A.lateral, an = A.anterior;
+  const apex = A.point('apex_endo', 0, 0), L = A.point('mv', 0, 0).sub(apex).dot(ax);
+  const flat = (v) => v.clone().addScaledVector(ax, -v.dot(ax)).normalize();
+  const angle = (v) => (Math.atan2(v.dot(an), v.dot(la)) * 180) / Math.PI;
+  // end-diastole of the heart shown: the amyloid burden, or a disease heart's own shape
+  const ph = m.pheno, dict = mesh.morphTargetDictionary || {}, MP = geo.morphAttributes.position || [];
+  const use = [[dict.amyloid, ph.a], [ph.mesh ? dict[`ph_${ph.mesh}`] : undefined, 1]].filter(([k, w]) => k !== undefined && MP[k] && w);
+  const NB = 24, lists = Array.from({ length: NB }, () => []);
+  const bin = (h) => Math.floor(clamp(h, 0, 0.999) * NB);
+  for (let i = 0; i < P.count; i++) {
+    if (C && Math.round(C.getX(i) * 10) !== 1) continue;
+    let x0 = P.getX(i), y0 = P.getY(i), z0 = P.getZ(i);
+    for (const [k, w] of use) { x0 += w * MP[k].getX(i); y0 += w * MP[k].getY(i); z0 += w * MP[k].getZ(i); }
+    const x = e[0] * x0 + e[4] * y0 + e[8] * z0 + e[12], y = e[1] * x0 + e[5] * y0 + e[9] * z0 + e[13], z = e[2] * x0 + e[6] * y0 + e[10] * z0 + e[14];
+    const qx = x - apex.x, qy = y - apex.y, qz = z - apex.z;
+    const h = qx * ax.x + qy * ax.y + qz * ax.z;
+    lists[bin(h / L)].push(Math.hypot(qx - h * ax.x, qy - h * ax.y, qz - h * ax.z));
+  }
+  for (const l of lists) l.sort((p, q) => p - q);
+  // the middle of the wall by level: the median distance of the LV's vertices from the axis
+  const rMid = (h) => { const l = lists[bin(h)]; return l.length ? l[Math.floor(l.length * 0.5)] : 2.5; };
+  const labels = {};
+  for (const [k, g] of Object.entries(geoms)) {
+    const out = [];
+    for (const side of [-1, 1]) {
+      const dir = flat(g.r.clone().multiplyScalar(side));
+      const th = angle(dir) + map.turn;
+      for (const h of [0.83, 0.51, 0.21]) out.push({ k: segmentOf(h, th), p: apex.clone().addScaledVector(ax, h * L).addScaledVector(dir, rMid(h)) });
+    }
+    out.push({ k: 17, p: apex.clone().addScaledVector(ax, -0.45) });
+    labels[k] = out;
+  }
+  return labels;
 }
 
 /** Per-vertex scale on the systolic motion for the scores sc[1..17]. */
@@ -182,15 +195,16 @@ async function startEcho() {
   echo = { loading: true };
   try {
     const [m, E] = await Promise.all([loadModel(), import('../echo.js')]);
-    const map = segmentMap(m, Object.fromEntries(ECHO.map(([, k]) => [k, E.viewGeometry(m.anat, k)])));
+    const map = segmentMap(m, Object.fromEntries(ECHO.map(([, k]) => [k, E.viewGeometry(m.anat.normal(), k)])));
     const views = ECHO.map(([name, key]) => {
       const canvas = document.createElement('canvas');
       const ev = new E.EchoView(m, canvas, { offscreen: true, width: 240, height: 200 });
       ev.depth = 15;                     // closer than the standard views: the LV fills more
+      ev.noSys = true;                   // the scores set the wall motion, not the heart's own change
       ev.setView(key, { animate: false });
       return { name, key, ev, canvas, fresh: false };
     });
-    echo = { map, views, next: 0, segs: '' };
+    echo = { m, E, map, views, next: 0, segs: '', pv: -1, labels: {} };
     if (sheet) sheet.dirty = true;
   } catch (e) {
     echo = { failed: true };
@@ -199,7 +213,14 @@ async function startEcho() {
 
 /** The scores onto the model; a view that is stale is drawn again. */
 function syncEcho() {
-  if (!echo || !echo.views || echo.segs === st.segs) return;
+  if (!echo || !echo.views) return;
+  if (echo.pv !== echo.m.pheno.version) {
+    // a new heart: the numbers move to its walls, and every view is cut again
+    echo.pv = echo.m.pheno.version;
+    echo.labels = segmentLabels(echo.m, echo.map, Object.fromEntries(ECHO.map(([, k]) => [k, echo.E.viewGeometry(echo.m.anat, k)])));
+    for (const v of echo.views) v.fresh = false;
+  }
+  if (echo.segs === st.segs) return;
   const scale = regionalScale(echo.map, parse(st.segs)), ps = periScale(echo.map, scale);
   for (const v of echo.views) { v.ev.setRegional(scale, ps); v.fresh = false; }
   echo.segs = st.segs;
@@ -224,7 +245,7 @@ function echoView(sh, t, box, v, sc) {
   ctx.font = `600 ${w < 200 ? 9.5 : 11}px ${MONO}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  for (const { k, p } of echo.map.labels[v.key] || []) {
+  for (const { k, p } of echo.labels[v.key] || []) {
     const [u, vv] = v.ev.toPlane(p, g);
     const x = box.x + mp.X(u), y = box.y + mp.Y(vv);
     if (x < box.x + 6 || x > box.x + w - 6 || y < box.y + 6 || y > box.y + h - 6) continue;

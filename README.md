@@ -1,6 +1,6 @@
 # The Heart in Sound
 
-An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and the final report. Eighteen chapters in seven parts. Chapters 11 to 17 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. Every guideline value carries its source.
+An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and the final report. Eighteen chapters in seven parts. Chapters 11 to 17 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. A menu in the header changes the heart that every chapter shows: normal, cardiac amyloidosis, ischemic cardiomyopathy, a Barlow mitral valve with severe regurgitation, or a bicuspid aortic valve with severe stenosis. Every guideline value carries its source.
 
 ![Chapter 08, Planes: the standard views as planes through one heart, with the mitral valve selected](docs/screenshots/planes.webp)
 
@@ -25,7 +25,7 @@ An illustrated, interactive study of echocardiography for trainees: ultrasound p
 | | 15 Mitral regurgitation | Mild to severe with LV dysfunction: color jet and PISA shell, CW jet, pulmonary vein flow reversal, E wave, LV and LA dilation |
 | | 16 Tricuspid regurgitation | Mild to torrential: RV, annulus and RA dilation, hepatic vein reversal, IVC, septal flattening, a jet that slows at the torrential end |
 | Pericardium | 17 Pericardium | No effusion through mild, moderate and severe (large) effusion to tamponade: four-chamber view with the fluid round the heart, the RA and RV folding in and the septum moving with each breath; mitral, tricuspid and hepatic vein Doppler over a breath; PLAX with the fluid in front of the descending aorta; IVC M-mode |
-| Report | 18 Report | Four simulated cases written up in the ASE 2025 report structure, with sex-specific ranges |
+| Report | 18 Report | Four simulated cases, and one for each disease heart, written up in the ASE 2025 report structure, with sex-specific ranges |
 
 | | | |
 | --- | --- | --- |
@@ -38,6 +38,24 @@ An illustrated, interactive study of echocardiography for trainees: ultrasound p
 On a phone the figure sits above the text and stays in view while the text scrolls:
 
 ![Phone, chapter 08](docs/screenshots/phone-planes.webp) ![Phone, chapter 15](docs/screenshots/phone-mr.webp)
+
+## The heart shown
+
+The **Heart** menu in the header sets the heart for the whole page, and the page keeps the choice between visits. A note under the title says what the heart shows.
+
+- **The mesh changes shape.** The 3D heart, and every echo view cut from it (chapters 02, 05, 07, 08 and 10), take the chosen heart. Amyloidosis is the model's own amyloid state. The other three are built from the normal mesh the first time they are chosen (`src/gl/phenomesh.js`, a few seconds; the note says so while it runs): each moves the walls, valves and chambers and scales the systolic motion by segment.
+  - **Ischemic cardiomyopathy**: a large LAD infarct. The LV dilates to 222 mL with an EF of 25%, the LAD territory is thin and akinetic, the apex bulges a little in systole, the rest is hypokinetic, and the mitral leaflets are pulled toward the apex.
+  - **Barlow mitral valve**: thick, redundant leaflets that billow into the LA, a wide annulus, a large LA, and an LV of 183 mL with an EF of 67%.
+  - **Bicuspid aortic valve**: the right and left cusps fused along a raphe; the valve domes and opens as a slit. The LV walls thicken to 12.5 mm and the ascending aorta widens to 3.9 cm.
+- **The 2D views draw the heart's valves** (`setHeart` in `src/echo2d.js`). Under the bicuspid heart the short axis shows two cusps, a raphe and a slit, and the long axis closes off-centre. Under the Barlow heart the mitral leaflets are 3 mm thick and 30% longer, and in systole they billow up to 1 cm past the annulus. Walls and chamber sizes stay each page's own.
+- **Chapters open at the heart's values** (`src/pheno.js`). Eject opens at the heart's volumes and EF, Segments at the LAD occlusion, Fill at the heart's diastolic grade, and the heart's own valve page at its severity (aortic valve area 0.76 cm²; mitral EROA 0.46 cm²). The pericardium page opens at a 7 mm effusion under amyloidosis. The other valve pages open with no lesion, and no page plays on its own.
+- **The report** has a case for each heart, with its button next to the four standard cases.
+- **Sizes.** The LV volumes come from 50 short-axis slices of each shape. The slices read 6% over the model's own normal volumes (118 and 42 mL against 112 and 39), so each heart's values are scaled by 0.945.
+- **Limits.** The severity pages keep their own LV models, so a page can show values that differ from the heart's (the MR page gives an EF of 64% under the Barlow heart, the mesh 67%).
+
+| | | |
+| --- | --- | --- |
+| ![Ischemic cardiomyopathy in chapter 07: the dilated, rounded LV in the apical four-chamber cut and echo](docs/screenshots/heart-icm.webp) | ![Bicuspid aortic stenosis in chapter 12: the short axis shows two cusps and a slit in systole](docs/screenshots/heart-bav.webp) | ![Barlow mitral valve in chapter 15: severe regurgitation from thick, billowing leaflets](docs/screenshots/heart-barlow.webp) |
 
 ## Views and the lab's annotation classes
 
@@ -82,7 +100,7 @@ Every echo image is simulated. The anatomy comes from sections of the heart mesh
 - **Structures into the image.** A small rasterizer fills each structure into the beam grid with its exact coverage, so a leaflet or a chord thinner than a sample keeps part of its strength instead of dropping out.
 - **Near field and noise.** Chest-wall layers, reverberation clutter over the first 2 cm below them, and electronic noise that rises with depth and changes each frame while the cine runs.
 - **Display.** Light speckle reduction (a fifth of each sample is the local mean; two fifths in a zoomed view), time-gain with a small loss left at depth, darker sector edges, log compression over 56 dB, then scan conversion at the screen's own pixel density. The views draw about 30 frames a second.
-- **Valves in the parametric views.** Each leaflet keeps its length and swings about its hinge; closed, the leaflets billow a little toward the atrium and share a zone of contact. Rheumatic stenosis holds the tips, so the anterior leaflet domes and the short posterior leaflet cannot move. Regurgitation leaves a gap at closure; the aortic cusps open along the sinus walls, or dome when stiff. Chordae run from the papillary muscles to the leaflets and fade when slack in diastole.
+- **Valves in the parametric views.** Each leaflet keeps its length and swings about its hinge; closed, the leaflets meet in a zone of contact up to 8 mm long and stay on the ventricular side of the annulus, which narrows about 15% in systole. Rheumatic stenosis holds the tips, so the anterior leaflet domes and the short posterior leaflet cannot move. Regurgitation leaves a gap at closure; the aortic cusps open along the sinus walls, or dome when stiff. Chordae run from the papillary muscles to the leaflets and fade when slack in diastole.
 - **Anatomy in the parametric views.** Papillary muscles and chordae, apical trabeculae, the moderator band, pulmonary vein openings, the pericardium, the coronary sinus and the descending aorta. The walls stay at the model's values on the measuring line, so the calipers read what the page reports.
 - **Pericardium.** In the four-chamber view the sac follows the convex envelope of the ventricles' outer walls, 1.3 mm out: it wraps the apex and bridges the interventricular groove, which epicardial fat fills; an RV wall that collapses in tamponade pulls away from it. In the long axis it runs behind the posterior wall, round the coronary sinus in the atrioventricular groove and behind the LA, in front of the descending aorta, at least 1.3 mm from each. In the views cut from the mesh, any point of the pericardium that falls inside a wall moves out to the wall's surface.
 - **Effusion.** Fluid widens the pericardial space most over the free walls and the apex and least at the atrioventricular grooves; grey lung and mediastinum lie outside the sac, so the fluid shows as a dark band. In the parasternal long axis the fluid thins out at the atrioventricular groove in front of the descending aorta. A swinging heart rocks about the middle of the atrioventricular plane inside a sac that stays put: the apex travels farthest, and the grooves, where the fluid is thinnest, hardly move sideways.

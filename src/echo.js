@@ -3,8 +3,7 @@
 import * as THREE from '../vendor/three.bundle.min.js';
 import { tokens, MONO, SANS } from './sketch.js';
 import { VIEWS, VESSELS } from './views.js';
-import { leafletWeights } from './gl/heart.js';
-import { normalGeo } from './model3d.js';
+import { leafletWeights, phenoWeights } from './gl/heart.js';
 import { ecg as ecgStrip } from './scope.js';
 import { bmode, DB } from './bmode.js';
 import { reducedMotion } from './state.js';
@@ -242,7 +241,6 @@ class MeshData {
     this.count = g.attributes.position.count;
     this.index = g.index ? g.index.array : null;
     this.dict = mesh.morphTargetDictionary || {};
-    this.targets = (g.morphAttributes.position || []).map((a) => a.array);
     this.pos = new Float32Array(this.count * 3);
     this.sd = new Float32Array(this.count);
     // vertices from here on are the centres of a tube's end caps (abdomen.js)
@@ -251,24 +249,23 @@ class MeshData {
     this.matrix = mesh.matrixWorld.clone();
     this.identity = this.matrix.equals(new THREE.Matrix4());
     // the rest shape in world space: where each section point sat at end-diastole
-    this.rest = new Float32Array(this.base);
-    if (!this.identity) {
-      const e = this.matrix.elements, r = this.rest;
-      for (let k = 0; k < r.length; k += 3) {
-        const x = r[k], y = r[k + 1], z = r[k + 2];
-        r[k] = e[0] * x + e[4] * y + e[8] * z + e[12];
-        r[k + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
-        r[k + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
-      }
-    }
+    this.rest = new Float32Array(this.count * 3);
+    this.setRest({});
   }
-  morph(w) {
+  /** The shape targets (a disease heart adds its own after loading). */
+  get targets() { return (this.mesh.geometry.morphAttributes.position || []).map((a) => a.array); }
+  /** The rest shape: the base plus the targets w (the end-diastole of the heart shown). */
+  setRest(w) {
+    this.morph(w, false);
+    this.rest.set(this.pos);
+  }
+  morph(w, scaled = true) {
     const { base, pos, targets, dict } = this;
     pos.set(base);
     for (const [name, value] of Object.entries(w)) {
       const i = dict[name];
       if (i === undefined || !value) continue;
-      const t = targets[i], sc = this.scale && this.scale[name];
+      const t = targets[i], sc = scaled && this.scale && this.scale[name];
       // a per-vertex scale on a target: regional wall motion on the systole shape
       if (sc) for (let k = 0, v = 0; k < pos.length; k += 3, v++) { const f = value * sc[v]; pos[k] += f * t[k]; pos[k + 1] += f * t[k + 1]; pos[k + 2] += f * t[k + 2]; }
       else for (let k = 0; k < pos.length; k++) pos[k] += value * t[k];
@@ -420,7 +417,7 @@ const FULL = {
   MV: 'Mitral valve', TV: 'Tricuspid valve', AV: 'Aortic valve', PV: 'Pulmonic valve', Ao: 'Aorta', LVOT: 'LV outflow tract', RVOT: 'RV outflow tract',
   PA: 'Pulmonary artery', 'main PA': 'Main pulmonary artery', RPA: 'Right pulmonary artery', LPA: 'Left pulmonary artery', IVC: 'Inferior vena cava',
   SVC: 'Superior vena cava', 'desc Ao': 'Descending aorta', 'ascending Ao': 'Ascending aorta', 'descending Ao': 'Descending aorta', arch: 'Aortic arch',
-  LMCA: 'Left main coronary artery', RCA: 'Right coronary artery', 'Ao root': 'Aortic root', RCC: 'Right coronary cusp', LCC: 'Left coronary cusp', NCC: 'Non-coronary cusp', SMA: 'Superior mesenteric artery', 'abdominal Ao': 'Abdominal aorta',
+  LMCA: 'Left main coronary artery', RCA: 'Right coronary artery', 'Ao root': 'Aortic root', RCC: 'Right coronary cusp', LCC: 'Left coronary cusp', NCC: 'Non-coronary cusp', 'R+L': 'Fused right and left cusps', SMA: 'Superior mesenteric artery', 'abdominal Ao': 'Abdominal aorta',
 };
 const ROOMY = new Set(['la', 'ra', 'lv', 'rv', 'rvant', 'rvot', 'mpa', 'ao', 'asc', 'arch', 'desc', 'ivc', 'ivcl', 'rpa', 'lpa', 'svc', 'abdao']);
 
@@ -439,7 +436,9 @@ export class EchoView {
     this.calipers = false;
     this.labels = !this.offscreen;
     this.measure = {};
-    this.geo = normalGeo(model.doc);
+    this.geo = model.sizes;
+    this.pv = -1;         // the version of the heart it last took (model3d.js); the first frame takes it
+    this.noSys = false;   // true: the heart's own systolic change is off (chapter 10 sets the motion)
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
     this.tr = null;
@@ -555,7 +554,13 @@ export class EchoView {
   /** The view's settings; a chapter may set its own depth and sector width (chapter 02). */
   specOf(key) {
     const base = key === 'free' ? this.freeSpec || {} : VIEWS[key] || {};
-    return { ...base, depth: this.depth ?? base.depth, angle: this.angle ?? base.angle };
+    const spec = { ...base, depth: this.depth ?? base.depth, angle: this.angle ?? base.angle };
+    // a bicuspid valve (phenomesh.js): the right and left cusps are one, fused along a raphe
+    const P = this.model.pheno;
+    if (P && P.key === 'bav' && spec.labels && spec.labels.some(([id]) => id === 'rcc')) {
+      spec.labels = [...spec.labels.filter(([id]) => !['rcc', 'lcc', 'ncc'].includes(id)), ['rl', 'R+L'], ['raphe', 'raphe'], ['ncc', 'NCC']];
+    }
+    return spec;
   }
 
   /** The plane now on screen: the eased one during a change, else the view's own. */
@@ -727,8 +732,32 @@ export class EchoView {
     if (this.cutOn !== false) this.stage.heart.setCut(new THREE.Plane().setFromNormalAndCoplanarPoint(g.n.clone(), g.O));
   }
 
+  /**
+   * The heart shown changed (model3d.js): the rest shapes for the speckle, the sizes for the
+   * labels, and the view planes, which follow the heart's landmarks.
+   */
+  takePheno() {
+    const m = this.model, P = m.pheno, first = this.pv < 0;
+    this.pv = P.version;
+    const rest = { amyloid: P.a };
+    if (P.mesh) rest[`ph_${P.mesh}`] = 1;
+    for (const md of [this.myo, ...this.valves, ...this.chords, this.pap, this.peri, this.cor]) if (md) md.setRest(rest);
+    this.geo = m.sizes;
+    this.cusps = null;
+    const free = this.geoms.free;
+    this.geoms = {};
+    for (const k of Object.keys(VIEWS)) { const g = viewGeometry(m.anat, k); if (g) this.geoms[k] = g; }
+    if (free) this.geoms.free = free;
+    if (first) return;
+    this.tr = null;
+    this.cur = null;
+    if (this.stage && this.fan && this.geoms[this.view]) this.setView(this.view, { animate: false });
+  }
+
   /** state: { s, v, drive, phase } from the cycle model. */
   frame(state) {
+    const P = this.model.pheno;
+    if (P && P.version !== this.pv) this.takePheno();
     this.advance();
     if (this.rig) {
       const cam = this.stage.camera;
@@ -737,35 +766,36 @@ export class EchoView {
     }
     const g = this.g;
     if (!g) { this.drawEmpty(); return; }
-    const w = { amyloid: 0, systole: state.s, amyloid_systole: 0 };
-    this.myo.morph(w);
+    const a = P ? P.a : 0, s = state.s;
+    const weights = (md, lw = null) => ({ amyloid: a, systole: s, amyloid_systole: a * s, ...(lw || {}), ...phenoWeights(Object.keys(md.dict), P, s, lw, this.noSys) });
+    this.myo.morph(weights(this.myo));
     const tissue = this.myo.section(g, true);
-    const lw = (md) => (md.dict.leaflets_mid !== undefined ? leafletWeights(md.mesh.name, state.v, state.drive, 0, state.s) : { leaflets: state.v });
+    const lw = (md) => (md.dict.leaflets_mid !== undefined ? leafletWeights(md.mesh.name, state.v, state.drive, a, s) : { leaflets: state.v });
     const valves = [];
     for (const vd of this.valves) {
-      vd.morph({ ...w, ...lw(vd) });
-      valves.push(...vd.section(g));
+      vd.morph(weights(vd, lw(vd)));
+      for (const L of vd.section(g)) { L.valve = vd.mesh.name; valves.push(L); }
     }
     // chordae: those in the middle of the slice show brightest
     const chords = [], chordsCore = [];
     for (const cd of this.chords) {
-      cd.morph({ ...w, ...lw(cd) });
+      cd.morph(weights(cd, lw(cd)));
       chords.push(cd.slab(g, SLICE));
       chordsCore.push(cd.slab(g, SLICE * 0.45));
     }
     let pap = [];
     if (this.pap) {
-      this.pap.morph(w);
+      this.pap.morph(weights(this.pap));
       pap = this.pap.section(g, true);
     }
     let peri = [];
     if (this.peri) {
-      this.peri.morph(w);
+      this.peri.morph(weights(this.peri));
       peri = this.peri.section(g, true);
     }
     let cor = [];
     if (this.cor && this.specOf(this.view).cor !== false) {
-      this.cor.morph(w);
+      this.cor.morph(weights(this.cor));
       cor = this.cor.section(g);
     }
     const abd = {};
@@ -821,7 +851,13 @@ export class EchoView {
     };
     const ref = (list) => (list.every((L) => L.ref) ? list.map((L) => L.ref) : null);
     // leaflets: the mesh gives each one as a thin closed loop, about 1 mm across
-    const leaf = valves.filter(closed).map((L) => L.pts);
+    // a disease heart's own valve is brighter: a calcified bicuspid aortic valve (with a faint
+    // shadow behind it), the thick myxomatous leaflets of a Barlow mitral valve
+    const ph = this.model.pheno || {};
+    const hot = ph.key === 'bav' ? 'AorticValve' : ph.key === 'barlow' ? 'MitralValve' : null;
+    const leaf = valves.filter((L) => closed(L) && L.valve !== hot).map((L) => L.pts);
+    const hotLeaf = valves.filter((L) => closed(L) && L.valve === hot).map((L) => L.pts);
+    const hotDb = ph.key === 'bav' ? DB.valve + 7 : DB.valve + 3, hotShadow = ph.key === 'bav' ? 6 : 0;
     // below the diaphragm: the liver with its bright capsule, the veins and arteries in it or
     // behind it (thin-walled veins, thicker brighter arteries), the vertebral bodies casting
     // a shadow; the coronary arteries on the heart
@@ -933,6 +969,8 @@ export class EchoView {
       { borders: periPts, refs: ref(peri), e: 8, spec: 10, w: 0.15, all: true },
       { polys: leaf, e: DB.valve },
       { borders: leaf, e: DB.valve, spec: 7, w: 0.06, closed: true },
+      { polys: hotLeaf, e: hotDb, shadow: hotShadow },
+      { borders: hotLeaf, e: hotDb, spec: 7, w: 0.06, closed: true },
       // coronary arteries run in epicardial fat: a bright sleeve, the wall, the dark lumen
       { lines: cor, closed: true, e: DB.fat + 4, w: 0.5 },
       { borders: cor, e: DB.fibrous, spec: 6, w: 0.07, closed: true, all: true },
@@ -1071,6 +1109,10 @@ export class EchoView {
     if (cusps) {
       const C = an.av.clone().addScaledVector(A.aorticRoot, 0.7);
       for (const [k, dir] of Object.entries(cusps)) an[k] = C.clone().addScaledVector(dir, 0.6);
+      // a bicuspid valve: the fused right and left cusp, and the raphe where they join
+      const rl = cusps.rcc.clone().add(cusps.lcc).normalize();
+      an.rl = C.clone().addScaledVector(rl, 0.75);
+      an.raphe = C.clone().addScaledVector(rl, 0.3);
     }
     const bif = V3(...VESSELS.paBif);
     an.mpa = an.pv.clone().lerp(bif, 0.5);

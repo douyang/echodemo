@@ -1,14 +1,15 @@
-// Work in progress: not imported by the site yet (the phenotype selector will load it).
 // Disease hearts built on the normal mesh. Each phenotype adds morph targets to every mesh, so
 // the 3D heart, its cut and every echo slice show one shape. The shapes are procedural fields in
 // the heart's own frame (the LV long axis from the apex), not sculpted; the amyloid heart is the
-// model's own amyloid target. Targets per phenotype k:
+// model's own amyloid target. A phenotype's targets are built the first time the page shows it
+// (model3d.js). Targets per phenotype k:
 //   ph_k       the end-diastolic change (weight 1)
 //   ph_k_sys   the change to the systolic motion, (scale - 1) x systole (weight s)
 //   ph_k_mid   a valve's shape at the middle of its swing (weight m, as leafletWeights)
 //   ph_k_far   a valve's shape at the far end of its swing: the mitral valve shut, the aortic
 //              valve open (weight f)
 import * as THREE from '../../vendor/three.bundle.min.js';
+import { TERRITORY, segmentOf } from '../aha.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const smooth = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
@@ -22,22 +23,13 @@ function table(tab, u) {
   return tab[tab.length - 1][1];
 }
 
-// AHA segments (Javadi 2010), as in chapter 10: level h (0 apex .. 1 mitral annulus), angle th
-// (deg; 90 anterior, 180 septal)
-export const TERRITORY = { lad: [1, 2, 7, 8, 13, 14, 17], rca: [3, 4, 9, 10, 15], lcx: [5, 6, 11, 12, 16] };
-export function segmentOf(h, th) {
-  if (h < 0.06) return 17;
-  const a = ((th % 360) + 360) % 360;
-  if (h < 0.36) return [13, 14, 15, 16][(Math.round((a - 90) / 90) % 4 + 4) % 4];
-  const i = (Math.round((a - 90) / 60) % 6 + 6) % 6;
-  return h < 0.66 ? 7 + i : 1 + i;
-}
-
 // ---------------------------------------------------------------- the phenotypes
 // Lengths in cm. dilate: how far the LV wall moves out from the long axis, by level u (0 the
 // epicardial apex, 1 the mitral valve); stretch: how far the apex moves away from the base;
 // la: the left atrium's scale about the mitral valve; lvAmy: the amyloid target's weight on the
-// LV wall (negative thins it); sys: systolic motion as a fraction of normal.
+// LV wall (negative thins it); sys: systolic motion as a fraction of normal; sizes (mm), which
+// place the labels: the LV diameters at end-diastole and end-systole from short-axis slices of
+// the built shape, and the walls as lvAmy moves them.
 export const MESH = {
   // a large anterior infarct: dilated, thin and akinetic in the LAD territory, the rest
   // hypokinetic; the mitral leaflets pulled toward the apex
@@ -46,6 +38,7 @@ export const MESH = {
     stretch: 0.6, la: 1.17, lvAmy: { lad: -0.4 },
     sys: { lad: 0, apex: -0.2, remote: 0.6, other: 0.75 },
     tent: 0.45,
+    sizes: { lvid: 64, lvids: 60, ivs: 5.5, pw: 8.9 },
   },
   // Barlow: bileaflet billowing of thick redundant leaflets, a wide annulus, and the large LA
   // and LV of severe chronic mitral regurgitation, which contracts briskly
@@ -54,13 +47,15 @@ export const MESH = {
     stretch: 0.5, la: 1.4, annulus: 1.2,
     sys: { lv: 1.3, other: 1 },
     billow: 1.5, mvThick: 0.2,
+    sizes: { lvid: 58, lvids: 37, ivs: 8.6, pw: 8.9 },
   },
   // bicuspid aortic valve, right and left cusps fused, severely stenotic: concentric LVH, the
   // ascending aorta wide
   bav: {
     dilate: null, stretch: 0, la: 1.1, lvAmy: { lv: 0.55 }, aorta: 0.4,
     sys: { lv: 1, other: 1 },
-    av: { open: 0.35, dome: 0.4, thick: 0.15 },
+    av: { open: 0.5, dome: 0.4, thick: 0.07 },
+    sizes: { lvid: 43, lvids: 29, ivs: 12.8, pw: 12.2 },
   },
 };
 export const PHENO_MESH_KEYS = Object.keys(MESH);
@@ -285,12 +280,12 @@ const targetOf = (mesh, name) => {
 };
 
 /**
- * Add the phenotype targets to every mesh. anat: the Anatomy (normal landmarks via raw());
- * turn: the angle that puts the model's apical planes on the standard walls (chapter 10).
- * Returns what the heart and the landmarks need: the systolic scale of each phenotype, and a
- * field for landmark points.
+ * What every phenotype needs, found once: the heart's frame, the LV wall's weight on each
+ * myocardial vertex, and how near each vertex lies to the LA and the aorta. anat: the Anatomy
+ * (normal landmarks via raw()); turn: the angle that puts the model's apical planes on the
+ * standard walls (aha.js).
  */
-export function buildPhenotypes(meshes, anat, turn, VESSELS) {
+export function preparePhenotypes(meshes, anat, turn, VESSELS) {
   const F = frameOf(meshes, anat, turn);
   const myo = meshes.Myocardium.geometry;
   const mpos = myo.attributes.position.array, mcol = myo.attributes.color, nMyo = mpos.length / 3;
@@ -312,9 +307,17 @@ export function buildPhenotypes(meshes, anat, turn, VESSELS) {
     else { const q = nearest(GAO, x, y, z, 1, 2.0); aoNear[i] = q.length ? 1 - smooth((Math.sqrt(q[0][1]) - 0.4) / 1.0) : 0; }
   }
   const aoLine = [F.av, V3(...VESSELS.ascMid), V3(...VESSELS.archTop)];
-  const out = { F, sys: {}, lvScale: {}, amyW: {} };
+  return { meshes, anat, F, REG, lvMask, laNear, aoNear, aoLine, mpos, nMyo };
+}
 
-  for (const key of PHENO_MESH_KEYS) {
+/**
+ * Add phenotype key's targets to every mesh (ctx from preparePhenotypes). Returns its systolic
+ * scale at a point, sys(x, y, z), and its landmarks, landmark(name, s) (cm).
+ */
+export function buildPhenotype(ctx, key) {
+  const { meshes, anat, F, lvMask, laNear, aoNear, aoLine, mpos, nMyo } = ctx;
+  const out = {};
+  {
     const P = MESH[key];
     const T = TARGETS(key);
     // systolic scale of the LV wall by segment, and the other walls
@@ -336,7 +339,6 @@ export function buildPhenotypes(meshes, anat, turn, VESSELS) {
       const sc = segCoords(F, x, y, z);
       return P.lvAmy.lad * ladGrid(sc.hs, sc.th) * lvMask[i];
     };
-    out.lvScale[key] = scaleAt;
     // ---- myocardium
     const myoMesh = meshes.Myocardium;
     const sysT = targetOf(myoMesh, 'systole'), amyT = targetOf(myoMesh, 'amyloid'), amySysT = targetOf(myoMesh, 'amyloid_systole');
@@ -416,11 +418,11 @@ export function buildPhenotypes(meshes, anat, turn, VESSELS) {
       if (extra.mid) addTarget(mesh, T.mid, extra.mid);
       if (extra.far) addTarget(mesh, T.far, extra.far);
     }
-    out.sys[key] = scaleAt;
+    out.sys = scaleAt;
   }
 
-  /** A landmark of phenotype key at systole s, from its normal corners (cm). */
-  out.landmark = (key, name, s) => {
+  /** A landmark of this phenotype at systole s, from its normal corners (cm). */
+  out.landmark = (name, s) => {
     const P = MESH[key];
     const e0 = anat.raw(name, 0, 0), e1 = anat.raw(name, 0, 1);
     const d = [0, 0, 0];
@@ -435,7 +437,7 @@ export function buildPhenotypes(meshes, anat, turn, VESSELS) {
       else { const sc = segCoords(F, e0.x, e0.y, e0.z); w = P.lvAmy.lad * (segmentOf(sc.hs, sc.th) === 17 || TERRITORY.lad.includes(segmentOf(sc.hs, sc.th)) ? 1 : 0); }
       p.addScaledVector(a0.clone().sub(e0), w);
     }
-    const sc = out.sys[key](e0.x, e0.y, e0.z);
+    const sc = out.sys(e0.x, e0.y, e0.z);
     return p.addScaledVector(e1.clone().sub(e0), s * sc);
   };
   return out;
@@ -522,49 +524,53 @@ function valveShapes(F, P, key, name, mesh, e0) {
     const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
     // the raphe: where the right and left cusps meet
     const raphe = R.a + wrap(L.a - R.a) / 2;
-    const rDir = dirOf(raphe);
     const cuspOf = (a) => {
       let best = null;
       for (const o of order) { const dd = Math.abs(wrap(a - o.a)); if (!best || dd < best.dd) best = { o, dd }; }
       return best.o;
     };
     const k = P.av.open, domeH = P.av.dome;
-    const fuse = (t, i, x, y, z) => {
-      const tx = t[3 * i], ty = t[3 * i + 1], tz = t[3 * i + 2];
-      const a = angOf(x, y, z), cusp = cuspOf(a);
-      if (cusp === N) return [k * tx, k * ty, k * tz];
-      // right and left: near the raphe they move as one cusp, out toward the fused sinus
-      const c = 1 - smooth(Math.abs(wrap(a - raphe)) / (Math.PI / 3));
-      const m = Math.hypot(tx, ty, tz);
-      return [k * (tx * (1 - c) + c * m * rDir.x), k * (ty * (1 - c) + c * m * rDir.y), k * (tz * (1 - c) + c * m * rDir.z)];
+    // how much of its normal swing a point makes: the right and left cusps are fused at the
+    // raphe and open only toward their commissures with the non-coronary cusp, so the orifice
+    // runs between the two remaining commissures (a fish mouth); every opening is restricted
+    const swingOf = (a) => {
+      const c = cuspOf(a);
+      if (c === N) return k;
+      return k * smooth(Math.abs(wrap(a - raphe)) / ((2 * Math.PI) / 3));
     };
     const rootR = 1.13;
     const build = (t, frac) => {
       const o = new Float32Array(base.length);
       for (let i = 0; i < n; i++) {
         const x = base[3 * i], y = base[3 * i + 1], z = base[3 * i + 2];
-        const f = fuse(t, i, x, y, z);
-        // doming: the bellies bow into the aorta while the tips stay held
-        const px = x + f[0] - C.x, py = y + f[1] - C.y, pz = z + f[2] - C.z;
+        const lam = swingOf(angOf(x, y, z));
+        // doming: the bellies bow into the aorta while the edges are held
+        const px = x + lam * t[3 * i] - C.x, py = y + lam * t[3 * i + 1] - C.y, pz = z + lam * t[3 * i + 2] - C.z;
         const hh = px * ax.x + py * ax.y + pz * ax.z;
         const rho = clamp(Math.hypot(px - hh * ax.x, py - hh * ax.y, pz - hh * ax.z) / rootR, 0, 1);
         const dome = domeH * frac * 4 * rho * (1 - rho);
-        o[3 * i] = f[0] - t[3 * i] + ax.x * dome;
-        o[3 * i + 1] = f[1] - t[3 * i + 1] + ax.y * dome;
-        o[3 * i + 2] = f[2] - t[3 * i + 2] + ax.z * dome;
+        for (let q = 0; q < 3; q++) o[3 * i + q] = (lam - 1) * t[3 * i + q] + ax.getComponent(q) * dome;
       }
       return o;
     };
     res.mid = build(mid, 0.6);
     res.far = build(far, 1);
-    // thick, stiff cusps
+    // thick, stiff cusps; thicker again along the raphe, the fused edge of the right and left cusps
     const th = P.av.thick;
+    const thAt = (i) => {
+      const a = angOf(base[3 * i], base[3 * i + 1], base[3 * i + 2]), c = cuspOf(a);
+      return c === N ? th : th * (1 + 2.2 * Math.exp(-((wrap(a - raphe) / 0.3) ** 2)));
+    };
     const n0 = normals(shape(null), idx), nm = normals(shape(mid, res.mid), idx), nf = normals(shape(far, res.far), idx);
     res.ed = new Float32Array(base.length);
-    for (let i = 0; i < base.length; i++) {
-      res.ed[i] = th * n0[i];
-      res.mid[i] += th * (nm[i] - n0[i]);
-      res.far[i] += th * (nf[i] - n0[i]);
+    for (let i = 0; i < n; i++) {
+      const w = thAt(i);
+      for (let q = 0; q < 3; q++) {
+        const j = 3 * i + q;
+        res.ed[j] = w * n0[j];
+        res.mid[j] += w * (nm[j] - n0[j]);
+        res.far[j] += w * (nf[j] - n0[j]);
+      }
     }
     F.bav = { R: R.a, L: L.a, N: N.a, raphe, e1, e2 };
   }

@@ -4,6 +4,9 @@ import { REFS } from './refs.js';
 import { CHAPTERS, PARTS } from './chapters.js';
 import { NORM_TABLES } from './norms.js';
 import { QUIZ } from './quiz.js';
+import { PHENOS, PHENO_STORE, presetsFor, PRESET_KEYS } from './pheno.js';
+import { setPheno, onPheno, onPhenoBusy } from './model3d.js';
+import { setHeart } from './echo2d.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -12,6 +15,7 @@ const KEYS = CHAPTERS.map((c) => c.key);
 const CH = Object.fromEntries(KEYS.map((k, i) => [k, i]));
 
 for (const c of CHAPTERS) if (c.defaults) declare(c.defaults);
+declare({ pheno: 'normal' });   // the heart every chapter shows (pheno.js)
 
 // ---------------------------------------------------------------- theme
 const store = {
@@ -96,6 +100,36 @@ for (const d of $$('dialog')) d.addEventListener('click', (e) => { if (e.target 
 $('#btn-refs').addEventListener('click', () => openDialog('dlg-refs'));
 $('#btn-norms').addEventListener('click', () => openDialog('dlg-norms'));
 $('#btn-about')?.addEventListener('click', () => openDialog('dlg-about'));
+
+// ---------------------------------------------------------------- the heart shown
+const phenoSel = $('#pheno');
+let building = false;   // a disease heart is being built (model3d.js)
+/** The chapters' starting values for heart k: its presets, and every other preset key back at its default. */
+function phenoPatch(k) {
+  const patch = {};
+  for (const name of PRESET_KEYS) {
+    const c = CHAPTERS.find((ch) => ch.defaults && name in ch.defaults);
+    if (c) patch[name] = c.defaults[name];
+  }
+  return { ...patch, ...presetsFor(k) };
+}
+function choosePheno(k) {
+  if (!PHENOS[k]) k = 'normal';
+  store.set(PHENO_STORE, k);
+  set({ pheno: k, ...phenoPatch(k), playing: false, anim: false });
+}
+function showPheno() {
+  const k = state.pheno, P = PHENOS[k];
+  phenoSel.value = k;
+  phenoSel.closest('.heart-pick').classList.toggle('is-disease', k !== 'normal');
+  const note = $('#pheno-note');
+  note.hidden = k === 'normal';
+  if (k !== 'normal') note.innerHTML = `<b>${esc(P.long)}.</b> ${esc(P.note || '')} ${building ? '<span class="pheno-busy">Building the heart…</span>' : 'Each chapter opens at this heart\'s values.'}`;
+}
+onPhenoBusy((b) => { building = b; showPheno(); });
+phenoSel.addEventListener('change', () => choosePheno(phenoSel.value));
+// the 3D heart and the echo views take a new heart when it is built: draw them again
+onPheno(() => dirtyAll());
 
 function fillNorms() {
   $('#norms-body').innerHTML = NORM_TABLES.map((t) => `
@@ -277,7 +311,8 @@ function showChapter() {
   active = i;
   // a severity page opens with its progression playing; not during the tour, which moves the
   // slider itself, and not with reduced motion. Any control stops it.
-  const autoplay = !state.playing && !reducedMotion && !!$(`#ch-${c.key} button[data-anim]`);
+  // Under a disease heart the page opens at that heart's grade instead.
+  const autoplay = !state.playing && !reducedMotion && state.pheno === 'normal' && !!$(`#ch-${c.key} button[data-anim]`);
   if (!!state.anim !== autoplay) set({ anim: autoplay });
   $$('.chapter').forEach((a, k) => a.classList.toggle('is-active', k === i));
   $$('.fig').forEach((f) => f.classList.toggle('is-active', f.id === `fig-${c.key}`));
@@ -337,6 +372,7 @@ play.addEventListener('click', togglePlay);
 
 // ---------------------------------------------------------------- state -> view
 subscribe((s, changed) => {
+  if ('pheno' in changed) { setPheno(s.pheno); setHeart(s.pheno); showPheno(); }
   if ('chapter' in changed) showChapter();
   if ('playing' in changed) {
     play.setAttribute('aria-pressed', String(s.playing));
@@ -400,6 +436,9 @@ function start() {
   fillNorms();
   for (const c of CHAPTERS) c.init?.({ state, set, subscribe, $, $$, cite: (ids) => cite(ids) });
   bindControls();
+  const heart = store.get(PHENO_STORE);
+  if (heart && heart !== 'normal' && PHENOS[heart]) set({ pheno: heart, ...phenoPatch(heart) });
+  showPheno();
   buildQuizzes();
   refIndex = numberCitations();
   applyTheme();

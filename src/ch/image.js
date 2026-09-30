@@ -26,7 +26,7 @@ function ensure() {
 /** The frame for the current depth and sector width, cut once and cached. */
 function frame(w, h) {
   if (!scan) return null;
-  const key = `${w}x${h}|${st.depth}|${st.sector}`;
+  const key = `${w}x${h}|${st.depth}|${st.sector}|${scan.model.pheno.version}`;   // a new heart: cut again
   if (key === frameKey && ev) return ev;
   ev = scan.make(w, h, 'plax', { depth: st.depth, angle: st.sector, labels: false });
   ev.frame({ s: 0, v: 0, drive: null, phase: 0 });

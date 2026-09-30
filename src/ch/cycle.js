@@ -6,7 +6,7 @@ import { cycleAt, RR, EV, mitralV, lvotV } from '../cyclemodel.js';
 import { spectral, panel, SC, ecg as ecgStrip } from '../scope.js';
 import { scanner } from '../scanner.js';
 
-let sheet = null, st = null, scan = null, ev = null, evKey = '', lastT = -1, frameTick = 0;
+let sheet = null, st = null, scan = null, ev = null, evKey = '', lastT = -1, frameTick = 0, pv = -1;
 
 const PHASES = [
   { a: EV.mvc, b: EV.avo, name: 'isovolumic contraction', short: 'IVC' },
@@ -26,6 +26,7 @@ function a4cFrame(w, h, c) {
   if (!scan) return null;
   const key = `${w}x${h}`;
   if (!ev || evKey !== key) { ev = scan.make(w, h, 'a4c'); evKey = key; lastT = -1; }
+  if (pv !== scan.model.pheno.version) { pv = scan.model.pheno.version; lastT = -1; }   // a new heart: cut again
   // cut a new frame only when the time moved (and on every other animation frame)
   if (Math.abs(c.t - lastT) > 0.5 && (frameTick++ % 2 === 0 || lastT < 0)) {
     ev.frame({ s: c.s, v: c.v, drive: c.drive, phase: c.phase });
