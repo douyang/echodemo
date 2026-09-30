@@ -639,7 +639,10 @@ function updateTags(t) {
   tagsHost.style.opacity = alpha.toFixed(3);
   if (alpha <= 0) return;
   const T = TAGS[view], S = panes.section;
-  labels.update(T.items, T.box, S.w, S.h);
+  // in a hold each leader starts where its structure is now (the plane and the camera are the
+  // view's own); in a move the tags leave with the view they named
+  const now = s.kind === 'move' ? null : new Map(echo.sectionLabels(stage.state.s).map((it) => [it.id, it]));
+  labels.update(T.items, T.box, S.w, S.h, [], now);
 }
 
 // ---------------------------------------------------------------- caption
