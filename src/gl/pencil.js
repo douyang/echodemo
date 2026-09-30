@@ -5,8 +5,9 @@
 // Pass 3  pericardium alone (normal/depth) -> rtPeri, drawn as a faint outline
 // Pass 4  composite to the canvas with premultiplied alpha, so the page paper
 //         shows through wherever nothing is drawn.
-// Tools (the probe) go through passes 1 and 2 with the heart. An inset (the body key) runs the
-// same passes in its corner: its solids hatched, its body as an outline in the third pass.
+// Tools (the probe) go through passes 1 and 2 with the heart; setToolInk draws them in a pencil
+// of their own. An inset (the body key) runs the same passes in its corner: its solids hatched,
+// its body as an outline in the third pass.
 import * as THREE from '../../vendor/three.bundle.min.js';
 
 const QUAD_VS = /* glsl */`
@@ -34,6 +35,8 @@ uniform vec4 uView;
 uniform vec3 uInk;
 uniform vec3 uLift;
 uniform vec3 uCongo;
+uniform vec3 uTool;
+uniform float uToolOn;
 varying vec2 vUv;
 
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
@@ -105,6 +108,17 @@ void main() {
   float coronary = step(0.45, flag) * step(flag, 0.55);
   float tool = step(0.7, flag) * step(flag, 0.8);
   float warm = step(0.58, flag) * step(flag, 0.62);   // drawn in red pencil (the body key's heart)
+  // a tool in its own pencil (setToolInk): its outline too, on both sides of the line
+  float toolNear = tool;
+  if (uToolOn > 0.5) {
+    vec2 o = 2.0 * uDpr / uRes;
+    vec4 q0 = texture2D(tData, uv + vec2(o.x, 0.0)), q1 = texture2D(tData, uv - vec2(o.x, 0.0));
+    vec4 q2 = texture2D(tData, uv + vec2(0.0, o.y)), q3 = texture2D(tData, uv - vec2(0.0, o.y));
+    toolNear = max(toolNear, step(0.001, q0.a) * step(0.7, q0.b) * step(q0.b, 0.8));
+    toolNear = max(toolNear, step(0.001, q1.a) * step(0.7, q1.b) * step(q1.b, 0.8));
+    toolNear = max(toolNear, step(0.001, q2.a) * step(0.7, q2.b) * step(q2.b, 0.8));
+    toolNear = max(toolNear, step(0.001, q3.a) * step(0.7, q3.b) * step(q3.b, 0.8));
+  }
 
   float e = edges(tNormal, tDepth, uv + wob, 1.0 * uDpr, 1.0);
   e = max(e, 0.55 * edges(tNormal, tDepth, uv - wob * 0.6, 1.9 * uDpr, 1.0));
@@ -133,6 +147,7 @@ void main() {
   ink = max(ink, sec);
   ink = max(ink, valve * cover * 0.16);
   ink = max(ink, coronary * cover * 0.22);
+  ink = max(ink, tool * cover * uToolOn * 0.2);
   ink = max(ink, e);
 
   // Pericardium: dashed outline only (an inset's body: a solid outline).
@@ -144,7 +159,9 @@ void main() {
   vec4 col = vec4(0.0);
   col = over(col, uCongo, clamp(red, 0.0, 1.0) * 0.95);
   col = over(col, uLift, clamp(lift, 0.0, 1.0));
-  col = over(col, mix(uInk, uCongo, warm * step(peri, ink)), clamp(max(ink, peri), 0.0, 1.0) * 0.92);
+  vec3 pencil = mix(uInk, uCongo, warm * step(peri, ink));
+  pencil = mix(pencil, uTool, toolNear * uToolOn * step(peri, ink));
+  col = over(col, pencil, clamp(max(ink, peri), 0.0, 1.0) * 0.92);
   gl_FragColor = col;
 }`;
 
@@ -202,6 +219,8 @@ export class Pencil {
         uInk: { value: new THREE.Vector3(0.13, 0.15, 0.17) },
         uLift: { value: new THREE.Vector3(0.98, 0.98, 0.96) },
         uCongo: { value: new THREE.Vector3(0.7, 0.23, 0.18) },
+        uTool: { value: new THREE.Vector3(0.13, 0.15, 0.17) },
+        uToolOn: { value: 0 },
       },
       depthTest: false,
       depthWrite: false,
@@ -222,6 +241,19 @@ export class Pencil {
     u.uLift.value.copy(hexToVec3(tok.chalk));
     u.uCongo.value.copy(hexToVec3(tok.congo));
     u.uDark.value = tok.dark ? 1 : 0;
+  }
+
+  /**
+   * Draw the tools (the probe) in a pencil of their own: css, a colour shown as it is (not made
+   * linear, so it matches the page's own), or null for the ink.
+   */
+  setToolInk(css) {
+    const u = this.post.uniforms;
+    u.uToolOn.value = css ? 1 : 0;
+    if (css) {
+      const c = new THREE.Color().setStyle(css, THREE.LinearSRGBColorSpace);
+      u.uTool.value.set(c.r, c.g, c.b);
+    }
   }
 
   setSize(w, h) {
