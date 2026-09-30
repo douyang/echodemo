@@ -107,12 +107,25 @@ async function applyTheme(theme) {
   };
   const root = document.documentElement;
   const put = (body) => { for (const m of body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) root.style.setProperty(m[1], m[2].trim()); };
+  for (const m of block(':root {').matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) LIGHT[m[1]] = m[2].trim();
   put(block(':root {'));
   if (theme === 'dark') put(block(':root[data-theme="dark"] {'));
   root.style.colorScheme = theme;
   root.dataset.theme = theme;
 }
 const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const LIGHT = {};   // the light palette (src/styles.css :root), for paper panes on a dark frame
+/**
+ * How the probe-and-body and cross-section panes draw: 'paper', graphite on paper whatever the
+ * frame (the site's light drawing), or 'theme', the cut's own palette (chalk on slate when dark).
+ */
+const DIAGRAMS = params.get('diagrams') || CUT.diagrams || 'paper';
+/** The palette the drawings take. */
+function diagTokens() {
+  if (DIAGRAMS !== 'paper') return { ...tokens(), accent: cssVar('--accent') };
+  const L = LIGHT;
+  return { ink: L['--ink'], chalk: L['--chalk'], congo: L['--flag'], accent: L['--accent'], paper: L['--paper'], rule: L['--rule'], dark: false };
+}
 
 // ---------------------------------------------------------------- page
 const panes = {};
@@ -137,6 +150,16 @@ function build() {
     const cw = P.canvasW || P.w;
     const w = Math.floor(cw / P.zoom), hh = Math.floor((P.h - LAY.head) / P.zoom);
     panes[k] = { el, view, zoom: P.zoom, w, h: hh, x0: Math.round((P.w - w * P.zoom) / 2) };
+  }
+  // paper panes on a dark frame: the two drawing panes take the light palette
+  if (DIAGRAMS === 'paper' && CUT.theme === 'dark') {
+    const L = LIGHT;
+    for (const k of ['body', 'section']) {
+      const st = panes[k].el.style;
+      st.setProperty('--card', L['--paper']);
+      for (const n of ['--ink', '--ink-2', '--ink-3']) st.setProperty(n, L[n]);
+      st.setProperty('--edge', `color-mix(in srgb, ${L['--rule']} 45%, transparent)`);
+    }
   }
   // caption: an eyebrow (the window; not on a phone, where the name says it), the view's
   // name, the probe and the structures
@@ -236,9 +259,12 @@ async function initScene() {
   stage.heart.group.visible = true;
   stage.heart.setPericardium(true);
   bodyPencil = new Pencil();        // the probe-and-body pane
-  bodyPencil.setTheme(tokens());
+  const DT = diagTokens();
   // the probe in the page's accent, in every pane, so it stands apart from the graphite heart
-  for (const p of [bodyPencil, stage.pencil]) p.setToolInk(cssVar('--accent'));
+  for (const p of [bodyPencil, stage.pencil]) {
+    p.setTheme(DT);
+    p.setToolInk(DT.accent);
+  }
   const B = panes.body, S = panes.section, E = panes.echo;
   B.view.appendChild(bodyPencil.canvas);
   S.view.appendChild(stage.pencil.canvas);
@@ -263,7 +289,9 @@ async function initScene() {
   echo.calipers = false;
   echo.section = true;
   echo.cutOn = false;                // each pass sets its own cut
+  // the probe on the heart, without its sector: the echo pane shows the sector
   echo.showOverlay(true);
+  echo.overlay.visible = false;
   echo.retheme();
   echo.top = echoTop();
   // the heart whole (no cut, so no cap), and the probe in its own frame
@@ -273,7 +301,7 @@ async function initScene() {
   // the body key: the site's own (src/gl/bodykey.js), drawn as the site draws it; the video
   // only places it, larger, in the top part of the pane (its rect)
   key = new BodyKey(model.heart.meshes.Myocardium, model.anat);
-  key.retheme(tokens());
+  key.retheme(DT);
   const [kx, ky, kw, kh] = LAY.body.key;
   const keyRect = { x: Math.round(kx * B.w), y: Math.round(ky * B.h), w: Math.round(kw * B.w), h: Math.round(kh * B.h) };
   key.rect = () => keyRect;
@@ -567,12 +595,12 @@ function renderPanes(t) {
   pose(bodyPose(P), B);
   stage.heart.setCut(null);
   keySite(P);
-  bodyPencil.render(stage.scene, stage.camera, stage.heart, { boil, amyloid: a, overlayScene: stage.overlayScene, tools: stage.tools, inset: key.frame(stage.camera, B.w, B.h) });
+  bodyPencil.render(stage.scene, stage.camera, stage.heart, { boil, amyloid: a, tools: stage.tools, inset: key.frame(stage.camera, B.w, B.h) });
   // 2. cross-section: the heart cut on the plane, seen square to it
   const S = panes.section;
   pose(sectionPose(P), S);
   stage.heart.setCut(new THREE.Plane().setFromNormalAndCoplanarPoint(P.g.n, P.g.O));
-  stage.pencil.render(stage.scene, stage.camera, stage.heart, { boil, amyloid: a, overlayScene: stage.overlayScene, tools: stage.tools, inset: null });
+  stage.pencil.render(stage.scene, stage.camera, stage.heart, { boil, amyloid: a, tools: stage.tools, inset: null });
   // 3. the echo. Where the near field changes kind, the two images cross over inside the
   // sector only; the scanner's lettering and the ECG come from one image, the one of the
   // view the move is closer to

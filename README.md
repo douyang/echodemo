@@ -162,8 +162,9 @@ Keys: ← → change chapter, space plays the tour, [ and ] step the views in ch
 - The heart beats at 70 per minute. The soundtrack (`tools/make-audio.mjs`, synthesized, original) runs at the same 70 BPM, with a kick on each heartbeat at mitral closure.
 - Between windows the probe travels round the heart, over the front of the chest, with its beam on the heart. Inside a window the plane moves as the site moves it.
 - The probe is drawn in the page's accent blue (`Pencil.setToolInk`), so it stands apart from the graphite heart. The site keeps it in graphite.
+- The two drawing panes are graphite on paper in every cut, as the site draws them in its light theme; on a dark frame the echo stays on black (`?diagrams=theme` draws them in the cut's own palette). The heart drawings carry no sector, since the echo pane shows it; the body key keeps its small sector to show the beam's direction.
 
-| Cut | Format | Theme | Views | Length |
+| Cut | Format | Frame | Views | Length |
 |---|---|---|---|---|
 | A, Full tour | 1920 × 1080 | dark | 20 | 2:24 |
 | B, Core views | 1920 × 1080 | light | 12 | 1:09 |
