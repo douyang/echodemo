@@ -11,7 +11,8 @@ import { rapFromIvc } from '../norms.js';
 import { BSA } from './pressure.js';
 
 const KEY = 'trS';
-const VA = 28;             // cm/s, PISA with the baseline shifted
+const VA = 28;             // cm/s, PISA with the baseline shifted toward the jet (ASE 2017)
+const NYQ = 60;            // cm/s, color scale for the jet (ASE 2017: 50-70)
 
 const aspectOf = mono([[0, 1], [0.4, 1], [0.6, 2.57], [0.8, 4.33], [1, 5.5]]);
 const vtiOf = mono([[0, 115], [0.4, 113], [0.6, 100], [0.8, 94], [1, 92]]);
@@ -61,7 +62,7 @@ let sheet = null, st = null;
 const beat = new Beat(RR);
 const q2 = (v) => Math.round(v * 50) / 50;
 
-function a4c(ctx, box, m, t) {
+function a4c(ctx, box, m, t, mode) {
   const raMax = m.ravi * BSA, raMin = raMax * 0.6;
   const dims = (vol, r) => { const L = Math.cbrt(vol / (0.524 * r * r)); return [r * L, L]; };
   const [rwMax, rlMax] = dims(raMax, 0.85 + 0.1 * m.s), [rwMin, rlMin] = dims(raMin, 0.85 + 0.1 * m.s);
@@ -77,16 +78,28 @@ function a4c(ctx, box, m, t) {
   const jA = Math.min(m.jetA, raArea * 0.8);
   const jl = Math.min(rlMax * 0.95, Math.sqrt((jA / 0.55) * 1.2));
   const jw = jl > 0 ? Math.min(rwMax * 0.95, jA / (0.55 * jl)) : 0;
-  const jets = m.eroa > 0.005 ? { tr: { q: m.q, va: VA, vc: m.vc, jl, jw, a, laminar: m.s > 0.7 } } : {};
+  // Jet: the standard scale. PISA: zoomed on the valve, the baseline shifted toward the jet
+  // (down: TR runs away from the probe) until the flow aliases at VA; variance off. The
+  // torrential jet is slow and laminar.
+  const pisa = mode === 'pisa';
   drawA4C(ctx, box, g, {
-    t, depth: 16 + 1.4 * m.s, jets, title: fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${VA} cm/s`, `A4C · COLOR ${VA}`),
+    t, depth: 16 + 1.4 * m.s,
+    title: pisa ? fit(box.w, `APICAL FOUR-CHAMBER · ZOOM · Va ${VA} cm/s`, `A4C ZOOM · Va ${VA}`) : fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${NYQ} cm/s`, `A4C · COLOR ${NYQ}`),
+    color: {
+      roi: pisa ? 'tv' : 'ra', zoom: pisa ? { at: 'tv', span: 7 } : null,
+      lo: pisa ? -VA : -NYQ, hi: pisa ? 2 * NYQ - VA : NYQ, variance: !pisa,
+      Et: m.E, At: 0.4, hvS: m.hvS, hvD: m.hvD,
+      tr: m.eroa > 0.005 ? { q: m.q, u0: m.v * 100, vc: m.vc, jl, jw, area: jA, a, lam: m.s > 0.7 ? 1 : 0 } : null,
+    },
     after: (c, F, geo) => {
-      if (m.eroa > 0.005 && a > 0.5) {
-        const O = geo.tv.gapMid, ax = [geo.Ra[0] - O[0], geo.Ra[1] - O[1]];
-        const l = Math.hypot(ax[0], ax[1]) || 1;
-        cal(c, F, O, [O[0] + (ax[0] / l) * m.r, O[1] + (ax[1] / l) * m.r], '', { solid: true });
+      if (pisa && m.eroa > 0.005 && a > 0.85) {
+        // the radius along the beam, from the orifice to the first aliasing boundary
+        const O = geo.tv.gapMid, l = Math.hypot(O[0], O[1]), r = m.r * Math.sqrt(a);
+        cal(c, F, O, [O[0] * (1 - r / l), O[1] * (1 - r / l)], '', { solid: true });
       }
-      measures(c, F, [`RV base ${m.rvb.toFixed(1)} cm`, [`annulus ${m.ta.toFixed(1)} cm`, `TA ${m.ta.toFixed(1)} cm`], `VC ${m.vc.toFixed(2)} cm`]);
+      measures(c, F, pisa
+        ? [`PISA r ${m.r.toFixed(2)} cm`, `Va ${VA} cm/s`, [`EROA ${m.eroa.toFixed(2)} cm²`, `EROA ${m.eroa.toFixed(2)}`]]
+        : [`RV base ${m.rvb.toFixed(1)} cm`, [`annulus ${m.ta.toFixed(1)} cm`, `TA ${m.ta.toFixed(1)} cm`], `VC ${m.vc.toFixed(2)} cm`]);
     },
   });
 }
@@ -168,9 +181,10 @@ function draw(sh, t) {
   const W = sh.w, H = sh.h, ctx = sh.ctx;
   const m = model(st[KEY]);
   const tt = beat.at(st.trCine, 220);
+  const mode = st.trColor;
   if (W < 700) {
     const [a, b] = cols({ x: 6, y: 6, w: W - 12, h: H - 12 }, [1.25, 1], 8);
-    a4c(ctx, a, m, tt);
+    a4c(ctx, a, m, tt, mode);
     const [p1, p2] = rows(b, [1, 1], 8);
     for (const bx of [trCW(ctx, p1, m), hvPW(ctx, p2, m)]) cursor(ctx, bx, beat.sweep);
     return;
@@ -178,7 +192,7 @@ function draw(sh, t) {
   const colL = { x: 16, y: 36, w: W * 0.45 - 16, h: H - 48 };
   const colR = { x: W * 0.465, y: 36, w: W * 0.535 - 18, h: H - 48 };
   const vh = Math.min(colL.w * 1.12, colL.h * 0.6);
-  a4c(ctx, { x: colL.x, y: colL.y, w: colL.w, h: vh }, m, tt);
+  a4c(ctx, { x: colL.x, y: colL.y, w: colL.w, h: vh }, m, tt, mode);
   meters(sh, t, { x: colL.x, y: colL.y + vh + 16, w: colL.w, h: colL.h - vh - 16 }, meterItems(m));
   const [p1, p2, p3] = rows(colR, [1.05, 0.95, 1.1], 10);
   const bxs = [trCW(ctx, p1, m), hvPW(ctx, p2, m)];
@@ -220,9 +234,9 @@ export default {
   title: 'Tricuspid regurgitation',
   nav: 'TR',
   dwell: 18,
-  defaults: { trS: 0.5, trCine: true },
+  defaults: { trS: 0.5, trCine: true, trColor: 'jet' },
   format: { trS: (v) => gradeOf(v) },
-  watch: ['trS', 'trCine'],
+  watch: ['trS', 'trCine', 'trColor'],
   figure(fig) {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
     return sheet;
@@ -236,7 +250,7 @@ export default {
     playSeverity(dt, s, set, KEY, BANDS);
     if (beat.tick(dt, s.trCine) && sheet) sheet.dirty = true;
   },
-  tourEnter(set) { set({ trS: 0, trCine: true }); },
+  tourEnter(set) { set({ trS: 0, trCine: true, trColor: 'jet' }); },
   tourTick(tt, set) { set({ trS: Math.round(clamp((tt - 1) / 15, 0, 1) * 200) / 200 }); },
   text(s, { cite }) {
     const m = model(s[KEY]);

@@ -71,9 +71,15 @@ function plax(ctx, box, m, t) {
   };
   const u = diaFrac(t);
   const a = u > 0.02 && u < 0.98 ? Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05)), 0.25) : 0;
-  const jets = m.eroa > 0.005 ? { ar: { q: m.eroa * V0 * 100, va: 60, vc: m.vc, jl: 2.2 + 9 * m.eroa, jw: m.jw, a } } : {};
+  // the jet slows through diastole as the CW trace does; it is widest where the jet/LVOT
+  // caliper reads it, just below the valve
+  const u0 = V0 * 100 * Math.pow(2, -(u * (RR + EV.avo - EV.avc)) / (2 * m.pht)), jl = 2.2 + 9 * m.eroa;
   drawPLAX(ctx, box, g, {
-    t, depth: 15 + 1.6 * m.s, jets, title: fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 60 cm/s', 'PLAX · COLOR 60'),
+    t, depth: 15 + 1.6 * m.s, title: fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 60 cm/s', 'PLAX · COLOR 60'),
+    color: {
+      roi: 'lvot', lo: -60, hi: 60, variance: true,
+      ar: m.eroa > 0.005 ? { q: m.eroa * u0, u0, vc: m.vc, jl, jw: m.jw, a, pk: clamp(0.8 / jl, 0.1, 0.4), open: 0.45, fit: 'width' } : null,
+    },
     after: (c, F, geo) => {
       plaxLV(c, geo);
       if (m.eroa > 0.005 && a > 0.4) {

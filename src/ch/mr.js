@@ -5,14 +5,15 @@ import { Sheet, clamp, MONO, SANS } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { mitralV, RR, EV } from '../cyclemodel.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, waveLetter } from '../sev.js';
-import { drawA4C, cal, measures } from '../echo2d.js';
+import { drawA4C, cal, measures, heartShown } from '../echo2d.js';
 import { BSA } from './pressure.js';
 
 const KEY = 'mrS';
 const VMAX = 5.0;        // m/s, MR jet (LV-LA gradient about 100 mmHg)
 const VTI = 150;         // cm, MR jet
 const FWD = 60;          // mL, forward stroke volume
-const VA = 30;           // cm/s, aliasing velocity for PISA (baseline shifted)
+const VA = 30;           // cm/s, aliasing velocity for PISA (baseline shifted toward the jet)
+const NYQ = 60;          // cm/s, color scale for the jet (ASE 2017: 50-70)
 
 const eroaOf = mono([[0, 0], [0.06, 0.03], [0.3, 0.2], [0.4, 0.3], [0.5, 0.4], [0.78, 0.55], [1, 0.65]]);
 const TR = tracks([0, 0.3, 0.5, 0.78, 1], {
@@ -32,11 +33,22 @@ const TR = tracks([0, 0.3, 0.5, 0.78, 1], {
   tri: [0, 0, 0.2, 0.8, 1],
 });
 
+/**
+ * The part of systole (0..1) before the leak starts. Prolapse (the Barlow heart): MR starts in
+ * mid-systole, when the leaflets prolapse, and becomes holosystolic as it becomes severe; MR in
+ * prolapse "is rarely severe when not holosystolic" (ASE 2017).
+ */
+function onsetOf(eroa) {
+  return heartShown() === 'barlow' ? 0.45 * (1 - clamp((eroa - 0.15) / 0.25, 0, 1)) : 0;
+}
+
 export function model(s) {
   const m = TR(s);
   m.s = s;
   m.eroa = eroaOf(s);
-  m.rvol = m.eroa * VTI;
+  // a leak through part of systole has a shorter jet VTI: less volume for the same EROA
+  m.onset = onsetOf(m.eroa);
+  m.rvol = m.eroa * VTI * (1 - m.onset);
   m.rf = (m.rvol / (m.rvol + FWD)) * 100;
   m.vc = 2 * Math.sqrt(m.eroa / Math.PI);
   m.q = m.eroa * VMAX * 100;                        // mL/s peak flow
@@ -71,7 +83,7 @@ function laDims(vol, r) {
   return [r * L, L];
 }
 
-function a4c(ctx, box, m, t) {
+function a4c(ctx, box, m, t, mode) {
   const laMax = m.lavi * BSA, laMin = laMax * 0.55;
   const [wMax, lMax] = laDims(laMax, 0.8 + 0.1 * m.s), [wMin, lMin] = laDims(laMin, 0.8 + 0.1 * m.s);
   const wall = 0.9 - 0.08 * m.s;
@@ -80,22 +92,34 @@ function a4c(ctx, box, m, t) {
     rvW: [3.4 + 0.3 * m.s, 2.8 + 0.3 * m.s], laW: [wMin, wMax], laL: [lMin, lMax], raW: [3.2, 3.8], raL: [3.9, 4.5],
     ma: m.ma, ta: 3.0, mv: { gap: m.gap, thick: 0.13 },
   };
-  const sys = t >= EV.mvc && t <= EV.mvo;
-  const a = sys ? Math.pow(Math.max(0, Math.sin(Math.PI * (t - EV.mvc) / (EV.mvo - EV.mvc))), 0.35) : 0;
+  const t0 = EV.mvc + m.onset * (EV.mvo - EV.mvc);
+  const sys = t >= t0 && t <= EV.mvo;
+  const a = sys ? Math.pow(Math.max(0, Math.sin(Math.PI * (t - t0) / (EV.mvo - t0))), 0.35) : 0;
   const laArea = (Math.PI / 4) * wMax * lMax;
   const jA = m.jetF * laArea;
   const jl = Math.min(lMax * 0.92, Math.sqrt(jA / 0.55 * 1.3));
   const jw = jl > 0 ? Math.min(wMax * 0.9, jA / (0.55 * jl)) : 0;
-  const jets = m.eroa > 0.005 ? { mr: { q: m.q, va: VA, vc: m.vc, jl, jw, a } } : {};
+  // Jet: the standard scale. PISA: zoomed on the valve, the baseline shifted toward the jet
+  // (down: MR runs away from the probe) until the flow aliases at VA; variance off
+  const pisa = mode === 'pisa';
   drawA4C(ctx, box, g, {
-    t, depth: 16 + 1.2 * m.s, jets,
-    title: fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${VA} cm/s`, `A4C · COLOR ${VA}`),
+    t, depth: 16 + 1.2 * m.s,
+    title: pisa ? fit(box.w, `APICAL FOUR-CHAMBER · ZOOM · Va ${VA} cm/s`, `A4C ZOOM · Va ${VA}`) : fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${NYQ} cm/s`, `A4C · COLOR ${NYQ}`),
+    color: {
+      roi: pisa ? 'mv' : 'la', zoom: pisa ? { at: 'mv', span: 7 } : null,
+      lo: pisa ? -VA : -NYQ, hi: pisa ? 2 * NYQ - VA : NYQ, variance: !pisa,
+      E: m.E, A: m.A, pvS: m.pvS, pvD: m.pvD,
+      mr: m.eroa > 0.005 ? { q: m.q, u0: VMAX * 100, vc: m.vc, jl, jw, frac: m.jetF, a } : null,
+    },
     after: (c, F, geo) => {
-      if (m.eroa > 0.005 && a > 0.5) {
-        const O = geo.mv.gapMid;
-        cal(c, F, O, [O[0] + geo.ax[0] * m.r, O[1] + geo.ax[1] * m.r], '', { solid: true });
+      if (pisa && m.eroa > 0.005 && a > 0.85) {
+        // the radius along the beam, from the orifice to the first aliasing boundary
+        const O = geo.mv.gapMid, l = Math.hypot(O[0], O[1]), r = m.r * Math.sqrt(a);
+        cal(c, F, O, [O[0] * (1 - r / l), O[1] * (1 - r / l)], '', { solid: true });
       }
-      measures(c, F, [`PISA r ${m.r.toFixed(2)} cm`, `VC ${m.vc.toFixed(2)} cm`, [`jet ${Math.round(m.jetF * 100)}% of LA`, `jet ${Math.round(m.jetF * 100)}% LA`]]);
+      measures(c, F, pisa
+        ? [`PISA r ${m.r.toFixed(2)} cm`, `Va ${VA} cm/s`, [`EROA ${m.eroa.toFixed(2)} cm²`, `EROA ${m.eroa.toFixed(2)}`]]
+        : [`VC ${m.vc.toFixed(2)} cm`, [`jet ${Math.round(m.jetF * 100)}% of LA`, `jet ${Math.round(m.jetF * 100)}% LA`]]);
     },
   });
 }
@@ -112,12 +136,13 @@ function mrCW(ctx, P, m) {
     const tr = u < pk ? Math.pow(u / pk, 0.45) : Math.pow((1 - u) / (1 - pk), 0.9);
     return round * (1 - tri) + tr * tri;
   };
+  const t0 = EV.mvc + m.onset * (EV.mvo - EV.mvc);
   const fn = (u) => {
     const tt = (u * 2 * RR) % RR;
-    const w = (tt - EV.mvc) / (EV.mvo - EV.mvc);
+    const w = (tt - t0) / (EV.mvo - t0);
     return m.eroa > 0.005 ? -VMAX * shape(w) : 0;
   };
-  spectral(ctx, bx, { fn, scale: 6, base: 0.06, mode: 'cw', broad: 0.35 + 0.4 * (1 - dens), key: `mrcw|${q2(m.eroa)}|${tri}`, seed: 12 });
+  spectral(ctx, bx, { fn, scale: 6, base: 0.06, mode: 'cw', broad: 0.35 + 0.4 * (1 - dens), key: `mrcw|${q2(m.eroa)}|${tri}|${q2(m.onset)}`, seed: 12 });
   if (dens < 0.95) {
     ctx.save();
     ctx.fillStyle = SC.bg;
@@ -127,7 +152,8 @@ function mrCW(ctx, P, m) {
   }
   vscale(ctx, bx, 6, 0.06, 2);
   const dn = m.rvol >= 60 ? 'dense' : m.rvol >= 30 ? 'dense, partial' : 'faint';
-  note(ctx, bx, m.eroa > 0.005 ? [`peak ${VMAX.toFixed(1)} m/s · ${dn}${m.tri > 0.5 ? ', triangular' : ''}`, dn] : 'no regurgitation', 'bottom');
+  const late = m.onset > 0.05 ? ', mid-late systolic' : '';
+  note(ctx, bx, m.eroa > 0.005 ? [`peak ${VMAX.toFixed(1)} m/s · ${dn}${m.tri > 0.5 ? ', triangular' : ''}${late}`, `${dn}${late}`, dn] : 'no regurgitation', 'bottom');
   return bx;
 }
 
@@ -189,9 +215,10 @@ function draw(sh, t) {
   const W = sh.w, H = sh.h, ctx = sh.ctx;
   const m = model(st[KEY]);
   const tt = beat.at(st.mrCine, 220);
+  const mode = st.mrColor;
   if (W < 700) {
     const [a, b] = cols({ x: 6, y: 6, w: W - 12, h: H - 12 }, [1.25, 1], 8);
-    a4c(ctx, a, m, tt);
+    a4c(ctx, a, m, tt, mode);
     const [p1, p2] = rows(b, [1, 1], 8);
     const b1 = mrCW(ctx, p1, m), b2 = pvPW(ctx, p2, m);
     for (const bx of [b1, b2]) cursor(ctx, bx, beat.sweep);
@@ -200,7 +227,7 @@ function draw(sh, t) {
   const colL = { x: 16, y: 36, w: W * 0.45 - 16, h: H - 48 };
   const colR = { x: W * 0.465, y: 36, w: W * 0.535 - 18, h: H - 48 };
   const vh = Math.min(colL.w * 1.12, colL.h * 0.6);
-  a4c(ctx, { x: colL.x, y: colL.y, w: colL.w, h: vh }, m, tt);
+  a4c(ctx, { x: colL.x, y: colL.y, w: colL.w, h: vh }, m, tt, mode);
   meters(sh, t, { x: colL.x, y: colL.y + vh + 16, w: colL.w, h: colL.h - vh - 16 }, meterItems(m));
   const [p1, p2, p3] = rows(colR, [1.1, 1, 1], 10);
   const bxs = [mrCW(ctx, p1, m), pvPW(ctx, p2, m), inflowPW(ctx, p3, m)];
@@ -237,9 +264,9 @@ export default {
   title: 'Mitral regurgitation',
   nav: 'MR',
   dwell: 18,
-  defaults: { mrS: 0.45, mrCine: true },
+  defaults: { mrS: 0.45, mrCine: true, mrColor: 'jet' },
   format: { mrS: (v) => gradeOf(v) },
-  watch: ['mrS', 'mrCine'],
+  watch: ['mrS', 'mrCine', 'mrColor'],
   figure(fig) {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
     return sheet;
@@ -253,7 +280,7 @@ export default {
     playSeverity(dt, s, set, KEY, BANDS);
     if (beat.tick(dt, s.mrCine) && sheet) sheet.dirty = true;
   },
-  tourEnter(set) { set({ mrS: 0, mrCine: true }); },
+  tourEnter(set) { set({ mrS: 0, mrCine: true, mrColor: 'jet' }); },
   tourTick(tt, set) { set({ mrS: Math.round(clamp((tt - 1) / 15, 0, 1) * 200) / 200 }); },
   text(s, { cite }) {
     const m = model(s[KEY]);
@@ -272,7 +299,7 @@ export default {
       ],
       live: m.eroa <= 0.001
         ? `No regurgitation. Press play to follow a leak from mild to severe.`
-        : `<b>${g[0].toUpperCase()}${g.slice(1)} mitral regurgitation.</b> EROA ${fmt(m.eroa, 2)} cm², regurgitant volume ${fmt(m.rvol)} mL, regurgitant fraction ${fmt(m.rf)}%${cite('zoghbi2017')}. LA volume index ${fmt(m.lavi)} mL/m², mitral E ${fmt(m.E, 2)} m/s; ${pv}.${stage}`,
+        : `<b>${g[0].toUpperCase()}${g.slice(1)} mitral regurgitation.</b> EROA ${fmt(m.eroa, 2)} cm², regurgitant volume ${fmt(m.rvol)} mL, regurgitant fraction ${fmt(m.rf)}%${cite('zoghbi2017')}. LA volume index ${fmt(m.lavi)} mL/m², mitral E ${fmt(m.E, 2)} m/s; ${pv}.${stage}${m.onset > 0.05 ? ` The leaflets prolapse, so the leak starts in mid-systole: the volume is smaller than the EROA suggests${cite('zoghbi2017')}.` : ''}`,
       extra: (art) => gradeTable(art.querySelector('#mr-table'), tableRows(m), 'ASE 2017 grading (Table 8, condensed)'),
     };
   },

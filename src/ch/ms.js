@@ -70,9 +70,13 @@ function plax(ctx, box, m, t) {
   const t0 = EV.mvo;
   const since = t >= t0 ? t - t0 : t + RR - t0;
   const a = since < RR - t0 + EV.mvc ? Math.min(1, since / 40) * (m.s > 0.08 ? 1 : 0) : 0;
-  const jets = m.s > 0.08 ? { ms: { q: (70 / (m.dfp / 1000)) * 1.1, va: 40, vc: m.tip * 0.6, jl: 2.5 + 2.5 * m.s, jw: 0.9 + m.tip * 0.4, a } } : {};
+  // the flow converges on the domed leaflets from the LA (a funnel, not a flat valve)
   drawPLAX(ctx, box, g, {
-    t, jets, title: fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 40 cm/s', 'PLAX · COLOR 40'),
+    t, title: fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 40 cm/s', 'PLAX · COLOR 40'),
+    color: {
+      roi: 'mitral', lo: -40, hi: 40, variance: true,
+      ms: m.s > 0.08 ? { q: (70 / (m.dfp / 1000)) * 1.1, u0: m.v0 * 100, vc: m.tip * 0.6, jl: 2.5 + 2.5 * m.s, jw: 0.9 + m.tip * 0.4, a, half: 0.9, soft: 0.35 } : null,
+    },
     after: (c, F) => measures(c, F, [`LA ${m.la.toFixed(1)} cm`, `leaflets ${(shownMitralThick(m.thick) * 10).toFixed(0)} mm`]),
   });
 }

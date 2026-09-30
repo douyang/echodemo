@@ -236,31 +236,53 @@ export function vscale(ctx, box, scale, base, step, unit = 'm/s', o = {}) {
 export function colorOf(v, nyq, variance = 0) {
   let u = v / nyq;
   if (Math.abs(u) > 1) u = ((((u + 1) % 2) + 2) % 2) - 1;   // wrap into [-1, 1)
-  const a = Math.abs(u);
-  const lo = u >= 0 ? SC.red : SC.blue, hi = u >= 0 ? SC.yellow : SC.cyan;
-  const t = Math.pow(a, 1.4);
-  let c = lo.map((q, i) => q + (hi[i] - q) * t);
-  const dim = 0.35 + 0.65 * Math.min(1, a * 1.6);
-  c = c.map((q) => q * dim);
-  if (variance > 0) c = c.map((q, i) => q + (i === 1 ? 190 : 120) * variance * 0.6);
-  return c.map((q) => Math.max(0, Math.min(255, Math.round(q))));
+  return flowColor(u, -1, 1, variance);
 }
 
-/** A color bar with the Nyquist limits, as on the scanner. */
+/**
+ * The BART color of a velocity v already inside the displayed range [lo, hi) (any unit): toward
+ * the probe dark red to yellow at hi, away dark blue to cyan at lo. With the baseline shifted the
+ * two halves differ in length; each color keeps its place on the bar. variance 0..1 adds green.
+ */
+export function flowColor(v, lo, hi, variance = 0, out = [0, 0, 0]) {
+  const pos = v >= 0;
+  const a = Math.min(1, pos ? v / hi : v / lo);
+  const c0 = pos ? SC.red : SC.blue, c1 = pos ? SC.yellow : SC.cyan;
+  const t = Math.pow(a, 1.5), dim = 0.3 + 0.7 * Math.min(1, a * 1.8);
+  for (let i = 0; i < 3; i++) out[i] = (c0[i] + (c1[i] - c0[i]) * t) * dim;
+  if (variance > 0) { out[0] += 30 * variance; out[1] += 150 * variance; out[2] += 30 * variance; }
+  for (let i = 0; i < 3; i++) out[i] = Math.max(0, Math.min(255, Math.round(out[i])));
+  return out;
+}
+
+/**
+ * A color bar with the Nyquist limits, as on the scanner. nyq (m/s) for a centred baseline; o.lo,
+ * o.hi (m/s) for a shifted one, with a tick where the baseline sits.
+ */
 export function colorBar(ctx, x, y, h, nyq, o = {}) {
   ctx.save();
-  const w = o.w || 8;
+  const w = o.w || 8, lo = o.lo ?? -nyq, hi = o.hi ?? nyq;
+  const c = [0, 0, 0];
   for (let i = 0; i < h; i++) {
-    const v = (1 - (2 * i) / h) * nyq * 0.999;
-    const [r, g, b] = colorOf(v, nyq);
+    const v = hi - ((i + 0.5) / h) * (hi - lo);
+    const [r, g, b] = flowColor(v, lo, hi, 0, c);
     ctx.fillStyle = `rgb(${r},${g},${b})`;
     ctx.fillRect(x, y + i, w, 1.2);
+  }
+  if (o.lo !== undefined && Math.abs(hi + lo) > 1e-6) {
+    const yb = Math.round(y + (h * hi) / (hi - lo)) + 0.5;
+    ctx.strokeStyle = SC.text;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x - 3, yb);
+    ctx.lineTo(x, yb);
+    ctx.stroke();
   }
   ctx.font = `400 10px ${MONO}`;
   ctx.fillStyle = SC.text;
   ctx.textAlign = 'center';
-  ctx.fillText(`+${Math.round(nyq * 100)}`, x + w / 2, y - 4);
-  ctx.fillText(`−${Math.round(nyq * 100)}`, x + w / 2, y + h + 11);
+  ctx.fillText(`+${Math.round(hi * 100)}`, x + w / 2, y - 4);
+  ctx.fillText(`−${Math.round(-lo * 100)}`, x + w / 2, y + h + 11);
   ctx.fillText('cm/s', x + w / 2, y + h + 22);
   ctx.restore();
 }

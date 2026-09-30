@@ -83,11 +83,14 @@ function plax(ctx, box, m, t) {
     ivs: [m.wall, sysW], pw: [m.wall, sysW], lvid: [m.lvidd, m.lvids], rvd: 2.6, la: [3.1 + 0.02 * (m.lavi - 24), 3.6 + 0.025 * (m.lavi - 24)],
     root: 3.1, lvot: LVOT_D, av: { thick: m.cusp, open: Math.min(1.9, 2 * Math.sqrt(m.ava / Math.PI) * 0.9), calc: m.calc },
   };
-  const ej = t >= EV.avo && t <= EV.avc;
-  const a = ej ? Math.pow(Math.max(0, Math.sin(Math.PI * (t - EV.avo) / (EV.avc - EV.avo))), 0.4) : 0;
-  const jets = m.vmax > 2.2 ? { as: { q: m.sv / ET, va: 60, vc: Math.sqrt(m.ava), jl: 2 + m.vmax * 0.6, jw: 1.4 + m.vmax * 0.18, a } } : {};
+  // the jet follows the CW trace through ejection; the outflow tract carries the LVOT velocity
+  const a = m.g((t - EV.avo) / (ET * 1000));
   drawPLAX(ctx, box, g, {
-    t, jets, title: fit(box.w, 'PARASTERNAL LONG AXIS', 'PLAX'),
+    t, title: fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 60 cm/s', 'PLAX · COLOR 60'),
+    color: {
+      roi: 'aorta', lo: -60, hi: 60, variance: true, lvot: m.vL,
+      as: m.vmax > 2.2 ? { q: m.ava * m.vmax * 100, u0: m.vmax * 100, vc: 2 * Math.sqrt(m.ava / Math.PI), jl: 2 + m.vmax * 0.6, jw: 1.4 + m.vmax * 0.18, a } : null,
+    },
     after: (c, F, geo) => {
       plaxLV(c, geo);
       measures(c, F, [`IVS ${m.wall.toFixed(1)} cm`, `LVIDd ${m.lvidd.toFixed(1)} cm`, `PW ${m.wall.toFixed(1)} cm`]);

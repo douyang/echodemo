@@ -3,8 +3,9 @@
 // the views draw them, so a caliper on the screen reads the value the page reports. The image
 // comes from bmode.js: each structure has its own echogenicity, a surface is brighter where
 // the beam meets it head-on, and the speckle moves with the tissue.
-import { SC, sectorPath, colorOf, colorBar, caliper, panel, tagBox } from './scope.js';
-import { cycleAt } from './cyclemodel.js';
+import { SC, sectorPath, colorBar, caliper, panel, tagBox } from './scope.js';
+import { cycleAt, mitralV, lvotV, EV, RR } from './cyclemodel.js';
+import { colorFlow, convergence, jetFlow, jetShare, stream, boxAround } from './cflow.js';
 import { bmode, mmode, DB } from './bmode.js';
 import { MONO, SANS, clamp, mix } from './sketch.js';
 import { cine } from './sev.js';
@@ -27,6 +28,8 @@ const smooth = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
 // annulus into the atrium. Walls and chamber sizes stay each page's own.
 let HEART = 'normal';
 export function setHeart(k) { HEART = k || 'normal'; }
+/** The heart the views draw: 'normal' or a key of pheno.js. */
+export const heartShown = () => HEART;
 const BARLOW = { len: 1.3, thick: 0.3, tent: -0.5 };
 /** The mitral leaflet thickness (cm) the views draw for a page's thickness t. */
 export function shownMitralThick(t) { return HEART === 'barlow' ? Math.max(t, BARLOW.thick) : t; }
@@ -276,17 +279,25 @@ export function frame(ctx, box, depthIn, title, o = {}) {
   // the scanner sets depth in half-centimetre steps
   const depth = Math.round(depthIn * 2) / 2;
   const deg = o.deg ?? 80;
-  const top = box.y + 24;
+  let top = box.y + 24;
   // the sector fills the panel height; its sides may run past the panel and are clipped
-  const R = Math.max(40, box.h - 30);
-  const cx = box.x + box.w / 2 + (o.shift ?? 0) * box.w;
-  const k = R / depth;
+  let R = Math.max(40, box.h - 30);
+  let cx = box.x + box.w / 2 + (o.shift ?? 0) * box.w;
+  let k = R / depth;
+  if (o.zoom) {
+    // zoom: o.zoom.span cm of the sector fill the image height, o.zoom.c (cm) in the middle; the
+    // probe lies above the image
+    k = (box.h - 26) / o.zoom.span;
+    cx = box.x + (box.w - 30) / 2 - o.zoom.c[0] * k;
+    top = box.y + 20 + (box.h - 20) / 2 - o.zoom.c[1] * k;
+    R = depth * k;
+  }
   const sect = { cx, top, R, deg };
   const P = (p) => [cx + p[0] * k, top + p[1] * k];
   const clipBox = new Path2D();
   clipBox.rect(box.x + 1, box.y + 20, box.w - 30, box.h - 21);
   const view = { box: { x: box.x + 1, y: box.y + 20, w: box.w - 30, h: box.h - 21 }, cx, top, k, half: (deg / 2) * (Math.PI / 180), depth, near: o.near ?? 1.4 };
-  return { sect, k, P, depth, box, clipBox, view, fan: sectorPath(cx, top, R, deg) };
+  return { sect, k, P, depth, box, clipBox, view, fan: sectorPath(cx, top, R, deg), zoom: !!o.zoom };
 }
 
 /** The B-mode image of a list of structures (see bmode.js), inside the panel. */
@@ -309,6 +320,7 @@ export function finish(ctx, F) {
   ctx.lineWidth = 1;
   for (let d = 1; d < F.depth; d++) {
     const y = sect.top + d * k;
+    if (y < box.y + 24) continue;                 // a zoomed image starts below the probe
     if (y > box.y + box.h - 6) break;
     const l = d % 5 === 0 ? 6 : 3;
     ctx.beginPath();
@@ -345,6 +357,9 @@ export function measures(ctx, F, lines) {
 /** Small white chamber labels, kept inside the image when the chamber runs past its edge. */
 function tag(ctx, F, text, p, o = {}) {
   const q = F.P(p);
+  const vb = F.view.box;
+  // a zoomed image names only what it shows
+  if (F.zoom && (q[0] < vb.x + 8 || q[0] > vb.x + vb.w - 8 || q[1] < vb.y + 8 || q[1] > vb.y + vb.h - 8)) return;
   ctx.save();
   ctx.font = `600 ${o.size || 11}px ${SANS}`;
   ctx.fillStyle = o.color || 'rgba(214,222,226,0.92)';
@@ -364,11 +379,16 @@ function tag(ctx, F, text, p, o = {}) {
   ctx.fillText(text, x, y);
   ctx.restore();
 }
-/** A color bar at the image's right edge; its legend ends above the depth scale's 5 cm number. */
-function barFor(ctx, F, nyq) {
+/**
+ * A color bar at the image's right edge for the range lo..hi (cm/s); its legend ends above the
+ * depth scale's first number.
+ */
+function barFor(ctx, F, lo, hi) {
   const { box, sect, k } = F;
-  const h = clamp(sect.top + 5 * k - 12 - (box.y + 34) - 24, 24, 90);
-  colorBar(ctx, box.x + box.w - 20, box.y + 34, h, nyq, { w: 7 });
+  let yNum = sect.top + 5 * k;
+  while (yNum < box.y + 24) yNum += 5 * k;
+  const h = clamp(yNum - 12 - (box.y + 34) - 24, 24, 90);
+  colorBar(ctx, box.x + box.w - 20, box.y + 34, h, hi / 100, { w: 7, lo: lo / 100, hi: hi / 100 });
   F.barEnd = box.y + 34 + h + 24;
 }
 
@@ -396,103 +416,201 @@ export function phase(t) {
 }
 const at = (pair, c) => (Array.isArray(pair) ? mix(pair[0], pair[1], c) : pair);
 
-// ---------------------------------------------------------------- color flow
-let JC = null;
-const hash = (i, j, f) => { const x = Math.sin(i * 127.1 + j * 311.7 + f * 74.7) * 43758.5453; return x - Math.floor(x); };
-/** Smooth noise in 0..1 on a lattice of `step` cells (blobs about that size), frame f. */
-function blob(i, j, step, f) {
-  const x = i / step, y = j / step, x0 = Math.floor(x), y0 = Math.floor(y), tx = x - x0, ty = y - y0;
-  const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
-  const a = hash(x0, y0, f), b = hash(x0 + 1, y0, f), c = hash(x0, y0 + 1, f), d = hash(x0 + 1, y0 + 1, f);
-  return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+// ---------------------------------------------------------------- color flow in the views
+// Normal flow through the beat, from the cycle model, and a lesion's jet with its flow
+// convergence; cflow.js makes the color image. C, from the page:
+//   lo, hi (cm/s): the displayed range, hi - lo twice the Nyquist limit; variance (bool);
+//   roi: the color box: 'la', 'ra', 'mv', 'tv' (A4C), 'lvot', 'aorta', 'mitral' (PLAX);
+//   zoom (A4C): { at: 'mv' | 'tv', span (cm) };
+//   E, A (m/s): mitral inflow; Et, At: tricuspid inflow; lvot (m/s): peak outflow;
+//   pvS, pvD (m/s, into the LA): pulmonary veins; hvS, hvD (m/s, negative forward): hepatic veins;
+//   mr, tr, ar, as, ms: a jet { q (mL/s), u0 (cm/s), vc, jl, jw (cm), frac (its share of its
+//     chamber) or area (cm²) at full strength, a (0..1), lam (0..1),
+//     pk (where it is widest, 0..1 of its length), open (cm), fit ('width': jw is its largest
+//     width; else its area is 0.55 jl jw), dir, half and soft (the cone of its flow convergence), pisa }.
+/** For checks: jetOnly leaves out the normal flow, noReturn a jet's return flow; stats ({ poly }, cm) takes the color area in poly. */
+export const cfDebug = { jetOnly: false, noReturn: false, stats: null };
+const bump = (t, a, b, pk) => (t > a && t < b ? Math.sin(Math.PI * Math.pow((t - a) / (b - a), Math.log(0.5) / Math.log((pk - a) / (b - a)))) : 0);
+/** Pulmonary vein velocity (m/s, into the atrium): S, D and the atrial reversal, as chapter 15 draws them. */
+function pvAt(t, S, D, Ar = -0.25) {
+  const tt = t < 60 ? t + RR : t;
+  return S * bump(t, 90, 400, 250) + D * bump(t, EV.mvo + 15, 720, 540) + Ar * bump(tt, 790, 900, 835);
 }
-
+const polyArea = (poly) => { let a = 0; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) a += poly[j][0] * poly[i][1] - poly[i][0] * poly[j][1]; return Math.abs(a) / 2; };
+/** Where the ray from O along d enters the chamber poly and where it meets its far wall (cm from O). */
+function crossing(O, d, poly) {
+  let entry = null;
+  for (let s = 0; s < 14; s += 0.05) {
+    const p = add(O, mul(d, s));
+    let c = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if ((yi > p[1]) !== (yj > p[1]) && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) c = !c;
+    }
+    if (c && entry === null) entry = s;
+    else if (!c && entry !== null) return { entry, exit: s };
+  }
+  return { entry: entry ?? 0, exit: 14 };
+}
 /**
- * A regurgitant or stenotic jet in color Doppler: flow convergence (PISA) upstream of the
- * orifice O and a turbulent jet downstream, inside a color box, as the scanner shows them:
- * velocity along the beam, red toward the probe, wrapping at the aliasing velocity, with a
- * green variance tag where the flow is turbulent. dir: unit vector of the jet (downstream);
- * q: flow (mL/s); va: aliasing velocity (cm/s); vc: vena contracta (cm); jl, jw: jet length
- * and largest width (cm); clip: chamber polygon (cm) the jet stays inside; a: 0..1 strength
- * over the cycle; laminar: a slow jet without the mosaic.
+ * A lesion: flow convergence upstream of the orifice O and the jet along d. The jet keeps its
+ * neck (the vena contracta) until it enters its chamber (cham, a polygon), where its color
+ * length and area are counted; a jet that reaches the far wall spreads along it and comes back
+ * along the side walls, toward the orifice.
  */
-export function jet(ctx, F, j) {
-  if (!j || !(j.a > 0.02) || !(j.q > 0)) return;   // a NaN strength draws nothing
-  const { k, box, sect } = F;
-  const O = j.O, d = unit(j.dir), n = perp(d);
-  const va = j.va, L = j.jl * Math.min(1, j.a * 1.15), Wd = j.jw, w0 = Math.max(0.12, j.vc / 2);
-  const v0 = clamp(j.q / (Math.PI * w0 * w0), 90, 600);   // cm/s at the vena contracta
-  const Rp = j.pisa === false ? 0 : Math.min(2.4, Math.sqrt(j.q / (2 * Math.PI * 0.15 * va)));
-  const halfAt = (u) => w0 + (Wd / 2 - w0) * Math.sin(Math.PI * Math.min(1, (u / Math.max(L, 0.01)) * 0.9 + 0.1)) ** 0.8 * Math.min(1, (u / Math.max(L, 0.01)) * 2.2);
-  // the region to color, in px: the jet and the convergence zone
-  const pts = [add(O, mul(n, Wd / 2 + 0.2)), add(O, mul(n, -Wd / 2 - 0.2)), add(add(O, mul(d, L + 0.2)), mul(n, Wd / 2 + 0.2)), add(add(O, mul(d, L + 0.2)), mul(n, -Wd / 2 - 0.2)), add(O, mul(d, -Rp - 0.1)), add(add(O, mul(d, -0.1)), mul(n, Rp + 0.1)), add(add(O, mul(d, -0.1)), mul(n, -Rp - 0.1))].map(F.P);
-  const x0 = Math.max(box.x, Math.min(...pts.map((p) => p[0]))), x1 = Math.min(box.x + box.w - 30, Math.max(...pts.map((p) => p[0])));
-  const y0 = Math.max(box.y + 20, Math.min(...pts.map((p) => p[1]))), y1 = Math.min(box.y + box.h, Math.max(...pts.map((p) => p[1])));
-  if (!(x1 > x0 && y1 > y0)) return;
-  const cell = Math.max(2, k * 0.09);                        // color pixels about 1 mm
-  const W = Math.ceil((x1 - x0) / cell), H = Math.ceil((y1 - y0) / cell);
-  if (!JC) JC = document.createElement('canvas');
-  if (JC.width < W || JC.height < H) { JC.width = Math.max(JC.width, W); JC.height = Math.max(JC.height, H); }
-  const g = JC.getContext('2d', { willReadFrequently: true });
-  const img = g.createImageData(W, H), px = img.data;
-  const clip = j.clip ? new Path2D() : null;
-  if (clip) { j.clip.forEach((p, i) => { const q = F.P(p); if (i) clip.lineTo(q[0], q[1]); else clip.moveTo(q[0], q[1]); }); clip.closePath(); }
-  const f = cine.live ? Math.floor(performance.now() / 45) : 0;
-  for (let jj = 0; jj < H; jj++) {
-    for (let ii = 0; ii < W; ii++) {
-      const X = x0 + (ii + 0.5) * cell, Y = y0 + (jj + 0.5) * cell;
-      const p = [(X - sect.cx) / k, (Y - sect.top) / k];
-      const rel = sub(p, O), al = dot(rel, d), ac = dot(rel, n);
-      const toward = unit(mul(p, -1));                         // from here to the probe
-      let vb = 0, vr = 0, alpha = 0;
-      if (al >= -0.02) {
-        // the jet: fastest in its core, slowing and widening downstream
-        if (al > L) continue;
-        const half = halfAt(al);
-        if (Math.abs(ac) > half) continue;
-        if (clip && !g.isPointInPath(clip, X, Y)) continue;
-        const vcl = v0 / (1 + (0.35 * al) / w0);
-        const v = vcl * Math.exp(-((ac / (0.55 * half)) ** 2)) * j.a;
-        const turb = j.laminar ? 0.08 : 0.55 * Math.min(1, 0.4 + al / (4 * w0));
-        const nz = blob(ii, jj, 2.2, f) - 0.5, nz2 = blob(ii + 50, jj + 50, 1.3, f) - 0.5;
-        vb = v * dot(d, toward) + turb * vcl * (1.6 * nz + 0.8 * nz2);
-        vr = Math.min(1, (turb * vcl) / va) * (j.laminar ? 0 : 1);
-        alpha = Math.min(1, j.a * 1.5) * (1 - smooth((Math.abs(ac) / half - 0.75) / 0.25)) * (1 - smooth((al / Math.max(L, 0.01) - 0.8) / 0.2));
-      } else if (Rp > 0) {
-        // flow convergence: v = q / (2 pi r^2) toward the orifice
-        const r = len(rel);
-        if (r > Rp || r < 0.04) continue;
-        const v = (j.q / (2 * Math.PI * r * r)) * j.a;
-        vb = v * dot(unit(sub(O, p)), toward);
-        alpha = Math.min(1, j.a * 1.4) * smooth((Math.abs(vb) / va - 0.12) / 0.12);
-      }
-      if (alpha <= 0.02 || Math.abs(vb) < 0.1 * va) continue;
-      const [cr, cg, cb] = colorOf(vb / 100, va / 100, 0.45 * vr);
-      const o = 4 * (jj * W + ii);
-      px[o] = cr; px[o + 1] = cg; px[o + 2] = cb; px[o + 3] = Math.round(255 * alpha);
+function lesion(O, d, J, cham) {
+  const a = J.a, L = J.jl * Math.min(1, a * 1.15);
+  const out = J.pisa === false ? [] : [convergence(O, d, J.q * a, { cap: J.u0, half: J.half, soft: J.soft })];
+  if (L <= 0.15) return out;
+  const X = cham ? crossing(O, d, cham) : { entry: 0, exit: Infinity }, D = X.exit - X.entry, hits = L > 0.8 * D;
+  const u0 = J.u0 * Math.sqrt(a), grow = Math.min(1, 0.35 + 0.65 * a);
+  // the color area at full strength: a share of the chamber as drawn (frac), cm² (area), or 0.55 jl jw
+  const target = J.frac && cham ? J.frac * polyArea(cham) : J.area;
+  const make = (wid) => jetFlow([O, add(O, mul(d, X.entry + L + 0.4))], {
+    u0, vc: J.vc, len: L, pre: X.entry, wid, lam: J.lam, seed: J.seed ?? 3, pk: J.pk ?? (hits ? 0.6 : 0.5), wall: hits, open: J.open, fit: J.fit, keep: true,
+  });
+  const w0 = target ? (target * grow) / (0.55 * J.jl) : J.jw * grow;
+  let jet = make(w0);
+  // what falls outside the chamber is not drawn: widen the jet to make up for it
+  for (let i = 0; i < 3 && target && cham; i++) {
+    const f = jetShare(jet, cham);
+    if (f > 0.98) break;
+    jet = make(w0 / Math.max(0.55, f));
+  }
+  out.push(jet);
+  if (hits && !cfDebug.noReturn) {
+    // along the far wall, then back along the side walls (toward the probe in an apical view)
+    const core = 1.4 * J.vc + 0.25, v = (0.3 * u0 * core) / Math.max(core, D), I = add(O, mul(d, X.exit - 0.45)), n = perp(d);
+    for (const sgn of [1, -1]) {
+      const side = mul(n, sgn * Math.min(2.4, J.jw * 0.5));
+      out.push(stream([I, add(I, side), add(add(I, side), mul(d, -0.5 * D)), add(add(I, mul(side, 0.8)), mul(d, -0.85 * D))], [0.5 * v, 0.8 * v, 0.55 * v, 0.15 * v], [0.35, 0.42, 0.45, 0.35], { seed: 7 + sgn }));
     }
   }
-  g.putImageData(img, 0, 0);
-  ctx.save();
-  ctx.clip(F.clipBox);
-  ctx.clip(F.fan);
-  ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(JC, 0, 0, W, H, x0, y0, W * cell, H * cell);
-  ctx.restore();
-  // the color box, as the scanner outlines it
-  const polar = pts.map((q) => { const x = (q[0] - sect.cx) / k, y = (q[1] - sect.top) / k; return [Math.atan2(x, y), Math.hypot(x, y)]; });
-  const t0 = Math.min(...polar.map((q) => q[0])) - 0.04, t1 = Math.max(...polar.map((q) => q[0])) + 0.04;
-  const r0 = Math.max(0.5, Math.min(...polar.map((q) => q[1])) - 0.3) * k, r1 = (Math.max(...polar.map((q) => q[1])) + 0.3) * k;
-  ctx.save();
-  ctx.clip(F.clipBox);
-  ctx.strokeStyle = 'rgba(205,212,216,0.5)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(sect.cx, sect.top, r0, Math.PI / 2 - t0, Math.PI / 2 - t1, true);
-  ctx.arc(sect.cx, sect.top, r1, Math.PI / 2 - t1, Math.PI / 2 - t0, false);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.restore();
+  return out;
+}
+/**
+ * Inflow through an open valve: from the atrium (H, the middle of the annulus) the blood speeds
+ * up into the funnel of the leaflets, is fastest between their tips, and runs on toward the apex
+ * as a broad laminar jet that slows within a few centimetres.
+ */
+function inflow(H, tip, into, gapW, v, far, seed) {
+  const w = clamp(gapW, 0.9, 3.2);
+  return stream([add(H, mul(into, -2.2)), H, tip, add(tip, mul(into, 1.4)), add(tip, mul(into, far))],
+    [0.18 * v, 0.55 * v, v, 0.75 * v, 0.25 * v], [2.1, 1.7, w * 0.48, w * 0.55, w * 0.5], { seed, tex: 0.15, bill: 0.14 });
+}
+
+function a4cFlows(S, t, C) {
+  const fl = [];
+  const Hm = lerp2(S.S0, S.L0, 0.5), Ht = lerp2(S.TS, S.TL, 0.5), rvAx = unit(sub(S.Ra, Ht));
+  const ldown = unit(add(mul(S.ax, -1), mul(S.nl, 0.12))), rdown = unit(add(mul(S.ax, -1), mul(S.out, 0.18)));
+  if (!cfDebug.jetOnly) {
+    // mitral and tricuspid inflow, E then A
+    const vm = mitralV(t, C.E ?? 0.8, C.A ?? 0.55) * 100, vt = mitralV(t - 6, C.Et ?? 0.5, C.At ?? 0.4) * 100;
+    if (vm > 2) fl.push(inflow(Hm, S.mv.tip, S.ax, len(sub(S.mv.l1[NL], S.mv.l2[NL])), vm, S.lvL * 0.45, 21));
+    if (vt > 2) fl.push(inflow(Ht, S.tv.tip, rvAx, len(sub(S.tv.l1[NL], S.tv.l2[NL])), vt, 3.2, 23));
+    // the LV vortex: the inflow turns near mid-ventricle and runs back along both walls
+    const vv = 0.3 * mitralV(t - 70, C.E ?? 0.8, C.A ?? 0.55) * 100;
+    if (vv > 2) {
+      for (const [side, f] of [[S.nl, 0.56], [mul(S.nl, -1), 0.44]]) {
+        const P = (u) => add(lerp2(S.B, S.A, u), mul(side, lvWidth(u, S.lvW, S.ma) * f - 0.6));
+        fl.push(stream([P(0.62), P(0.4), P(0.15)], [0.6 * vv, vv, 0.5 * vv], [0.5, 0.55, 0.45], { seed: f > 0.5 ? 31 : 33 }));
+      }
+    }
+    // ejection: toward the outflow tracts, which lie in front of this plane
+    const vo = lvotV(t, C.lvot ?? 1.0) * 100;
+    if (vo > 2) {
+      const a0 = lerp2(S.B, S.A, 0.55), b0 = add(add(S.S0, mul(S.ax, 1.2)), mul(S.nl, 0.9));
+      // most of this flow runs across the plane: little of it shows
+      fl.push(stream([a0, lerp2(a0, b0, 0.55), b0], [0.1 * vo, 0.22 * vo, 0.16 * vo], [1.0, 0.95, 0.75], { seed: 35 }));
+      fl.push(stream([lerp2(Ht, S.Ra, 0.55), add(lerp2(S.TS, S.TL, 0.35), mul(rvAx, 1.0))], [0.1 * vo, 0.18 * vo], [0.8, 0.65], { seed: 37 }));
+    }
+    // pulmonary veins through the LA roof, toward the mitral valve; reversed flow runs back into them
+    const pv = pvAt(t, C.pvS ?? 0.55, C.pvD ?? 0.4) * 100;
+    if (Math.abs(pv) > 2) {
+      const nLa = S.laCav.length - 1;
+      for (const gi of [Math.round(nLa * 0.43), Math.round(nLa * 0.63)]) {
+        const p = S.laCav[gi], d = unit(sub(Hm, p));
+        fl.push(stream([sub(p, mul(d, 0.9)), p, add(p, mul(d, 2.4))], [pv, 0.85 * pv, 0.15 * pv], [0.3, 0.38, 0.7], { seed: 40 + gi }));
+      }
+    }
+    // caval return: the IVC opens into the floor of the RA, behind this plane
+    const cav = -((C.hvS ?? -0.45) * bump(t, 90, 400, 250) + (C.hvD ?? -0.3) * bump(t, EV.mvo + 15, 720, 540)) * 60;
+    if (Math.abs(cav) > 2) {
+      let f0 = S.raCav[0], best = -Infinity;
+      for (const p of S.raCav) { const d = dot(sub(p, S.TL), rdown); if (d > best) { best = d; f0 = p; } }
+      fl.push(stream([add(f0, mul(rdown, 0.6)), f0, lerp2(f0, Ht, 0.5)], [cav, 0.8 * cav, 0.3 * cav], [0.6, 0.7, 0.8], { seed: 45 }));
+    }
+  }
+  if (C.mr?.a > 0.02) fl.push(...lesion(S.mv.gapMid, C.mr.dir ?? ldown, C.mr, S.laCav));
+  if (C.tr?.a > 0.02) fl.push(...lesion(S.tv.gapMid, rdown, C.tr, S.raCav));
+  return fl;
+}
+// The color box depends only on the heart's sizes and the page's setting: made once for each.
+const BOXES = new Map();
+function cachedBox(key, make) {
+  let b = BOXES.get(key);
+  if (!b) {
+    b = make();
+    BOXES.set(key, b);
+    if (BOXES.size > 32) BOXES.delete(BOXES.keys().next().value);
+  }
+  return b;
+}
+/** The A4C color box: over the chambers of every shape given (the box keeps still through the beat). */
+function a4cBox(shapes, C, half) {
+  const pts = [];
+  for (const T of shapes) {
+    if (C.roi === 'la') pts.push(add(T.S0, mul(T.ax, 2.4)), add(T.L0, mul(T.ax, 2.4)), ...T.laCav);
+    else if (C.roi === 'ra') {
+      const ax = unit(sub(T.Ra, lerp2(T.TS, T.TL, 0.5)));
+      pts.push(add(T.TS, mul(ax, 2.4)), add(T.TL, mul(ax, 2.4)), ...T.raCav);
+    } else {
+      const c = (C.roi === 'tv' ? T.tv : T.mv).gapMid;
+      for (let i = 0; i < 12; i++) pts.push(add(c, [2 * Math.cos((i * Math.PI) / 6), 2 * Math.sin((i * Math.PI) / 6)]));
+    }
+  }
+  return boxAround(pts, half, { mr: 0.25 });
+}
+
+function plaxFlows(S, R, t, C, g) {
+  const fl = [];
+  const { xAnn, aoMid, yLv, yPw, lvot, hingeA, hingeP, tipA, tipP } = S;
+  const Rp = (pts) => pts.map(R);
+  const Rd = (p, d) => unit(sub(R(add(p, d)), R(p)));      // a direction at p, turned with the image
+  const root = g.root ?? 3.1, avTip = lerp2(S.cuspA[NL], S.cuspP[NL], 0.5), mvTip = lerp2(tipA, tipP, 0.5);
+  if (!cfDebug.jetOnly) {
+    // systole: the LV empties through the outflow tract into the aorta
+    const vo = lvotV(t, C.lvot ?? 1.0) * 100;
+    if (vo > 2) {
+      const pts = [[-3.2, (yLv + yPw) / 2], [xAnn - 1.4, aoMid + 0.1], [xAnn + 0.8, aoMid]];
+      const sp = [0.3 * vo, 0.9 * vo, 1.1 * vo], hw = [1.6, lvot * 0.42, (g.av?.open ?? 1.9) * 0.45];
+      if (!C.as) { pts.push([xAnn + 3.4, aoMid - 0.25], [xAnn + 6.5, aoMid - 0.6]); sp.push(vo, 0.9 * vo); hw.push(root * 0.4, root * 0.38); }
+      fl.push(stream(Rp(pts), sp, hw));
+    }
+    // diastole: mitral inflow toward the apex
+    const vm = mitralV(t, C.E ?? 0.8, C.A ?? 0.55) * 100;
+    if (vm > 2 && !C.ms) {
+      const H = lerp2(hingeA, hingeP, 0.5);
+      fl.push(inflow(R(H), R(mvTip), Rd(mvTip, unit(sub(mvTip, H))), len(sub(tipA, tipP)), vm, 3.4, 25));
+    }
+  }
+  const lv = Rp(S.lvCav);
+  if (C.ar?.a > 0.02) fl.push(...lesion(R(avTip), Rd(avTip, unit(sub([-4, aoMid + 1.0], [xAnn, aoMid]))), C.ar, lv));
+  if (C.as?.a > 0.02) fl.push(...lesion(R(avTip), Rd(avTip, unit(sub([xAnn + 6, aoMid - 0.3], [xAnn + 1.2, aoMid]))), C.as));
+  // the stenotic jet leaves along the axis of the leaflet funnel
+  if (C.ms?.a > 0.02) fl.push(...lesion(R(mvTip), Rd(mvTip, unit(sub(mvTip, lerp2(hingeA, hingeP, 0.5)))), C.ms, lv));
+  return fl;
+}
+/** The PLAX color box, round the lesion's region in every shape given. */
+function plaxBox(shapes, C, R, half) {
+  const pts = [];
+  for (const T of shapes) {
+    const { xAnn, aoTop, aoBot, yLv, yPw } = T;
+    if (C.roi === 'lvot') pts.push([xAnn + 2.0, aoTop - 0.2], [xAnn + 2.0, aoBot + 0.2], [xAnn - 6, yLv + 0.1], [xAnn - 6, yPw - 0.2]);
+    else if (C.roi === 'aorta') pts.push([xAnn - 2.4, aoTop], [xAnn - 2.4, aoBot + 0.3], [xAnn + 5.2, aoTop - 0.6], [xAnn + 5.2, aoBot]);
+    else pts.push(...T.laCav, [xAnn - 4.5, yLv + 0.3], [xAnn - 4.5, yPw - 0.3]);
+  }
+  return boxAround(pts.map(R), half);
 }
 
 // ---------------------------------------------------------------- apical four-chamber
@@ -749,24 +867,29 @@ function a4cItems(S, Sr, g) {
  * g (cm; [ED, ES] pairs beat with the heart):
  *   lvL, lvW, lvWall, ivs, rvW, rvWall, laW, laL ([min, max]), raW, raL, ma (mitral annulus),
  *   ta (tricuspid annulus), mv: {thick, gap, dome, tip}, tv: {thick, gap}
- * o: t (ms), ph (the phase, in place of t's), title, depth, jets: {mr, tr, ms} (flow q mL/s, va,
- *    vc, jl, jw), labels (false, or a list such as ['LA', 'RA']), gain, after(ctx, F, geo)
+ * o: t (ms), ph (the phase, in place of t's), title, depth, color (color flow: see a4cFlows),
+ *    labels (false, or a list such as ['LA', 'RA']), gain, after(ctx, F, geo)
  * Returns the geometry (cm) for labels and measurements.
  */
 export function drawA4C(ctx, box, g, o = {}) {
-  const F = frame(ctx, box, o.depth ?? 16, o.title ?? 'APICAL FOUR-CHAMBER', { deg: 80, near: 1.2 });
   const ph = o.ph ?? phase(o.t ?? 150);
-  const c = ph.c;
+  const c = ph.c, C = o.color;
   // the reference frame: end-diastole with the valves shut, where the speckle is laid down
   const S = a4cShape(g, c, ph, o.dyn), Sr = a4cShape(g, 0, { ...ph, mvShut: 1, tvShut: 1 });
+  const zc = C?.zoom ? (C.zoom.at === 'tv' ? Sr.tv : Sr.mv).gapMid : null;
+  const F = frame(ctx, box, o.depth ?? 16, o.title ?? 'APICAL FOUR-CHAMBER', { deg: 80, near: 1.2, zoom: zc && { c: zc, span: C.zoom.span } });
   scan(ctx, F, a4cItems(S, Sr, g), { t: o.t, gain: o.gain });
-  // jets
-  const J = o.jets || {};
-  const ldown = unit(add(mul(S.ax, -1), mul(S.nl, 0.12))), rdown = unit(add(mul(S.ax, -1), mul(S.out, 0.18)));
-  if (J.mr) jet(ctx, F, { ...J.mr, O: S.mv.gapMid, dir: ldown, clip: S.laCav });
-  if (J.tr) jet(ctx, F, { ...J.tr, O: S.tv.gapMid, dir: rdown, clip: S.raCav });
-  if (J.ms) jet(ctx, F, { ...J.ms, O: S.mv.tip, dir: S.ax, clip: S.lvCav });
-  if (J.mr || J.tr || J.ms) barFor(ctx, F, (J.mr || J.tr || J.ms).va / 100);
+  if (C) {
+    // the color box keeps still through the beat: it covers the chambers at both ends of it
+    const key = `a4c|${HEART}|${C.roi}|${F.view.half}|${JSON.stringify(g)}`;
+    colorFlow(ctx, F, {
+      box: cachedBox(key, () => a4cBox([Sr, a4cShape(g, 1, { ...ph, mvShut: 1, tvShut: 1 })], C, F.view.half)), lo: C.lo, hi: C.hi, variance: C.variance,
+      blood: [S.lvCav, S.laCav, S.raCav, [...S.rvSepEndo, ...S.rvFree]],
+      tissue: [S.mv.o1, S.mv.o2, S.tv.o1, S.tv.o2, S.pm, ...S.annuli],
+      flows: a4cFlows(S, o.t ?? ph.t ?? 150, C), stats: cfDebug.stats,
+    });
+    barFor(ctx, F, C.lo, C.hi);
+  }
   const geo = { ...S, F, c, ph };
   // the hook first: the tags keep clear of the measurement box it draws
   if (o.after) o.after(ctx, F, geo);
@@ -876,7 +999,7 @@ function a2cItems(S, Sr, g) {
   ];
 }
 
-/** Apical two-chamber view; g and o as for drawA4C (no jets). Returns the geometry (cm). */
+/** Apical two-chamber view; g and o as for drawA4C (no color flow). Returns the geometry (cm). */
 export function drawA2C(ctx, box, g, o = {}) {
   const F = frame(ctx, box, o.depth ?? 16, o.title ?? 'APICAL TWO-CHAMBER', { deg: 80, near: 1.2 });
   const ph = o.ph ?? phase(o.t ?? 150);
@@ -1062,7 +1185,7 @@ function plaxShape(g, c, ph) {
  * g (cm): rvd (RV outflow), ivs, lvid, pw ([ED, ES] pairs), root (aortic sinus), lvot, la (AP,
  *   [min, max]), av: {thick, open (orifice width at full opening, cm), calc}, mv: {thick, dome,
  *   tip (orifice width, cm), calc}, effusion
- * o: t, depth, jets: {ar, as, ms}, title, labels, after
+ * o: t, depth, color (color flow: see a4cFlows), title, labels, after
  */
 export function drawPLAX(ctx, box, g, o = {}) {
   const F = frame(ctx, box, o.depth ?? 15, o.title ?? 'PARASTERNAL LONG AXIS', { deg: 88, near: 1.4 });
@@ -1107,16 +1230,19 @@ export function drawPLAX(ctx, box, g, o = {}) {
   }
   if (g.mv?.calc) items.push({ lines: [RP([S.tipA, along(S.aml, 0.8)]), RP([S.tipP, along(S.pml, 0.8)])], e: DB.calcium - 4, w: 0.18, shadow: 8 * g.mv.calc });
   scan(ctx, F, items, { t: o.t, gain: o.gain });
-  // jets
-  const J = o.jets || {};
-  const { xAnn, aoTop, aoBot, aoMid, yLv, yPw, tipA, tipP } = S;
-  const lvCav = RP(S.lvCav);
-  const aoCav = RP([[xAnn + 0.05, aoTop + 0.1], [xAnn + 7, aoTop - 0.6], [xAnn + 7, aoBot + 0.3], [xAnn + 0.05, aoBot - 0.1]]);
-  if (J.ar) jet(ctx, F, { ...J.ar, O: R([xAnn + 0.6, aoMid]), dir: unit(sub(R([-4, aoMid + 1.0]), R([xAnn, aoMid]))), clip: lvCav });
-  if (J.as) jet(ctx, F, { ...J.as, O: R([xAnn + 1.2, aoMid]), dir: unit(sub(R([xAnn + 6, aoMid - 0.3]), R([xAnn + 1.2, aoMid]))), clip: aoCav, pisa: false });
-  if (J.ms) jet(ctx, F, { ...J.ms, O: R(lerp2(tipA, tipP, 0.5)), dir: unit(sub(R([-6, (yLv + yPw) / 2 + 0.6]), R(lerp2(tipA, tipP, 0.5)))), clip: lvCav });
-  const anyJet = J.ar || J.as || J.ms;
-  if (anyJet) barFor(ctx, F, anyJet.va / 100);
+  const { xAnn, aoTop, aoBot, aoMid, yLv, yPw } = S;
+  const C = o.color;
+  if (C) {
+    // the color box keeps still through the beat: it covers the region at both ends of it
+    const key = `plax|${HEART}|${C.roi}|${F.view.half}|${JSON.stringify(g)}`;
+    colorFlow(ctx, F, {
+      box: cachedBox(key, () => plaxBox([Sr, plaxShape(g, 1, { ...ph, mvShut: 1, avOpen: 0 })], C, R, F.view.half)), lo: C.lo, hi: C.hi, variance: C.variance,
+      blood: [RP(S.lvCav), RP(S.laCav), RP([...S.aoAnt, ...S.aoPost.slice().reverse()]), RP([...S.rvEndoT, ...S.sepRV.slice().reverse()])],
+      tissue: [RP(S.cuspAo), RP(S.cuspPo), RP(S.amlO), RP(S.pmlO), RP(S.pm)],
+      flows: plaxFlows(S, R, o.t ?? 150, C, g), stats: cfDebug.stats,
+    });
+    barFor(ctx, F, C.lo, C.hi);
+  }
   const geo = { F, R, yIvs: S.yIvs, yLv, yPw, yEpi: S.yEpi, ivs: S.ivs, lvid: S.lvid, pw: S.pw, la: S.la, laTop: S.laTop, aoTop, aoBot, aoMid, xAnn, c, ph, lvot: S.lvot };
   if (o.after) o.after(ctx, F, geo);
   if (o.labels !== false) {
