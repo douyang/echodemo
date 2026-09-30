@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Heart in Sound</title>
+<meta name="description" content="An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and the final report.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&display=swap">
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="masthead">
+    <p class="eyebrow"><span class="eyebrow-long">An illustrated study · </span>Echocardiography</p>
+    <h1 class="title">The Heart in <em>Sound.</em></h1>
+    <p class="subtitle">From a sound pulse to the final report</p>
+  </header>
+
+  <div class="tools">
+    <label class="tool heart-pick" title="The heart every chapter shows">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13.5S2.5 10.2 2.5 6.1A2.9 2.9 0 0 1 8 4.6a2.9 2.9 0 0 1 5.5 1.5C13.5 10.2 8 13.5 8 13.5Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      <span class="t">Heart</span>
+      <select id="pheno" aria-label="Heart shown">
+        <option value="normal">Normal</option>
+        <option value="amyloid">Amyloid</option>
+        <option value="icm">Ischemic CM</option>
+        <option value="barlow">Barlow MR</option>
+        <option value="bav">Bicuspid AS</option>
+      </select>
+    </label>
+    <button class="tool" id="btn-norms" type="button" aria-haspopup="dialog" aria-label="Normal values">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h11M6 2v12" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+      <span class="t">Normal values</span>
+    </button>
+    <button class="tool" id="btn-refs" type="button" aria-haspopup="dialog" aria-label="Sources">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h8.5a1.5 1.5 0 0 1 1.5 1.5v9.5H4.5A1.5 1.5 0 0 1 3 12V2.5Z M3 12a1.5 1.5 0 0 1 1.5-1.5H13" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+      <span class="t">Sources</span>
+    </button>
+    <button class="tool" id="btn-theme" type="button" aria-label="Switch paper and slate">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11Z" fill="currentColor"/></svg>
+      <span class="t" id="theme-label">Slate</span>
+    </button>
+  </div>
+
+  <!-- ============================================================ figures -->
+  <main class="stage" id="stage">
+    <figure class="fig is-active" id="fig-pulse">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">A transducer sends a short pulse into the chest. The pulse crosses the chest wall, the right ventricle, the septum, the left ventricle and the posterior wall. Echoes return from each boundary. An amplitude trace and one brightness line show the echoes by depth.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-image">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">A sector image of the heart builds one scan line at a time. A chosen artifact is drawn into the image.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-shift">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">An ultrasound beam meets flowing blood at an angle. Below, the Doppler display shows the measured velocity, the Nyquist limit and aliasing.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-pressure">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Left: stroke volume from the outflow tract area and the velocity-time integral. Right: right ventricular systolic pressure from the tricuspid regurgitation velocity and the right atrial pressure estimated from the inferior vena cava.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-cycle">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Wiggers diagram of one heartbeat: aortic, left ventricular and left atrial pressure, left ventricular volume, the ECG, the heart sounds, mitral inflow and left ventricular outflow Doppler, and an apical four-chamber frame at the chosen moment.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-loop">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Left ventricular pressure-volume loop with the end-systolic and end-diastolic pressure-volume relations and the arterial elastance line, beside the normal loop.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-windows">
+      <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
+      <div class="split">
+        <div class="pane-3d"><div class="gl-host"></div><div class="overlay" id="windows-overlay"></div><p class="pane-label" id="windows-3dlabel">Cross-section</p><p class="fig-note" id="windows-note">Drag to orbit · Scroll or pinch to zoom</p></div>
+        <div class="pane-2d"><canvas class="fig-canvas" id="windows-canvas" aria-hidden="true"></canvas><p class="pane-label" id="windows-label">Parasternal long axis</p></div>
+      </div>
+      <figcaption class="sr-only">Left: a three-dimensional heart with the ultrasound sector plane that cuts it. Right: the matching echocardiographic view with the chambers and valves labeled.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-planes">
+      <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
+      <div class="split wide">
+        <div class="pane-3d"><div class="gl-host"></div><canvas class="ink" id="planes-ink" aria-hidden="true"></canvas><p class="pane-label">All planes</p><p class="fig-note" id="planes-note">Drag to orbit · Scroll or pinch to zoom · Click a tag</p></div>
+        <div class="pane-2d"><canvas class="fig-canvas" id="planes-canvas" aria-hidden="true"></canvas><p class="pane-label" id="planes-label">Apical four-chamber</p></div>
+      </div>
+      <figcaption class="sr-only">A three-dimensional heart with the imaging planes of the chosen standard views drawn through it, each in the color of its acoustic window, with the lines where the planes cross. Beside it, the echo view of the focused plane.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-eject">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Apical four-chamber and two-chamber echo views with the left ventricular border traced, its long axis and twenty disks for the biplane method, each above a drawing of the same ventricle divided into the same disks; or, for the right ventricle, TAPSE on M-mode, tricuspid annular velocity and fractional area change.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-segments">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <div class="occl">
+        <span class="occl-label" id="occl-label">Occluded artery</span>
+        <div class="seg" role="group" aria-labelledby="occl-label" data-key="culprit">
+          <button type="button" data-val="none">Normal</button><button type="button" data-val="lad">LAD</button><button type="button" data-val="rca">RCA</button><button type="button" data-val="lcx">LCX</button>
+        </div>
+      </div>
+      <figcaption class="sr-only">Buttons for a normal heart and for an occluded LAD, RCA or circumflex artery. Seventeen-segment bullseye colored by the wall motion score of each segment, with the occluded artery drawn on it, and the apical four-, two- and three-chamber echo views, in which each segment moves by its score. The numbered segment buttons under the controls change the scores.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-fill">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Diastolic function from normal to restrictive filling: an apical four-chamber view with the left atrium to scale, mitral inflow, septal and lateral tissue Doppler, pulmonary vein flow, left atrial strain and the tricuspid jet, with the 2025 diastolic algorithm and the path the current values take.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-as">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Aortic stenosis from a normal valve to severe stenosis and then low flow: a parasternal long-axis view with the thickened walls and the calcified valve, the short-axis valve orifice to scale, continuous-wave and outflow Doppler, mitral inflow, and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-ar">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Aortic regurgitation from mild to severe: a parasternal long-axis view with the color jet in the outflow tract and a dilating left ventricle, the continuous-wave jet with its pressure half-time, flow reversal in the descending aorta, outflow Doppler, and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-ms">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Mitral stenosis from a normal valve to severe stenosis: a parasternal long-axis view with doming leaflets and a large left atrium, the short-axis orifice to scale, continuous-wave mitral inflow with the pressure half-time, the tricuspid jet, and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-mr">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Mitral regurgitation from mild to severe: an apical four-chamber view with the color jet and flow convergence, the continuous-wave jet, pulmonary vein and mitral inflow Doppler, and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-tr">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Tricuspid regurgitation from mild to torrential: an apical four-chamber view with the color jet and a dilating right heart, the continuous-wave jet, hepatic vein flow, the inferior vena cava on M-mode, a short-axis view of the septum, and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-peri">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Pericardial effusion from none to tamponade: an apical four-chamber view with the fluid round the heart and, in tamponade, the right atrium and right ventricle folding in; mitral inflow, tricuspid inflow and hepatic vein flow over a breath; a parasternal long-axis view with the fluid in front of the descending aorta; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-report">
+      <div class="sheet-host" id="report-host"></div>
+      <figcaption class="sr-only">A structured echocardiography report built from the values on this page.</figcaption>
+    </figure>
+  </main>
+
+  <!-- ============================================================ chapters -->
+  <section class="panel" id="panel" aria-live="off">
+    <p class="pheno-note" id="pheno-note" hidden></p>
+
+    <!-- ======================================================== Physics -->
+    <article class="chapter is-active" id="ch-pulse">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">01</span><div><h2 class="ch-title">Pulse</h2><p class="ch-kicker">The sound</p></div></div>
+      <p class="dek" data-part="dek">An echo image starts as one short pulse of sound. The scanner times each echo and changes the time into depth.</p>
+      <div class="controls">
+        <div class="control">
+          <label for="freq">Transducer frequency <output data-for="freq"></output></label>
+          <input type="range" id="freq" data-key="freq" min="1" max="10" step="0.1">
+          <div class="zone" aria-hidden="true" style="--a: 0.111; --w: 0.333"><i></i><span>adult transthoracic, 2–5 MHz</span></div>
+          <div class="ticks" aria-hidden="true"><span>1 MHz</span><span>10 MHz</span></div>
+        </div>
+        <div class="row2">
+          <div class="control">
+            <span class="label">Cycles per pulse</span>
+            <div class="seg" role="group" aria-label="Cycles per pulse" data-key="cycles">
+              <button type="button" data-val="1">1</button><button type="button" data-val="2">2</button><button type="button" data-val="3">3</button><button type="button" data-val="4">4</button>
+            </div>
+          </div>
+          <div class="control">
+            <span class="label">Gain</span>
+            <div class="toggles"><label class="check"><input type="checkbox" id="tgc" data-key="tgc"> Time gain compensation</label></div>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Time becomes depth</h3>
+        <p>The scanner assumes one speed of sound in all soft tissue: 1540 m/s<span class="cite" data-ref="iaea2014"></span>. Depth is speed × time ÷ 2, because the pulse goes to the reflector and back<span class="cite" data-ref="iaea2014"></span>. The round trip takes about 13 µs for each centimeter of depth, so an echo from 10 cm arrives after about 130 µs<span class="cite" data-ref="efrimescu2024"></span>.</p>
+        <h3>Wavelength sets the detail</h3>
+        <p class="eq">wavelength = speed ÷ frequency &nbsp;·&nbsp; axial resolution = cycles × wavelength ÷ 2</p>
+        <p>At 7 MHz the wavelength is about 0.22 mm<span class="cite" data-ref="openstax2022"></span>. Axial resolution is half the length of the pulse, because the pulse makes a round trip<span class="cite" data-ref="iaea2014"></span>. A higher frequency or fewer cycles give a shorter pulse, and two reflectors closer together show as two echoes.</p>
+        <h3>Echoes come from steps in impedance</h3>
+        <p>Acoustic impedance is density × speed of sound<span class="cite" data-ref="iaea2014"></span>. At each boundary the reflected fraction of the intensity is ((Z2 − Z1) ÷ (Z2 + Z1))². Fat on muscle reflects about 1.4% of the intensity<span class="cite" data-ref="openstax2022"></span>. Soft tissue on air reflects almost all of it: the lung stops the beam, and the image ends there.</p>
+        <h3>Attenuation limits the depth</h3>
+        <p>Tissue absorbs and scatters the pulse. The loss increases approximately in proportion to frequency<span class="cite" data-ref="iaea2014"></span>. The textbook average for soft tissue is 0.5 dB per cm per MHz; blood loses much less (0.17 dB/cm at 1 MHz) and muscle more (1.2 dB/cm)<span class="cite" data-ref="iaea2014"></span>. The figure adds the loss layer by layer.</p>
+        <ul>
+        <li>Adult transthoracic studies use 2.0 to 5.0 MHz<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>ASE recommends the highest frequency that still reaches the depth of interest<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>Time gain compensation amplifies late, deep echoes to offset attenuation<span class="cite" data-ref="mitchell2019"></span>. It amplifies the noise too.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Depth comes from time: about 13 µs per centimeter, round trip.</li>
+        <li>A higher frequency gives finer axial detail and less depth.</li>
+        <li>Large impedance steps give bright echoes. Air and bone block the beam.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-image">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">02</span><div><h2 class="ch-title">Image</h2><p class="ch-kicker">The picture</p></div></div>
+      <p class="dek" data-part="dek">A sector image is many scan lines, one after another. Depth, sector width and line density set how many frames the scanner can make each second.</p>
+      <div class="controls">
+        <div class="row2">
+          <div class="control">
+            <label for="depth">Depth <output data-for="depth"></output></label>
+            <input type="range" id="depth" data-key="depth" min="6" max="30" step="1">
+          </div>
+          <div class="control">
+            <label for="sector">Sector width <output data-for="sector"></output></label>
+            <input type="range" id="sector" data-key="sector" min="30" max="90" step="5">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="control">
+            <label for="density">Line density <output data-for="density"></output></label>
+            <input type="range" id="density" data-key="density" min="0.5" max="2" step="0.1">
+          </div>
+          <div class="control">
+            <label for="focus">Focal depth <output data-for="focus"></output></label>
+            <input type="range" id="focus" data-key="focus" min="3" max="20" step="0.5">
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Artifact</span>
+          <div class="seg" role="group" aria-label="Artifact" data-key="artifact">
+            <button type="button" data-val="none">None</button><button type="button" data-val="reverb">Reverberation</button><button type="button" data-val="shadow">Shadowing</button><button type="button" data-val="mirror">Mirror</button><button type="button" data-val="lobe">Side lobe</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Frame rate</h3>
+        <p class="eq">time per line ≈ 2 × depth ÷ c &nbsp;·&nbsp; time per frame = lines × time per line</p>
+        <p>Each scan line waits for the echoes from the deepest point before the next pulse goes out<span class="cite" data-ref="iaea2014"></span>. More lines, more depth or more focal zones make each frame slower. In the ASE example, 17 cm with a narrow sector gave 84 frames a second; 24 cm and a wide sector gave 43<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <p>To increase the frame rate, decrease the depth, narrow the sector, use fewer focal zones or use write zoom<span class="cite" data-ref="mitchell2019"></span>. The heart moves fast, so temporal resolution is important<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <h3>Lateral resolution</h3>
+        <p>Detail across the beam depends on the beam width. The beam is narrowest at the focus, and lateral resolution is typically 1 to 2 mm<span class="cite" data-ref="iaea2014"></span>. Put the focus at the depth of the structure<span class="cite" data-ref="mitchell2019"></span>. More, closer lines give better lateral detail but a lower frame rate<span class="cite" data-ref="zander2020"></span>.</p>
+        <h3>Artifacts</h3>
+        <p>The scanner assumes that sound travels in a straight line, reflects once, comes only from the beam axis, and returns at a time proportional to depth<span class="cite" data-ref="bertrand2016"></span>. Each artifact breaks one of these assumptions.</p>
+        <ul>
+        <li><b>Reverberation.</b> Sound bounces between two strong reflectors. Copies appear at 2 and 3 times the distance<span class="cite" data-ref="bertrand2016"></span>.</li>
+        <li><b>Shadowing.</b> A strong reflector or attenuator, such as a prosthetic ring or calcium, removes the echoes behind it<span class="cite" data-ref="bertrand2016"></span>.</li>
+        <li><b>Mirror.</b> A strong reflector, often the pleura, places a copy of the structures in front of it behind it<span class="cite" data-ref="bertrand2016"></span>.</li>
+        <li><b>Side lobe.</b> Off-axis energy from a strong reflector shows as if it came from the main beam, often as an arc<span class="cite" data-ref="bertrand2016"></span>.</li>
+        </ul>
+        <p>Harmonic imaging forms the image from twice the transmit frequency, and ASE recommends it<span class="cite" data-ref="mitchell2019"></span>. It decreases side-lobe artifacts<span class="cite" data-ref="starkoff2014"></span>, but it can make valve leaflets look thicker<span class="cite" data-ref="hawkins2008"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Frame rate = 1 ÷ (lines × time per line).</li>
+        <li>Decrease depth and sector width to make the frame rate higher.</li>
+        <li>Name the broken assumption to name the artifact.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-shift">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">03</span><div><h2 class="ch-title">Shift</h2><p class="ch-kicker">The Doppler effect</p></div></div>
+      <p class="dek" data-part="dek">Doppler measures blood velocity from the frequency shift of the echoes. The beam angle and the Nyquist limit decide what the scanner can report.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Mode</span>
+          <div class="seg" role="group" aria-label="Doppler mode" data-key="dmode">
+            <button type="button" data-val="pw">Pulsed wave</button><button type="button" data-val="cw">Continuous wave</button><button type="button" data-val="color">Color</button>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="control">
+            <label for="angle">Beam angle to flow <output data-for="angle"></output></label>
+            <input type="range" id="angle" data-key="angle" min="0" max="80" step="1">
+          </div>
+          <div class="control">
+            <label for="vtrue">True peak velocity <output data-for="vtrue"></output></label>
+            <input type="range" id="vtrue" data-key="vtrue" min="0.2" max="5" step="0.05">
+          </div>
+          <div class="control">
+            <label for="sdepth">Sample depth <output data-for="sdepth"></output></label>
+            <input type="range" id="sdepth" data-key="sdepth" min="3" max="20" step="0.5">
+          </div>
+          <div class="control">
+            <label for="f0">Doppler frequency <output data-for="f0"></output></label>
+            <input type="range" id="f0" data-key="f0" min="1.5" max="5" step="0.1">
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>The Doppler equation</h3>
+        <p class="eq">Δf = 2 × f0 × v × cos θ ÷ c</p>
+        <p>Flow toward the transducer gives a positive shift, and flow away a negative shift<span class="cite" data-ref="quinones2002"></span>. The equation uses c = 1540 m/s<span class="cite" data-ref="quinones2002"></span>. With blood at about 1 m/s and MHz transducers, the shift is a few kHz: an audible sound<span class="cite" data-ref="iaea2014"></span>.</p>
+        <h3>The angle</h3>
+        <p>Cardiac Doppler assumes the beam is parallel to the flow (θ = 0)<span class="cite" data-ref="quinones2002"></span>. A 20° angle underestimates the velocity by only about 6%<span class="cite" data-ref="mitchell2019"></span>. At 60° the scanner reports half the true velocity (cos 60° = 0.5, a calculation). ASE does not recommend angle correction: align the beam with the flow, use several windows, and report the highest velocity<span class="cite" data-ref="mitchell2019,quinones2002"></span>.</p>
+        <h3>Pulsed wave and the Nyquist limit</h3>
+        <p>Pulsed-wave Doppler measures at one depth, but it must wait for each echo before the next pulse. The deepest sample sets the pulse repetition frequency (PRF), and the highest velocity without aliasing is c² ÷ (8 × depth × f0)<span class="cite" data-ref="iaea2014"></span>. The Nyquist limit is PRF ÷ 2; faster flow wraps to the other side of the baseline<span class="cite" data-ref="quinones2002"></span>.</p>
+        <ul>
+        <li>Move the sample volume closer, or use a lower Doppler frequency, to increase the limit.</li>
+        <li>High-PRF Doppler adds sample volumes to increase the limit, and accepts range ambiguity<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>Continuous wave has no Nyquist limit, and no depth information<span class="cite" data-ref="mitchell2019"></span>.</li>
+        </ul>
+        <h3>Color Doppler</h3>
+        <p>Color shows the mean velocity at many sample volumes<span class="cite" data-ref="iaea2014"></span>: red toward the transducer, blue away<span class="cite" data-ref="mitchell2019"></span>. It is a pulsed method, so it aliases too. ASE suggests a scale of 50 to 70 cm/s for routine color, and about 30 cm/s for slow flow<span class="cite" data-ref="mitchell2019"></span>. A small, shallow color box keeps the frame rate high<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <p>A wide spectrum does not always mean turbulent flow; a large sample volume or high gain also widen it<span class="cite" data-ref="paeng2025,mitchell2019"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Measured velocity = true velocity × cos θ.</li>
+        <li>Deeper sample, higher frequency: lower Nyquist limit.</li>
+        <li>For high velocities, use continuous wave.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-pressure">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">04</span><div><h2 class="ch-title">Pressure</h2><p class="ch-kicker">Flow and gradients</p></div></div>
+      <p class="dek" data-part="dek">Two Doppler calculations appear in almost every report: stroke volume from the LV outflow tract, and RV systolic pressure from the tricuspid jet.</p>
+      <div class="controls">
+        <div class="row2">
+          <div class="control">
+            <label for="sv">Stroke volume <output data-for="sv"></output></label>
+            <input type="range" id="sv" data-key="sv" min="20" max="120" step="1">
+          </div>
+          <div class="control">
+            <label for="lvotD">LVOT diameter <output data-for="lvotD"></output></label>
+            <input type="range" id="lvotD" data-key="lvotD" min="1.6" max="2.6" step="0.01">
+          </div>
+          <div class="control">
+            <label for="calErr">Caliper error <output data-for="calErr"></output></label>
+            <input type="range" id="calErr" data-key="calErr" min="-3" max="3" step="0.5">
+          </div>
+          <div class="control">
+            <label for="hr">Heart rate <output data-for="hr"></output></label>
+            <input type="range" id="hr" data-key="hr" min="40" max="140" step="1">
+          </div>
+          <div class="control">
+            <label for="trV">TR peak velocity <output data-for="trV"></output></label>
+            <input type="range" id="trV" data-key="trV" min="1.5" max="5" step="0.05">
+          </div>
+          <div class="control">
+            <label for="ivcD">IVC diameter <output data-for="ivcD"></output></label>
+            <input type="range" id="ivcD" data-key="ivcD" min="1" max="3" step="0.05">
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">IVC collapse with a sniff</span>
+          <div class="seg" role="group" aria-label="IVC collapse" data-key="ivcCollapse">
+            <button type="button" data-val="gt">More than 50%</button><button type="button" data-val="lt">Less than 50%</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Stroke volume</h3>
+        <p class="eq">SV = 0.785 × d² × VTI &nbsp;(d, VTI in cm; SV in mL)</p>
+        <p>The outflow tract is taken as a circle with diameter d<span class="cite" data-ref="zoghbi2017"></span>. Measure d in a zoomed parasternal long-axis view, inner edge to inner edge, in mid-systole<span class="cite" data-ref="baumgartner2017"></span>. Record the LVOT velocity with pulsed wave from the apical five-chamber or long-axis view, just below the valve<span class="cite" data-ref="mitchell2019"></span>. Take both at the same level<span class="cite" data-ref="baumgartner2017"></span>.</p>
+        <p>The diameter is squared, so a small error becomes a large one. Repeated LVOT measurements vary by 5 to 8%, the largest error in the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. A 2 mm error on a 2.0 cm outflow tract changes the stroke volume by about 20%.</p>
+        <p>Normal resting values from catheter studies: stroke volume 60 to 100 mL, cardiac output 4 to 8 L/min, cardiac index 2.5 to 4.0 L/min/m²<span class="cite" data-ref="humbert2022"></span>.</p>
+        <h3>Pressure from velocity</h3>
+        <p class="eq">ΔP = 4 v² &nbsp;·&nbsp; RVSP = 4 × (peak TR velocity)² + RA pressure</p>
+        <p>The simplified Bernoulli equation gives the pressure difference in mmHg from a velocity in m/s<span class="cite" data-ref="baumgartner2017"></span>. It holds when the velocity before the narrowing is 1.5 m/s or less<span class="cite" data-ref="quinones2002"></span>. The TR jet gives the pressure difference between the RV and the RA; add the RA pressure from the IVC<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <ul>
+        <li>IVC ≤2.1 cm that collapses ≥50% with a sniff: RA pressure 3 mmHg.</li>
+        <li>IVC >2.1 cm that collapses &lt;50%: 15 mmHg. Other combinations: 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li>Report one number, not a range<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        </ul>
+        <p>A resting peak TR velocity of 2.9 m/s or more, or 2.8 m/s with two other signs, suggests pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>SV = area × VTI; the diameter error is squared.</li>
+        <li>ΔP = 4v².</li>
+        <li>RVSP = 4 × TR² + RA pressure from the IVC.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Physiology -->
+    <article class="chapter" id="ch-cycle">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">05</span><div><h2 class="ch-title">Cycle</h2><p class="ch-kicker">One heartbeat</p></div></div>
+      <p class="dek" data-part="dek">One heartbeat has four valve events. Echo times each event from the ECG, from valve motion and from Doppler.</p>
+      <div class="controls">
+        <div class="control">
+          <label for="tcycle">Time after the R wave <output data-for="tcycle"></output></label>
+          <input type="range" id="tcycle" data-key="tcycle" min="0" max="856" step="1">
+          <div class="ticks" aria-hidden="true"><span>R wave</span><span>systole</span><span>diastole</span><span>next R</span></div>
+        </div>
+        <div class="toggles"><label class="check"><input type="checkbox" id="c-run" data-key="crun"> Run the beat</label></div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>The Wiggers diagram</h3>
+        <p>The diagram plots LV pressure, LV volume, LA pressure and aortic pressure against time, and marks the valve events<span class="cite" data-ref="mitchellwang2014"></span>. Mitral closure makes the first heart sound and aortic closure the second<span class="cite" data-ref="mitchellwang2014"></span>. Electrical events come before mechanical events: the QRS comes before contraction<span class="cite" data-ref="mitchellwang2014"></span>.</p>
+        <h3>Intervals</h3>
+        <p>In 1,969 healthy adults, isovolumic contraction lasted 40 ± 10 ms, ejection 292 ± 23 ms and isovolumic relaxation 96 ± 19 ms<span class="cite" data-ref="alhakak2025"></span>. The model uses these means at 70 beats a minute. Isovolumic relaxation becomes longer with age<span class="cite" data-ref="alhakak2025"></span>.</p>
+        <h3>Timing on echo</h3>
+        <ul>
+        <li><b>End-diastole</b> is the first frame after mitral valve closure, or the frame with the largest LV; the QRS or the R wave can stand in<span class="cite" data-ref="lang2015,voigt2015"></span>.</li>
+        <li><b>End-systole</b> is the frame at or after aortic valve closure<span class="cite" data-ref="lang2015"></span>, near the end of the T wave<span class="cite" data-ref="schimpf2008"></span>.</li>
+        <li><b>Mitral inflow:</b> the E wave peaks after the T wave; the A wave comes after the P wave<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>IVRT</b> runs from the end of LVOT flow to the start of mitral inflow. Record it with CW Doppler through the LVOT, from the apical five-chamber or long-axis view, so that both signals show<span class="cite" data-ref="nagueh2025"></span>.</li>
+        </ul>
+        <p>A short IVRT (under 70 ms) in a patient with heart disease suggests a high LA pressure<span class="cite" data-ref="nagueh2025"></span>. IVRT is age-dependent, so do not use one normal value for all ages<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <p>Early filling brings most of the blood into the LV; atrial contraction adds the rest, about one fifth in the example of Mitchell and Wang<span class="cite" data-ref="mitchellwang2014"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>S1 = mitral closure; S2 = aortic closure.</li>
+        <li>End-diastole: first frame after mitral closure. End-systole: aortic closure.</li>
+        <li>IVRT: end of LVOT flow to start of the E wave.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-loop">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">06</span><div><h2 class="ch-title">Loop</h2><p class="ch-kicker">Pressure and volume</p></div></div>
+      <p class="dek" data-part="dek">The pressure–volume loop shows one beat as a shape. Contractility, afterload and chamber stiffness move its corners, and the ejection fraction follows them.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Heart</span>
+          <div class="seg" role="group" aria-label="Loop preset" data-key="pv">
+            <button type="button" data-val="normal">Normal</button><button type="button" data-val="hfref">Weak (HFrEF)</button><button type="button" data-val="hfpef">Stiff (HFpEF)</button><button type="button" data-val="as">Pressure load</button>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="control">
+            <label for="edp">Preload (EDP) <output data-for="edp"></output></label>
+            <input type="range" id="edp" data-key="edp" min="3" max="30" step="0.5">
+          </div>
+          <div class="control">
+            <label for="ea">Afterload (Ea) <output data-for="ea"></output></label>
+            <input type="range" id="ea" data-key="ea" min="0.8" max="4" step="0.05">
+          </div>
+          <div class="control">
+            <label for="ees">Contractility (Ees) <output data-for="ees"></output></label>
+            <input type="range" id="ees" data-key="ees" min="0.4" max="4" step="0.05">
+          </div>
+          <div class="control">
+            <label for="stiff">Chamber stiffness <output data-for="stiff"></output></label>
+            <input type="range" id="stiff" data-key="stiff" min="0" max="1" step="0.01">
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>The four sides</h3>
+        <p>The loop runs counterclockwise: isovolumic contraction, ejection, isovolumic relaxation and filling<span class="cite" data-ref="bastos2020"></span>. The width of the loop is the stroke volume; its area is the stroke work<span class="cite" data-ref="bastos2020"></span>.</p>
+        <h3>Three lines</h3>
+        <ul>
+        <li><b>ESPVR.</b> The end-systolic points lie on a near-straight line, P = Ees × (V − V0)<span class="cite" data-ref="bastos2020"></span>. Its slope, Ees, is a relatively load-independent measure of contractility<span class="cite" data-ref="bastos2020,suga1973"></span>.</li>
+        <li><b>EDPVR.</b> The end-diastolic relation is curved, close to exponential, and shows the passive stiffness of the chamber<span class="cite" data-ref="bastos2020"></span>.</li>
+        <li><b>Ea.</b> Effective arterial elastance is end-systolic pressure ÷ stroke volume: the slope of the line from the EDV on the volume axis to the end-systolic point<span class="cite" data-ref="bastos2020,kelly1992"></span>.</li>
+        </ul>
+        <h3>Coupling and EF</h3>
+        <p class="eq">EF = Ees ÷ (Ees + Ea) &nbsp;(with V0 taken as 0)</p>
+        <p>EF is a ratio of the heart and its load, not a pure measure of contractility<span class="cite" data-ref="mongegarcia2020"></span>. A higher afterload decreases EF even when contractility does not change. Stroke work is largest when Ea equals Ees; efficiency is highest at a lower Ea/Ees<span class="cite" data-ref="burkhoffsagawa1986"></span>. At rest, healthy adults have an Ea/Ees of about 0.5 to 1.0, depending on the method<span class="cite" data-ref="bastos2020,chantlerlakatta2012"></span>.</p>
+        <p>Without a catheter, end-systolic pressure is often estimated as 0.9 × the systolic cuff pressure<span class="cite" data-ref="antonini2013"></span>.</p>
+        <h3>The presets</h3>
+        <ul>
+        <li><b>Weak ventricle.</b> Low Ees: the ventricle dilates and ejects a small fraction.</li>
+        <li><b>Stiff ventricle.</b> Steep EDPVR: filling pressure is high at a normal volume, and EF stays normal.</li>
+        <li><b>Pressure load.</b> High Ea, as with aortic stenosis or hypertension: the loop is tall.</li>
+        </ul>
+        <p>Preload is the stretch of the muscle before contraction; afterload is the load against which the ventricle ejects<span class="cite" data-ref="vincent2008,norton2001"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Ees (slope of the ESPVR) indexes contractility.</li>
+        <li>Ea = end-systolic pressure ÷ stroke volume.</li>
+        <li>EF depends on both: Ees ÷ (Ees + Ea).</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Views -->
+    <article class="chapter" id="ch-windows">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">07</span><div><h2 class="ch-title">Windows</h2><p class="ch-kicker">The views</p></div></div>
+      <p class="dek" data-part="dek">Each standard view is one plane through the heart. The probe position, the rotation of the marker and the tilt of the beam select the plane.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Window</span>
+          <div class="seg" role="group" aria-label="Acoustic window" data-key="win">
+            <button type="button" data-val="plax">Parasternal long</button><button type="button" data-val="psax">Parasternal short</button><button type="button" data-val="apical">Apical</button><button type="button" data-val="sub">Subcostal</button><button type="button" data-val="ssn">Suprasternal</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">View <output>[ and ] step through all</output></span>
+          <div class="seg" role="group" aria-label="View" data-key="view" id="view-seg"></div>
+        </div>
+        <div class="toggles">
+          <label class="check"><input type="checkbox" id="w-labels" data-key="wlabels"> Labels</label>
+          <label class="check"><input type="checkbox" id="w-body" data-key="wbody"> Probe and body</label>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Four windows</h3>
+        <p>ASE describes four acoustic windows: parasternal, apical, subcostal and suprasternal notch<span class="cite" data-ref="mitchell2019"></span>. Parasternal and apical imaging is done with the patient on the left side; subcostal and suprasternal imaging with the patient supine<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <ul>
+        <li><b>Parasternal long axis.</b> Third or fourth left intercostal space, marker toward the right shoulder, 9 to 10 o’clock<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Parasternal short axis.</b> Rotate 90° clockwise from the long axis; the marker points to the left shoulder<span class="cite" data-ref="mitchell2019"></span>. Tilt the beam to step from the great vessels to the mitral valve, the papillary muscles and the apex<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Apical.</b> At the apical impulse, marker at 4 to 5 o’clock<span class="cite" data-ref="mitchell2019"></span>. From the four-chamber view, rotate about 60° counterclockwise for the two-chamber view and 60° more for the three-chamber view<span class="cite" data-ref="mitchell2019"></span>. Tilt anteriorly for the five-chamber view<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Subcostal.</b> Below the xiphoid. It shows the heart, the pericardium, the RV free wall and the inferior vena cava<span class="cite" data-ref="mitchell2019"></span>; angled a little to the patient's left, the abdominal aorta.</li>
+        <li><b>Suprasternal.</b> It shows the ascending aorta, the arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
+        </ul>
+        <h3>The figure</h3>
+        <p>Left: the heart model cut on the imaging plane and seen square to it, turned as the echo is. <b>Labels</b> names the structures on the model. <b>Probe and body</b> shows the whole heart from the front with the plane through it and the probe, and a small figure of the body: the probe on the skin at the window, the heart inside the chest, and the head and the patient's left, turned as the heart is. Right: the echo view that the same plane cuts from the model. A change of view moves the plane from where it is, as the probe would move.</p>
+        <p>Below the diaphragm, the liver, the inferior vena cava, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views; they are not part of the heart model and the 3D heart does not show them. Each view carries the class name that the lab uses to annotate it, where the lab's list has one. The model is a normal adult heart; in a patient, the position of the heart changes the angles.</p>
+        <h3>A good apical view</h3>
+        <p>An apical view that is not foreshortened shows about two thirds LV and one third LA along the long axis<span class="cite" data-ref="mitchell2019"></span>. A plane that misses the true apex makes the LV look short and round, and its volumes read low<span class="cite" data-ref="lang2015"></span>.</p>
+        <p>The British Society of Echocardiography lists a minimum dataset of views in scanning order, and asks for at least two cardiac cycles for each clip<span class="cite" data-ref="bse2020"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Parasternal long → short: rotate 90° clockwise.</li>
+        <li>Apical four → two → three chamber: rotate about 60° counterclockwise each step.</li>
+        <li>Measure the IVC 1 to 2 cm from the right atrium, in the subcostal view<span class="cite" data-ref="mitchell2019"></span>.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-planes">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">08</span><div><h2 class="ch-title">Planes</h2><p class="ch-kicker">All views in one heart</p></div></div>
+      <p class="dek" data-part="dek">The standard views are planes through one heart. Seen together, the planes show which views share a line, which views are parallel, and which views show a structure.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Sets</span>
+          <div class="seg" role="group" aria-label="View sets" id="planes-sets">
+            <button type="button" data-set="nine">Nine views</button><button type="button" data-set="long">Parasternal long</button><button type="button" data-set="stack">Short-axis stack</button><button type="button" data-set="apical">Apical</button><button type="button" data-set="all">All</button><button type="button" data-set="none">Clear</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Views <output>click: add, focus, remove</output></span>
+          <div class="chips" id="planes-views"></div>
+        </div>
+        <div class="control">
+          <span class="label">Find a structure</span>
+          <div class="seg" role="group" aria-label="Structure" data-key="pstruct"><button type="button" data-val="none">None</button></div>
+        </div>
+        <div class="control">
+          <span class="label">Look from</span>
+          <div class="seg" role="group" aria-label="Camera" data-key="pcam">
+            <button type="button" data-val="front">Front</button><button type="button" data-val="apex">The apex</button><button type="button" data-val="side">The side</button><button type="button" data-val="plane">Square to the plane</button>
+          </div>
+        </div>
+        <div class="toggles">
+          <label class="check"><input type="checkbox" data-key="pheart"> Heart</label>
+          <label class="check"><input type="checkbox" data-key="plines"> Where the focused plane crosses</label>
+          <label class="check"><input type="checkbox" data-key="pcut"> Cut at the focused plane</label>
+          <label class="check"><input type="checkbox" data-key="pfree"> Free plane</label>
+        </div>
+        <div class="free" id="planes-free" hidden>
+          <p class="free-head"><span>Free plane, from the focused view</span> <output id="pfree-state"></output></p>
+          <div class="row2">
+            <div class="control">
+              <label for="prot">Rotate, + clockwise <output data-for="prot"></output></label>
+              <input type="range" id="prot" data-key="prot" min="-180" max="180" step="1">
+            </div>
+            <div class="control">
+              <label for="ptilt">Tilt <output data-for="ptilt"></output></label>
+              <input type="range" id="ptilt" data-key="ptilt" min="-45" max="45" step="1">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="control">
+              <label for="prock">Rock, + to the right <output data-for="prock"></output></label>
+              <input type="range" id="prock" data-key="prock" min="-40" max="40" step="1">
+            </div>
+            <div class="control">
+              <label for="pslide">Slide <output data-for="pslide"></output></label>
+              <input type="range" id="pslide" data-key="pslide" min="-5" max="5" step="0.1">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="control">
+              <label for="psweep">Sweep <output data-for="psweep"></output></label>
+              <input type="range" id="psweep" data-key="psweep" min="-5" max="5" step="0.1">
+            </div>
+            <div class="control free-reset"><button type="button" class="chip" id="pfree-reset">Back to the focused view</button></div>
+          </div>
+          <div class="control free-goto">
+            <label for="pgoto">Go to a view</label>
+            <select id="pgoto"></select>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt matrix" id="planes-matrix"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>How the views relate</h3>
+        <ul>
+        <li><b>The apical views share one line.</b> The four-, two- and three-chamber planes all contain the long axis of the LV. ASE rotates about 60° between them<span class="cite" data-ref="mitchell2019"></span>; the figure shows the angles of this model. Look from the apex to see the three planes as a star.</li>
+        <li><b>The short-axis levels are parallel.</b> Tilting the probe steps the plane from the mitral valve to the papillary muscles and the apex<span class="cite" data-ref="mitchell2019"></span>. Look from the side to see the stack.</li>
+        <li><b>Long and short axis cross at right angles.</b> The short axis comes from a 90° rotation of the long axis<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Small tilts make new views.</b> From the parasternal long axis, tilt toward the right hip for RV inflow, and anteriorly for RV outflow. From the four-chamber view, tilt anteriorly to add the LVOT and the aortic valve<span class="cite" data-ref="mitchell2019"></span>.</li>
+        </ul>
+        <h3>Free plane</h3>
+        <p>Turn on <b>Free plane</b> to move a plane away from the focused view the way a probe moves: rotate it about the beam, tilt the beam across the plane, rock it within the plane, slide the probe along the plane and sweep it across. The echo pane shows what that plane cuts; <b>Square to the plane</b> turns the 3D heart to face it. In this model, a turn of 60° counterclockwise from the four-chamber view gives the two-chamber view, and a turn of 120° gives the three-chamber view. A turn of 90° clockwise from the parasternal long axis gives the short axis at the mitral valve.</p>
+        <p>The probe stays in the window of the focused view, so the free plane is compared only with the standard views of that window. A plane from another window can cut the heart almost the same way (the apical and subcostal four-chamber planes do), but it is a different view. The comparison uses the angle between the planes, with the marker on the same side, and how far the view's centre lies off the free plane. The same plane with the marker on the other side gives a mirrored image, and the panel says so. Within 20° and 3 cm the nearest view is marked; within 10° and 1.5 cm the plane settles onto it when you let go of the control.</p>
+        <p><b>Back to the focused view</b> moves the probe in steps: slide and sweep first, then tilt and rock, then rotate. Each step starts before the previous step ends, so the move does not stop between steps. <b>Go to a view</b> takes the free plane to any standard view. For a view in the same window, the new view becomes the focused view. The controls then show the present plane relative to it and move to zero. For a view in another window, the probe first returns to the focused view. Then it moves across the chest to the new window.</p>
+        <h3>What each view shows</h3>
+        <p>The table lists the structures that ASE names for each view on show<span class="cite" data-ref="mitchell2019"></span>. Choose a structure to light the views that contain it. The figure shows each parent view only, not its zoomed or LV-focused variants.</p>
+        <h3>Why it matters</h3>
+        <ul>
+        <li>Confirm a finding in two views that cross it at different angles.</li>
+        <li>Some measurements need two views at one site: the LVOT diameter (zoomed parasternal long axis) and the LVOT velocity (apical five-chamber) must come from the same level<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>Each apical view shows two opposite walls of the LV, and together the three views cover the 17 segments<span class="cite" data-ref="lang2015"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Apical planes rotate about the LV long axis.</li>
+        <li>Short-axis planes are parallel slices.</li>
+        <li>Every structure appears in several views: use at least two.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Function -->
+    <article class="chapter" id="ch-eject">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">09</span><div><h2 class="ch-title">Eject</h2><p class="ch-kicker">Systolic function</p></div></div>
+      <p class="dek" data-part="dek">LVEF is the fraction of the end-diastolic volume that the LV ejects. Measure it from biplane volumes; the right ventricle needs its own measures.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Ventricle</span>
+          <div class="seg" role="group" aria-label="Ventricle" data-key="side">
+            <button type="button" data-val="lv">Left</button><button type="button" data-val="rv">Right</button>
+          </div>
+        </div>
+        <div class="row2" data-show-side="lv">
+          <div class="control">
+            <label for="edv">End-diastolic volume <output data-for="edv"></output></label>
+            <input type="range" id="edv" data-key="edv" min="50" max="320" step="1">
+          </div>
+          <div class="control">
+            <label for="ef">Ejection fraction <output data-for="ef"></output></label>
+            <input type="range" id="ef" data-key="ef" min="10" max="75" step="1">
+          </div>
+          <div class="control">
+            <label for="wall">Wall thickness <output data-for="wall"></output></label>
+            <input type="range" id="wall" data-key="wall" min="6" max="20" step="0.5">
+          </div>
+          <div class="control">
+            <label for="fore">Foreshortening <output data-for="fore"></output></label>
+            <input type="range" id="fore" data-key="fore" min="0" max="25" step="1">
+          </div>
+        </div>
+        <div class="row2" data-show-side="rv">
+          <div class="control">
+            <label for="tapse">TAPSE <output data-for="tapse"></output></label>
+            <input type="range" id="tapse" data-key="tapse" min="5" max="30" step="0.5">
+          </div>
+          <div class="control">
+            <label for="sPrime">RV S′ <output data-for="sPrime"></output></label>
+            <input type="range" id="sPrime" data-key="sPrime" min="4" max="18" step="0.5">
+          </div>
+          <div class="control">
+            <label for="fac">Fractional area change <output data-for="fac"></output></label>
+            <input type="range" id="fac" data-key="fac" min="10" max="60" step="1">
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Frame</span>
+          <div class="seg" role="group" aria-label="Frame" data-key="frame8">
+            <button type="button" data-val="cine">Cine</button><button type="button" data-val="ed">End-diastole</button><button type="button" data-val="es">End-systole</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Biplane volumes</h3>
+        <p>The biplane method of disks (modified Simpson’s rule) is the recommended 2D method; use 3D when it is available and the images are good<span class="cite" data-ref="lang2015"></span>. Trace the LV at end-diastole and end-systole in the apical four- and two-chamber views. The software divides the LV into a stack of thin disks and adds their volumes. Do not calculate volumes from linear dimensions<span class="cite" data-ref="lang2015"></span>.</p>
+        <p>Trace the border between the compacted myocardium and the cavity. Close it with a straight line across the mitral annulus. L runs from the middle of that line to the farthest point of the border. Use the longer L of the two views<span class="cite" data-ref="lang2015"></span>. In the figure, each echo view shows its tracing, L and the 20 disks. The drawing under each view is the model LV that the view cuts.</p>
+        <p>Foreshortened views make the volumes read low<span class="cite" data-ref="lang2015"></span>. A depth set on the LV makes foreshortening less likely<span class="cite" data-ref="lang2015"></span>. In a foreshortened view the apex looks more round<span class="cite" data-ref="mitchell2019"></span>. In the figure, both volumes fall by the same fraction, so the EF changes little while the volumes are wrong.</p>
+        <h3>Normal values</h3>
+        <ul>
+        <li>LVEF normal: 52 to 72% in men, 54 to 74% in women. Mildly abnormal: 41 to 51% (men) or 41 to 53% (women); moderately 30 to 40%; severely below 30%<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>Heart failure categories by LVEF: reduced ≤40%, mildly reduced 41 to 49%, preserved ≥50%<span class="cite" data-ref="heidenreich2022"></span>.</li>
+        <li>Global longitudinal strain: normal more negative than −18%, borderline −16 to −18%, abnormal less negative than −16%<span class="cite" data-ref="thomas2025"></span>.</li>
+        </ul>
+        <p>Report one LVEF, with its method<span class="cite" data-ref="taub2025"></span>. On serial 2D studies of stable patients, EF varied by more than 10 points; non-contrast 3D varied by about 6<span class="cite" data-ref="thavendiranathan2013"></span>.</p>
+        <h3>The right ventricle</h3>
+        <p>ASE grades three simple measures of RV systolic function<span class="cite" data-ref="mukherjee2025"></span>:</p>
+        <ul>
+        <li><b>TAPSE.</b> M-mode excursion of the lateral tricuspid annulus toward the apex, in the RV-focused four-chamber view<span class="cite" data-ref="mitchell2019"></span>. Normal above 1.7 cm.</li>
+        <li><b>S′.</b> Tissue Doppler velocity of the same point. Normal above 9.5 cm/s.</li>
+        <li><b>Fractional area change.</b> (end-diastolic area − end-systolic area) ÷ end-diastolic area. Normal above 35%<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Biplane disks in two apical views; avoid foreshortening.</li>
+        <li>Normal LVEF starts at 52% (men) and 54% (women).</li>
+        <li>Report at least one measure of RV function<span class="cite" data-ref="taub2025"></span>.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-segments">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">10</span><div><h2 class="ch-title">Segments</h2><p class="ch-kicker">Regional function</p></div></div>
+      <p class="dek" data-part="dek">The LV wall has 17 segments. A coronary artery usually supplies one set of segments, so the pattern of abnormal motion points to the artery.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Wall motion of the affected segments</span>
+          <div class="seg" role="group" aria-label="Wall motion" data-key="wm">
+            <button type="button" data-val="2">Hypokinetic</button><button type="button" data-val="3">Akinetic</button><button type="button" data-val="4">Dyskinetic</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Each segment: tap for the next score</span>
+          <div class="segpick" id="seg-pick" role="group" aria-label="Segment scores"></div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Names and numbers</h3>
+        <p>Start at the anterior junction of the septum and the RV free wall and go counterclockwise: anteroseptal, inferoseptal, inferior, inferolateral, anterolateral, anterior<span class="cite" data-ref="lang2015"></span>. The basal and mid levels have six segments each, the apical level four, and the apical cap is segment 17<span class="cite" data-ref="lang2015"></span>.</p>
+        <ul>
+        <li>Use 16 segments to score wall motion, and 17 for perfusion or to compare with other modalities<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>Score each segment: 1 normal or hyperkinetic, 2 hypokinetic, 3 akinetic, 4 dyskinetic<span class="cite" data-ref="lang2015"></span>. The 2025 reporting guideline adds 5, aneurysmal<span class="cite" data-ref="taub2025"></span>. In the figure, tap a segment on the bull's-eye or on an apical view, or use its numbered button, to move it to the next score.</li>
+        <li>The wall motion score index is the mean of the scores; 1.00 is normal<span class="cite" data-ref="lang2015"></span>.</li>
+        </ul>
+        <h3>Views and walls</h3>
+        <p>The apical four-chamber view shows the inferoseptal and anterolateral walls; the two-chamber view the inferior and anterior walls; the three-chamber view the inferolateral and anteroseptal walls<span class="cite" data-ref="lang2015"></span>.</p>
+        <h3>What each occlusion shows</h3>
+        <ul>
+        <li><b>LAD.</b> The anterior wall in the two-chamber view and the anteroseptal wall in the three-chamber view, each from base to apex; the apical septum in the four-chamber view; the apex in all three<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
+        <li><b>RCA.</b> The inferior wall in the two-chamber view, from base to apex, and the basal and mid inferoseptum in the four-chamber view. The three-chamber view stays normal<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
+        <li><b>Circumflex.</b> The anterolateral wall in the four-chamber view and the inferolateral wall in the three-chamber view. The two-chamber view stays normal<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
+        </ul>
+        <h3>Territories</h3>
+        <p>In the standard map, the LAD supplies segments 1, 2, 7, 8, 13, 14 and 17; the right coronary artery 3, 4, 9, 10 and 15; the circumflex 5, 6, 11, 12 and 16<span class="cite" data-ref="javadi2010"></span>. Supply varies: in one CT study, 72% of patients had at least one segment supplied by a different artery<span class="cite" data-ref="javadi2010"></span>. Treat the map as a guide, not a rule.</p>
+        <p>Regional strain values are not recommended for clinical decisions, because they vary between tests and vendors<span class="cite" data-ref="thomas2025"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>16 segments for wall motion; the index is their mean score.</li>
+        <li>Each apical view shows two opposite walls.</li>
+        <li>Anterior wall, anteroseptum and apex: think LAD. Inferior wall and basal inferoseptum: RCA. Lateral walls: circumflex.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-fill">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">11</span><div><h2 class="ch-title">Fill</h2><p class="ch-kicker">Diastolic function</p></div></div>
+      <p class="dek" data-part="dek">Diastolic function decides how high the LA pressure must be to fill the LV. As the LV relaxes more slowly and then stiffens, the inflow, the annulus, the pulmonary veins and the LA change together; the 2025 ASE algorithm reads them.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="fstate">Filling pattern <output data-for="fstate"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="fstate" data-key="fstate" min="0" max="3" step="0.01">
+          <div class="grades" id="fill-grades" aria-hidden="true"></div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap">
+        <table class="vt" id="fill-calc">
+          <thead><tr><th>Measurement</th><th class="num">Value</th><th>Abnormal if</th><th class="num">Result</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="prose" data-part="prose">
+        <h3>As the grade rises</h3>
+        <ol class="steps">
+        <li><b>Grade 1.</b> Relaxation slows: e′ falls, and E/A falls to 0.8 or less. E/e′ and the PA pressure stay normal, so the LA pressure is normal<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>Grade 2.</b> The LA pressure rises (mild to moderate) and E/A stays below 2: the inflow can look normal again, a pseudonormal pattern<span class="cite" data-ref="nagueh2025"></span>. E/e′ and the TR velocity rise; pulmonary vein S/D falls to 0.67 or less; LA reservoir strain falls to 18% or less<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>Grade 3.</b> A marked rise in LA pressure with E/A ≥2, the restrictive pattern<span class="cite" data-ref="nagueh2025"></span>. With a normal EF, a restrictive pattern with a dilated LA carries a poor prognosis<span class="cite" data-ref="nagueh2025"></span>.</li>
+        </ol>
+        <p>The values on the page are illustrative. With a normal EF, S/D can stay above 0.67 although the filling pressures are high; LA strain ≤18% is specific but can miss raised pressure<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <h3>What the signals mean</h3>
+        <ul>
+        <li><b>Mitral E and A.</b> Early filling (E) and atrial filling (A). Slow relaxation decreases early filling relative to late filling, so E/A falls<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>e′.</b> The tissue Doppler velocity of the mitral annulus in early diastole. It depends directly on LV relaxation, so it is the first value in the algorithm<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>E/e′.</b> Rises with LA pressure. In an early study, lateral E/e′ tracked wedge pressure (r = 0.87)<span class="cite" data-ref="nagueh1997"></span>.</li>
+        <li><b>TR velocity.</b> Without lung or pulmonary vascular disease, a peak of 2.8 m/s or more supports a raised LA pressure<span class="cite" data-ref="nagueh2025"></span>.</li>
+        </ul>
+        <h3>The 2025 algorithm, sinus rhythm</h3>
+        <ol class="steps">
+        <li>Check three values: e′ reduced (septal ≤6, lateral ≤7 or average ≤6.5 cm/s); E/e′ raised (septal ≥15, lateral ≥13 or average ≥14); TR ≥2.8 m/s, or PA systolic pressure ≥35 mmHg when the RA pressure is known<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>All three normal: normal LA pressure and normal diastolic function.</li>
+        <li>Only e′ reduced and E/A ≤0.8: normal LA pressure, grade 1.</li>
+        <li>One or two abnormal (other cases): check pulmonary vein S/D ≤0.67, LA reservoir strain ≤18% or LA volume index >34 mL/m². One or more abnormal: raised LA pressure. None: normal LA pressure<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>All three abnormal: raised LA pressure.</li>
+        <li>With raised LA pressure: E/A &lt;2 is grade 2; E/A ≥2 is grade 3<span class="cite" data-ref="nagueh2025"></span>.</li>
+        </ol>
+        <p>In a validation study of 951 patients with catheter pressures, the algorithm left 2 patients unclassified (the 2016 approach left 38) and was 86% accurate<span class="cite" data-ref="lababidi2025"></span>.</p>
+        <h3>Where it does not apply</h3>
+        <p>Do not use it in atrial fibrillation, mitral stenosis, severe primary mitral regurgitation, moderate or severe annular calcification, after mitral repair or replacement, after heart transplant, with an LV assist device, with pericardial constriction, or with pulmonary hypertension of non-cardiac cause<span class="cite" data-ref="nagueh2025"></span>. The guideline does not apply to children, to normal pregnancy, or during surgery<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <p>If the grade is uncertain, report whether the LA pressure is normal or raised<span class="cite" data-ref="nagueh2025"></span>. e′ decreases with age; age-adjusted limits can replace the fixed cut-offs<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <p>In advanced cardiac amyloidosis, the annular s′, e′ and a′ can all fall below 5 cm/s: the “5-5-5” sign<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>First step: e′, E/e′, TR velocity.</li>
+        <li>Second step, if needed: pulmonary vein S/D, LA strain, LA volume.</li>
+        <li>Grade from E/A once the LA pressure is raised.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Valves -->
+    <article class="chapter" id="ch-as">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">12</span><div><h2 class="ch-title">Aortic stenosis</h2><p class="ch-kicker">Pressure load</p></div></div>
+      <p class="dek" data-part="dek">As a calcified aortic valve narrows, the jet speeds up and the LV wall thickens against the pressure. Late, the LV fails: the stroke volume falls, and the gradient falls with it.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="asS">Severity <output data-for="asS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="asS" data-key="asS" min="0" max="1" step="0.005">
+          <div class="grades" id="as-grades" aria-hidden="true"></div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="as-table"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Progressive stenosis.</b> Mild: peak velocity 2.0–2.9 m/s or mean gradient below 20 mmHg. Moderate: 3.0–3.9 m/s or 20–39 mmHg. Early LV diastolic dysfunction can be present; the LVEF is normal<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Severe stenosis.</b> Peak velocity ≥4 m/s or mean gradient ≥40 mmHg; the area is typically ≤1.0 cm². The LV shows diastolic dysfunction and mild hypertrophy, with a normal LVEF<span class="cite" data-ref="otto2020"></span>. Very severe: ≥5 m/s or ≥60 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>LV dysfunction.</b> Severe stenosis with an LVEF below 50%<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Low flow, low gradient.</b> The failing LV cannot open the valve fully: area ≤1.0 cm² with a velocity below 4 m/s or a mean gradient below 40 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
+        </ol>
+        <p>The letter stages also need the symptoms: stage C has none, stage D has them<span class="cite" data-ref="otto2020"></span>. The page follows the echo findings only.</p>
+        <h3>Grading</h3>
+        <p class="eq">AVA = LVOT area × VTI(LVOT) ÷ VTI(AV) &nbsp;·&nbsp; mean gradient = mean of 4v² over ejection</p>
+        <ul>
+        <li>Find the highest jet velocity with continuous wave from several windows, and report the window; do not use angle correction<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>Any one of peak velocity ≥4.0 m/s, mean gradient ≥40 mmHg or area &lt;1.0 cm² suggests severe stenosis; ideally all three agree<span class="cite" data-ref="baumgartner2017"></span>. A velocity ratio below 0.25 also indicates severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>With more severe obstruction the peak comes later in systole and the curve is more rounded; mild stenosis peaks early, with a triangular curve<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>At normal flow, a mean gradient of 40 mmHg matches an area nearer 0.8 than 1.0 cm²<span class="cite" data-ref="baumgartner2017"></span>. The “area” band on the slider is this gap.</li>
+        </ul>
+        <h3>When the gradient falls</h3>
+        <ul>
+        <li>A stroke volume index below 35 mL/m² is low flow<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li><b>Low EF.</b> Area &lt;1.0 cm², mean gradient &lt;40 mmHg, LVEF &lt;50%: classical low-flow, low-gradient stenosis<span class="cite" data-ref="baumgartner2017"></span>. Low-dose dobutamine: a velocity ≥4.0 m/s with an area that stays ≤1.0 cm² confirms severe stenosis; an area that rises above 1.0 cm² suggests pseudo-severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li><b>Normal EF.</b> A small LV with a low stroke volume can give a low gradient through a severe stenosis: paradoxical low flow<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Severe: 4 m/s, 40 mmHg, 1.0 cm², ideally all three.</li>
+        <li>The LV thickens first; the EF falls late.</li>
+        <li>A falling gradient with a falling EF is not a better valve: check the flow.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-ar">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">13</span><div><h2 class="ch-title">Aortic regurgitation</h2><p class="ch-kicker">Volume and pressure load</p></div></div>
+      <p class="dek" data-part="dek">A leaking aortic valve returns blood to the LV in diastole. The LV receives blood from the LA and from the aorta, dilates, and ejects a large stroke volume; late, it fails.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="arS">Severity <output data-for="arS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="arS" data-key="arS" min="0" max="1" step="0.005">
+          <div class="grades" id="ar-grades" aria-hidden="true"></div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="ar-table"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Mild.</b> A small central jet, a faint or incomplete CW signal, a pressure half-time above 500 ms and a brief early diastolic reversal in the descending aorta<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Moderate.</b> The LV is normal or dilated; half-time 500–200 ms; regurgitant volume 30–59 mL<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Severe.</b> Vena contracta &gt;0.6 cm, jet width ≥65% of the LVOT, regurgitant volume ≥60 mL, fraction ≥50%, EROA ≥0.30 cm², half-time below 200 ms, holodiastolic reversal<span class="cite" data-ref="zoghbi2017"></span>. Holodiastolic reversal in the abdominal aorta is consistent with severe AR<span class="cite" data-ref="zoghbi2017"></span>. EACVI uses an end-diastolic velocity ≥20 cm/s in the proximal descending aorta<span class="cite" data-ref="lancellotti2022"></span>. Chronic severe AR also requires LV dilation<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>LV dysfunction.</b> ACC/AHA stage C1: LVEF &gt;55% and end-systolic diameter &lt;50 mm. Stage C2: LVEF ≤55%, or diameter &gt;50 mm or &gt;25 mm/m²<span class="cite" data-ref="otto2020"></span>.</li>
+        </ol>
+        <h3>Why the LVOT velocity rises</h3>
+        <p>The LV ejects the forward volume plus the volume that returns in diastole. The regurgitant volume is the stroke volume through the leaking valve minus the stroke volume through a competent valve<span class="cite" data-ref="zoghbi2017"></span>. On the page, the LVOT VTI rises as the leak grows.</p>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li>The half-time shortens as the LV diastolic pressure rises and can lengthen in chronic adaptation to severe AR<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>The length of the jet into the LV is not a reliable measure of severity<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Severe: vena contracta &gt;0.6 cm, jet ≥65% of the LVOT, volume ≥60 mL.</li>
+        <li>Holodiastolic reversal in the abdominal aorta: severe.</li>
+        <li>LVEF ≤55% or end-systolic diameter &gt;50 mm: stage C2.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-ms">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">14</span><div><h2 class="ch-title">Mitral stenosis</h2><p class="ch-kicker">Inflow obstruction</p></div></div>
+      <p class="dek" data-part="dek">In rheumatic mitral stenosis the commissures fuse and the leaflets dome. As the orifice narrows, the LA pressure rises: the LA enlarges, the pulmonary pressure rises and the right heart follows.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="msS">Severity <output data-for="msS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="msS" data-key="msS" min="0" max="1" step="0.005">
+          <div class="grades" id="ms-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <label for="hr13">Heart rate <output data-for="hr"></output></label>
+          <input type="range" id="hr13" data-key="hr" min="40" max="140" step="1">
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="ms-table"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Progressive stenosis.</b> Commissural fusion and diastolic doming; area &gt;1.5 cm², pressure half-time &lt;150 ms; mild to moderate LA enlargement; normal pulmonary pressure at rest<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Severe stenosis.</b> Area ≤1.5 cm², pressure half-time ≥150 ms; severe LA enlargement; PA systolic pressure above 50 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
+        </ol>
+        <p>ASE divides progressive stenosis into mild (area &gt;2.5 cm², half-time &lt;100 ms, mean gradient &lt;5 mmHg, PA systolic pressure &lt;30 mmHg) and moderate (2.5–1.6 cm², 100–149 ms, 5–9 mmHg, 30–49 mmHg)<span class="cite" data-ref="pandian2023"></span>.</p>
+        <h3>Measuring the area</h3>
+        <p class="eq">MVA = 220 ÷ pressure half-time</p>
+        <ul>
+        <li><b>Planimetry.</b> The short axis shows the commissural fusion and allows planimetry of the orifice<span class="cite" data-ref="otto2020"></span>. When the methods disagree, planimetry is the reference<span class="cite" data-ref="baumgartner2009"></span>.</li>
+        <li><b>Pressure half-time.</b> The time for the peak gradient to fall by half; the velocity falls to about 70% of its peak<span class="cite" data-ref="pandian2023,quinones2002"></span>. The constant 220 is empirical<span class="cite" data-ref="baumgartner2009"></span>; Hatle described the method in 1979<span class="cite" data-ref="hatle1979"></span>. The half-time is not reliable just after balloon valvotomy, with severe aortic regurgitation, or with abnormal LV compliance<span class="cite" data-ref="baumgartner2009"></span>.</li>
+        <li><b>Mean gradient.</b> It changes with heart rate and flow, so it is not a severity criterion; report it with the heart rate<span class="cite" data-ref="otto2020"></span>. Move the heart rate: the same valve gives a higher gradient at a faster rate.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Severe: area ≤1.5 cm² and half-time ≥150 ms.</li>
+        <li>The LA and the pulmonary pressure carry the consequence.</li>
+        <li>Report the gradient with the heart rate.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-mr">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">15</span><div><h2 class="ch-title">Mitral regurgitation</h2><p class="ch-kicker">Volume load, left heart</p></div></div>
+      <p class="dek" data-part="dek">A leaking mitral valve sends part of each stroke back into the LA. The LV and LA dilate to carry the extra volume; late, the LV fails.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="mrS">Severity <output data-for="mrS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="mrS" data-key="mrS" min="0" max="1" step="0.005">
+          <div class="grades" id="mr-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Color Doppler</span>
+          <div class="seg" role="group" aria-label="Color Doppler setting" data-key="mrColor">
+            <button type="button" data-val="jet">Jet · 60 cm/s</button><button type="button" data-val="pisa">PISA · zoom, baseline shift</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="mr-table"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Mild.</b> A small central jet, normal leaflets, a vena contracta below 0.3 cm, no flow convergence and A-wave-dominant inflow: the regurgitation is mild<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Moderate.</b> The LV and LA are normal or mildly dilated; pulmonary vein flow is normal or blunted in systole<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Severe.</b> EROA ≥0.40 cm², regurgitant volume ≥60 mL, regurgitant fraction ≥50%, vena contracta ≥0.7 cm<span class="cite" data-ref="zoghbi2017"></span>. The LV and LA dilate; the CW signal is dense and triangular; systolic flow in the pulmonary veins stops or reverses; mitral E exceeds 1.2 m/s<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>LV dysfunction.</b> ACC/AHA stage C1: LVEF &gt;60% and LV end-systolic diameter &lt;40 mm. Stage C2: LVEF ≤60% or diameter ≥40 mm<span class="cite" data-ref="otto2020"></span>.</li>
+        </ol>
+        <h3>The PISA method</h3>
+        <p class="eq">flow = 2π r² × Va &nbsp;·&nbsp; EROA = flow ÷ peak velocity &nbsp;·&nbsp; RVol = EROA × VTI</p>
+        <p>Blood speeds up as it converges on the orifice; at the aliasing velocity Va the color changes, and that shell is a hemisphere of radius r<span class="cite" data-ref="zoghbi2017"></span>. Shift the baseline toward the jet to lower Va to about 30 to 40 cm/s; measure the radius at the time of the peak jet velocity<span class="cite" data-ref="zoghbi2017"></span>. A radius of 1.0 cm or more at this setting is specific for severe MR<span class="cite" data-ref="zoghbi2017"></span>.</p>
+        <ul>
+        <li>The radius is squared: errors of 10 to 25% are common, even among experts<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>An elliptical orifice, common in secondary MR, makes PISA underestimate the flow<span class="cite" data-ref="zoghbi2017"></span>. In secondary MR, an EROA ≥0.30 cm² by 2D PISA may still be severe<span class="cite" data-ref="zoghbi2017"></span>; EACVI accepts ≥0.30 cm² or ≥45 mL<span class="cite" data-ref="lancellotti2022"></span>.</li>
+        <li>For regurgitation in only part of systole, use the regurgitant volume; one frame overestimates the EROA<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ul>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li>A normal LA size generally excludes severe chronic MR; a dilated LA alone does not prove it<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>Color jet area helps to exclude MR but is unreliable to grade it; set the color scale to 50 to 70 cm/s for jets<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>Systolic flow reversal in the pulmonary veins is specific for severe regurgitation but not sensitive<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Severe: EROA ≥0.40 cm², volume ≥60 mL, fraction ≥50%.</li>
+        <li>Support it with E ≥1.2 m/s and pulmonary vein reversal.</li>
+        <li>LVEF ≤60% or end-systolic diameter ≥40 mm: stage C2.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-tr">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">16</span><div><h2 class="ch-title">Tricuspid regurgitation</h2><p class="ch-kicker">Volume load, right heart</p></div></div>
+      <p class="dek" data-part="dek">A leaking tricuspid valve loads the right heart. The RV, the annulus and the RA dilate and the veins fill; at the torrential end the jet slows, because the RV and RA pressures come close.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="trS">Severity <output data-for="trS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="trS" data-key="trS" min="0" max="1" step="0.005">
+          <div class="grades" id="tr-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Color Doppler</span>
+          <div class="seg" role="group" aria-label="Color Doppler setting" data-key="trColor">
+            <button type="button" data-val="jet">Jet · 60 cm/s</button><button type="button" data-val="pisa">PISA · zoom, baseline shift</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="tr-table"></table></div>
+      <div class="table-wrap"><table class="vt grade" id="tr-table2"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>Mild.</b> A small, narrow central jet; a faint CW signal; systolic dominance in the hepatic veins; IVC below 2 cm<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Moderate.</b> The RV and RA are normal or mildly dilated; the hepatic veins show systolic blunting; vena contracta 0.3–0.69 cm; EROA 0.20–0.39 cm²<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Severe.</b> Vena contracta ≥0.7 cm, EROA ≥0.40 cm², regurgitant volume ≥45 mL, PISA radius &gt;0.9 cm (baseline shifted to 28 cm/s), jet area &gt;10 cm²; systolic reversal in the hepatic veins; tricuspid E &gt;1.0 m/s; IVC &gt;2.5 cm<span class="cite" data-ref="zoghbi2017"></span>. ACC/AHA adds a dilated RV and RA and a raised RA pressure with a c-V wave<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Beyond severe.</b> Massive: vena contracta 14–20 mm, EROA 60–79 mm², volume 60–74 mL. Torrential: ≥21 mm, ≥80 mm², ≥75 mL<span class="cite" data-ref="lancellotti2022"></span>. A report can name them as subgroups of severe TR<span class="cite" data-ref="taub2025"></span>.</li>
+        </ol>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li>The TR velocity does not show the regurgitant volume. Very severe TR often has a low velocity, about 2 m/s, because the RV and RA pressures equalize<span class="cite" data-ref="zoghbi2017"></span>; EACVI gives a peak below 2 m/s in massive TR<span class="cite" data-ref="lancellotti2022"></span>.</li>
+        <li>Hepatic vein systolic reversal is specific for severe TR, after other causes (atrial fibrillation, pacing, RA or RV compliance) are excluded<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>The volume limit for severe TR (45 mL) is lower than for MR (60 mL) at the same EROA, because the TR velocity is lower<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>At left-sided valve surgery, a tricuspid annulus above 4.0 cm in diastole makes tricuspid repair reasonable, even with less than severe TR<span class="cite" data-ref="otto2020"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Severe: vena contracta ≥0.7 cm, EROA ≥0.40 cm², volume ≥45 mL.</li>
+        <li>Hepatic vein systolic reversal is specific.</li>
+        <li>A low jet velocity does not exclude severe TR.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Pericardium -->
+    <article class="chapter" id="ch-peri">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Pericardium</h2><p class="ch-kicker">Effusion and tamponade</p></div></div>
+      <p class="dek" data-part="dek">Fluid in the pericardial sac shows as an echo-free space round the heart. As it collects, the pressure in the sac rises; when it reaches the pressure in the right heart, the chambers cannot fill: tamponade.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="periS">Effusion <output data-for="periS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="periS" data-key="periS" min="0" max="1" step="0.005">
+          <div class="grades" id="peri-grades" aria-hidden="true"></div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="peri-table"></table></div>
+      <div class="table-wrap"><table class="vt grade" id="peri-table2"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>What changes, in order</h3>
+        <ol class="steps">
+        <li><b>None.</b> The normal sac holds 10–50 mL of fluid<span class="cite" data-ref="adler2015"></span>. A separation seen only in systole is a trivial effusion; a separation in systole and diastole means more than 50 mL<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Mild (small).</b> An echo-free space below 10 mm, measured at end-diastole between the epicardium and the parietal pericardium<span class="cite" data-ref="adler2015"></span>. ASE gives 50–100 mL for a small effusion and calls the volumes arbitrary<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Moderate.</b> 10–20 mm<span class="cite" data-ref="adler2015"></span>, about 100–500 mL<span class="cite" data-ref="klein2013"></span>. In this model the pressure in the sac stays below the pressure in the right heart, so no chamber collapses.</li>
+        <li><b>Severe (large).</b> More than 20 mm<span class="cite" data-ref="adler2015"></span>; ASE adds very large, more than 25 mm<span class="cite" data-ref="klein2013"></span>. The heart can swing in the fluid. ESC links the swing to electrical alternans on the ECG<span class="cite" data-ref="adler2015"></span>.</li>
+        <li><b>Tamponade.</b> The pressure in the sac reaches the pressure in the right heart. A chamber collapses in its relaxation phase, when its pressure falls below the pressure in the sac<span class="cite" data-ref="klein2013"></span>.</li>
+        </ol>
+        <h3>Signs of tamponade</h3>
+        <ul>
+        <li><b>Right atrium.</b> The wall folds in near the peak of the R wave. It stays in until filling in ventricular systole raises the atrial pressure<span class="cite" data-ref="klein2013"></span>. Collapse for more than a third of the cycle is nearly 100% sensitive and specific<span class="cite" data-ref="klein2013"></span>. In the first study, a collapse time above 0.34 of the cycle gave 94% sensitivity and 100% specificity<span class="cite" data-ref="gillam1983"></span>.</li>
+        <li><b>Right ventricle.</b> The free wall collapses in early diastole, after the T wave<span class="cite" data-ref="klein2013"></span>. This occurs when cardiac output is about 20% lower but blood pressure has not fallen<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Left atrium.</b> The LA also collapses in about a quarter of patients; this sign is highly specific<span class="cite" data-ref="spodick2003"></span>.</li>
+        <li><b>IVC.</b> Wider than 2.1 cm, with less than 50% collapse in inspiration. This occurs in more than 90% of patients, but many other heart diseases also cause it<span class="cite" data-ref="klein2013"></span>. ESC 2025 uses 20 mm: sensitivity 97%, specificity 40%<span class="cite" data-ref="schulzmenger2025"></span>.</li>
+        <li><b>Filling with breathing.</b> With inspiration, mitral E falls more than 25–30% and tricuspid E increases more than 40–60%<span class="cite" data-ref="schulzmenger2025"></span>. The RV gets larger and the LV smaller in inspiration, and the reverse occurs in expiration<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Hepatic veins.</b> On the first beat of expiration, diastolic flow falls or reverses<span class="cite" data-ref="klein2013"></span>.</li>
+        </ul>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li>Size does not define tamponade. The rate of accumulation matters more than the volume<span class="cite" data-ref="adler2015"></span>. Fluid that collects fast, as in haemopericardium, can cause tamponade at 200–300 mL; a slow effusion can reach 1–2 L first<span class="cite" data-ref="schulzmenger2025"></span>.</li>
+        <li>Tamponade is a clinical diagnosis: history, symptoms and signs, with echo confirmation<span class="cite" data-ref="schulzmenger2025"></span>. Pulsus paradoxus is an inspiratory fall in systolic pressure of more than 10 mmHg<span class="cite" data-ref="adler2015"></span>.</li>
+        <li>A brief RA inversion occurs without tamponade, so measure its duration. An M-mode line through the wall shows the timing best<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>No chamber collapse gives a negative predictive value above 90%. RV hypertrophy, severe pulmonary hypertension or severe LV dysfunction can delay or prevent collapse<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>Pericardial or pleural fluid: in the parasternal long axis, pericardial fluid lies between the descending aorta and the heart. Pleural fluid runs behind the aorta<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>Respiratory variation of inflow is not a criterion alone. Under positive-pressure ventilation it is minimal, even in tamponade<span class="cite" data-ref="klein2013"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>End-diastolic echo-free space: mild &lt;10 mm, moderate 10–20 mm, severe (large) &gt;20 mm.</li>
+        <li>RA collapse for more than a third of the cycle and RV collapse in early diastole: tamponade physiology.</li>
+        <li>The rate of accumulation, not the size, sets the tolerance. Tamponade is a clinical diagnosis.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Report -->
+    <article class="chapter" id="ch-report">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">The study comes together</p></div></div>
+      <p class="dek" data-part="dek">The report changes the study into a decision. The summary statement comes first; each structure follows, structure before function; every number is called normal or abnormal.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Case</span>
+          <div class="seg" role="group" aria-label="Case" data-key="caseId">
+            <button type="button" data-val="normal">Normal</button><button type="button" data-val="hfref">HFrEF + MR</button><button type="button" data-val="as">Aortic stenosis</button><button type="button" data-val="hfpef">HFpEF</button><button type="button" data-val="amyloid" data-heart hidden>Amyloid</button><button type="button" data-val="icm" data-heart hidden>Ischemic CM</button><button type="button" data-val="barlow" data-heart hidden>Barlow MR</button><button type="button" data-val="bav" data-heart hidden>Bicuspid AS</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Sex (sets the normal ranges)</span>
+          <div class="seg" role="group" aria-label="Sex" data-key="sex">
+            <button type="button" data-val="F">Female</button><button type="button" data-val="M">Male</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap">
+        <table class="vt" id="report-inputs">
+          <caption>The values behind the report</caption>
+          <thead><tr><th>Measurement</th><th class="num">Value</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="prose" data-part="prose">
+        <h3>Order</h3>
+        <ol class="steps">
+        <li>Demographics, essential history, the indication and the priority go at the top<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>The summary statement comes next, in every report<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Then one heading for each structure: LV, septum, RV, LA, atrial septum, RA, the four valves, aorta, pulmonary artery, IVC, SVC, pericardium<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Under each heading, structure first, then function; keep the Doppler findings with their structure<span class="cite" data-ref="taub2025"></span>.</li>
+        </ol>
+        <h3>The summary statement</h3>
+        <p>It names five things: LV and RV function; significant valve disease, or none; other important positive findings; pertinent negatives for the indication; and a comparison with prior studies<span class="cite" data-ref="taub2025"></span>. Relate it to the indication, so the referring clinician can decide the next step<span class="cite" data-ref="taub2025"></span>. Label critical findings, put them first, and record who received them<span class="cite" data-ref="taub2025"></span>.</p>
+        <h3>Words and numbers</h3>
+        <ul>
+        <li>Call every structure and number normal or abnormal. Grade only where guidelines grade<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Write “trace” for less than mild regurgitation. Avoid “mild-to-moderate” unless you explain why<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Give one LVEF, with its method<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Pressures, volumes and EF as whole numbers; velocity, area and length to 0.1<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Numbers and words must agree: “normal LA size” with an LA volume index of 50 mL/m² is an error<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>State image quality: excellent, good, fair, poor or non-diagnostic<span class="cite" data-ref="taub2025"></span>. Measure the blood pressure at the bedside at the start of the study<span class="cite" data-ref="taub2025"></span>.</li>
+        </ul>
+        <h3>Accreditation</h3>
+        <p>IAC requires standard reports across a laboratory. Routine inpatient studies must be read within 24 hours, outpatient studies by the end of the next business day, and STAT findings at once<span class="cite" data-ref="iac2025"></span>. Every structure that is not well seen must be noted, and the text must agree with the numbers<span class="cite" data-ref="iac2025"></span>.</p>
+        <h3>The cases</h3>
+        <p>Four simulated cases use the same models as the other figures. Change the sex: the normal ranges change, and so can the words. In the stiff-ventricle case, an LV mass index of 100 g/m² is hypertrophy in a woman and normal in a man<span class="cite" data-ref="lang2015"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Summary statement at the top: five elements.</li>
+        <li>Structure before function, under each heading.</li>
+        <li>One LVEF with its method; words that match the numbers.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+  </section>
+
+  <!-- ============================================================ transport -->
+  <nav class="transport" aria-label="Chapters">
+    <button class="play" id="play" type="button" aria-pressed="false" aria-label="Play all chapters">
+      <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8Z" fill="currentColor"/></svg>
+      <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>
+    </button>
+    <ol class="groups" id="groups" aria-hidden="true"></ol>
+    <ol class="chapters" id="chapters">
+      <li class="track" aria-hidden="true"><svg id="track" preserveAspectRatio="none"></svg></li>
+    </ol>
+  </nav>
+</div>
+
+<dialog id="dlg-refs" aria-labelledby="refs-title">
+  <div class="dlg-head"><h2 id="refs-title">Sources</h2><button class="tool" type="button" data-close>Close</button></div>
+  <div class="dlg-body">
+    <div class="about">
+      <p>Each guideline value on this page carries its source. Cut-offs come from the American Society of Echocardiography (ASE), the European Association of Cardiovascular Imaging (EACVI), the ACC/AHA and the ESC/ERS.</p>
+      <p>The figures run simple models, set to agree with these sources. The diastolic values and the report cases are illustrative, not patient data. All images are simulated: the drawings, the heart model and the echo views.</p>
+    </div>
+    <h3 class="dlg-sub">Sources, in reading order</h3>
+    <ol class="reflist" id="reflist"></ol>
+  </div>
+</dialog>
+
+<dialog id="dlg-norms" aria-labelledby="norms-title">
+  <div class="dlg-head"><h2 id="norms-title">Normal values</h2><button class="tool" type="button" data-close>Close</button></div>
+  <div class="dlg-body" id="norms-body"></div>
+</dialog>
+
+<noscript><p style="padding:16px">This study needs JavaScript for its drawings. The text is readable without it.</p></noscript>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
