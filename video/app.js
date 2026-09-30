@@ -260,11 +260,10 @@ async function initScene() {
   stage.heart.setPericardium(true);
   bodyPencil = new Pencil();        // the probe-and-body pane
   const DT = diagTokens();
-  // the probe in the page's accent, in every pane, so it stands apart from the graphite heart
-  for (const p of [bodyPencil, stage.pencil]) {
-    p.setTheme(DT);
-    p.setToolInk(DT.accent);
-  }
+  for (const p of [bodyPencil, stage.pencil]) p.setTheme(DT);
+  // on the heart and the body key the probe is in the page's accent, so its place stands apart
+  // from the graphite heart; in the cross-section it is graphite, drawn as the heart is
+  bodyPencil.setToolInk(DT.accent);
   const B = panes.body, S = panes.section, E = panes.echo;
   B.view.appendChild(bodyPencil.canvas);
   S.view.appendChild(stage.pencil.canvas);
