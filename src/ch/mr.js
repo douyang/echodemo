@@ -7,13 +7,14 @@ import { mitralV, RR, EV } from '../cyclemodel.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, waveLetter } from '../sev.js';
 import { drawA4C, cal, measures, heartShown } from '../echo2d.js';
 import { BSA } from './pressure.js';
+import { JETS } from '../jets.js';
 
 const KEY = 'mrS';
 const VMAX = 5.0;        // m/s, MR jet (LV-LA gradient about 100 mmHg)
 const VTI = 150;         // cm, MR jet
 const FWD = 60;          // mL, forward stroke volume
-const VA = 30;           // cm/s, aliasing velocity for PISA (baseline shifted toward the jet)
-const NYQ = 60;          // cm/s, color scale for the jet (ASE 2017: 50-70)
+const VA = 30;           // cm/s, aliasing velocity for PISA (ASE 2017); the plume format draws the view at it
+const NYQ = 60;          // cm/s, the scanner format's scale for the jet (ASE 2017: 50-70)
 
 const eroaOf = mono([[0, 0], [0.06, 0.03], [0.3, 0.2], [0.4, 0.3], [0.5, 0.4], [0.78, 0.55], [1, 0.65]]);
 const TR = tracks([0, 0.3, 0.5, 0.78, 1], {
@@ -99,6 +100,22 @@ function a4c(ctx, box, m, t, mode) {
   const jA = m.jetF * laArea;
   const jl = Math.min(lMax * 0.92, Math.sqrt(jA / 0.55 * 1.3));
   const jw = jl > 0 ? Math.min(wMax * 0.9, jA / (0.55 * jl)) : 0;
+  if (JETS === 'plume') {
+    // one view at the aliasing velocity: the flow convergence with its radius, and the jet
+    drawA4C(ctx, box, g, {
+      t, depth: 16 + 1.2 * m.s, title: fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${VA} cm/s`, `A4C · COLOR ${VA}`),
+      jets: m.eroa > 0.005 ? { mr: { q: m.q, va: VA, vc: m.vc, jl, jw, a } } : {},
+      after: (c, F, geo) => {
+        if (m.eroa > 0.005 && a > 0.5) {
+          // from the orifice into the LV, along its long axis
+          const O = geo.mv.gapMid;
+          cal(c, F, O, [O[0] + geo.ax[0] * m.r, O[1] + geo.ax[1] * m.r], '', { solid: true });
+        }
+        measures(c, F, [`PISA r ${m.r.toFixed(2)} cm`, `VC ${m.vc.toFixed(2)} cm`, [`jet ${Math.round(m.jetF * 100)}% of LA`, `jet ${Math.round(m.jetF * 100)}% LA`]]);
+      },
+    });
+    return;
+  }
   // Jet: the standard scale. PISA: zoomed on the valve, the baseline shifted toward the jet
   // (down: MR runs away from the probe) until the flow aliases at VA; variance off
   const pisa = mode === 'pisa';

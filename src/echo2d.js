@@ -408,6 +408,123 @@ export function cal(ctx, F, a, b, text, o = {}) {
   }
 }
 
+// ---------------------------------------------------------------- jets drawn from their model
+// The 'plume' format (jets.js): each jet from a model of its flow, drawn at the aliasing
+// velocity, over the grey image; no normal flow. The 'scanner' format (cflow.js) is above.
+let JC = null;
+const hash = (i, j, f) => { const x = Math.sin(i * 127.1 + j * 311.7 + f * 74.7) * 43758.5453; return x - Math.floor(x); };
+/** Smooth noise in 0..1 on a lattice of `step` cells (blobs about that size), frame f. */
+function blob(i, j, step, f) {
+  const x = i / step, y = j / step, x0 = Math.floor(x), y0 = Math.floor(y), tx = x - x0, ty = y - y0;
+  const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+  const a = hash(x0, y0, f), b = hash(x0 + 1, y0, f), c = hash(x0, y0 + 1, f), d = hash(x0 + 1, y0 + 1, f);
+  return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+}
+/** The BART color of velocity v (m/s) at aliasing velocity nyq (m/s), wrapped past it. */
+function plumeColor(v, nyq) {
+  let u = v / nyq;
+  if (Math.abs(u) > 1) u = ((((u + 1) % 2) + 2) % 2) - 1;   // wrap into [-1, 1)
+  const a = Math.abs(u);
+  const lo = u >= 0 ? SC.red : SC.blue, hi = u >= 0 ? SC.yellow : SC.cyan;
+  const t = Math.pow(a, 1.4);
+  let c = lo.map((q, i) => q + (hi[i] - q) * t);
+  const dim = 0.35 + 0.65 * Math.min(1, a * 1.6);
+  c = c.map((q) => q * dim);
+  return c.map((q) => Math.max(0, Math.min(255, Math.round(q))));
+}
+
+/**
+ * A regurgitant or stenotic jet in color Doppler: flow convergence (PISA) upstream of the
+ * orifice O and a jet downstream, inside a color box: velocity along the beam, red toward the
+ * probe, wrapping at the aliasing velocity. Every jet is drawn as the torrential TR jet shows:
+ * a smooth flame, laminar, with no variance mosaic, its core aliasing once. So the velocity
+ * drawn is at most 3.2 times the aliasing velocity, and a jet across the beam is drawn as if at
+ * 40 degrees to it; the CW panels carry the true velocity.
+ * dir: unit vector of the jet (downstream); q: flow (mL/s); va: aliasing velocity (cm/s); vc:
+ * vena contracta (cm); jl, jw: jet length and largest width (cm); clip: chamber polygon (cm) the
+ * jet stays inside; a: 0..1 strength over the cycle; pisa: false for no convergence zone.
+ */
+export function jet(ctx, F, j) {
+  if (!j || !(j.a > 0.02) || !(j.q > 0)) return;   // a NaN strength draws nothing
+  const { k, box, sect } = F;
+  const O = j.O, d = unit(j.dir), n = perp(d);
+  const va = j.va, L = j.jl * Math.min(1, j.a * 1.15), Wd = j.jw, w0 = Math.max(0.12, j.vc / 2);
+  const v0 = Math.min(clamp(j.q / (Math.PI * w0 * w0), 90, 600), 3.2 * va);   // cm/s at the vena contracta
+  // toward the probe or away, as the jet leaves the orifice; a jet across the beam is drawn as if
+  // it met the beam at no more than about 40 degrees, so it shows its flame too
+  const sgn = Math.sign(dot(d, unit(mul(O, -1)))) || -1;
+  const Rp = j.pisa === false ? 0 : Math.min(2.4, Math.sqrt(j.q / (2 * Math.PI * 0.15 * va)));
+  const halfAt = (u) => w0 + (Wd / 2 - w0) * Math.sin(Math.PI * Math.min(1, (u / Math.max(L, 0.01)) * 0.9 + 0.1)) ** 0.8 * Math.min(1, (u / Math.max(L, 0.01)) * 2.2);
+  // the region to color, in px: the jet and the convergence zone
+  const pts = [add(O, mul(n, Wd / 2 + 0.2)), add(O, mul(n, -Wd / 2 - 0.2)), add(add(O, mul(d, L + 0.2)), mul(n, Wd / 2 + 0.2)), add(add(O, mul(d, L + 0.2)), mul(n, -Wd / 2 - 0.2)), add(O, mul(d, -Rp - 0.1)), add(add(O, mul(d, -0.1)), mul(n, Rp + 0.1)), add(add(O, mul(d, -0.1)), mul(n, -Rp - 0.1))].map(F.P);
+  const x0 = Math.max(box.x, Math.min(...pts.map((p) => p[0]))), x1 = Math.min(box.x + box.w - 30, Math.max(...pts.map((p) => p[0])));
+  const y0 = Math.max(box.y + 20, Math.min(...pts.map((p) => p[1]))), y1 = Math.min(box.y + box.h, Math.max(...pts.map((p) => p[1])));
+  if (!(x1 > x0 && y1 > y0)) return;
+  const cell = Math.max(2, k * 0.09);                        // color pixels about 1 mm
+  const W = Math.ceil((x1 - x0) / cell), H = Math.ceil((y1 - y0) / cell);
+  if (!JC) JC = document.createElement('canvas');
+  if (JC.width < W || JC.height < H) { JC.width = Math.max(JC.width, W); JC.height = Math.max(JC.height, H); }
+  const g = JC.getContext('2d', { willReadFrequently: true });
+  const img = g.createImageData(W, H), px = img.data;
+  const clip = j.clip ? new Path2D() : null;
+  if (clip) { j.clip.forEach((p, i) => { const q = F.P(p); if (i) clip.lineTo(q[0], q[1]); else clip.moveTo(q[0], q[1]); }); clip.closePath(); }
+  const f = cine.live ? Math.floor(performance.now() / 45) : 0;
+  for (let jj = 0; jj < H; jj++) {
+    for (let ii = 0; ii < W; ii++) {
+      const X = x0 + (ii + 0.5) * cell, Y = y0 + (jj + 0.5) * cell;
+      const p = [(X - sect.cx) / k, (Y - sect.top) / k];
+      const rel = sub(p, O), al = dot(rel, d), ac = dot(rel, n);
+      const toward = unit(mul(p, -1));                         // from here to the probe
+      let vb = 0, alpha = 0;
+      if (al >= -0.02) {
+        // the jet: fastest in its core, slowing and widening downstream
+        if (al > L) continue;
+        const half = halfAt(al);
+        if (Math.abs(ac) > half) continue;
+        if (clip && !g.isPointInPath(clip, X, Y)) continue;
+        const vcl = v0 / (1 + (0.35 * al) / w0);
+        const v = vcl * Math.exp(-((ac / (0.55 * half)) ** 2)) * j.a;
+        const turb = 0.08;
+        const nz = blob(ii, jj, 2.2, f) - 0.5, nz2 = blob(ii + 50, jj + 50, 1.3, f) - 0.5;
+        vb = v * sgn * Math.max(Math.abs(dot(d, toward)), 0.75) + turb * vcl * (1.6 * nz + 0.8 * nz2);
+        alpha = Math.min(1, j.a * 1.5) * (1 - smooth((Math.abs(ac) / half - 0.75) / 0.25)) * (1 - smooth((al / Math.max(L, 0.01) - 0.8) / 0.2));
+      } else if (Rp > 0) {
+        // flow convergence: v = q / (2 pi r^2) toward the orifice
+        const r = len(rel);
+        if (r > Rp || r < 0.04) continue;
+        const v = (j.q / (2 * Math.PI * r * r)) * j.a;
+        vb = v * dot(unit(sub(O, p)), toward);
+        alpha = Math.min(1, j.a * 1.4) * smooth((Math.abs(vb) / va - 0.12) / 0.12);
+      }
+      if (alpha <= 0.02 || Math.abs(vb) < 0.1 * va) continue;
+      const [cr, cg, cb] = plumeColor(vb / 100, va / 100);
+      const o = 4 * (jj * W + ii);
+      px[o] = cr; px[o + 1] = cg; px[o + 2] = cb; px[o + 3] = Math.round(255 * alpha);
+    }
+  }
+  g.putImageData(img, 0, 0);
+  ctx.save();
+  ctx.clip(F.clipBox);
+  ctx.clip(F.fan);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(JC, 0, 0, W, H, x0, y0, W * cell, H * cell);
+  ctx.restore();
+  // the color box, as the scanner outlines it
+  const polar = pts.map((q) => { const x = (q[0] - sect.cx) / k, y = (q[1] - sect.top) / k; return [Math.atan2(x, y), Math.hypot(x, y)]; });
+  const t0 = Math.min(...polar.map((q) => q[0])) - 0.04, t1 = Math.max(...polar.map((q) => q[0])) + 0.04;
+  const r0 = Math.max(0.5, Math.min(...polar.map((q) => q[1])) - 0.3) * k, r1 = (Math.max(...polar.map((q) => q[1])) + 0.3) * k;
+  ctx.save();
+  ctx.clip(F.clipBox);
+  ctx.strokeStyle = 'rgba(205,212,216,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(sect.cx, sect.top, r0, Math.PI / 2 - t0, Math.PI / 2 - t1, true);
+  ctx.arc(sect.cx, sect.top, r1, Math.PI / 2 - t1, Math.PI / 2 - t0, false);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+}
+
 // ---------------------------------------------------------------- the beat
 /** Contraction 0 (end-diastole) .. 1 (end-systole), valve drives, at ms after the R wave. */
 export function phase(t) {
@@ -877,8 +994,9 @@ function a4cItems(S, Sr, g) {
  * g (cm; [ED, ES] pairs beat with the heart):
  *   lvL, lvW, lvWall, ivs, rvW, rvWall, laW, laL ([min, max]), raW, raL, ma (mitral annulus),
  *   ta (tricuspid annulus), mv: {thick, gap, dome, tip}, tv: {thick, gap}
- * o: t (ms), ph (the phase, in place of t's), title, depth, color (color flow: see a4cFlows),
- *    labels (false, or a list such as ['LA', 'RA']), gain, after(ctx, F, geo)
+ * o: t (ms), ph (the phase, in place of t's), title, depth, color (the scanner format: see
+ *    a4cFlows) or jets: {mr, tr, ms} (the plume format: see jet()), labels (false, or a list such
+ *    as ['LA', 'RA']), gain, after(ctx, F, geo)
  * Returns the geometry (cm) for labels and measurements.
  */
 export function drawA4C(ctx, box, g, o = {}) {
@@ -899,6 +1017,15 @@ export function drawA4C(ctx, box, g, o = {}) {
       flows: a4cFlows(S, o.t ?? ph.t ?? 150, C), stats: cfDebug.stats,
     });
     barFor(ctx, F, C.lo, C.hi);
+  }
+  const J = o.jets;
+  if (J) {
+    const ldown = unit(add(mul(S.ax, -1), mul(S.nl, 0.12))), rdown = unit(add(mul(S.ax, -1), mul(S.out, 0.18)));
+    if (J.mr) jet(ctx, F, { ...J.mr, O: S.mv.gapMid, dir: J.mr.dir ?? ldown, clip: S.laCav });
+    if (J.tr) jet(ctx, F, { ...J.tr, O: S.tv.gapMid, dir: rdown, clip: S.raCav });
+    if (J.ms) jet(ctx, F, { ...J.ms, O: S.mv.tip, dir: S.ax, clip: S.lvCav });
+    const any = J.mr || J.tr || J.ms;
+    if (any) barFor(ctx, F, -any.va, any.va);
   }
   const geo = { ...S, F, c, ph };
   // the hook first: the tags keep clear of the measurement box it draws
@@ -1195,7 +1322,8 @@ function plaxShape(g, c, ph) {
  * g (cm): rvd (RV outflow), ivs, lvid, pw ([ED, ES] pairs), root (aortic sinus), lvot, la (AP,
  *   [min, max]), av: {thick, open (orifice width at full opening, cm), calc}, mv: {thick, dome,
  *   tip (orifice width, cm), calc}, effusion
- * o: t, depth, color (color flow: see a4cFlows), title, labels, after
+ * o: t, depth, color (the scanner format: see plaxFlows) or jets: {ar, as, ms} (the plume format: see
+ *    jet()), title, labels, after
  */
 export function drawPLAX(ctx, box, g, o = {}) {
   const F = frame(ctx, box, o.depth ?? 15, o.title ?? 'PARASTERNAL LONG AXIS', { deg: 88, near: 1.4 });
@@ -1252,6 +1380,15 @@ export function drawPLAX(ctx, box, g, o = {}) {
       flows: plaxFlows(S, R, o.t ?? 150, C, g), stats: cfDebug.stats,
     });
     barFor(ctx, F, C.lo, C.hi);
+  }
+  const J = o.jets;
+  if (J) {
+    const lvCav = RP(S.lvCav), aoCav = RP([...S.aoAnt, ...S.aoPost.slice().reverse()]), mid = R(lerp2(S.tipA, S.tipP, 0.5));
+    if (J.ar) jet(ctx, F, { ...J.ar, O: R([xAnn + 0.6, aoMid]), dir: unit(sub(R([-4, aoMid + 1.0]), R([xAnn, aoMid]))), clip: lvCav });
+    if (J.as) jet(ctx, F, { ...J.as, O: R([xAnn + 1.2, aoMid]), dir: unit(sub(R([xAnn + 6, aoMid - 0.3]), R([xAnn + 1.2, aoMid]))), clip: aoCav, pisa: false });
+    if (J.ms) jet(ctx, F, { ...J.ms, O: mid, dir: unit(sub(R([-6, (yLv + yPw) / 2 + 0.6]), mid)), clip: lvCav });
+    const any = J.ar || J.as || J.ms;
+    if (any) barFor(ctx, F, -any.va, any.va);
   }
   const geo = { F, R, yIvs: S.yIvs, yLv, yPw, yEpi: S.yEpi, ivs: S.ivs, lvid: S.lvid, pw: S.pw, la: S.la, laTop: S.laTop, aoTop, aoBot, aoMid, xAnn, c, ph, lvot: S.lvot };
   if (o.after) o.after(ctx, F, geo);

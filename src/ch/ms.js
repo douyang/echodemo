@@ -8,6 +8,7 @@ import { msGrade } from '../norms.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit } from '../sev.js';
 import { drawA4C, drawPSAXmv, measures, shownMitralThick } from '../echo2d.js';
 import { BSA } from './pressure.js';
+import { JETS } from '../jets.js';
 
 const KEY = 'msS';
 const mean = (fn, n = 400) => { let a = 0; for (let i = 0; i < n; i++) a += fn((i + 0.5) / n); return a / n; };
@@ -85,13 +86,18 @@ function a4c(ctx, box, m, t) {
   const since = t >= t0 ? t - t0 : t + RR - t0;
   const a = since < fill && m.s > 0.08 ? Math.min(1, since / 40) * clamp(m.env((since / fill) * m.dfp), 0.3, 1) : 0;
   const jl = 2.5 + 2.5 * m.s;
+  const jet = m.s > 0.08 ? { q: (70 / (m.dfp / 1000)) * 1.1, vc: m.tip * 0.6, jl, jw: 0.9 + m.tip * 0.4, a } : null;
   drawA4C(ctx, box, g, {
     t, depth: 16 + m.s, title: fit(box.w, 'APICAL FOUR-CHAMBER · COLOR 40 cm/s', 'A4C · COLOR 40'),
-    color: {
-      roi: 'mvin', reach: 1.6 + jl, lo: -40, hi: 40, variance: true, pvS: 0.5, pvD: 0.4 - 0.15 * m.s,
-      // the flow converges on the domed leaflets from the LA (a funnel, not a flat valve)
-      ms: m.s > 0.08 ? { q: (70 / (m.dfp / 1000)) * 1.1, u0: m.v0 * 100, vc: m.tip * 0.6, jl, jw: 0.9 + m.tip * 0.4, a, half: 0.9, soft: 0.35 } : null,
-    },
+    ...(JETS === 'plume'
+      ? { jets: jet ? { ms: { ...jet, va: 40 } } : {} }
+      : {
+        color: {
+          roi: 'mvin', reach: 1.6 + jl, lo: -40, hi: 40, variance: true, pvS: 0.5, pvD: 0.4 - 0.15 * m.s,
+          // the flow converges on the domed leaflets from the LA (a funnel, not a flat valve)
+          ms: jet ? { ...jet, u0: m.v0 * 100, half: 0.9, soft: 0.35 } : null,
+        },
+      }),
     after: (c, F) => measures(c, F, [[`LA volume index ${Math.round(m.lavi)} mL/m²`, `LAVi ${Math.round(m.lavi)} mL/m²`], `leaflets ${(shownMitralThick(m.thick) * 10).toFixed(0)} mm`]),
   });
 }
