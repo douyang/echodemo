@@ -8,7 +8,7 @@ import { ecg as ecgStrip } from './scope.js';
 import { bmode, DB } from './bmode.js';
 import { reducedMotion } from './state.js';
 import { ABD, buildAbdomen, beneath } from './abdomen.js';
-import { makeProbe, probeMaterials, placeProbe, themeProbe } from './gl/probe3d.js';
+import { pencilProbe, placeProbe } from './gl/probe3d.js';
 
 export { VIEWS };
 
@@ -439,6 +439,8 @@ export class EchoView {
     this.geo = model.sizes;
     this.pv = -1;         // the version of the heart it last took (model3d.js); the first frame takes it
     this.noSys = false;   // true: the heart's own systolic change is off (chapter 10 sets the motion)
+    this.own = null;      // a heart of this view's own (setBurden), in place of the page's
+    this.ownAnat = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
     this.tr = null;
@@ -474,6 +476,34 @@ export class EchoView {
     if (this.peri) this.peri.scale = periScale ? { systole: periScale } : null;
   }
 
+  /** The heart this view shows: its own (setBurden), or the page's (model3d.js). */
+  get heart() { return this.own || this.model.pheno; }
+  /** The landmarks of that heart. */
+  get anat() { return this.ownAnat || this.model.anat; }
+
+  /**
+   * Show the model's own amyloid heart at burden a (0 normal .. 1 the amyloid corner), whatever
+   * heart the page shows; null: the page's heart again. Chapter 18 sets it.
+   */
+  setBurden(a) {
+    if (a === null || a === undefined) {
+      this.own = null;
+      this.ownAnat = null;
+      this.pv = -2;
+      return;
+    }
+    if (this.own && this.own.a === a) return;
+    this.ownV = (this.ownV || 0) + 1;
+    // a version the page's hearts never take, so the next frame takes this heart
+    this.own = { key: 'amyloid', a, mesh: null, version: -1000 - this.ownV };
+    const anat = Object.create(this.model.anat.normal());
+    anat.pheno = { a, landmark: null };
+    this.ownAnat = anat;
+    const c = this.model.doc.corners;
+    const at = (k, ph = 'ed') => c[`normal_${ph}`].measurements[k] + (c[`amyloid_${ph}`].measurements[k] - c[`normal_${ph}`].measurements[k]) * a;
+    this.ownGeo = { ivs: at('ivs'), pw: at('pw'), lvid: at('lvid'), lvids: at('lvid', 'es'), effusion: at('peri_gap'), rvWall: at('rv_wall') };
+  }
+
   setSize(w, h) {
     this.w = w;
     this.h = h;
@@ -493,18 +523,23 @@ export class EchoView {
     this.fanLineMat = new THREE.LineBasicMaterial({ color: 0x22272b, transparent: true, opacity: 0.6, depthTest: false });
     this.fan = new THREE.Mesh(new THREE.BufferGeometry(), this.fanMat);
     this.fanLine = new THREE.LineLoop(new THREE.BufferGeometry(), this.fanLineMat);
-    // the transducer at the fan's apex, shaded: its own lights ride with the camera (frame())
-    this.probeMats = probeMaterials();
-    this.probe = makeProbe(this.probeMats);
-    this.rig = new THREE.Group();
-    const key = new THREE.DirectionalLight(0xffffff, 1.9);
-    key.position.set(-0.55, 0.75, 0.6);
-    key.target.position.set(0, 0, -1);
-    this.rig.add(key, key.target);
-    // one group, so a chapter that shares the stage can hide this fan
+    // the transducer at the fan's apex, drawn in pencil with the heart (the stage's tools)
+    const P = pencilProbe();
+    this.probe = P.group;
+    this.probeRoot = new THREE.Group();
+    this.probeRoot.add(this.probe);
+    s.scene.add(this.probeRoot);
+    s.tools.push(...P.items);
+    // one group, so a chapter that shares the stage can hide this fan (showOverlay)
     this.overlay = new THREE.Group();
-    this.overlay.add(this.fan, this.fanLine, this.probe, this.rig, new THREE.AmbientLight(0xffffff, 1.75));
+    this.overlay.add(this.fan, this.fanLine);
     s.overlayScene.add(this.overlay);
+  }
+
+  /** Show or hide the fan and the probe (a chapter that shares the stage hides them). */
+  showOverlay(on) {
+    if (this.overlay) this.overlay.visible = on;
+    if (this.probeRoot) this.probeRoot.visible = on;
   }
 
   retheme() {
@@ -512,7 +547,6 @@ export class EchoView {
     const t = tokens();
     this.fanMat.color.setStyle(t.ink);
     this.fanLineMat.color.setStyle(t.ink);
-    themeProbe(this.probeMats, t, 0.35, true);   // the overlay pass writes colours as they are
     if (this.bodyKey) this.bodyKey.retheme(t);
   }
 
@@ -556,7 +590,7 @@ export class EchoView {
     const base = key === 'free' ? this.freeSpec || {} : VIEWS[key] || {};
     const spec = { ...base, depth: this.depth ?? base.depth, angle: this.angle ?? base.angle };
     // a bicuspid valve (phenomesh.js): the right and left cusps are one, fused along a raphe
-    const P = this.model.pheno;
+    const P = this.heart;
     if (P && P.key === 'bav' && spec.labels && spec.labels.some(([id]) => id === 'rcc')) {
       spec.labels = [...spec.labels.filter(([id]) => !['rcc', 'lcc', 'ncc'].includes(id)), ['rl', 'R+L'], ['raphe', 'raphe'], ['ncc', 'NCC']];
     }
@@ -576,6 +610,7 @@ export class EchoView {
   setView(key, opts = {}) {
     const from = this.g;
     this.view = key;
+    if (this.own && !this.geoms[key] && VIEWS[key]) { const g = viewGeometry(this.anat, key); if (g) this.geoms[key] = g; }
     const g1 = this.geoms[key] || null;
     const spec = this.specOf(key);
     this.zoomAt = null;
@@ -737,16 +772,17 @@ export class EchoView {
    * labels, and the view planes, which follow the heart's landmarks.
    */
   takePheno() {
-    const m = this.model, P = m.pheno, first = this.pv < 0;
+    const m = this.model, P = this.heart, first = this.pv === -1;
     this.pv = P.version;
     const rest = { amyloid: P.a };
     if (P.mesh) rest[`ph_${P.mesh}`] = 1;
     for (const md of [this.myo, ...this.valves, ...this.chords, this.pap, this.peri, this.cor]) if (md) md.setRest(rest);
-    this.geo = m.sizes;
+    this.geo = this.own ? this.ownGeo : m.sizes;
     this.cusps = null;
     const free = this.geoms.free;
     this.geoms = {};
-    for (const k of Object.keys(VIEWS)) { const g = viewGeometry(m.anat, k); if (g) this.geoms[k] = g; }
+    // a view with its own heart plans only its own plane (setView plans another when asked)
+    for (const k of this.own ? [this.view] : Object.keys(VIEWS)) { const g = viewGeometry(this.anat, k); if (g) this.geoms[k] = g; }
     if (free) this.geoms.free = free;
     if (first) return;
     this.tr = null;
@@ -756,14 +792,9 @@ export class EchoView {
 
   /** state: { s, v, drive, phase } from the cycle model. */
   frame(state) {
-    const P = this.model.pheno;
+    const P = this.heart;
     if (P && P.version !== this.pv) this.takePheno();
     this.advance();
-    if (this.rig) {
-      const cam = this.stage.camera;
-      this.rig.position.copy(cam.position);
-      this.rig.quaternion.copy(cam.quaternion);
-    }
     const g = this.g;
     if (!g) { this.drawEmpty(); return; }
     const a = P ? P.a : 0, s = state.s;
@@ -853,7 +884,7 @@ export class EchoView {
     // leaflets: the mesh gives each one as a thin closed loop, about 1 mm across
     // a disease heart's own valve is brighter: a calcified bicuspid aortic valve (with a faint
     // shadow behind it), the thick myxomatous leaflets of a Barlow mitral valve
-    const ph = this.model.pheno || {};
+    const ph = this.heart || {};
     const hot = ph.key === 'bav' ? 'AorticValve' : ph.key === 'barlow' ? 'MitralValve' : null;
     const leaf = valves.filter((L) => closed(L) && L.valve !== hot).map((L) => L.pts);
     const hotLeaf = valves.filter((L) => closed(L) && L.valve === hot).map((L) => L.pts);
@@ -1010,7 +1041,12 @@ export class EchoView {
       this.boxPath = new Path2D();
       this.boxPath.rect(8, m.boxTop, W - 16, m.boxH);
     }
-    if (off) return;
+    if (off) {
+      // no header, scale or labels: a page draws its own; calipers when it asks (chapter 18)
+      if (this.calipers && this.view === 'plax' && !this.tr) this.drawCalipers(tissue, X, Y);
+      else this.measure = {};
+      return;
+    }
 
     // depth scale and header
     ctx.save();
@@ -1061,7 +1097,7 @@ export class EchoView {
 
   /** Middle of the LV wall on the screen-right (side 1) or screen-left (side -1) of this plane. */
   wallPoint(side, s, g) {
-    const A = this.model.anat, Z = A.axis;
+    const A = this.anat, Z = A.axis;
     const eq = A.point('lv_eq', 0, s);
     const mid = eq.clone().addScaledVector(g.n, -eq.clone().sub(g.O).dot(g.n));
     const rr = g.r.clone().addScaledVector(Z, -g.r.dot(Z)).normalize();
@@ -1071,7 +1107,7 @@ export class EchoView {
 
   /** Named anchors (world, cm) for the labels. */
   anchors(s) {
-    const A = this.model.anat;
+    const A = this.anat;
     const an = A.anchors(0, s, this.geo);
     const eq = A.point('lv_eq', 0, s), mm = 0.1;
     const lvid = (s > 0.5 ? this.geo.lvids : this.geo.lvid) * mm, wall = this.geo.pw * mm;

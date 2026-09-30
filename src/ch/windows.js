@@ -68,7 +68,7 @@ async function ensure() {
       const e = await import('../echo.js');
       stage = await sharedStage();
       echo = new e.EchoView(model, fig.querySelector('#windows-canvas'), { stage });
-      echo.overlay.visible = false;
+      echo.showOverlay(false);
       echo.top = 42;
       echo.retheme();
       labels = new Labels(fig.querySelector('#windows-overlay'));
@@ -116,7 +116,7 @@ async function enter() {
   stage.opts.stillPhase = 0;
   stage.heart.group.visible = true;
   stage.heart.setPericardium(true);
-  echo.overlay.visible = true;
+  echo.showOverlay(true);
   echo.section = true;
   echo.setView(st.view);
   echo.setBody(st.wbody);
@@ -147,7 +147,7 @@ export default {
     on = false;
     if (labels) labels.update([], null, 1, 1);
     if (stage) { stage.opts.labeled = false; stage.inset = null; }   // the stage is shared with 08 Planes
-    if (echo && echo.overlay) echo.overlay.visible = false;
+    if (echo) echo.showOverlay(false);
     if (stage && stage.onFrame === onFrame) { stage.stop(); stage.onFrame = null; }
   },
   warm() { ensure().catch(() => {}); },

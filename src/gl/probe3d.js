@@ -4,6 +4,7 @@
 // About 13 cm from the lens to the cable, with a 2.6 x 1.7 cm head. The caller draws the cable,
 // which hangs from PROBE_TAIL.
 import * as THREE from '../../vendor/three.bundle.min.js';
+import { pencilMaterials } from './heart.js';
 
 const LENS = 0.19;   // the lens stands this far proud of the housing's face
 /** From the top of the lens to the end of the strain relief, where the cable leaves (cm). */
@@ -86,6 +87,21 @@ export function makeProbe(mats) {
   relief.translate(0, -LENS, 0);
   g.add(new THREE.Mesh(relief, mats.cable));
   return g;
+}
+
+/**
+ * The transducer drawn in pencil with the heart: { group, items } (items: {mesh, data, normal}
+ * for the pencil passes). A pale housing, a darker lens and strain relief, a white marker: the
+ * darker a part, the more it is hatched. cable: the same materials for a cable mesh.
+ */
+export const TOOL = 0.75;   // the pencil composite's flag for tools
+export function pencilProbe() {
+  const P = { body: pencilMaterials(TOOL, 0xdcdcdc), lens: pencilMaterials(TOOL, 0x8c8c8c), mark: pencilMaterials(TOOL, 0xffffff), cable: pencilMaterials(TOOL, 0x707070) };
+  const group = makeProbe({ body: P.body.data, lens: P.lens.data, mark: P.mark.data, cable: P.cable.data });
+  const normalOf = new Map(Object.values(P).map((m) => [m.data, m.normal]));
+  const items = [];
+  group.traverse((o) => { if (o.isMesh) items.push({ mesh: o, data: o.material, normal: normalOf.get(o.material) }); });
+  return { group, items, cable: P.cable };
 }
 
 /** Shaded materials for the transducer; themeProbe sets their colours. */

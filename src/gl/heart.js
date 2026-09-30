@@ -71,6 +71,16 @@ function normalMaterial(clipping) {
   return m;
 }
 
+/**
+ * Pencil materials for a mesh drawn beside the heart (the probe, the body key): the data pass
+ * writes its Lambert tone (a darker colour hatches more) and flag; it is never clipped.
+ */
+export function pencilMaterials(flag, color = 0xffffff) {
+  const data = dataMaterial(flag, false, []);
+  data.color.set(color);
+  return { data, normal: normalMaterial([]) };
+}
+
 const STENCIL_CAP = {
   stencilWrite: true,
   stencilRef: 0,

@@ -5,6 +5,8 @@
 // Pass 3  pericardium alone (normal/depth) -> rtPeri, drawn as a faint outline
 // Pass 4  composite to the canvas with premultiplied alpha, so the page paper
 //         shows through wherever nothing is drawn.
+// Tools (the probe) go through passes 1 and 2 with the heart. An inset (the body key) runs the
+// same passes in its corner: its solids hatched, its body as an outline in the third pass.
 import * as THREE from '../../vendor/three.bundle.min.js';
 
 const QUAD_VS = /* glsl */`
@@ -26,6 +28,9 @@ uniform float uNear;
 uniform float uFar;
 uniform float uAmyloid;
 uniform float uPeri;
+uniform float uPeriDash;
+uniform float uPeriInk;
+uniform vec4 uView;
 uniform vec3 uInk;
 uniform vec3 uLift;
 uniform vec3 uCongo;
@@ -86,7 +91,8 @@ float hatch(vec2 p, float ang, float gap, float width, float seed) {
 vec4 over(vec4 dst, vec3 c, float a) { return vec4(c * a + dst.rgb * (1.0 - a), a + dst.a * (1.0 - a)); }
 
 void main() {
-  vec2 uv = vUv;
+  // the part of the targets this quad shows: all of them, or an inset's corner
+  vec2 uv = uView.xy + vUv * uView.zw;
   vec2 p = gl_FragCoord.xy / uDpr;
   vec2 wob = (vec2(noise(uv * 7.0 + uBoil), noise(uv * 7.0 + 19.7 + uBoil)) - 0.5) * 2.2 * uDpr / uRes;
 
@@ -98,6 +104,7 @@ void main() {
   float valve = step(0.2, flag) * step(flag, 0.3);
   float coronary = step(0.45, flag) * step(flag, 0.55);
   float tool = step(0.7, flag) * step(flag, 0.8);
+  float warm = step(0.58, flag) * step(flag, 0.62);   // drawn in red pencil (the body key's heart)
 
   float e = edges(tNormal, tDepth, uv + wob, 1.0 * uDpr, 1.0);
   e = max(e, 0.55 * edges(tNormal, tDepth, uv - wob * 0.6, 1.9 * uDpr, 1.0));
@@ -128,16 +135,16 @@ void main() {
   ink = max(ink, coronary * cover * 0.22);
   ink = max(ink, e);
 
-  // Pericardium: dashed outline only.
+  // Pericardium: dashed outline only (an inset's body: a solid outline).
   float pe = edges(tPeriNormal, tPeriDepth, uv + wob * 0.8, 1.2 * uDpr, 1.0);
   float dash = step(0.45, fract((p.x + p.y) * 0.045 + noise(p * 0.02)));
-  float peri = uPeri * pe * (0.35 + 0.35 * dash);
+  float peri = uPeri * pe * mix(uPeriInk, 0.35 + 0.35 * dash, uPeriDash);
   peri *= 1.0 - 0.7 * cover;
 
   vec4 col = vec4(0.0);
   col = over(col, uCongo, clamp(red, 0.0, 1.0) * 0.95);
   col = over(col, uLift, clamp(lift, 0.0, 1.0));
-  col = over(col, uInk, clamp(max(ink, peri), 0.0, 1.0) * 0.92);
+  col = over(col, mix(uInk, uCongo, warm * step(peri, ink)), clamp(max(ink, peri), 0.0, 1.0) * 0.92);
   gl_FragColor = col;
 }`;
 
@@ -189,6 +196,9 @@ export class Pencil {
         uFar: { value: 200 },
         uAmyloid: { value: 0 },
         uPeri: { value: 1 },
+        uPeriDash: { value: 1 },
+        uPeriInk: { value: 0.8 },
+        uView: { value: new THREE.Vector4(0, 0, 1, 1) },
         uInk: { value: new THREE.Vector3(0.13, 0.15, 0.17) },
         uLift: { value: new THREE.Vector3(0.98, 0.98, 0.96) },
         uCongo: { value: new THREE.Vector3(0.7, 0.23, 0.18) },
@@ -241,10 +251,12 @@ export class Pencil {
     u.uPeri.value = heart.peri && heart.peri.visible ? 1 : 0;
 
     const periVisible = heart.peri ? heart.peri.visible : false;
+    const tools = opts.tools || [];   // {mesh, data, normal}: meshes in the scene, beside the heart
 
     // pass 1: normals + depth
     if (heart.peri) heart.peri.visible = false;
     for (const it of heart.items) it.mesh.material = it.normal;
+    for (const it of tools) it.mesh.material = it.normal;
     r.setRenderTarget(this.rtNormal);
     r.setClearColor(0x000000, 0);
     r.clear(true, true, true);
@@ -252,6 +264,7 @@ export class Pencil {
 
     // pass 2: data
     for (const it of heart.items) it.mesh.material = it.data;
+    for (const it of tools) it.mesh.material = it.data;
     r.setRenderTarget(this.rtData);
     r.clear(true, true, true);
     r.render(scene, camera);
@@ -259,6 +272,8 @@ export class Pencil {
     // pass 3: pericardium on its own
     r.setRenderTarget(this.rtPeri);
     r.clear(true, true, true);
+    const shown = tools.map((it) => it.mesh.visible);
+    for (const it of tools) it.mesh.visible = false;
     if (heart.peri && periVisible) {
       heart.group.visible = false;
       heart.peri.visible = true;
@@ -272,6 +287,7 @@ export class Pencil {
       heart.group.visible = true;
     }
     if (heart.peri) heart.peri.visible = periVisible;
+    tools.forEach((it, i) => { it.mesh.visible = shown[i]; });
 
     // pass 4: composite
     r.setRenderTarget(null);
@@ -284,7 +300,8 @@ export class Pencil {
     }
     // an inset in a corner (the body key, chapter 07): its own scene and camera on paper, lit
     // and encoded as ordinary shaded scenes are, so its paper matches the page's
-    if (opts.inset) {
+    if (opts.inset && opts.inset.pencil) this.renderInset(opts.inset);
+    else if (opts.inset) {
       const { scene: s2, camera: c2, rect, clear, border } = opts.inset;
       const y = this.h - rect.y - rect.h;
       r.outputColorSpace = THREE.SRGBColorSpace;
@@ -304,5 +321,82 @@ export class Pencil {
       r.outputColorSpace = THREE.LinearSRGBColorSpace;
       r.setClearColor(0x000000, 0);
     }
+  }
+
+  /**
+   * An inset drawn in pencil, in its corner of the canvas: its solids (their pencil items)
+   * hatched and outlined as the heart is, its outline meshes as a solid contour (the third
+   * pass), and its flat marks (sector, letters) over them, on the page's paper.
+   * inset: { scene, camera (perspective), rect (CSS px from the top left), clear, border,
+   *          pencil: { solids: [{mesh, data, normal}], outline: [mesh], outlineNormal, flat: [Object3D], ink } }
+   */
+  renderInset(inset) {
+    const r = this.renderer, u = this.post.uniforms, dpr = this.dpr;
+    const { scene: s2, camera: c2, rect, clear, border, pencil: P } = inset;
+    const W = Math.max(1, Math.round(this.w * dpr)), H = Math.max(1, Math.round(this.h * dpr));
+    const yc = this.h - rect.y - rect.h;   // CSS px from the bottom
+    const x = Math.round(rect.x * dpr), y = Math.round(yc * dpr), w = Math.round(rect.w * dpr), h = Math.round(rect.h * dpr);
+    const targets = [this.rtNormal, this.rtData, this.rtPeri];
+    for (const t of targets) { t.viewport.set(x, y, w, h); t.scissor.set(x, y, w, h); t.scissorTest = true; }
+    const solids = P.solids.map((it) => it.mesh);
+    const was = new Map([...solids, ...P.outline, ...P.flat].map((o) => [o, o.visible]));
+    const show = (list, on) => { for (const o of list) o.visible = on && was.get(o); };
+    r.setClearColor(0x000000, 0);
+    // passes 1 and 2: the solids
+    show(P.outline, false);
+    show(P.flat, false);
+    for (const it of P.solids) it.mesh.material = it.normal;
+    r.setRenderTarget(this.rtNormal);
+    r.clear(true, true, true);
+    r.render(s2, c2);
+    for (const it of P.solids) it.mesh.material = it.data;
+    r.setRenderTarget(this.rtData);
+    r.clear(true, true, true);
+    r.render(s2, c2);
+    // pass 3: the outline meshes alone
+    show(solids, false);
+    show(P.outline, true);
+    const mats = P.outline.map((m) => m.material);
+    for (const m of P.outline) m.material = P.outlineNormal;
+    r.setRenderTarget(this.rtPeri);
+    r.clear(true, true, true);
+    r.render(s2, c2);
+    P.outline.forEach((m, i) => { m.material = mats[i]; });
+    for (const t of targets) { t.viewport.set(0, 0, W, H); t.scissor.set(0, 0, W, H); t.scissorTest = false; }
+    // the corner: border and paper, then the composite of this corner over them
+    r.setRenderTarget(null);
+    r.outputColorSpace = THREE.SRGBColorSpace;
+    r.setScissorTest(true);
+    if (border) {
+      r.setScissor(rect.x - 1, yc - 1, rect.w + 2, rect.h + 2);
+      r.setClearColor(border, 1);
+      r.clear(true, false, false);
+    }
+    r.setScissor(rect.x, yc, rect.w, rect.h);
+    r.setViewport(rect.x, yc, rect.w, rect.h);
+    r.setClearColor(clear, 1);
+    r.clear(true, true, false);
+    const keep = [u.uNear.value, u.uFar.value, u.uPeri.value, u.uAmyloid.value, u.uPeriDash.value, u.uPeriInk.value];
+    u.uNear.value = c2.near;
+    u.uFar.value = c2.far;
+    u.uPeri.value = 1;
+    u.uAmyloid.value = 0;
+    u.uPeriDash.value = 0;
+    u.uPeriInk.value = P.ink ?? 0.8;
+    u.uView.value.set(x / W, y / H, w / W, h / H);
+    r.render(this.quadScene, this.quadCam);
+    [u.uNear.value, u.uFar.value, u.uPeri.value, u.uAmyloid.value, u.uPeriDash.value, u.uPeriInk.value] = keep;
+    u.uView.value.set(0, 0, 1, 1);
+    // the flat marks over the drawing
+    show(solids, false);
+    show(P.outline, false);
+    show(P.flat, true);
+    r.clearDepth();
+    r.render(s2, c2);
+    for (const [o, v] of was) o.visible = v;
+    r.setScissorTest(false);
+    r.setViewport(0, 0, this.w, this.h);
+    r.outputColorSpace = THREE.LinearSRGBColorSpace;
+    r.setClearColor(0x000000, 0);
   }
 }

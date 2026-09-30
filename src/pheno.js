@@ -33,7 +33,7 @@ const PRESETS = {
   amyloid: {
     pv: 'hfpef', sv: 40, trV: 3.0,
     side: 'lv', edv: 72, ef: 54, wall: 16, tapse: 15, sPrime: 9, fac: 35,
-    fstate: 3, periS: 0.25, caseId: 'amyloid',
+    fstate: 3, periS: 0.25, amyS: 1, caseId: 'amyloid',
   },
   icm: {
     pv: 'hfref', sv: 45, trV: 3.1,
@@ -52,8 +52,8 @@ const PRESETS = {
     fstate: 1, asS: 0.55, caseId: 'bav',
   },
 };
-// under a disease heart the valve and pericardium pages start with no lesion unless it is the heart's own
-const QUIET = { asS: 0, arS: 0, msS: 0, mrS: 0, trS: 0, periS: 0 };
+// under a disease heart the valve, pericardium and amyloid pages start with no disease unless it is the heart's own
+const QUIET = { asS: 0, arS: 0, msS: 0, mrS: 0, trS: 0, periS: 0, amyS: 0 };
 /** The chapter state that heart key starts from ({} for the normal heart). */
 export function presetsFor(key) { return key === 'normal' || !PRESETS[key] ? {} : { ...QUIET, ...PRESETS[key] }; }
 /** Every state key that some heart presets. */

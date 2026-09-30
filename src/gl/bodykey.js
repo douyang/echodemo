@@ -1,9 +1,10 @@
 // The body key (chapter 07, Probe and body): the patient in a corner of the 3D view, turned as
-// the camera is. The skin is see-through: inside it beats the model's own heart, placed as it
-// lies in the chest, and the probe sits on the skin at the view's window with its sector toward
-// the heart.
+// the camera is, drawn in pencil like the heart (pencil.js, renderInset). The body is an outline:
+// inside it beats the model's own heart in red pencil, placed as it lies in the chest, and the
+// probe sits on the skin at the view's window with its sector toward the heart.
 import * as THREE from '../../vendor/three.bundle.min.js';
-import { makeProbe, probeMaterials, placeProbe, themeProbe, mix, mixHex, PROBE_TAIL } from './probe3d.js';
+import { pencilProbe, placeProbe, PROBE_TAIL } from './probe3d.js';
+import { pencilMaterials } from './heart.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -82,37 +83,7 @@ function section(r, t) {
   return [a * Math.sign(c) * Math.abs(c) ** (2 / 2.4), zc + h * Math.sign(s) * Math.abs(s) ** (2 / n)];
 }
 
-/** The skin's shading: lit from the upper left, and denser toward the outline, like glass. */
-function skinMaterial() {
-  return new THREE.ShaderMaterial({
-    uniforms: { color: { value: new THREE.Color() }, edge: { value: new THREE.Color() }, face: { value: 0.34 }, rim: { value: 0.95 } },
-    vertexShader: `
-      varying vec3 vN;
-      void main() {
-        vN = normalize(normalMatrix * normal);
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        gl_Position = projectionMatrix * mvPosition;
-      }`,
-    fragmentShader: `
-      uniform vec3 color;
-      uniform vec3 edge;
-      uniform float face;
-      uniform float rim;
-      varying vec3 vN;
-      void main() {
-        vec3 n = normalize(vN);
-        float k = pow(1.0 - abs(n.z), 1.7);
-        float lit = 0.6 + 0.4 * max(dot(n, normalize(vec3(-0.35, 0.65, 0.68))), 0.0);
-        gl_FragColor = vec4(mix(color * lit, edge, 0.6 * k), mix(face, rim, k));
-        #include <colorspace_fragment>
-      }`,
-    transparent: true,
-    depthWrite: false,
-    polygonOffset: true,
-    polygonOffsetFactor: -1,
-    polygonOffsetUnits: -1,
-  });
-}
+const WARM = 0.6;   // the pencil composite's flag for red pencil
 
 export class BodyKey {
   /**
@@ -123,11 +94,14 @@ export class BodyKey {
   constructor(myo, anat) {
     this.src = myo;
     this.scene = new THREE.Scene();
-    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000);
-    const light = new THREE.DirectionalLight(0xffffff, 2.2);
-    light.position.set(-0.4, 0.8, 1);
-    this.camera.add(light);
-    this.scene.add(this.camera, new THREE.AmbientLight(0xffffff, 1.3));
+    // a long lens, so the pencil edges read depth as they do on the heart; lit as the stage is
+    this.camera = new THREE.PerspectiveCamera(20, 1, 140, 260);
+    const key = new THREE.DirectionalLight(0xffffff, 2.9);
+    key.position.set(-0.55, 0.75, 0.6);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.55);
+    rim.position.set(0.8, -0.2, -0.5);
+    this.camera.add(key, rim);
+    this.scene.add(this.camera, new THREE.AmbientLight(0xffffff, 0.95));
     const pos = myo.geometry.attributes.position;
     let front = -Infinity;
     for (let i = 0; i < pos.count; i++) front = Math.max(front, pos.getZ(i));
@@ -188,29 +162,22 @@ export class BodyKey {
       ear.translate(hc.x + side * 7.9, hc.y - 0.6, hc.z - 0.9);
       parts.push(ear);
     }
-    // each part twice: depth first, then the skin on the nearest surface only, so the parts read
-    // as one body and the heart shows through the chest
-    this.skin = skinMaterial();
-    const depth = new THREE.MeshBasicMaterial({ colorWrite: false });
-    for (const g of parts) {
-      const d = new THREE.Mesh(g, depth), s = new THREE.Mesh(g, this.skin);
-      d.renderOrder = 1;
-      s.renderOrder = 2;
-      this.scene.add(d, s);
-    }
+    // the body: an outline only (the pencil inset's third pass), so the heart shows inside it
+    this.outlineNormal = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
+    this.outline = parts.map((g) => new THREE.Mesh(g, this.outlineNormal));
+    this.scene.add(...this.outline);
 
-    // the heart: the model's own mesh, beating with it
-    this.red = new THREE.MeshLambertMaterial({ color: 0xb23a2e, side: THREE.DoubleSide });
-    this.heart = new THREE.Mesh(myo.geometry, this.red);
-    this.heart.renderOrder = 0;
+    // the heart: the model's own mesh, beating with it, in red pencil
+    const H = pencilMaterials(WARM, 0xdadada);
+    this.heart = new THREE.Mesh(myo.geometry, H.data);
     this.scene.add(this.heart);
+    this.solids = [{ mesh: this.heart, data: H.data, normal: H.normal }];
 
-    // the probe on the skin and its sector (placed by setView)
-    this.pm = probeMaterials();
-    this.probe = makeProbe(this.pm);
-    this.probe.traverse((o) => { o.renderOrder = 3; });
-    this.cable = new THREE.Mesh(new THREE.BufferGeometry(), this.pm.cable);
-    this.cable.renderOrder = 3;
+    // the probe on the skin and its sector (placed by setView), in graphite
+    const P = pencilProbe();
+    this.probe = P.group;
+    this.cable = new THREE.Mesh(new THREE.BufferGeometry(), P.cable.data);
+    this.solids.push(...P.items, { mesh: this.cable, data: P.cable.data, normal: P.cable.normal });
     this.fanMat = new THREE.MeshBasicMaterial({ color: 0x1f262b, transparent: true, opacity: 0.16, depthTest: false, depthWrite: false, side: THREE.DoubleSide });
     this.fanLineMat = new THREE.LineBasicMaterial({ color: 0x1f262b, transparent: true, opacity: 0.7, depthTest: false });
     this.fan = new THREE.Mesh(new THREE.BufferGeometry(), this.fanMat);
@@ -224,6 +191,7 @@ export class BodyKey {
     this.left.position.copy(W(28, 3, -13));
     this.left.renderOrder = 6;
     this.scene.add(this.left);
+    this.flat = [this.fan, this.fanLine, this.left];
     this.center = W(0, -1.5, -12.5);
     this.radius = 37;
   }
@@ -275,15 +243,10 @@ export class BodyKey {
   }
 
   retheme(tok) {
+    // the drawing takes the page's ink and red from the pencil composite; these are the flat marks
     const ink = new THREE.Color(tok.ink || '#1f262b');
-    // a light skin tone, a fifth of the way to the paper
-    const skin = mixHex('#c9a387', tok.paper || '#e2e4e3', 0.2);
-    this.skin.uniforms.color.value.setStyle(skin);
-    this.skin.uniforms.edge.value.copy(mix(skin, tok.ink || '#1f262b', 0.4));
-    themeProbe(this.pm, tok);
     this.fanMat.color.copy(ink);
     this.fanLineMat.color.copy(ink);
-    this.red.color.setStyle(tok.flag || '#b23a2e');
     this.left.material.color.copy(ink);
     this.paper = tok.paper;
     this.rule = tok.rule;
@@ -302,15 +265,20 @@ export class BodyKey {
     this.heart.morphTargetDictionary = this.src.morphTargetDictionary;
     const r = this.rect(w, h);
     const q = mainCamera.quaternion;
-    const back = V3(0, 0, 1).applyQuaternion(q);
-    this.camera.position.copy(this.center).addScaledVector(back, 200);
+    const back = V3(0, 0, 1).applyQuaternion(q), D = 200;
+    this.camera.position.copy(this.center).addScaledVector(back, D);
     this.camera.quaternion.copy(q);
-    const aspect = r.w / r.h, R = this.radius;
-    Object.assign(this.camera, { left: -R * aspect, right: R * aspect, top: R, bottom: -R });
+    this.camera.aspect = r.w / r.h;
+    this.camera.fov = 2 * THREE.MathUtils.radToDeg(Math.atan(this.radius / D));
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();
     this.left.quaternion.copy(q);
-    return { scene: this.scene, camera: this.camera, rect: r, clear: this.paper || '#e2e4e3', border: this.rule || '#a9aeac' };
+    // seen from behind, the probe on the chest is out of sight: the outline body would not hide it
+    this.probe.visible = this.cable.visible = back.z > -0.25;
+    return {
+      scene: this.scene, camera: this.camera, rect: r, clear: this.paper || '#e2e4e3', border: this.rule || '#a9aeac',
+      pencil: { solids: this.solids, outline: this.outline, outlineNormal: this.outlineNormal, flat: this.flat, ink: 0.72 },
+    };
   }
 }
 
