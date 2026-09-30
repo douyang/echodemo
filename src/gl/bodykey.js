@@ -1,121 +1,316 @@
-// The body key (chapter 07, Probe and body): a small figure of the patient in a corner of the 3D
-// view, turned as the camera is. It shows how the body lies around the heart, the heart inside
-// the chest, and the probe on the skin at the view's window with its beam toward the heart.
+// The body key (chapter 07, Probe and body): the patient in a corner of the 3D view, turned as
+// the camera is. The skin is see-through: inside it beats the model's own heart, placed as it
+// lies in the chest, and the probe sits on the skin at the view's window with its sector toward
+// the heart.
 import * as THREE from '../../vendor/three.bundle.min.js';
+import { makeProbe, probeMaterials, placeProbe, themeProbe, mix, mixHex, PROBE_TAIL } from './probe3d.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
 /**
- * The probe's place on the skin for each acoustic window, in the body's own frame (cm): x from
- * the midline to the patient's left, y up from the heart's centre, z back from the front of the
- * chest. Parasternal: left sternal border, 3rd to 4th intercostal space; apical: over the apex
- * beat; subcostal: below the xiphoid; suprasternal: the notch (views.js, WINDOWS).
+ * The torso's cross-sections, neck to thighs (cm): height from the jugular notch, half-breadth,
+ * and the skin's front and back on the midline, from the front of the chest at the heart.
+ * Adult male proportions: chest 33 cm across and 26 cm deep, shoulders 48 cm, hips 35 cm.
  */
-const SITE = {
-  plax: [3, 4, 0], psax: [3, 4, 0], apical: [10, -7, 3.2], sub: [0.5, -13, 1], ssn: [0, 15, 5],
-};
+const RINGS = [
+  [13, 5.2, -8.0, -17.0], [9, 5.5, -6.5, -17.5], [5, 5.9, -5.6, -18.0], [4.2, 7.3, -5.3, -18.6],
+  [3.0, 10.5, -5.0, -19.6], [1.8, 14.5, -4.8, -20.6], [0.6, 17.8, -4.5, -21.6], [-1, 19.6, -4.1, -22.5],
+  [-4, 20.0, -3.0, -23.5], [-8, 17.8, -1.8, -24.8], [-12, 16.9, -0.6, -25.6], [-15, 16.7, 0, -26.0],
+  [-19, 16.2, -0.2, -25.9], [-24, 15.5, -1.3, -25.3], [-30, 15.0, -1.8, -24.0], [-35, 14.8, -1.7, -23.2],
+  [-42, 15.6, -1.6, -23.6], [-50, 17.3, -2.6, -25.8], [-58, 16.8, -3.6, -25.5], [-62, 15.5, -4.5, -24.5],
+];
+const FRONT_N = 2.2, BACK_N = 2.8;   // the chest is rounder in front than behind
+
+/** The left arm's centre line (dx from the midline, dy, z as in RINGS) and radius, cm. */
+const ARM = [
+  [16.8, -4.5, -13.4, 4.6], [19.2, -9, -13.5, 4.9], [20.2, -18, -13.6, 4.3], [20.9, -28, -13.8, 3.8],
+  [21.2, -33, -13.7, 3.6], [21.4, -41, -13.0, 3.9], [21.3, -53, -12.2, 2.9], [21.1, -58, -11.8, 2.6],
+];
+
+/**
+ * The probe's place on the skin for each acoustic window: cm from the midline to the patient's
+ * left, and from the jugular notch (views.js, WINDOWS). Parasternal: left sternal border, 3rd to
+ * 4th intercostal space; apical: over the apex, 5th space between the mid-clavicular and anterior
+ * axillary lines; subcostal: below the xiphoid; suprasternal: the notch.
+ */
+const SITE = { plax: [2.6, -10], psax: [2.6, -10], apical: [11.5, -20.5], sub: [0.8, -23], ssn: [0, 0.8] };
+
+/** Catmull-Rom through the rows of a table, n steps per span. */
+function spline(rows, steps) {
+  const out = [];
+  for (let i = 0; i < rows.length - 1; i++) {
+    const p0 = rows[Math.max(0, i - 1)], p1 = rows[i], p2 = rows[i + 1], p3 = rows[Math.min(rows.length - 1, i + 2)];
+    const n = steps(p1, p2);
+    for (let s = 0; s < n; s++) {
+      const t = s / n, t2 = t * t, t3 = t2 * t;
+      out.push(p1.map((_, k) => 0.5 * (2 * p1[k] + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3)));
+    }
+  }
+  out.push(rows[rows.length - 1].slice());
+  return out;
+}
+
+/** A mesh from a grid of rows x M points that closes round, with a cap at each end. */
+function gridMesh(rows, M) {
+  const pos = [], idx = [];
+  for (const r of rows) for (const p of r) pos.push(p.x, p.y, p.z);
+  const R = rows.length;
+  for (let i = 0; i < R - 1; i++) {
+    for (let k = 0; k < M; k++) {
+      const a = i * M + k, b = i * M + ((k + 1) % M), c = a + M, e = b + M;
+      idx.push(a, b, c, b, e, c);
+    }
+  }
+  const ends = [rows[0], rows[R - 1]].map((r) => r.reduce((s, p) => s.add(p), V3()).divideScalar(M));
+  const c0 = pos.length / 3;
+  pos.push(ends[0].x, ends[0].y, ends[0].z, ends[1].x, ends[1].y, ends[1].z);
+  for (let k = 0; k < M; k++) {
+    const k2 = (k + 1) % M;
+    idx.push(c0, k2, k, c0 + 1, (R - 1) * M + k, (R - 1) * M + k2);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+/** A point of a torso cross-section at angle t (0: the patient's left, pi/2: the front). */
+function section(r, t) {
+  const [, a, zf, zb] = r, c = Math.cos(t), s = Math.sin(t);
+  const zc = (zf + zb) / 2, h = (zf - zb) / 2, n = s >= 0 ? FRONT_N : BACK_N;
+  return [a * Math.sign(c) * Math.abs(c) ** (2 / 2.4), zc + h * Math.sign(s) * Math.abs(s) ** (2 / n)];
+}
+
+/** The skin's shading: lit from the upper left, and denser toward the outline, like glass. */
+function skinMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: { color: { value: new THREE.Color() }, edge: { value: new THREE.Color() }, face: { value: 0.34 }, rim: { value: 0.95 } },
+    vertexShader: `
+      varying vec3 vN;
+      void main() {
+        vN = normalize(normalMatrix * normal);
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * mvPosition;
+      }`,
+    fragmentShader: `
+      uniform vec3 color;
+      uniform vec3 edge;
+      uniform float face;
+      uniform float rim;
+      varying vec3 vN;
+      void main() {
+        vec3 n = normalize(vN);
+        float k = pow(1.0 - abs(n.z), 1.7);
+        float lit = 0.6 + 0.4 * max(dot(n, normalize(vec3(-0.35, 0.65, 0.68))), 0.0);
+        gl_FragColor = vec4(mix(color * lit, edge, 0.6 * k), mix(face, rim, k));
+        #include <colorspace_fragment>
+      }`,
+    transparent: true,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
+  });
+}
 
 export class BodyKey {
-  /** heart: the heart's centre (world cm); the body's midline lies 2 cm to its right. */
-  constructor(heart, lvAxis) {
+  /**
+   * myo: the heart's myocardium mesh (the key shares its geometry and beat); anat: the model's
+   * landmarks. The body is laid round the heart: the apex 8.5 cm left of the midline, the aortic
+   * valve 12 cm below the jugular notch, the front of the heart 2.4 cm under the skin.
+   */
+  constructor(myo, anat) {
+    this.src = myo;
     this.scene = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000);
-    const light = new THREE.DirectionalLight(0xffffff, 1.6);
+    const light = new THREE.DirectionalLight(0xffffff, 2.2);
     light.position.set(-0.4, 0.8, 1);
     this.camera.add(light);
-    this.scene.add(this.camera, new THREE.AmbientLight(0xffffff, 1.5));
-    this.H = heart.clone();
-    this.mid = V3(this.H.x - 2, 0, 0);
-    this.front = this.H.z + 6;                       // the front of the chest, 6 cm before the heart's centre
-    const zc = this.front - 10;                      // the body's centre line, front to back
-    const P = (x, y, z = 0) => V3(this.mid.x + x, this.H.y + y, zc + z);
-    this.body = new THREE.MeshLambertMaterial({ color: 0xd8d2c6, transparent: true, opacity: 0.55, depthWrite: false });
-    this.red = new THREE.MeshBasicMaterial({ color: 0xb23a2e });
-    this.probeMat = new THREE.MeshBasicMaterial({ color: 0x22272b });
-    this.beamMat = new THREE.LineDashedMaterial({ color: 0x22272b, dashSize: 1.6, gapSize: 1.2 });
-    const part = (geo, at, sx = 1, sy = 1, sz = 1, rot = null) => {
-      const m = new THREE.Mesh(geo, this.body);
-      m.position.copy(at);
-      m.scale.set(sx, sy, sz);
-      if (rot) m.rotation.set(...rot);
-      m.renderOrder = 1;
-      this.scene.add(m);
-      return m;
-    };
-    // trunk from the pelvis to the shoulders, flatter front to back; arms at the sides
-    part(new THREE.CapsuleGeometry(14, 26, 8, 24), P(0, -6), 1.12, 1, 0.68);
-    part(new THREE.CapsuleGeometry(4.2, 26, 6, 12), P(-21, 0), 1, 1, 1, [0, 0, -0.12]);
-    part(new THREE.CapsuleGeometry(4.2, 26, 6, 12), P(21, 0), 1, 1, 1, [0, 0, 0.12]);
-    part(new THREE.CylinderGeometry(5, 5.5, 8, 16), P(0, 23));
-    part(new THREE.SphereGeometry(8.5, 24, 16), P(0, 34));
-    const nose = new THREE.Mesh(new THREE.ConeGeometry(1.8, 4.5, 12), this.probeMat);
-    nose.position.copy(P(0, 33.5, 9.8));
-    nose.rotation.x = Math.PI / 2;
-    this.scene.add(nose);
-    // the heart inside the chest, along its long axis
-    const heartM = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), this.red);
-    heartM.scale.set(4.2, 6.2, 4.2);
-    heartM.quaternion.setFromUnitVectors(V3(0, 1, 0), lvAxis.clone().normalize());
-    heartM.position.copy(this.H);
-    heartM.renderOrder = 2;
-    this.scene.add(heartM);
-    // the probe and its beam (placed by setView)
-    this.probe = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.8, 6, 16), this.probeMat);
-    this.beam = new THREE.Line(new THREE.BufferGeometry(), this.beamMat);
-    this.probe.renderOrder = this.beam.renderOrder = 3;
-    this.scene.add(this.probe, this.beam);
+    this.scene.add(this.camera, new THREE.AmbientLight(0xffffff, 1.3));
+    const pos = myo.geometry.attributes.position;
+    let front = -Infinity;
+    for (let i = 0; i < pos.count; i++) front = Math.max(front, pos.getZ(i));
+    this.xm = anat.point('apex_epi', 0, 0).x - 8.5;
+    this.yN = anat.point('av', 0, 0).y + 12;
+    this.zF = front + 2.4;
+    const W = (dx, dy, z) => V3(this.xm + dx, this.yN + dy, this.zF + z);
+
+    // the torso: splined cross-sections, 1.2 cm apart
+    this.rows = spline(RINGS, (p, q) => Math.max(1, Math.ceil(Math.abs(p[0] - q[0]) / 1.2)));
+    const M = 64;
+    const torso = this.rows.map((r) => Array.from({ length: M }, (_, k) => {
+      const [x, z] = section(r, (k / M) * Math.PI * 2);
+      return W(x, r[0], z);
+    }));
+    const parts = [gridMesh(torso, M)];
+    // the arms: tubes along the centre lines, mirrored
+    for (const side of [1, -1]) {
+      const line = spline(ARM, (p, q) => Math.max(2, Math.ceil(Math.hypot(p[0] - q[0], p[1] - q[1]) / 1.5)));
+      const pts = line.map(([dx, dy, z]) => W(side * dx, dy, z));
+      const rings = pts.map((p, i) => {
+        const t = pts[Math.min(i + 1, pts.length - 1)].clone().sub(pts[Math.max(i - 1, 0)]).normalize();
+        const u = V3(0, 0, 1).addScaledVector(t, -t.z).normalize(), v = new THREE.Vector3().crossVectors(t, u);
+        return Array.from({ length: 24 }, (_, k) => {
+          const a = (k / 24) * Math.PI * 2;
+          return p.clone().addScaledVector(u, line[i][3] * Math.cos(a)).addScaledVector(v, line[i][3] * Math.sin(a));
+        });
+      });
+      parts.push(gridMesh(rings, 24));
+    }
+    // the head: an egg, narrower and set forward at the jaw, with a nose and ears
+    const hc = W(0, 21.8, -11.2);
+    const head = new THREE.SphereGeometry(1, 48, 32);
+    const hp = head.attributes.position;
+    for (let i = 0; i < hp.count; i++) {
+      let x = hp.getX(i), y = hp.getY(i), z = hp.getZ(i);
+      const jaw = THREE.MathUtils.smoothstep(-y, 0.1, 0.95);
+      x *= 7.6 * (1 - 0.3 * jaw);
+      z *= 9.9 * (z < 0 ? 1 - 0.45 * jaw : 1);
+      z += 3.0 * jaw;
+      hp.setXYZ(i, hc.x + x, hc.y + y * 11.6, hc.z + z);
+    }
+    head.computeVertexNormals();
+    parts.push(head);
+    const nose = new THREE.BufferGeometry();
+    const f = 9.5;
+    nose.setAttribute('position', new THREE.Float32BufferAttribute([
+      0, 1.6, f - 0.3, -1.2, -2.4, f - 0.4, 0, -1.6, f + 2.1, 1.2, -2.4, f - 0.4,
+    ].map((v, i) => v + [hc.x, hc.y - 1, hc.z][i % 3]), 3));
+    nose.setIndex([0, 1, 2, 0, 2, 3, 1, 3, 2]);
+    parts.push(nose.toNonIndexed());
+    parts[parts.length - 1].computeVertexNormals();
+    for (const side of [1, -1]) {
+      const ear = new THREE.SphereGeometry(1, 16, 12);
+      ear.scale(0.55, 3.1, 1.9);
+      ear.rotateY(-side * 0.45);   // the back of the ear stands out from the head
+      ear.rotateX(-0.18);
+      ear.translate(hc.x + side * 7.9, hc.y - 0.6, hc.z - 0.9);
+      parts.push(ear);
+    }
+    // each part twice: depth first, then the skin on the nearest surface only, so the parts read
+    // as one body and the heart shows through the chest
+    this.skin = skinMaterial();
+    const depth = new THREE.MeshBasicMaterial({ colorWrite: false });
+    for (const g of parts) {
+      const d = new THREE.Mesh(g, depth), s = new THREE.Mesh(g, this.skin);
+      d.renderOrder = 1;
+      s.renderOrder = 2;
+      this.scene.add(d, s);
+    }
+
+    // the heart: the model's own mesh, beating with it
+    this.red = new THREE.MeshLambertMaterial({ color: 0xb23a2e, side: THREE.DoubleSide });
+    this.heart = new THREE.Mesh(myo.geometry, this.red);
+    this.heart.renderOrder = 0;
+    this.scene.add(this.heart);
+
+    // the probe on the skin and its sector (placed by setView)
+    this.pm = probeMaterials();
+    this.probe = makeProbe(this.pm);
+    this.probe.traverse((o) => { o.renderOrder = 3; });
+    this.cable = new THREE.Mesh(new THREE.BufferGeometry(), this.pm.cable);
+    this.cable.renderOrder = 3;
+    this.fanMat = new THREE.MeshBasicMaterial({ color: 0x1f262b, transparent: true, opacity: 0.16, depthTest: false, depthWrite: false, side: THREE.DoubleSide });
+    this.fanLineMat = new THREE.LineBasicMaterial({ color: 0x1f262b, transparent: true, opacity: 0.7, depthTest: false });
+    this.fan = new THREE.Mesh(new THREE.BufferGeometry(), this.fanMat);
+    this.fanLine = new THREE.LineLoop(new THREE.BufferGeometry(), this.fanLineMat);
+    this.fan.renderOrder = 4;
+    this.fanLine.renderOrder = 5;
+    this.scene.add(this.probe, this.cable, this.fan, this.fanLine);
+
     // the patient's left: a letter beside the left shoulder
     this.left = letter('L');
-    this.left.position.copy(P(31, 17, 0));
-    this.left.renderOrder = 4;
+    this.left.position.copy(W(28, 3, -13));
+    this.left.renderOrder = 6;
     this.scene.add(this.left);
-    this.center = P(0, 8);
-    this.radius = 31;
+    this.center = W(0, -1.5, -12.5);
+    this.radius = 37;
   }
 
-  /** Put the probe at window win on the skin, its beam toward target (world cm). */
-  setView(win, target) {
-    const s = SITE[win] || SITE.plax;
-    const at = V3(this.mid.x + s[0], this.H.y + s[1], this.front - s[2]);
+  /** The point on the skin for window win (SITE), on the front of the body. */
+  site(win) {
+    const [dx, dy] = SITE[win] || SITE.plax;
+    const rows = this.rows;
+    let i = 0;
+    while (i < rows.length - 2 && rows[i + 1][0] > dy) i++;
+    const t = THREE.MathUtils.clamp((rows[i][0] - dy) / (rows[i][0] - rows[i + 1][0]), 0, 1);
+    const r = rows[i].map((v, k) => v + (rows[i + 1][k] - v) * t);
+    const zc = (r[2] + r[3]) / 2, h = (r[2] - r[3]) / 2;
+    const u = Math.min(0.999, Math.abs(dx) / r[1]) ** 2.4;
+    return V3(this.xm + dx, this.yN + dy, this.zF + zc + h * (1 - u) ** (1 / FRONT_N));
+  }
+
+  /**
+   * Put the probe at window win on the skin, its beam toward target (world cm), its marker
+   * toward r; the sector spec.angle wide and spec.depth deep.
+   */
+  setView(win, target, r, spec = {}) {
+    const at = this.site(win);
     const dir = target.clone().sub(at).normalize();
-    this.probe.position.copy(at).addScaledVector(dir, -2.5);
-    this.probe.quaternion.setFromUnitVectors(V3(0, 1, 0), dir);
-    this.beam.geometry.dispose();
-    this.beam.geometry = new THREE.BufferGeometry().setFromPoints([at, target]);
-    this.beam.computeLineDistances();
+    placeProbe(this.probe, at, dir, r);
+    // the cable leaves along the handle, then hangs
+    const out = dir.clone().negate(), down = V3(0, -1, 0), tail = at.clone().addScaledVector(out, PROBE_TAIL);
+    const path = new THREE.CatmullRomCurve3([
+      tail, tail.clone().addScaledVector(out, 2.2), tail.clone().addScaledVector(out, 4).addScaledVector(down, 1.8),
+      tail.clone().addScaledVector(out, 5).addScaledVector(down, 6), tail.clone().addScaledVector(out, 5.4).addScaledVector(down, 12),
+    ]);
+    this.cable.geometry.dispose();
+    this.cable.geometry = new THREE.TubeGeometry(path, 32, 0.22, 8, false);
+    const u = r.clone().addScaledVector(dir, -r.dot(dir)).normalize();
+    const half = THREE.MathUtils.degToRad((spec.angle || 90) / 2), D = spec.depth || 16;
+    const pts = [at.x, at.y, at.z], N = 32, idx = [];
+    for (let i = 0; i <= N; i++) {
+      const th = -half + (2 * half * i) / N;
+      const p = at.clone().addScaledVector(dir, D * Math.cos(th)).addScaledVector(u, D * Math.sin(th));
+      pts.push(p.x, p.y, p.z);
+      if (i) idx.push(0, i, i + 1);
+    }
+    for (const m of [this.fan, this.fanLine]) {
+      m.geometry.dispose();
+      m.geometry = new THREE.BufferGeometry();
+      m.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    }
+    this.fan.geometry.setIndex(idx);
   }
 
   retheme(tok) {
-    this.body.color.setStyle(tok.paper3 || tok.paper2);
-    this.probeMat.color.setStyle(tok.ink);
-    this.beamMat.color.setStyle(tok.ink);
-    this.red.color.setStyle(tok.congo || '#b23a2e');
-    this.left.material.color.setStyle(tok.ink);
+    const ink = new THREE.Color(tok.ink || '#1f262b');
+    // a light skin tone, a fifth of the way to the paper
+    const skin = mixHex('#c9a387', tok.paper || '#e2e4e3', 0.2);
+    this.skin.uniforms.color.value.setStyle(skin);
+    this.skin.uniforms.edge.value.copy(mix(skin, tok.ink || '#1f262b', 0.4));
+    themeProbe(this.pm, tok);
+    this.fanMat.color.copy(ink);
+    this.fanLineMat.color.copy(ink);
+    this.red.color.setStyle(tok.flag || '#b23a2e');
+    this.left.material.color.copy(ink);
     this.paper = tok.paper;
     this.rule = tok.rule;
   }
 
   /** The key's corner of a w x h view (CSS px, from the top left): the top left, under the pane's name. */
   rect(w, h) {
-    const kw = Math.round(Math.max(88, Math.min(160, w * 0.27)));
-    const kh = Math.round(Math.min(h * 0.62, kw * 1.25));
+    const kw = Math.round(Math.max(96, Math.min(190, w * 0.3)));
+    const kh = Math.round(Math.min(h * 0.6, kw * 1.3));
     return { x: 12, y: 36, w: kw, h: kh };
   }
 
-  /** The key for this frame: its camera turned as the main camera is. */
+  /** The key for this frame: its camera turned as the main camera is, the heart at its beat. */
   frame(mainCamera, w, h) {
+    this.heart.morphTargetInfluences = this.src.morphTargetInfluences;
+    this.heart.morphTargetDictionary = this.src.morphTargetDictionary;
     const r = this.rect(w, h);
     const q = mainCamera.quaternion;
     const back = V3(0, 0, 1).applyQuaternion(q);
     this.camera.position.copy(this.center).addScaledVector(back, 200);
     this.camera.quaternion.copy(q);
     const aspect = r.w / r.h, R = this.radius;
-    const hw = aspect >= 1 ? R * aspect : R, hh = aspect >= 1 ? R : R / aspect;
-    Object.assign(this.camera, { left: -hw, right: hw, top: hh, bottom: -hh });
+    Object.assign(this.camera, { left: -R * aspect, right: R * aspect, top: R, bottom: -R });
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();
     this.left.quaternion.copy(q);
-    return { scene: this.scene, camera: this.camera, rect: r, clear: this.paper || '#f4f1ea', border: this.rule || '#c9c3b8' };
+    return { scene: this.scene, camera: this.camera, rect: r, clear: this.paper || '#e2e4e3', border: this.rule || '#a9aeac' };
   }
 }
 
@@ -130,9 +325,7 @@ function letter(ch) {
   g.fillStyle = '#ffffff';
   g.fillText(ch, 32, 34);
   const tex = new THREE.CanvasTexture(c);
-  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, color: 0x22272b });
   // the letter's alpha is the canvas's: the colour comes from the material
-  mat.alphaMap = tex;
-  mat.map = null;
-  return new THREE.Mesh(new THREE.PlaneGeometry(7, 7), mat);
+  const mat = new THREE.MeshBasicMaterial({ alphaMap: tex, transparent: true, depthTest: false, color: 0x1f262b });
+  return new THREE.Mesh(new THREE.PlaneGeometry(8, 8), mat);
 }

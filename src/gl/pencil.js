@@ -282,10 +282,12 @@ export class Pencil {
       r.clearDepth();
       r.render(opts.overlayScene, camera);
     }
-    // an inset in a corner (the body key, chapter 07): its own scene and camera on paper
+    // an inset in a corner (the body key, chapter 07): its own scene and camera on paper, lit
+    // and encoded as ordinary shaded scenes are, so its paper matches the page's
     if (opts.inset) {
       const { scene: s2, camera: c2, rect, clear, border } = opts.inset;
       const y = this.h - rect.y - rect.h;
+      r.outputColorSpace = THREE.SRGBColorSpace;
       r.setScissorTest(true);
       if (border) {
         r.setScissor(rect.x - 1, y - 1, rect.w + 2, rect.h + 2);
@@ -299,6 +301,7 @@ export class Pencil {
       r.render(s2, c2);
       r.setScissorTest(false);
       r.setViewport(0, 0, this.w, this.h);
+      r.outputColorSpace = THREE.LinearSRGBColorSpace;
       r.setClearColor(0x000000, 0);
     }
   }

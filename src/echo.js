@@ -9,6 +9,7 @@ import { ecg as ecgStrip } from './scope.js';
 import { bmode, DB } from './bmode.js';
 import { reducedMotion } from './state.js';
 import { ABD, buildAbdomen, beneath } from './abdomen.js';
+import { makeProbe, probeMaterials, placeProbe, themeProbe } from './gl/probe3d.js';
 
 export { VIEWS };
 
@@ -493,10 +494,17 @@ export class EchoView {
     this.fanLineMat = new THREE.LineBasicMaterial({ color: 0x22272b, transparent: true, opacity: 0.6, depthTest: false });
     this.fan = new THREE.Mesh(new THREE.BufferGeometry(), this.fanMat);
     this.fanLine = new THREE.LineLoop(new THREE.BufferGeometry(), this.fanLineMat);
-    this.probe = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.7, 2.4, 20), new THREE.MeshBasicMaterial({ color: 0x22272b, transparent: true, opacity: 0.22, depthTest: false }));
+    // the transducer at the fan's apex, shaded: its own lights ride with the camera (frame())
+    this.probeMats = probeMaterials();
+    this.probe = makeProbe(this.probeMats);
+    this.rig = new THREE.Group();
+    const key = new THREE.DirectionalLight(0xffffff, 1.9);
+    key.position.set(-0.55, 0.75, 0.6);
+    key.target.position.set(0, 0, -1);
+    this.rig.add(key, key.target);
     // one group, so a chapter that shares the stage can hide this fan
     this.overlay = new THREE.Group();
-    this.overlay.add(this.fan, this.fanLine, this.probe);
+    this.overlay.add(this.fan, this.fanLine, this.probe, this.rig, new THREE.AmbientLight(0xffffff, 1.75));
     s.overlayScene.add(this.overlay);
   }
 
@@ -505,7 +513,7 @@ export class EchoView {
     const t = tokens();
     this.fanMat.color.setStyle(t.ink);
     this.fanLineMat.color.setStyle(t.ink);
-    this.probe.material.color.setStyle(t.ink);
+    themeProbe(this.probeMats, t, 0.35, true);   // the overlay pass writes colours as they are
     if (this.bodyKey) this.bodyKey.retheme(t);
   }
 
@@ -518,9 +526,7 @@ export class EchoView {
     if (!this.stage) return;
     if (on && !this.bodyKey) {
       const { BodyKey } = await import('./gl/bodykey.js');
-      const h = this.model.heart.meshes;
-      const box = new THREE.Box3().setFromObject(h.Pericardium || h.Myocardium);
-      this.bodyKey = new BodyKey(box.getCenter(new THREE.Vector3()), this.model.anat.axis);
+      this.bodyKey = new BodyKey(this.model.heart.meshes.Myocardium, this.model.anat);
       this.bodyKey.retheme(tokens());
     }
     if (!!on !== this.bodyOn) return;   // switched again while the key loaded
@@ -542,7 +548,8 @@ export class EchoView {
   _keySite() {
     const g = this.geoms[this.view];
     if (!this.bodyKey || !g || !VIEWS[this.view]) return;
-    this.bodyKey.setView(VIEWS[this.view].win, g.O.clone().addScaledVector(g.d, this.specOf(this.view).depth * 0.45));
+    const spec = this.specOf(this.view);
+    this.bodyKey.setView(VIEWS[this.view].win, g.O.clone().addScaledVector(g.d, spec.depth * 0.45), g.r, spec);
   }
 
   /** The view's settings; a chapter may set its own depth and sector width (chapter 02). */
@@ -716,14 +723,18 @@ export class EchoView {
     this.fanLine.geometry.dispose();
     this.fanLine.geometry = new THREE.BufferGeometry();
     this.fanLine.geometry.setAttribute('position', new THREE.Float32BufferAttribute(line, 3));
-    this.probe.position.copy(g.O).addScaledVector(g.d, -1.5);
-    this.probe.quaternion.setFromUnitVectors(V3(0, 1, 0), g.d);
+    placeProbe(this.probe, g.O, g.d, g.r);
     if (this.cutOn !== false) this.stage.heart.setCut(new THREE.Plane().setFromNormalAndCoplanarPoint(g.n.clone(), g.O));
   }
 
   /** state: { s, v, drive, phase } from the cycle model. */
   frame(state) {
     this.advance();
+    if (this.rig) {
+      const cam = this.stage.camera;
+      this.rig.position.copy(cam.position);
+      this.rig.quaternion.copy(cam.quaternion);
+    }
     const g = this.g;
     if (!g) { this.drawEmpty(); return; }
     const w = { amyloid: 0, systole: state.s, amyloid_systole: 0 };
