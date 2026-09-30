@@ -88,7 +88,10 @@ function sectionTags(stg) {
     const r = e.getBoundingClientRect();
     return { x0: r.left - host.left, y0: r.top - host.top, x1: r.right - host.left, y1: r.bottom - host.top };
   });
-  labels.update(echo.sectionLabels(stg.state.s), echo.sectorBox(), host.width, host.height, keep);
+  // laid out at end-diastole, so the tags hold still through the beat and none comes and goes
+  // with it; each leader starts where its structure is now
+  const now = new Map(echo.sectionLabels(stg.state.s).map((it) => [it.id, it]));
+  labels.update(echo.sectionLabels(0), echo.sectorBox(), host.width, host.height, keep, now);
 }
 
 function onFrame(stg) {

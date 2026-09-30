@@ -1,8 +1,9 @@
 // The canonical 2D views: ASE comprehensive-TTE views, cross-referenced to the lab's
 // annotation classes (the `lab` field). Each view is a plane through the heart model.
 //
-// plane: how viewGeometry() builds the plane; aim: the landmark the beam points at;
-// zoom: magnified box around a landmark (width in cm); labels: structures to name.
+// plane: how viewGeometry() builds the plane; aim: the landmark the beam points at; level, slide:
+// the parasternal short-axis level and whether the probe slides to it (echo.js); zoom: magnified
+// box around a landmark (width in cm); labels: structures to name.
 
 export const WINDOWS = [
   { key: 'plax', name: 'Parasternal long', probe: 'Left sternal border, 3rd–4th intercostal space' },
@@ -50,11 +51,11 @@ export const VIEWS = {
     labels: [['rcc', 'RCC'], ['lcc', 'LCC'], ['ncc', 'NCC']] }),
   psax_cor: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, coronary artery origins', lab: null, plane: 'psax_cor', depth: 14, zoom: { at: 'avroot', w: 5 },
     labels: [['lmca', 'LMCA'], ['rca', 'RCA'], ['avroot', 'Ao root']] }),
-  psax_mv: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, mitral valve level', lab: 'PSAX_(level_of_MV)', plane: 'psax', level: 0.72, depth: 14,
+  psax_mv: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, mitral valve level', lab: 'PSAX_(level_of_MV)', plane: 'psax', level: 0.6, depth: 14,
     labels: [['rv', 'RV'], ['ivs', 'IVS'], ['lv', 'LV'], ['mv', 'MV']] }),
   psax_pm: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, papillary muscle level', lab: 'PSAX_(level_of_papillary_muscles)', plane: 'psax', level: -0.24, depth: 14,
     labels: [['rv', 'RV'], ['ivs', 'IVS'], ['lv', 'LV'], ['antw', 'anterior'], ['infw', 'inferior'], ['latw', 'lateral']] }),
-  psax_ap: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, apical level', lab: 'PSAX_(level_of_apex)', plane: 'psax', level: -1.25, depth: 14,
+  psax_ap: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, apical level', lab: 'PSAX_(level_of_apex)', plane: 'psax', level: -1.6, slide: true, depth: 14,
     labels: [['lv', 'LV'], ['antw', 'anterior']] }),
   // ---- apical
   a4c: V({ win: 'apical', short: 'A4C', name: 'Apical four-chamber', lab: 'A4C', plane: 'a4c', depth: 17, near: 1.0,

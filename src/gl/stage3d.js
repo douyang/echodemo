@@ -357,8 +357,10 @@ export class Labels {
    * items: [{id, x, y, text, sub, flag, side?}] in px, the most important first; box: screen box
    * of the heart; keep: boxes {x0, y0, x1, y1} (px) the tags must leave clear, such as the pane's
    * name and note. A column too short for all its tags shows the most important ones.
+   * at: where each leader starts, id -> {x, y} (px), when the structure has moved from where the
+   * items place it (the tags are laid out at end-diastole and hold still through the beat).
    */
-  update(items, box, w, h, keep = []) {
+  update(items, box, w, h, keep = [], at = null) {
     const seen = new Set();
     const tags = [];
     for (const [order, it] of items.entries()) {
@@ -474,9 +476,10 @@ export class Labels {
       n.tag.style.top = `${t.y}px`;
       const ex = t.left ? t.x + t.hw + 4 : t.x - t.hw - 4;
       const ey = t.y - t.hh + 12;
-      n.path.setAttribute('d', `M${it.x.toFixed(1)},${it.y.toFixed(1)} L${ex.toFixed(1)},${ey.toFixed(1)}`);
-      n.dot.setAttribute('cx', it.x.toFixed(1));
-      n.dot.setAttribute('cy', it.y.toFixed(1));
+      const a = (at && at.get(it.id)) || it;
+      n.path.setAttribute('d', `M${a.x.toFixed(1)},${a.y.toFixed(1)} L${ex.toFixed(1)},${ey.toFixed(1)}`);
+      n.dot.setAttribute('cx', a.x.toFixed(1));
+      n.dot.setAttribute('cy', a.y.toFixed(1));
     }
     for (const [id, n] of this.nodes) {
       if (!seen.has(id)) { n.tag.style.display = n.path.style.display = n.dot.style.display = 'none'; }

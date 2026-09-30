@@ -156,32 +156,52 @@ export function viewGeometry(anat, key) {
         O = onPlane(O, C, n1);
         d = C.clone().sub(O).normalize();
         r = perp(perp(BODY.left, n1), d);
-      } else {
-        // the aortic valve level: through the shut cusps where they meet, leaning 28 degrees
-        // toward the patient's right and 10 degrees back. Square to the root the plane would pass
-        // above this model's left atrium; leaning, it cuts the atrium below the valve and the
-        // tricuspid and pulmonic valves beside it: AV, LA, RA, TV, RVOT, PV and the atrial septum
+      } else if (spec.plane === 'psax_tv') {
+        // the tricuspid valve: the plane leans 30 degrees toward the patient's right and 2 back;
+        // the probe comes onto it from where it lies for a plane leaning 28 degrees toward the
+        // right and 10 back, and the sector turns onto the valve
         probe(av.clone().addScaledVector(n0, 0.62), turned(28, 170), 6.2);
-        if (spec.plane === 'psax_tv') {
-          // the tricuspid valve: the plane leans 2 degrees further toward it, the probe stays,
-          // and the sector turns onto the valve
-          const n1 = turned(30, 178);
-          const P0 = onPlane(O, av.clone().addScaledVector(n0, 0.55), n1);
-          const t = onPlane(tv, av.clone().addScaledVector(n0, 0.55), n1);
-          O = P0;
-          d = t.clone().sub(O).normalize();
-          r = perp(perp(BODY.left, n1), d);
-        }
+        const n1 = turned(30, 178);
+        const P0 = onPlane(O, av.clone().addScaledVector(n0, 0.55), n1);
+        const t = onPlane(tv, av.clone().addScaledVector(n0, 0.55), n1);
+        O = P0;
+        d = t.clone().sub(O).normalize();
+        r = perp(perp(BODY.left, n1), d);
+      } else {
+        // the aortic valve level (ASE 2019, Table 2, row 2.8): leaning 30 degrees toward the
+        // patient's right and 20 degrees back, through a point 4.5 mm above the valve's centre.
+        // The shut cusps meet 6 to 13 mm above it, so the leaning plane still crosses them where
+        // they meet. Square to the root the plane would pass above this model's left atrium;
+        // leaning, it cuts the atrium about 2 mm behind the root, and the tricuspid and pulmonic
+        // valves beside the aortic valve: AV, LA, RA, TV, RVOT, PV and the atrial septum
+        probe(av.clone().addScaledVector(n0, 0.45), turned(30, 160), 6.2);
       }
       break;
     }
     case 'psax': {
-      const th = THREE.MathUtils.degToRad(128);
+      // The LV levels (ASE 2019, Table 2, rows 2.11-2.13). The probe lies at the left sternal
+      // border, 138 degrees round the LV's axis from its lateral wall toward the front, level with
+      // a point a fifth of the way from the LV's equator to the mitral valve. From there the beam
+      // tilts 9 degrees up to the mitral valve (the long axis turned 90 degrees clockwise lies 2
+      // degrees from that plane) and 9 degrees down to the papillary muscles; at both levels the RV
+      // lies at about 11 o'clock from the LV, as in the reference images. For the apex (slide) the
+      // probe moves down the chest to a level below the end of the RV, square to the axis, so the
+      // LV shows alone. level: along the axis from the LV's equator, in units of the distance from
+      // there to the mitral valve's centre.
+      const th = THREE.MathUtils.degToRad(138);
       const u = X.clone().multiplyScalar(Math.cos(th)).addScaledVector(Y, Math.sin(th)).normalize();
-      const level = eq.clone().lerp(mv, spec.level ?? -0.24);
-      O = level.clone().addScaledVector(u, 7.6);
-      d = perp(u.clone().negate(), Z);   // keep the plane square to the long axis
-      r = perp(perp(X, d), Z);
+      const L = mv.clone().sub(eq).dot(Z), at = (h) => eq.clone().addScaledVector(Z, h * L);
+      const level = spec.level ?? -0.24;
+      if (spec.slide) {
+        O = at(level).addScaledVector(u, 7.6);
+        d = perp(u.clone().negate(), Z);
+      } else {
+        O = at(0.2).addScaledVector(u, 7.6);
+        d = at(level).sub(O).normalize();
+      }
+      // screen-right square to the beam and to the axis, toward the patient's left
+      r = new THREE.Vector3().crossVectors(Z, d).normalize();
+      if (r.dot(X) < 0) r.negate();
       break;
     }
     case 'sc4c': {
@@ -829,8 +849,12 @@ export class EchoView {
       this.cor.morph(weights(this.cor));
       cor = this.cor.section(g);
     }
-    const abd = {};
-    for (const [k, md] of Object.entries(this.abd)) abd[k] = md.section(g);
+    // no liver in the parasternal views: this model's liver reaches into their far field, where
+    // ASE's parasternal images (2019, Table 2) show none; its hepatic veins go with it, and the
+    // aorta and the IVC stay
+    const abd = {}, win = this.specOf(this.view).win;
+    const skip = win === 'plax' || win === 'psax' ? ['liver', 'mhv', 'rhv'] : [];
+    for (const [k, md] of Object.entries(this.abd)) if (!skip.includes(k)) abd[k] = md.section(g);
     this.last = { tissue, valves, peri, chords, pap, state };
     this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd });
   }
