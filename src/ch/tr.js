@@ -9,10 +9,11 @@ import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols
 import { drawA4C, drawIVC, drawPSAXpm, cal, measures } from '../echo2d.js';
 import { rapFromIvc } from '../norms.js';
 import { BSA } from './pressure.js';
+import { JETS } from '../jets.js';
 
 const KEY = 'trS';
-const VA = 28;             // cm/s, PISA with the baseline shifted toward the jet (ASE 2017)
-const NYQ = 60;            // cm/s, color scale for the jet (ASE 2017: 50-70)
+const VA = 28;             // cm/s, aliasing velocity for PISA (ASE 2017); the plume format draws the view at it
+const NYQ = 60;            // cm/s, the scanner format's scale for the jet (ASE 2017: 50-70)
 
 const aspectOf = mono([[0, 1], [0.4, 1], [0.6, 2.57], [0.8, 4.33], [1, 5.5]]);
 const vtiOf = mono([[0, 115], [0.4, 113], [0.6, 100], [0.8, 94], [1, 92]]);
@@ -78,6 +79,22 @@ function a4c(ctx, box, m, t, mode) {
   const jA = Math.min(m.jetA, raArea * 0.8);
   const jl = Math.min(rlMax * 0.95, Math.sqrt((jA / 0.55) * 1.2));
   const jw = jl > 0 ? Math.min(rwMax * 0.95, jA / (0.55 * jl)) : 0;
+  if (JETS === 'plume') {
+    // one view at the aliasing velocity: the flow convergence with its radius, and the jet
+    drawA4C(ctx, box, g, {
+      t, depth: 16 + 1.4 * m.s, title: fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${VA} cm/s`, `A4C · COLOR ${VA}`),
+      jets: m.eroa > 0.005 ? { tr: { q: m.q, va: VA, vc: m.vc, jl, jw, a } } : {},
+      after: (c, F, geo) => {
+        if (m.eroa > 0.005 && a > 0.5) {
+          // from the orifice into the RV, toward its apex
+          const O = geo.tv.gapMid, ax = [geo.Ra[0] - O[0], geo.Ra[1] - O[1]], l = Math.hypot(ax[0], ax[1]) || 1;
+          cal(c, F, O, [O[0] + (ax[0] / l) * m.r, O[1] + (ax[1] / l) * m.r], '', { solid: true });
+        }
+        measures(c, F, [`RV base ${m.rvb.toFixed(1)} cm`, [`annulus ${m.ta.toFixed(1)} cm`, `TA ${m.ta.toFixed(1)} cm`], `VC ${m.vc.toFixed(2)} cm`]);
+      },
+    });
+    return;
+  }
   // Jet: the standard scale. PISA: zoomed on the valve, the baseline shifted toward the jet
   // (down: TR runs away from the probe) until the flow aliases at VA; variance off. The
   // torrential jet is slow and laminar.

@@ -7,6 +7,7 @@ import { RR, EV } from '../cyclemodel.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit } from '../sev.js';
 import { drawPLAX, plaxLV, cal, measures } from '../echo2d.js';
 import { BSA } from './pressure.js';
+import { JETS } from '../jets.js';
 
 const KEY = 'arS';
 const VTI = 200;          // cm, AR jet
@@ -74,20 +75,26 @@ function plax(ctx, box, m, t) {
   // the jet slows through diastole as the CW trace does; it is widest where the jet/LVOT
   // caliper reads it, just below the valve
   const u0 = V0 * 100 * Math.pow(2, -(u * (RR + EV.avo - EV.avc)) / (2 * m.pht)), jl = 2.2 + 9 * m.eroa;
+  const after = (c, F, geo) => {
+    plaxLV(c, geo);
+    if (m.eroa > 0.005 && a > 0.4) {
+      const x = geo.xAnn - 0.7;
+      cal(c, F, geo.R([x, geo.aoMid - m.jw / 2]), geo.R([x, geo.aoMid + m.jw / 2]), '', { solid: true });
+    }
+    measures(c, F, [`LVIDd ${m.lvedd.toFixed(1)} cm`, `LVIDs ${m.lvesd.toFixed(1)} cm`, `jet/LVOT ${Math.round(m.ratio)}%`]);
+  };
+  const title = fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 60 cm/s', 'PLAX · COLOR 60');
+  if (JETS === 'plume') {
+    drawPLAX(ctx, box, g, { t, depth: 15 + 1.6 * m.s, title, jets: m.eroa > 0.005 ? { ar: { q: m.eroa * V0 * 100, va: 60, vc: m.vc, jl, jw: m.jw, a } } : {}, after });
+    return;
+  }
   drawPLAX(ctx, box, g, {
-    t, depth: 15 + 1.6 * m.s, title: fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 60 cm/s', 'PLAX · COLOR 60'),
+    t, depth: 15 + 1.6 * m.s, title,
     color: {
       roi: 'lvot', lo: -60, hi: 60, variance: true,
       ar: m.eroa > 0.005 ? { q: m.eroa * u0, u0, vc: m.vc, jl, jw: m.jw, a, pk: clamp(0.8 / jl, 0.1, 0.4), open: 0.45, fit: 'width' } : null,
     },
-    after: (c, F, geo) => {
-      plaxLV(c, geo);
-      if (m.eroa > 0.005 && a > 0.4) {
-        const x = geo.xAnn - 0.7;
-        cal(c, F, geo.R([x, geo.aoMid - m.jw / 2]), geo.R([x, geo.aoMid + m.jw / 2]), '', { solid: true });
-      }
-      measures(c, F, [`LVIDd ${m.lvedd.toFixed(1)} cm`, `LVIDs ${m.lvesd.toFixed(1)} cm`, `jet/LVOT ${Math.round(m.ratio)}%`]);
-    },
+    after,
   });
 }
 

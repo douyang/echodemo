@@ -7,6 +7,7 @@ import { QUIZ } from './quiz.js';
 import { PHENOS, PHENO_STORE, presetsFor, PRESET_KEYS } from './pheno.js';
 import { setPheno, onPheno, onPhenoBusy } from './model3d.js';
 import { setHeart } from './echo2d.js';
+import { JETS } from './jets.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -149,6 +150,8 @@ function fillNorms() {
 //   <output data-for="freq" data-dp="1">           formatted value
 const parse = (v) => (v === 'true' ? true : v === 'false' ? false : v !== '' && !Number.isNaN(Number(v)) ? Number(v) : v);
 function bindControls() {
+  // controls of one color Doppler format (jets.js) show only in that format
+  for (const el of $$('[data-jets]')) el.hidden = el.dataset.jets !== JETS;
   for (const el of $$('input[type="range"][data-key]')) {
     el.addEventListener('input', () => set({ [el.dataset.key]: Number(el.value), playing: false, anim: false }));
   }
