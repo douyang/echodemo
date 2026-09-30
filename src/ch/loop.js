@@ -12,42 +12,95 @@ const beta = (stiff) => 0.012 + 0.06 * stiff;
 const edpvr = (V, stiff) => A_EDP * (Math.exp(beta(stiff) * V) - 1);
 const edvFrom = (edp, stiff) => Math.log(edp / A_EDP + 1) / beta(stiff);
 
+// rf: the regurgitant fraction of the stroke volume, 0 with a competent mitral valve
 export const PV_PRESETS = {
-  normal: { edp: 9, ees: 2.4, ea: 1.6, stiff: 0.3 },
-  hfref: { edp: 20, ees: 0.65, ea: 1.7, stiff: 0.13 },
-  hfpef: { edp: 20, ees: 3.0, ea: 2.4, stiff: 0.55 },
-  as: { edp: 16, ees: 3.5, ea: 3.5, stiff: 0.45 },
+  normal: { edp: 9, ees: 2.4, ea: 1.6, stiff: 0.3, rf: 0 },
+  hfref: { edp: 20, ees: 0.65, ea: 1.7, stiff: 0.13, rf: 0 },
+  hfpef: { edp: 20, ees: 3.0, ea: 2.4, stiff: 0.55, rf: 0 },
+  as: { edp: 16, ees: 3.5, ea: 3.5, stiff: 0.45, rf: 0 },
+  // chronic severe primary MR, the Barlow heart: EDV 183 mL and EF 67% as on its mesh, RF 53% as
+  // on the MR page (15). The dilated LV is compliant: a much larger EDV at an EDP only a little
+  // higher. With V0 = 0 the larger end-systolic volume at a normal pressure gives a lower Ees.
+  mr: { edp: 11.5, ees: 1.7, ea: 1.05, stiff: 0.15, rf: 0.53 },
 };
-const PNAME = { normal: 'Normal', hfref: 'Weak ventricle (HFrEF)', hfpef: 'Stiff ventricle (HFpEF)', as: 'Pressure load', custom: 'Your settings' };
+const PNAME = { normal: 'Normal', hfref: 'Weak ventricle (HFrEF)', hfpef: 'Stiff ventricle (HFpEF)', as: 'Pressure load', mr: 'Volume load (mitral regurgitation)', custom: 'Your settings' };
+
+// With a mitral leak the LA is a second outlet. Blood goes back whenever LV pressure is above LA
+// pressure, from mitral closure to mitral opening, so neither isovolumic phase is isovolumic. The
+// flow goes with the square root of that pressure difference (the orifice equation). LA pressure
+// rises through systole from the EDP to its v wave, which the regurgitant volume sets in a
+// compliant, chronically dilated LA; the mitral valve opens when LV pressure falls to it.
+const LA_C = 8;   // mL/mmHg, LA compliance (model)
+const PHASE = { ivc: EV.avo - EV.mvc, ej: EV.avc - EV.avo, ivr: EV.mvo - EV.avc };
+/** LV pressure in ejection, u = 0 at aortic opening to 1 at aortic closure. */
+const pEject = (L, u) => L.pao + (L.pes - L.pao) * u + 0.21 * L.pes * Math.sin(Math.PI * Math.pow(u, 0.65));
+
+/** The leak's volume before aortic opening (pre) and after aortic closure (post). */
+function leak(L) {
+  const { ivc, ej, ivr } = PHASE, n = 24;
+  let rvol = L.rf * (L.edv - L.esv), fPre = 0, fPost = 0;
+  for (let it = 0; it < 6; it++) {
+    const pmo = Math.min(L.pes, Math.max(L.pmin, L.edp + rvol / LA_C));
+    const la = (t) => mix(L.edp, pmo, t / (ivc + ej));   // LA pressure, t in ms from mitral closure
+    let iPre = 0, iEj = 0;
+    for (let i = 0; i < n; i++) {
+      const u = (i + 0.5) / n;
+      iPre += Math.sqrt(Math.max(0, mix(L.edp, L.pao, u) - la(u * ivc))) * (ivc / n);
+      iEj += Math.sqrt(Math.max(0, pEject(L, u) - la(ivc + u * ej))) * (ej / n);
+    }
+    // LV pressure falls at the normal rate, so it reaches the LA pressure early
+    const trel = L.pes > L.pmin ? (ivr * (L.pes - pmo)) / (L.pes - L.pmin) : 0;
+    const iPost = trel * (2 / 3) * Math.sqrt(Math.max(0, L.pes - pmo));
+    // at the slider limits LV pressure can stay under the EDP: no difference, no timing to split by
+    const tot = iPre + iEj + iPost;
+    fPre = tot > 0 ? iPre / tot : 0;
+    fPost = tot > 0 ? iPost / tot : 0;
+    Object.assign(L, { pmo, trel });
+    // the leak after aortic closure widens the loop, and so adds to its own volume
+    rvol = (L.rf * (L.edv - L.esv)) / (1 - L.rf * fPost);
+  }
+  L.pre = rvol * fPre;
+  L.post = rvol * fPost;
+  L.vao = L.edv - L.pre;
+  L.vmin = L.esv - L.post;
+}
 
 export function pvState(s) {
   const edv = edvFrom(s.edp, s.stiff);
-  const esv = (s.ea * edv) / (s.ees + s.ea);
-  const sv = edv - esv;
+  const esv = (s.ea * edv) / (s.ees + s.ea);   // end-systole: the loop's corner on the ESPVR
   const pes = s.ees * esv;
   const pao = 0.7 * pes;                  // pressure at aortic valve opening (model)
   const pmin = Math.max(2, edpvr(esv, s.stiff));
-  return { edv, esv, sv, ef: sv / edv, pes, pao, pmin, ratio: s.ea / s.ees, stiff: s.stiff, edp: s.edp };
+  const rf = s.rf || 0;
+  // vao: volume at aortic opening; vmin, pmo: volume and pressure at mitral opening
+  const L = { edv, esv, pes, pao, pmin, ratio: s.ea / s.ees, stiff: s.stiff, edp: s.edp, rf, vao: edv, vmin: esv, pmo: pmin, trel: PHASE.ivr, pre: 0, post: 0 };
+  if (rf > 0) leak(L);
+  L.sv = edv - L.vmin;                    // the width of the loop: all the LV ejects
+  L.ef = L.sv / edv;
+  L.rvol = rf * L.sv;
+  L.fwd = L.sv - L.rvol;
+  return L;
 }
 
 /** The loop as a list of [V, P] points, with the time fraction of each phase. */
 function loopPath(L) {
   const pts = [];
   const n = 40;
-  // isovolumic contraction
-  for (let i = 0; i <= n / 4; i++) pts.push([L.edv, mix(L.edp, L.pao, i / (n / 4))]);
+  // isovolumic contraction; with a leak, the volume falls as the pressure rises
+  for (let i = 0; i <= n / 4; i++) { const u = i / (n / 4); pts.push([L.edv - L.pre * Math.pow(u, 1.5), mix(L.edp, L.pao, u)]); }
   // ejection: volume falls fastest early; pressure rises to a peak, then falls to Pes
-  const k = 0.21 * L.pes;
   for (let i = 1; i <= n; i++) {
     const u = i / n;
-    pts.push([L.edv - L.sv * Math.pow(u, 0.8), L.pao + (L.pes - L.pao) * u + k * Math.sin(Math.PI * Math.pow(u, 0.65))]);
+    pts.push([L.vao - (L.vao - L.esv) * Math.pow(u, 0.8), pEject(L, u)]);
   }
-  // isovolumic relaxation
-  for (let i = 1; i <= n / 4; i++) pts.push([L.esv, mix(L.pes, L.pmin, i / (n / 4))]);
-  // filling along the end-diastolic relation
+  // isovolumic relaxation; with a leak, the LV empties into the LA until the mitral valve opens
+  for (let i = 1; i <= n / 4; i++) { const u = i / (n / 4); pts.push([L.esv - L.post * (1 - Math.pow(1 - u, 1.5)), mix(L.pes, L.pmo, u)]); }
+  // filling along the end-diastolic relation; LV pressure falls on from mitral opening while
+  // the ventricle still relaxes
+  pts.fill = pts.length;   // where the filling limb starts
   for (let i = 1; i <= n; i++) {
-    const w = i / n, V = mix(L.esv, L.edv, Math.pow(w, 0.7));
-    pts.push([V, edpvr(V, L.stiff) + (L.pmin - edpvr(L.esv, L.stiff)) * (1 - w)]);
+    const w = i / n, V = mix(L.vmin, L.edv, Math.pow(w, 0.7));
+    pts.push([V, edpvr(V, L.stiff) + (L.pmo - edpvr(L.vmin, L.stiff)) * Math.pow(1 - w, 3)]);
   }
   return pts;
 }
@@ -55,19 +108,18 @@ function loopPath(L) {
 /** Point on the loop at time t (ms from the R wave), for the moving dot. */
 function loopAt(L, t) {
   const tt = ((t % RR) + RR) % RR;
-  const ivc = EV.avo - EV.mvc, ej = EV.avc - EV.avo, ivr = EV.mvo - EV.avc;
+  const { ivc, ej } = PHASE, ivr = L.trel;
   const since = (tt - EV.mvc + RR) % RR;
-  const k = 0.21 * L.pes;
-  if (since < ivc) return [L.edv, mix(L.edp, L.pao, since / ivc)];
+  if (since < ivc) { const u = since / ivc; return [L.edv - L.pre * Math.pow(u, 1.5), mix(L.edp, L.pao, u)]; }
   if (since < ivc + ej) {
     const u = (since - ivc) / ej;
-    return [L.edv - L.sv * Math.pow(u, 0.8), L.pao + (L.pes - L.pao) * u + k * Math.sin(Math.PI * Math.pow(u, 0.65))];
+    return [L.vao - (L.vao - L.esv) * Math.pow(u, 0.8), pEject(L, u)];
   }
-  if (since < ivc + ej + ivr) return [L.esv, mix(L.pes, L.pmin, (since - ivc - ej) / ivr)];
+  if (since < ivc + ej + ivr) { const u = (since - ivc - ej) / ivr; return [L.esv - L.post * (1 - Math.pow(1 - u, 1.5)), mix(L.pes, L.pmo, u)]; }
   const w = (since - ivc - ej - ivr) / (RR - ivc - ej - ivr);
   const f = 1 - Math.pow(1 - w, 2.2);   // early filling is fast
-  const V = mix(L.esv, L.edv, Math.pow(f, 0.7));
-  return [V, edpvr(V, L.stiff) + (L.pmin - edpvr(L.esv, L.stiff)) * (1 - f)];
+  const V = mix(L.vmin, L.edv, Math.pow(f, 0.7));
+  return [V, edpvr(V, L.stiff) + (L.pmo - edpvr(L.vmin, L.stiff)) * Math.pow(1 - f, 3)];
 }
 
 function area(pts) {
@@ -142,14 +194,20 @@ function draw(sh, t) {
   sh.line(X(L.edv), Y(0), X(vEa), Y(st.ea * (L.edv - vEa)), { width: 1.3, rough: 0.4, seed: 23, stroke: t.flag, dash: [6, 5] });
   // the stroke volume label: its short name on a small loop, left of the EDV corner
   const by = y1 - 18, sv = Math.round(L.sv);
-  const svT = sh.fit([`stroke volume ${sv} mL`, `SV ${sv} mL`], X(L.edv) - X(L.esv) + 40, { size: 16 * s }, 1).str;
+  // on a phone the long name only where it stays inside the loop
+  const svT = sh.fit([`stroke volume ${sv} mL`, `SV ${sv} mL`], X(L.edv) - X(L.vmin) + (narrow ? 6 : 40), { size: 16 * s }, 1).str;
   const svW = sh.measure(svT, { size: 16 * s });
-  const svX = Math.max(x0 + 4 + svW / 2, Math.min((X(L.esv) + X(L.edv)) / 2, X(L.edv) - 2 - svW / 2));
+  const svX = Math.max(x0 + 4 + svW / 2, Math.min((X(L.vmin) + X(L.edv)) / 2, X(L.edv) - 2 - svW / 2));
+  // above the bracket, and above the filling limb where it runs close to the bracket (after an
+  // early mitral opening it dips toward the volume axis)
+  const pts = loopPath(L);
+  let svY = by - 7;
+  for (const [v, p] of pts.slice(pts.fill)) if (Math.abs(X(v) - svX) < svW / 2 + 4) svY = Math.min(svY, Y(p) - 5);
   // Ea beside the EDV corner, clear of the stroke volume label and, on a desktop, of the
   // end-diastole label there: low on the corner, else right of that label, else above the
   // stroke volume label
   const eaT = `Ea ${st.ea.toFixed(2)}`, eaW = sh.measure(eaT, { size: 17 * s });
-  const svBox = { x0: svX - svW / 2, y0: by - 7 - 13, x1: svX + svW / 2, y1: by - 3 };
+  const svBox = { x0: svX - svW / 2, y0: svY - 13, x1: svX + svW / 2, y1: svY + 4 };
   let edBox = null;
   if (!narrow) {
     ctx.save();
@@ -161,7 +219,7 @@ function draw(sh, t) {
   const eaAt = (x, y) => ({ x, y, box: { x0: x, y0: y - 13, x1: x + eaW, y1: y + 4 } });
   const eaTries = [eaAt(X(L.edv) + 6, Y(14))];
   if (edBox) eaTries.push(eaAt(edBox.x1 + 8, Y(L.edp) + 14));
-  eaTries.push(eaAt(X(L.edv) + 6, Math.min(Y(14), by - 7 - 16 * s - 4)));
+  eaTries.push(eaAt(X(L.edv) + 6, Math.min(Y(14), svY - 16 * s - 4)));
   const ea = eaTries.find((c) => c.box.x1 <= W - 8 && !hit(c.box, svBox) && !hit(c.box, edBox)) || eaTries[eaTries.length - 1];
   sh.text(eaT, ea.x, ea.y, { size: 17 * s, color: t.flag });
 
@@ -172,7 +230,6 @@ function draw(sh, t) {
   sh.poly(ghost, { width: 1.1, rough: 0.5, seed: 30, stroke: t.ink3 });
   ctx.restore();
   // this loop
-  const pts = loopPath(L);
   sh.poly(pts.map(([v, p]) => [X(v), Y(p)]), { width: 2.2, rough: 0.6, seed: 31, stroke: t.ink, fill: t.accent2, fillStyle: 'hachure', gap: 6 });
   // corners
   const dot = (v, p, label, dx, dy, align = 'left') => {
@@ -182,15 +239,17 @@ function draw(sh, t) {
     ctx.fill();
     if (label && !narrow) sh.text(label, X(v) + dx, Y(p) + dy, { family: SANS, weight: 500, size: 11, color: t.ink2, align });
   };
+  // with a leak the LV still empties after aortic closure: the corner on the ESPVR is aortic
+  // closure, and the smallest volume comes at mitral opening
   dot(L.edv, L.edp, 'end-diastole', 8, 14);
-  dot(L.esv, L.pes, 'end-systole', -8, -8, 'right');
-  dot(L.edv, L.pao, 'aortic valve opens', 8, 4);
-  dot(L.esv, L.pmin, 'mitral valve opens', -8, -8, 'right');
-  // stroke volume bracket
-  sh.line(X(L.esv), by, X(L.edv), by, { width: 1.2, rough: 0.3, seed: 40, stroke: t.ink });
-  sh.line(X(L.esv), by - 4, X(L.esv), by + 4, { width: 1.2, rough: 0.2, seed: 41 });
+  dot(L.esv, L.pes, L.rf > 0 ? 'aortic valve closes' : 'end-systole', -8, -8, 'right');
+  dot(L.vao, L.pao, 'aortic valve opens', 8, 4);
+  dot(L.vmin, L.pmo, 'mitral valve opens', -8, -8, 'right');
+  // stroke volume bracket, across the loop
+  sh.line(X(L.vmin), by, X(L.edv), by, { width: 1.2, rough: 0.3, seed: 40, stroke: t.ink });
+  sh.line(X(L.vmin), by - 4, X(L.vmin), by + 4, { width: 1.2, rough: 0.2, seed: 41 });
   sh.line(X(L.edv), by - 4, X(L.edv), by + 4, { width: 1.2, rough: 0.2, seed: 42 });
-  sh.text(svT, svX, by - 7, { size: 16 * s, align: 'center' });
+  sh.text(svT, svX, svY, { size: 16 * s, align: 'center' });
 
   // the moving point, one beat at a time
   const [v, p] = loopAt(L, reducedMotion ? EV.avc : (clock * 1000) / 2.2);
@@ -204,8 +263,14 @@ function draw(sh, t) {
   // equation card
   if (!narrow) {
     const cx = cardX, cy = cardY;
-    sh.text('EF = SV / EDV = Ees / (Ees + Ea)', cx, cy + 12, { family: MONO, weight: 500, size: 12, color: t.ink });
-    sh.text(`${Math.round(L.ef * 100)}% = ${st.ees.toFixed(2)} / (${st.ees.toFixed(2)} + ${st.ea.toFixed(2)})`, cx, cy + 30, { family: MONO, weight: 400, size: 12, color: t.ink2 });
+    if (L.rf > 0) {
+      // the leak after aortic closure adds to the EF: Ees / (Ees + Ea) no longer gives it
+      sh.text(`EF = SV / EDV = ${Math.round(L.sv)} / ${Math.round(L.edv)} = ${Math.round(L.ef * 100)}%`, cx, cy + 12, { family: MONO, weight: 500, size: 12, color: t.ink });
+      sh.text(`SV = ${Math.round(L.fwd)} forward + ${Math.round(L.sv) - Math.round(L.fwd)} regurgitant`, cx, cy + 30, { family: MONO, weight: 400, size: 12, color: t.ink2 });
+    } else {
+      sh.text('EF = SV / EDV = Ees / (Ees + Ea)', cx, cy + 12, { family: MONO, weight: 500, size: 12, color: t.ink });
+      sh.text(`${Math.round(L.ef * 100)}% = ${st.ees.toFixed(2)} / (${st.ees.toFixed(2)} + ${st.ea.toFixed(2)})`, cx, cy + 30, { family: MONO, weight: 400, size: 12, color: t.ink2 });
+    }
     sh.text('grey loop: normal', cx, cy + 52, { family: SANS, weight: 400, size: 11, color: t.ink3 });
   }
 }
@@ -216,7 +281,7 @@ export default {
   key: 'loop',
   part: 'physiology',
   title: 'Loop',
-  dwell: 16,
+  dwell: 20,
   defaults: { pv: 'normal', ...PV_PRESETS.normal },
   format: {
     edp: (v) => `${v.toFixed(1)} mmHg`,
@@ -224,12 +289,17 @@ export default {
     ees: (v) => v.toFixed(2),
     stiff: (v) => (v < 0.2 ? 'compliant' : v < 0.4 ? 'normal' : v < 0.65 ? 'stiff' : 'very stiff'),
   },
-  watch: ['pv', 'edp', 'ea', 'ees', 'stiff'],
+  watch: ['pv', 'edp', 'ea', 'ees', 'stiff', 'rf'],
   figure(fig) {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
     return sheet;
   },
   init({ state, set }) { st = state; setState = set; },
+  // a heart chosen on another page sets pv alone: take that preset's values on the way in
+  enter({ state: s, set }) {
+    const p = PV_PRESETS[s.pv];
+    if (p && Object.keys(p).some((k) => s[k] !== p[k])) set({ ...p });
+  },
   anim(dt) {
     if (reducedMotion) return;
     clock += dt;
@@ -246,11 +316,32 @@ export default {
   },
   tourEnter(set) { set({ pv: 'normal', ...PV_PRESETS.normal }); },
   tourTick(tt, set, s) {
-    const want = tt < 4 ? 'normal' : tt < 8 ? 'hfref' : tt < 12 ? 'hfpef' : 'as';
+    const want = tt < 4 ? 'normal' : tt < 8 ? 'hfref' : tt < 12 ? 'hfpef' : tt < 16 ? 'as' : 'mr';
     if (s.pv !== want) set({ pv: want, ...PV_PRESETS[want] });
   },
   text(s, { cite }) {
     const L = pvState(s);
+    const work = `Stroke work, the area of the loop, is ${fmt(area(loopPath(L)) * 1.333e-4, 2)} J.`;
+    if (L.rf > 0) {
+      const preset = s.pv === 'mr';   // the sliders can move the loop off the chronic MR heart
+      const back = Math.round(L.sv) - Math.round(L.fwd);   // so that the two parts add up as shown
+      // severe: regurgitant volume >=60 mL, fraction >=50% (ASE 2017); LVEF <=60% in severe
+      // primary MR is stage C2 (ACC/AHA 2020)
+      return {
+        readouts: [
+          { k: 'EDV', v: fmt(L.edv), u: 'mL' },
+          { k: 'ESV', v: fmt(L.vmin), u: 'mL' },
+          { k: 'Stroke volume', v: fmt(L.sv), u: 'mL' },
+          { k: 'Forward stroke volume', v: fmt(L.fwd), u: 'mL' },
+          { k: 'Regurgitant volume', v: String(back), u: 'mL', flag: L.rvol >= 60 },
+          { k: 'Regurgitant fraction', v: fmt(L.rf * 100), u: '%', flag: L.rf >= 0.5 },
+          { k: 'EF', v: fmt(L.ef * 100), u: '%', flag: L.ef <= 0.6 },
+          { k: 'End-systolic pressure', v: fmt(L.pes), u: 'mmHg' },
+          { k: 'Ea / Ees', v: fmt(L.ratio, 2), flag: L.ratio > 1.2 },
+        ],
+        live: `<b>${PNAME[s.pv] || PNAME.custom}.</b> ${preset ? 'The dilated, compliant ventricle' : 'The ventricle'} fills to ${fmt(L.edv)} mL at an end-diastolic pressure of ${fmt(s.edp, 1)} mmHg${preset ? cite('neema2025,klabunde_mr') : ''}. It ejects ${fmt(L.sv)} mL: ${fmt(L.fwd)} mL into the aorta and ${back} mL back into the LA, a regurgitant fraction of ${fmt(L.rf * 100)}%. The leak starts at mitral closure, so the volume falls before the aortic valve opens${cite('neema2025,klabunde_mr')}. After aortic closure the LV still empties into the LA; the mitral valve opens early, at a high LA pressure${cite('neema2025,klabunde_mr')}.${preset ? ` The LA is a second outlet with a low resistance, so Ea is low${cite('klabunde_mr')}.` : ''} EF ${fmt(L.ef * 100)}%; in severe primary MR an LVEF of 60% or less already means LV dysfunction${cite('otto2020')}. ${work}`,
+      };
+    }
     const lo = L.ef < 0.52;
     return {
       readouts: [
@@ -261,7 +352,7 @@ export default {
         { k: 'End-systolic pressure', v: fmt(L.pes), u: 'mmHg' },
         { k: 'Ea / Ees', v: fmt(L.ratio, 2), flag: L.ratio > 1.2 },
       ],
-      live: `<b>${PNAME[s.pv] || PNAME.custom}.</b> At an end-diastolic pressure of ${fmt(s.edp, 1)} mmHg the ventricle fills to ${fmt(L.edv)} mL. It ejects ${fmt(L.sv)} mL against an end-systolic pressure of ${fmt(L.pes)} mmHg: EF ${fmt(L.ef * 100)}%, Ea/Ees ${fmt(L.ratio, 2)}${cite('mongegarcia2020')}. Stroke work, the area of the loop, is ${fmt(area(loopPath(L)) * 1.333e-4, 2)} J.`,
+      live: `<b>${PNAME[s.pv] || PNAME.custom}.</b> At an end-diastolic pressure of ${fmt(s.edp, 1)} mmHg the ventricle fills to ${fmt(L.edv)} mL. It ejects ${fmt(L.sv)} mL against an end-systolic pressure of ${fmt(L.pes)} mmHg: EF ${fmt(L.ef * 100)}%, Ea/Ees ${fmt(L.ratio, 2)}${cite('mongegarcia2020')}. ${work}`,
     };
   },
 };

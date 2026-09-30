@@ -20,7 +20,8 @@ import amyloidPage from './ch/amyloid.js';
 import report from './ch/report.js';
 
 // The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come
-// back as chapter 19 when this is true.
+// back as chapter 19 when this is true (main.js shows the article of every chapter listed here).
+// The Normal values table opens from it.
 const SHOW_REPORT = false;
 
 export const PARTS = [
