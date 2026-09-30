@@ -108,6 +108,7 @@ export class Stage3D {
     this.opts = { a: 0, beat: true, peri: true, cut: 'a4c', labels: true, look: 0 };
     this.onFrame = null;
     this.inset = null;    // a key in a corner (gl/bodykey.js): frame(camera, w, h) -> { scene, camera, rect }
+    this.tools = [];      // pencil items of meshes in the scene beside the heart (the probe)
     this.tween = null;
     this.ready = this._load();
   }
@@ -265,6 +266,7 @@ export class Stage3D {
       groundUp: o.groundUp,
       site: o.site,
       overlayScene: this.overlayScene.children.length ? this.overlayScene : null,
+      tools: this.tools,
       inset: this.inset ? this.inset.frame(this.camera, this.pencil.w, this.pencil.h) : null,
     });
   }

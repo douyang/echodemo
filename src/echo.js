@@ -8,7 +8,7 @@ import { ecg as ecgStrip } from './scope.js';
 import { bmode, DB } from './bmode.js';
 import { reducedMotion } from './state.js';
 import { ABD, buildAbdomen, beneath } from './abdomen.js';
-import { makeProbe, probeMaterials, placeProbe, themeProbe } from './gl/probe3d.js';
+import { pencilProbe, placeProbe } from './gl/probe3d.js';
 
 export { VIEWS };
 
@@ -523,18 +523,23 @@ export class EchoView {
     this.fanLineMat = new THREE.LineBasicMaterial({ color: 0x22272b, transparent: true, opacity: 0.6, depthTest: false });
     this.fan = new THREE.Mesh(new THREE.BufferGeometry(), this.fanMat);
     this.fanLine = new THREE.LineLoop(new THREE.BufferGeometry(), this.fanLineMat);
-    // the transducer at the fan's apex, shaded: its own lights ride with the camera (frame())
-    this.probeMats = probeMaterials();
-    this.probe = makeProbe(this.probeMats);
-    this.rig = new THREE.Group();
-    const key = new THREE.DirectionalLight(0xffffff, 1.9);
-    key.position.set(-0.55, 0.75, 0.6);
-    key.target.position.set(0, 0, -1);
-    this.rig.add(key, key.target);
-    // one group, so a chapter that shares the stage can hide this fan
+    // the transducer at the fan's apex, drawn in pencil with the heart (the stage's tools)
+    const P = pencilProbe();
+    this.probe = P.group;
+    this.probeRoot = new THREE.Group();
+    this.probeRoot.add(this.probe);
+    s.scene.add(this.probeRoot);
+    s.tools.push(...P.items);
+    // one group, so a chapter that shares the stage can hide this fan (showOverlay)
     this.overlay = new THREE.Group();
-    this.overlay.add(this.fan, this.fanLine, this.probe, this.rig, new THREE.AmbientLight(0xffffff, 1.75));
+    this.overlay.add(this.fan, this.fanLine);
     s.overlayScene.add(this.overlay);
+  }
+
+  /** Show or hide the fan and the probe (a chapter that shares the stage hides them). */
+  showOverlay(on) {
+    if (this.overlay) this.overlay.visible = on;
+    if (this.probeRoot) this.probeRoot.visible = on;
   }
 
   retheme() {
@@ -542,7 +547,6 @@ export class EchoView {
     const t = tokens();
     this.fanMat.color.setStyle(t.ink);
     this.fanLineMat.color.setStyle(t.ink);
-    themeProbe(this.probeMats, t, 0.35, true);   // the overlay pass writes colours as they are
     if (this.bodyKey) this.bodyKey.retheme(t);
   }
 
@@ -791,11 +795,6 @@ export class EchoView {
     const P = this.heart;
     if (P && P.version !== this.pv) this.takePheno();
     this.advance();
-    if (this.rig) {
-      const cam = this.stage.camera;
-      this.rig.position.copy(cam.position);
-      this.rig.quaternion.copy(cam.quaternion);
-    }
     const g = this.g;
     if (!g) { this.drawEmpty(); return; }
     const a = P ? P.a : 0, s = state.s;
