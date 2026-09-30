@@ -31,7 +31,8 @@
         <option value="bav">Bicuspid AS</option>
       </select>
     </label>
-    <button class="tool" id="btn-norms" type="button" aria-haspopup="dialog" aria-label="Normal values">
+    <!-- hidden: Normal values opens from the report chapter (#ch-report) -->
+    <button class="tool" id="btn-norms" type="button" aria-haspopup="dialog" aria-label="Normal values" hidden>
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h11M6 2v12" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
       <span class="t">Normal values</span>
     </button>
@@ -419,7 +420,7 @@
         <div class="control">
           <span class="label">Heart</span>
           <div class="seg" role="group" aria-label="Loop preset" data-key="pv">
-            <button type="button" data-val="normal">Normal</button><button type="button" data-val="hfref">Weak (HFrEF)</button><button type="button" data-val="hfpef">Stiff (HFpEF)</button><button type="button" data-val="as">Pressure load</button>
+            <button type="button" data-val="normal">Normal</button><button type="button" data-val="hfref">Weak (HFrEF)</button><button type="button" data-val="hfpef">Stiff (HFpEF)</button><button type="button" data-val="as">Pressure load</button><button type="button" data-val="mr">Volume load (MR)</button>
           </div>
         </div>
         <div class="row2">
@@ -461,6 +462,7 @@
         <li><b>Weak ventricle.</b> Low Ees: the ventricle dilates and ejects a small fraction.</li>
         <li><b>Stiff ventricle.</b> Steep EDPVR: filling pressure is high at a normal volume, and EF stays normal.</li>
         <li><b>Pressure load.</b> High Ea, as with aortic stenosis or hypertension: the loop is tall.</li>
+        <li><b>Volume load (MR).</b> Chronic severe primary mitral regurgitation, the loop of the Barlow heart. The loop is wide and shifted right: EDV is much larger, EDP only a little higher<span class="cite" data-ref="neema2025"></span>. The LV ejects into the LA from the start of contraction, so there is no isovolumic contraction; the mitral valve opens early<span class="cite" data-ref="neema2025,klabunde_mr"></span>. Only part of the stroke volume goes forward<span class="cite" data-ref="klabunde_mr"></span>.</li>
         </ul>
         <p>Preload is the stretch of the muscle before contraction; afterload is the load against which the ventricle ejects<span class="cite" data-ref="vincent2008,norton2001"></span>.</p>
         <h3>Key points</h3>
@@ -468,6 +470,7 @@
         <li>Ees (slope of the ESPVR) indexes contractility.</li>
         <li>Ea = end-systolic pressure ÷ stroke volume.</li>
         <li>EF depends on both: Ees ÷ (Ees + Ea).</li>
+        <li>Mitral regurgitation: no isovolumic contraction; a wide loop, shifted right.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -1186,6 +1189,10 @@
           <tbody></tbody>
         </table>
       </div>
+      <p class="norms-open"><button class="tool" type="button" data-dialog="dlg-norms" aria-haspopup="dialog">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h11M6 2v12" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+        <span class="t">Normal values</span>
+      </button></p>
       <div class="prose" data-part="prose">
         <h3>Order</h3>
         <ol class="steps">

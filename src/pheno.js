@@ -42,7 +42,7 @@ const PRESETS = {
     fstate: 2.2, caseId: 'icm',
   },
   barlow: {
-    sv: 55, trV: 3.0,
+    pv: 'mr', sv: 55, trV: 3.0,
     side: 'lv', edv: 183, ef: 67, wall: 9,
     mrS: 0.6, caseId: 'barlow',
   },

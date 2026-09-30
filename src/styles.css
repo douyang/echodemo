@@ -780,9 +780,9 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .tag { font-size: 0.98rem; }
   .tag small { font-size: 0.78rem; }
   .tools { top: 14px; right: 14px; width: 132px; flex-wrap: wrap; justify-content: flex-end; }
-  .tool .t { display: none; }
-  .tool { width: 34px; padding: 0; justify-content: center; }
-  /* the heart picker takes a second row under the three icons */
+  .tools .tool .t { display: none; }
+  .tools .tool { width: 34px; padding: 0; justify-content: center; }
+  /* the heart picker takes a second row under the icons */
   .tool.heart-pick { order: 9; width: 100%; height: 30px; padding: 0 24px 0 10px; justify-content: flex-start; }
   .heart-pick select { flex: 1; min-width: 0; font-size: 0.72rem; }
   .sheet { padding: 18px 16px 20px; }

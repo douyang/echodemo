@@ -15,6 +15,8 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const KEYS = CHAPTERS.map((c) => c.key);
 const CH = Object.fromEntries(KEYS.map((k, i) => [k, i]));
 
+// a chapter article left out of CHAPTERS (the report, chapters.js) stays hidden, its citations unnumbered
+for (const a of $$('article.chapter')) a.hidden = !KEYS.includes(a.id.replace(/^ch-/, ''));
 for (const c of CHAPTERS) if (c.defaults) declare(c.defaults);
 declare({ pheno: 'normal' });   // the heart every chapter shows (pheno.js)
 
@@ -93,13 +95,15 @@ document.addEventListener('click', (e) => {
     }
     return;
   }
+  const dl = e.target.closest('button[data-dialog]');
+  if (dl) { openDialog(dl.dataset.dialog); return; }
   const go = e.target.closest('a[data-go]');
   if (go) { e.preventDefault(); goChapter(CH[go.dataset.go] ?? Number(go.dataset.go)); return; }
   if (e.target.matches('[data-close]')) e.target.closest('dialog').close();
 });
 for (const d of $$('dialog')) d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
 $('#btn-refs').addEventListener('click', () => openDialog('dlg-refs'));
-$('#btn-norms').addEventListener('click', () => openDialog('dlg-norms'));
+$('#btn-norms').addEventListener('click', () => openDialog('dlg-norms'));   // hidden; the report chapter opens it
 $('#btn-about')?.addEventListener('click', () => openDialog('dlg-about'));
 
 // ---------------------------------------------------------------- the heart shown
