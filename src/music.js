@@ -13,7 +13,9 @@
 //    grade while a severity page plays) a single soft bell on a note of the chord that plays. A
 //    bell never follows a chapter cue within 0.6 s, nor another bell within 0.25 s.
 // The brand's films run at 120 BPM; this page keeps the heart's tempo, so the beat is the heart.
-// A click turns the sound on (browsers start sound only after one).
+// A click turns the sound on (browsers start sound only after one). iPhone and iPad play Web Audio
+// as ambient sound, which the ring/silent switch mutes (videos play as media, and it does not mute
+// them): the page asks for media playback there (mediaPlayback()).
 import { RR, EV } from './cyclemodel.js';
 
 const AC = typeof window !== 'undefined' ? window.AudioContext || window.webkitAudioContext : null;
@@ -73,20 +75,45 @@ export function follow(p, now = performance.now()) {
   heart.at = now;
 }
 
+// iPhone and iPad (iPadOS reports a Mac with touch); a second of silence, played on a loop
+const IOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+const SILENCE = 'assets/silence.mp3';
+let keep = null;
+
+/**
+ * Sound as media playback, which the ring/silent switch leaves alone: the Audio Session API where
+ * the browser has it, and on iPhone and iPad also a silent media element that plays while the
+ * sound is on (a playing media element puts the page in media playback). Call it from a click.
+ */
+function mediaPlayback(on) {
+  try { if (navigator.audioSession) navigator.audioSession.type = on ? 'playback' : 'auto'; } catch (e) { /* not settable here */ }
+  if (!IOS) return;
+  if (on) {
+    if (!keep) {
+      keep = new Audio(SILENCE);
+      keep.loop = true;
+      keep.setAttribute('playsinline', '');
+    }
+    keep.play().catch(() => {});
+  } else if (keep) keep.pause();
+}
+
 /** Turn the sound on or off; resolves to whether it plays. Call it from a click. */
 export async function setMusic(want) {
   if (!AC) return false;
   if (want) {
     if (!ctx) build();
+    mediaPlayback(true);
     const resumed = ctx.resume();     // inside the click, as some browsers require
     playing = true;
     out.gain.cancelScheduledValues(ctx.currentTime);
     out.gain.setTargetAtTime(LEVEL, ctx.currentTime, 0.08);
     start();
-    try { await resumed; } catch (e) { stop(); playing = false; }
+    try { await resumed; } catch (e) { stop(); playing = false; mediaPlayback(false); }
   } else if (ctx) {
     playing = false;
     stop();
+    mediaPlayback(false);
     out.gain.cancelScheduledValues(ctx.currentTime);
     out.gain.setTargetAtTime(0, ctx.currentTime, 0.04);
     setTimeout(() => { if (!playing && ctx.state === 'running') ctx.suspend(); }, 300);
@@ -116,12 +143,20 @@ export function cue(kind) {
 function start() { last = -1; next = 0; lastPass = 0; if (!timer) timer = setInterval(schedule, TICK); }
 function stop() { clearInterval(timer); timer = 0; }
 
-// a hidden tab throttles timers: stop there, start again on the next beat when it shows
+// a hidden tab throttles timers: stop there, start again on the next beat when it shows. A call
+// or another app's audio can stop the sound on a phone (the context reads "interrupted"): the next
+// tap on the page brings it back
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (!ctx || !playing) return;
-    if (document.hidden) { stop(); ctx.suspend(); } else { ctx.resume(); start(); }
+    if (document.hidden) { stop(); ctx.suspend(); if (keep) keep.pause(); } else { ctx.resume(); start(); if (keep) keep.play().catch(() => {}); }
   });
+  // on release: a touch counts as a gesture when the finger lifts, not when it lands
+  document.addEventListener('pointerup', () => {
+    if (!ctx || !playing || ctx.state === 'running') return;
+    ctx.resume().catch(() => {});
+    if (keep) keep.play().catch(() => {});
+  }, { passive: true });
 }
 
 // ---------------------------------------------------------------- the mix
