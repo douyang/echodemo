@@ -4,6 +4,7 @@
 import { clamp, mix, SANS, MONO } from './sketch.js';
 import { reducedMotion } from './state.js';
 import { SC } from './scope.js';
+import { cue } from './music.js';
 
 /** Monotone cubic through [[x, y], ...] (no overshoot between keyframes). */
 export function mono(keys) {
@@ -91,18 +92,21 @@ export function playSeverity(dt, s, set, key, list, o = {}) {
   const h = holds.get(key) || { t: 0 };
   holds.set(key, h);
   const v = s[key];
+  // a soft bell (music.js) each time Play takes the slider into another grade
+  const band = (x) => list.findIndex((b) => x < b.b || b === list[list.length - 1]);
+  const to = (x) => { if (band(x) !== band(v)) cue('bell'); set({ [key]: x }); };
   if (reducedMotion) {
     h.t += dt;
     if (h.t < 2.6) return;
     h.t = 0;
     const mids = list.map((b) => (b.a + b.b) / 2);
     const next = mids.find((m) => m > v + 1e-3);
-    set({ [key]: next === undefined ? mids[0] : Math.round(next * 1000) / 1000 });
+    to(next === undefined ? mids[0] : Math.round(next * 1000) / 1000);
     return;
   }
   if (v >= 1) {
     h.t += dt;
-    if (h.t > 1.8) { h.t = 0; h.v = 0; set({ [key]: 0 }); }
+    if (h.t > 1.8) { h.t = 0; h.v = 0; to(0); }
     return;
   }
   h.t = 0;
@@ -110,7 +114,7 @@ export function playSeverity(dt, s, set, key, list, o = {}) {
   if (h.v === undefined || Math.abs(h.v - v) > 0.01) h.v = v;
   h.v = Math.min(1, h.v + dt / dur);
   const q = Math.round(h.v * 400) / 400;
-  if (q !== v) set({ [key]: q });
+  if (q !== v) to(q);
 }
 
 /** Whether the cine of the page being drawn runs: Beat.at() sets it, the echo views read it. */
