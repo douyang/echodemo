@@ -61,26 +61,29 @@ export const MESH = {
 export const PHENO_MESH_KEYS = Object.keys(MESH);
 
 // ---------------------------------------------------------------- small helpers
+// a cell's three indices packed in one number (each under 1024 in size): a Map lookup by number
+// costs far less than one by a built string, and nearest() makes hundreds per query
+const cellKey = (cx, cy, cz) => ((cx + 1024) * 2048 + (cy + 1024)) * 2048 + (cz + 1024);
 /** A grid of points for neighbour searches. */
-function grid(pos, keep, cell) {
+export function grid(pos, keep, cell) {
   const g = new Map();
   const n = pos.length / 3;
   for (let i = 0; i < n; i++) {
     if (keep && !keep(i)) continue;
-    const k = `${Math.floor(pos[3 * i] / cell)},${Math.floor(pos[3 * i + 1] / cell)},${Math.floor(pos[3 * i + 2] / cell)}`;
+    const k = cellKey(Math.floor(pos[3 * i] / cell), Math.floor(pos[3 * i + 1] / cell), Math.floor(pos[3 * i + 2] / cell));
     if (!g.has(k)) g.set(k, []);
     g.get(k).push(i);
   }
   return { g, cell, pos };
 }
 /** The k nearest points of grid G to (x, y, z) within rMax: [[index, d2], ...]. */
-function nearest(G, x, y, z, k, rMax) {
+export function nearest(G, x, y, z, k, rMax) {
   const { g, cell, pos } = G;
   const cx = Math.floor(x / cell), cy = Math.floor(y / cell), cz = Math.floor(z / cell);
   const reach = Math.ceil(rMax / cell);
   const best = [];
   for (let dx = -reach; dx <= reach; dx++) for (let dy = -reach; dy <= reach; dy++) for (let dz = -reach; dz <= reach; dz++) {
-    const list = g.get(`${cx + dx},${cy + dy},${cz + dz}`);
+    const list = g.get(cellKey(cx + dx, cy + dy, cz + dz));
     if (!list) continue;
     for (const i of list) {
       const ex = pos[3 * i] - x, ey = pos[3 * i + 1] - y, ez = pos[3 * i + 2] - z, d2 = ex * ex + ey * ey + ez * ez;

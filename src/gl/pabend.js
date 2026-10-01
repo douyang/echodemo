@@ -38,7 +38,7 @@ export const PA_SHAPE = {
 };
 
 /** A bend along an axis line (origin A, direction u): points turn by angle th * w(a) about k. */
-class AxisBend {
+export class AxisBend {
   constructor(A, u, k, th, a0, a1, amax = 12, h = 0.005) {
     this.A = A.clone(); this.u = u.clone().normalize(); this.a0 = a0; this.h = h; this.amax = amax;
     const n = Math.round(amax / h) + 1, kk = k.clone().normalize();
@@ -378,7 +378,7 @@ function closeHoles(g, reg, geo = 2.0) {
 }
 
 /** After positions moved: turn normals and morph displacements at the moved vertices. */
-function turnMesh(G, mats, v) {
+export function turnMesh(G, mats, v) {
   G.attributes.position.needsUpdate = true;
   const N = G.attributes.normal;
   const MP = G.morphAttributes.position || [], MN = G.morphAttributes.normal || [];

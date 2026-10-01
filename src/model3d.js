@@ -6,9 +6,10 @@ let modelP = null;
 export function loadModel() {
   if (!modelP) {
     modelP = (async () => {
-      const [{ loadHeart, Anatomy, turnValve }, { bendPA }, doc] = await Promise.all([
+      const [{ loadHeart, Anatomy, turnValve }, { bendPA }, RVD, doc] = await Promise.all([
         import('./gl/heart.js'),
         import('./gl/pabend.js'),
+        import('./gl/rvdetail.js'),
         fetch('assets/anatomy.json').then((r) => {
           if (!r.ok) throw new Error(`anatomy: HTTP ${r.status}`);
           return r.json();
@@ -21,9 +22,14 @@ export function loadModel() {
       // and each coronary artery leaves its own sinus (ASE 2019, Table 2.9).
       // The model's pulmonary trunk rises steeply from its valve; re-shaped, it runs back round
       // the left side of the aorta, as in the great-vessel short axis (gl/pabend.js).
+      // Its left pulmonary veins turn out of the four-chamber plane, its papillary muscles stay
+      // inside the heart, and the RV gets its trabeculations (gl/rvdetail.js).
       const prepare = (meshes) => {
         if (meshes.AorticValve) turnValve(meshes.AorticValve, anat.point('av', 0, 0), anat.aorticRoot, 60);
         bendPA(meshes, anat.point('pv', 0, 0));
+        RVD.seatLeftVeins(meshes, anat);
+        RVD.trabeculate(meshes, anat);
+        RVD.holdPapillary(meshes);
       };
       const heart = await loadHeart('assets/heart.json', { valves: 'assets/valves.json', prepare });
       const m = { heart, anat, doc, pheno: { key: 'normal', a: 0, mesh: null, version: 0 }, sizes: normalGeo(doc), built: {} };

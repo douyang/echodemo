@@ -3,7 +3,7 @@
 //        [--jobs=2]                      render in parallel segments, then join them
 //        [--from=0] [--to=12.5]          render part of the cut (seconds)
 //        [--stills=3.2,14,40.5]          write PNG stills at these times instead of a video
-//        [--audio=video/out/echo-views-A.wav]   mux this soundtrack (tools/score/score.py); a
+//        [--audio=video/out/echo-views-A.wav]   mux this soundtrack (tools/score/pulse.py); a
 //                                        part of the cut takes the same part of the soundtrack
 //        [--theme=light|dark]            the other palette, for a trial
 // Serve the repository root first: python3 -m http.server 8790
