@@ -212,6 +212,7 @@ export default {
     BANDS = bands((s) => gradeOf(s));
     paintBands(document.getElementById('as-grades'), BANDS, LEV, { 'severe (area only)': 'area', 'very severe': 'v. severe', 'severe, LV dysfunction': 'EF <50', 'severe, low flow': 'low flow' });
   },
+  pulse: () => beat.pulse(),
   anim(dt, s, set) {
     playSeverity(dt, s, set, KEY, BANDS);
     if (beat.tick(dt, s.asCine) && sheet) sheet.dirty = true;

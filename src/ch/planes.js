@@ -719,6 +719,7 @@ export default {
   defaults: { pviews: PRESETS.nine.join(','), pfocus: 'a4c', pstruct: 'none', pcam: 'front', pheart: true, pcut: false, plines: true,
     pfree: false, prot: 0, ptilt: 0, prock: 0, pslide: 0, psweep: 0 },
   watch: ['pviews', 'pfocus', 'pstruct', 'pcam', 'pheart', 'pcut', 'plines', 'pfree', ...FREE_KEYS],
+  pulse: () => (stage ? stage.pulse() : null),
   format: {
     prot: (v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}°`,
     ptilt: (v) => `${Math.round(v) > 0 ? '+' : ''}${Math.round(v)}°`,

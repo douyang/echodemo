@@ -266,6 +266,8 @@ export default {
     BANDS = bands((s) => gradeOf(s));
     paintBands(document.getElementById('peri-grades'), BANDS, LEV, { moderate: 'mod.', tamponade: 'tamp.' });
   },
+  // the heart for the music: the page's own rate, and its beat while the cine runs
+  pulse: (s) => ({ rr: model(s[KEY]).rr, phase: s.periCine && !reducedMotion ? clock.beats % 1 : null }),
   anim(dt, s, set) {
     playSeverity(dt, s, set, KEY, BANDS);
     if (s.periCine && !reducedMotion) {

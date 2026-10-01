@@ -263,6 +263,7 @@ export default {
     BANDS = bands((s) => gradeOf(s));
     paintBands(document.getElementById('tr-grades'), BANDS, LEVEL, { moderate: 'mod.', torrential: 'torr.' });
   },
+  pulse: () => beat.pulse(),
   anim(dt, s, set) {
     playSeverity(dt, s, set, KEY, BANDS);
     if (beat.tick(dt, s.trCine) && sheet) sheet.dirty = true;

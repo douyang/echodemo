@@ -8,6 +8,7 @@ import { PHENOS, PHENO_STORE, presetsFor, PRESET_KEYS } from './pheno.js';
 import { setPheno, onPheno, onPhenoBusy } from './model3d.js';
 import { setHeart } from './echo2d.js';
 import { JETS } from './jets.js';
+import { canPlay, setMusic, follow } from './music.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -44,6 +45,16 @@ $('#btn-theme').addEventListener('click', () => {
   applyTheme(next);
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme());
+
+// ---------------------------------------------------------------- music (music.js): off until clicked
+const musicBtn = $('#btn-music');
+if (!canPlay) musicBtn.hidden = true;
+musicBtn.addEventListener('click', async () => {
+  const want = musicBtn.getAttribute('aria-pressed') !== 'true';
+  musicBtn.setAttribute('aria-pressed', String(want));
+  const on = await setMusic(want);
+  if (on !== want) musicBtn.setAttribute('aria-pressed', String(on));
+});
 
 // ---------------------------------------------------------------- citations
 function numberCitations() {
@@ -411,6 +422,7 @@ function frame(now) {
   if (state.playing) tourTick(tdt);
   const c = CHAPTERS[state.chapter];
   if (c.anim) c.anim(state.playing ? tdt : dt, state, set);
+  follow(c.pulse ? c.pulse(state) : null, now);
   const sh = sheets[c.key];
   if (sh && sh.render) sh.render();
   requestAnimationFrame(frame);

@@ -118,8 +118,10 @@ export const cine = { live: false };
 
 /** The beat: ms since the R wave, advanced while the cine runs. */
 export class Beat {
-  constructor(rr = 857) { this.rr = rr; this.ms = 150; }
-  tick(dt, run) { if (run && !reducedMotion) this.ms = (this.ms + dt * 1000) % (2 * this.rr); return run && !reducedMotion; }
+  constructor(rr = 857) { this.rr = rr; this.ms = 150; this.live = false; }
+  tick(dt, run) { this.live = run && !reducedMotion; if (this.live) this.ms = (this.ms + dt * 1000) % (2 * this.rr); return this.live; }
+  /** The heart for the music (music.js): its beat, and its phase while the cine runs. */
+  pulse() { return { rr: this.rr, phase: this.live ? (this.ms % this.rr) / this.rr : null }; }
   /** ms within the current beat */
   get t() { return this.ms % this.rr; }
   /** the frame to draw: the running beat, or a fixed moment when the cine is off */

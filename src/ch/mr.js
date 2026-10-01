@@ -293,6 +293,7 @@ export default {
     BANDS = bands((s) => gradeOf(s));
     paintBands(document.getElementById('mr-grades'), BANDS, LEV, { 'severe, LV dysfunction': 'LV dysf.' });
   },
+  pulse: () => beat.pulse(),
   anim(dt, s, set) {
     playSeverity(dt, s, set, KEY, BANDS);
     if (beat.tick(dt, s.mrCine) && sheet) sheet.dirty = true;
