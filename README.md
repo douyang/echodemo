@@ -60,13 +60,15 @@ The **Heart** menu in the header sets the heart for the whole page, and the page
 | --- | --- | --- |
 | ![Ischemic cardiomyopathy in chapter 07: the dilated, rounded LV in the apical four-chamber cut and echo](docs/screenshots/heart-icm.webp) | ![Bicuspid aortic stenosis in chapter 12: the short axis shows two cusps and a slit in systole](docs/screenshots/heart-bav.webp) | ![Barlow mitral valve in chapter 15: severe regurgitation from thick, billowing leaflets](docs/screenshots/heart-barlow.webp) |
 
-## Music
+## Sound
 
-**Music** in the header plays a loop in time with the heart (`src/music.js`). It is off when the page opens; a click turns it on, and another turns it off.
+**Sound** in the header plays music in time with the heart, and cues for what changes on screen (`src/music.js`). Both follow the InVision sound brand: its chords, instruments, echo and room, and its cue notes. All of it is synthesized in the browser (Web Audio), so there is nothing to download. It is off when the page opens; a click turns it on, and another turns it off.
 
 - **One beat per heartbeat.** The tempo is the heart rate the page shows: 70 a minute, and up to 118 at tamponade on the pericardium page. Where the heart on the page beats in real time (chapters 07, 08 and 11 to 18), the kick falls on its first heart sound, mitral closure 25 ms after the R wave. Chapters that slow the beat for study (05 Cycle, 06 Loop, 09 Eject, 10 Segments) and chapters with no heart keep the rate without the lock. So does a page that draws too few frames to keep its heart in real time.
-- **The loop.** D major, I–V–vi–IV, one chord to a bar of four beats, with the voicings of the video's soundtrack: a kick on every beat, a clap on two and four, sixteenth-note hats, an off-beat bass, and a pad and a plucked arpeggio that dip on each kick, with a short reverb. It is synthesized in the browser (Web Audio), so there is nothing to download.
-- **Sound starts only after a click**, as browsers require: until the button is pressed the page makes no audio context. The music stops while the tab is hidden.
+- **The music.** C major, I–V–vi–IV (C, G, Am, F), one chord to a bar of four beats, in the brand's voicings: a pad of five detuned saws, a sine sub on the root in eighths, a soft kick on every beat, off-beat hats, and the brand's plucked arpeggio with a dotted-eighth echo. The pad, the sub and the arpeggio dip on each kick. The brand's films lean on the kick and the sub, which laptop and phone speakers barely play; here the pad and the plucks carry the music over a softer kick and sub.
+- **The cues.** A new chapter sounds the brand's rising fourth, G5 then C6. A smaller change sounds one soft bell on a note of the chord that plays: a new view in chapters 07 and 08, any switch or tick box, a new heart from the header menu, and each new grade while a severity page plays. A bell never follows a chapter cue within 0.6 s, nor another bell within 0.25 s.
+- **Levels.** About −17.5 LUFS with the cues, the level of the first music. The brand's master stage (a tanh curve) holds every peak under −1.4 dBFS.
+- **Sound starts only after a click**, as browsers require: until the button is pressed the page makes no audio context. The sound stops while the tab is hidden.
 
 ## Views and the lab's annotation classes
 
@@ -157,13 +159,14 @@ src/cflow.js        the scanner format (kept, off): flow elements, pulse-pair es
 src/views.js        view catalog: planes, lab classes, structures, probe moves
 src/echo.js         plane geometry, plane changes, cross-sections and the echo views cut from the heart mesh
 src/cyclemodel.js   one heartbeat (pressures, volume, valve events)
-src/music.js        the music: a loop in time with the heart on the page (Web Audio)
+src/music.js        the sound: music in time with the heart on the page, and cues (Web Audio)
 src/gl/pabend.js    the pulmonary artery, re-shaped as the model loads
 src/norms.js        normal values and cut-offs
 src/refs.js         references
 assets/             heart mesh (JSON), anatomy landmarks, poster image
 video/              the views video: page, cuts, timing, fonts
-tools/              video tools: render, soundtrack, storyboard
+tools/              video tools: render, storyboard
+tools/score/        the video soundtracks: the InVision sound engine and a score per cut (Python)
 ```
 
 ## Run it
@@ -182,7 +185,7 @@ Keys: ← → change chapter, space plays the tour, [ and ] step the views in ch
 
 `video/index.html` plays the standard views of chapter 07 as a video, drawn by the site's own code. Three panes show the probe on the body and on the heart, the cross-section, and the echo image. The plane moves smoothly from view to view in all three. A caption names each view, the probe position and the structures it shows. The zoomed and depth-focused views are left out.
 
-- The heart beats at 70 per minute. The soundtrack (`tools/make-audio.mjs`, synthesized, original) runs at the same 70 BPM, with a kick on each heartbeat at mitral closure.
+- The heart beats at 70 per minute. The soundtrack (`tools/score/score.py`) is scored to the InVision sound brand with the brand's own engine (`tools/score/synth.py`) and reads the cut's timeline, so each cue falls on its frame. It runs at the heart's 70 BPM with a kick on each heartbeat at mitral closure, one chord to a view and back to C with each window. A bell sounds as each view arrives, the brand's rising fourth (G5 then C6) as each window opens, and the brand's sound logo on the end card. −15 LUFS. The first soundtrack (`tools/make-audio.mjs`) is kept but not used.
 - Between windows the probe travels round the heart, over the front of the chest, with its beam on the heart. Inside a window the plane moves as the site moves it.
 - The cross-section's tags are laid out at end-diastole and hold still while a view holds; each leader follows its structure through the beat.
 - On the heart and the body key the probe is drawn in the page's accent blue (`Pencil.setToolInk`), so its place stands apart from the graphite heart. In the cross-section it is graphite, drawn as the heart is. The site keeps it in graphite.
@@ -201,7 +204,7 @@ Cut D stays in `video/cuts.js` but is no longer rendered.
 To render a cut (Node 22, Playwright with Chromium, ffmpeg), serve the repository root on port 8790, then:
 
 ```
-node tools/make-audio.mjs --cut=A                  # video/out/echo-views-A.wav
+python3 tools/score/score.py A video/out/echo-views-A.wav   # Python 3 with numpy and scipy
 node tools/render-video.mjs --cut=A --jobs=3 --audio=video/out/echo-views-A.wav
 node tools/storyboard.mjs --cut=A --moves          # one frame of each view on one sheet
 ```
@@ -210,6 +213,8 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 
 ## Checks run before this commit
 
+- Sound on the site, recorded from the page on the audio thread (an AudioWorklet tap; a ScriptProcessor tap dropped and repeated buffers under software rendering, and a test chime through the new tap decays at the scheduled −20.7 dB/s). Music alone −17.8 LUFS (the first music −17.7); peak −2.9 dBTP with the cues, and the tanh master caps any peak at −1.4 dBFS. In 300–3000 Hz the chapter cue stands 10.7 dB over the music, against 11.0 dB for the brand's value cue over its own groove; the bells stand 4.6 to 6.3 dB over it. Each cue sounds 28 to 40 ms after its change of state (it is scheduled 20 ms ahead). Notes: G5 then C6 for a chapter; the bells on notes of the chord that plays (G5, A4 and C5 in the test). All 18 chapters with the sound on: one chapter cue each, no page errors; the pages' own Play rings bells at their grades (aortic stenosis four in 8 s, Fill three, pericardium two). Header at the 14 screen sizes: no overlap, clipped label or sideways scroll; the button reads *Sound* from 834 px and shows its icon alone below that. The beat scheduler and the lock to the heart are unchanged.
+- Video soundtracks: 66 cues at their events (28 in cut A, 20 in B, 18 in C), each 5 to 45 dB over the moment before in the band of its note. −15.0 LUFS, −2.7 dBTP, loudness range 1.9 to 2.2 LU, side/mid 0.073 to 0.080. The normalization stays linear: a look-ahead limiter first takes 8 to 10 hits (the window accents, the end-card hit, the last heartbeat) down by at most 2.6 dB, and the gain elsewhere is one constant, title card included. ffmpeg's default AAC rate loop took the opening heartbeat to +1.7 dBFS in cut A at 160, 192 and 224 kb/s; with its fast loop at 256 kb/s every band decodes within 0.5 dB of the WAV, with peaks of −2.2 dBFS at most. The re-muxed masters keep their video streams bit for bit.
 - Title *The Heart by Ultrasound*: the header title is 10.72 em wide in its face, against 8.5 em before, so in the two-column layouts its size now comes from the panel width ÷ 10.9 (8.2 before). It stays on one line and inside its box at all 14 screen sizes from 320 × 640 to 1920 × 1080: 380 of 386 px at 1440, 279 of 283 px at 834, 281 of 288 px at 320. Layout audit at the 14 sizes, five states each over chapters 01 and 07: no findings, no sideways scroll, no page errors. The 25 README screenshots were retaken with the new header. Video end cards of cuts A, B and C: the title on one line, the last word in the accent italic.
 - Five-chamber view: the aortic valve lies 0.3 cm off the plane and the LVOT 0.1 cm (1.0 and 0.5 cm before), 9.9° from the four-chamber plane. The sections show the LVOT into the aortic root between the atria. All six tags land on their structures, and chapter 08 still settles every view on itself.
 - Liver in 3D, chapter 07 at 1280 × 800: the liver shows in the three subcostal views and in no other. Alphas sampled through moves: from the four-chamber view to the IVC view the layer and the liver read 0.77 and 0.23 at 0.4 s, and 0.01 and 0.99 at 1.25 s. From the aorta view to the four-chamber apical view the liver reads 0.87 at 0.36 s and 0 at 1.6 s. At half alpha both themes draw the heart through the liver. *Probe and body* swaps the layer for the whole liver and back. The layer leaves the shared stage when chapter 07 closes, so chapter 08 shows none. Video stills of cut C through the move into the four-chamber view, its hold, the move to the IVC view, its hold and the move out: the liver fades with the plane in both drawing panes, with no console errors.

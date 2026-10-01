@@ -3,15 +3,16 @@
 //        [--jobs=2]                      render in parallel segments, then join them
 //        [--from=0] [--to=12.5]          render part of the cut (seconds)
 //        [--stills=3.2,14,40.5]          write PNG stills at these times instead of a video
-//        [--audio=video/out/echo-views-A.wav]   mux this soundtrack (tools/make-audio.mjs); a
+//        [--audio=video/out/echo-views-A.wav]   mux this soundtrack (tools/score/score.py); a
 //                                        part of the cut takes the same part of the soundtrack
 //        [--theme=light|dark]            the other palette, for a trial
 // Serve the repository root first: python3 -m http.server 8790
 //
 // Chromium steps window.__video.frame(i) and captures the frame over CDP; ffmpeg encodes the
-// JPEGs with libx264 (CRF 16, BT.709). Every frame is a function of its time alone
-// (video/app.js), so a segment needs no run-up: it draws two frames first only to compile the
-// shaders, and parallel segments join without a seam.
+// JPEGs with libx264 (CRF 16, BT.709); the soundtrack goes in as AAC 256 kb/s with ffmpeg's fast
+// rate loop (its default loop took the opening heartbeat past full scale at 160-224 kb/s). Every
+// frame is a function of its time alone (video/app.js), so a segment needs no run-up: it draws
+// two frames first only to compile the shaders, and parallel segments join without a seam.
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
@@ -124,7 +125,7 @@ for (const f of [...segs, list]) fs.unlinkSync(f);
 if (audio) {
   const dur = (b0 - a0) / FPS;
   await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', video, '-ss', (a0 / FPS).toFixed(4), '-t', dur.toFixed(4), '-i', audio,
-    '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', mp4]);
+    '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-aac_coder', 'fast', '-b:a', '256k', '-shortest', '-movflags', '+faststart', mp4]);
   fs.unlinkSync(video);
 }
 const min = (Date.now() - t0) / 60000;

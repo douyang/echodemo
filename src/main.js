@@ -8,7 +8,7 @@ import { PHENOS, PHENO_STORE, presetsFor, PRESET_KEYS } from './pheno.js';
 import { setPheno, onPheno, onPhenoBusy } from './model3d.js';
 import { setHeart } from './echo2d.js';
 import { JETS } from './jets.js';
-import { canPlay, setMusic, follow } from './music.js';
+import { canPlay, setMusic, follow, cue } from './music.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -46,7 +46,7 @@ $('#btn-theme').addEventListener('click', () => {
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme());
 
-// ---------------------------------------------------------------- music (music.js): off until clicked
+// ---------------------------------------------------------------- sound (music.js): off until clicked
 const musicBtn = $('#btn-music');
 if (!canPlay) musicBtn.hidden = true;
 musicBtn.addEventListener('click', async () => {
@@ -54,6 +54,13 @@ musicBtn.addEventListener('click', async () => {
   musicBtn.setAttribute('aria-pressed', String(want));
   const on = await setMusic(want);
   if (on !== want) musicBtn.setAttribute('aria-pressed', String(on));
+});
+// cues for changes on screen: a new chapter; a new view, set of views or heart, or any switch or
+// tick box (bindControls adds their keys; the grades of a playing severity page ring from sev.js)
+const BELL_KEYS = new Set(['view', 'pfocus', 'pviews', 'pheno']);
+subscribe((s, ch) => {
+  if ('chapter' in ch) cue('chapter');
+  else if (Object.keys(ch).some((k) => BELL_KEYS.has(k))) cue('bell');
 });
 
 // ---------------------------------------------------------------- citations
@@ -171,12 +178,14 @@ function bindControls() {
     el.addEventListener('input', () => set({ [el.dataset.key]: Number(el.value), playing: false, anim: false }));
   }
   for (const g of $$('.seg[data-key]')) {
+    BELL_KEYS.add(g.dataset.key);
     g.addEventListener('click', (e) => {
       const b = e.target.closest('button[data-val]');
       if (b) set({ [g.dataset.key]: parse(b.dataset.val), playing: false, anim: false });
     });
   }
   for (const el of $$('input[type="checkbox"][data-key]')) {
+    BELL_KEYS.add(el.dataset.key);
     el.addEventListener('change', () => set({ [el.dataset.key]: el.checked, playing: false, anim: false }));
   }
   for (const el of $$('input[type="number"][data-key]')) {
