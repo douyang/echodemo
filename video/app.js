@@ -1,4 +1,4 @@
-// "Echo views": a video of the key echo views of chapter 07 (Windows) of The Heart in Sound.
+// "Echo views": a video of the key echo views of chapter 07 (Windows) of The Heart by Ultrasound.
 // One cut (?cut=A|B|C|D), one frame at a time: tools/render-video.mjs calls
 // window.__video.frame(i) and captures the frame. Nothing here runs on a clock of its own: the
 // heartbeat, the plane, the cameras and the text follow t = i / FPS alone, so any frame renders
