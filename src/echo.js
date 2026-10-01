@@ -105,13 +105,13 @@ export function viewGeometry(anat, key) {
     }
     case 'rv_out': {
       // tilted toward the left shoulder: RVOT, pulmonic valve and main PA along the plane. The
-      // plane runs along the valve's own axis, turned 10 degrees about it from the straight
-      // front-to-back plane so the trunk runs on toward the bifurcation, and 3 mm to one side
-      // of it: there it crosses two cusps and the line where they meet, so the shut valve is
+      // plane runs along the valve's own axis, turned about it to hold the bifurcation, so the
+      // trunk runs in the plane from the valve to the bifurcation, and 3 mm to one side of the
+      // axis: there it crosses two cusps and the line where they meet, so the shut valve is
       // two thin cusps meeting in the middle (through the axis it would graze a commissure).
       // The cusps hinge on the walls and open along them; the aortic root lies behind.
       const bif = VP('paBif');
-      const e = perp(BODY.ant.clone().negate(), PV_AXIS).applyAxisAngle(PV_AXIS, THREE.MathUtils.degToRad(10));
+      const e = perp(bif.clone().sub(pv), PV_AXIS);
       const n0 = PV_AXIS.clone().cross(e).normalize();
       O = pv.clone().addScaledVector(e, -7.8).addScaledVector(n0, 0.3);
       d = perp(pv.clone().lerp(bif, 0.3).sub(O), n0);
@@ -141,10 +141,11 @@ export function viewGeometry(anat, key) {
         // in a Y and each cusp shows whole (the sonographer turns the probe until the valve is round)
         probe(av.clone().addScaledVector(n0, 0.7), n0, 6.2);
       } else if (spec.plane === 'psax_pa') {
-        // tilted up from the valve: the aorta above its valve in cross-section, the pulmonic
-        // valve, the trunk and the start of both branches. This model's trunk rises steeply, so
-        // the plane leans 27 degrees from square to the root to follow it to the bifurcation
-        probe(av.clone().addScaledVector(n0, 2.0), turned(27, 252), 6.0, V3(-0.1, -0.1, -1));
+        // tilted up from the valve: the aorta above its valve in cross-section, the RVOT, the
+        // pulmonic valve, the trunk down the right of the sector, the bifurcation, the RPA behind
+        // the aorta and the LPA. The plane passes 2 cm up the root and leans 20 degrees from
+        // square to it, toward the front and a little to the patient's left
+        probe(av.clone().addScaledVector(n0, 2.0), turned(20, 300), 6.0, V3(-0.1, -0.1, -1));
       } else if (spec.plane === 'psax_cor') {
         // through both coronary origins, as square to the aortic root as that allows; the
         // probe moves onto this plane from the valve-level position
@@ -173,8 +174,11 @@ export function viewGeometry(anat, key) {
         // The shut cusps meet 6 to 13 mm above it, so the leaning plane still crosses them where
         // they meet. Square to the root the plane would pass above this model's left atrium;
         // leaning, it cuts the atrium about 2 mm behind the root, and the tricuspid and pulmonic
-        // valves beside the aortic valve: AV, LA, RA, TV, RVOT, PV and the atrial septum
-        probe(av.clone().addScaledVector(n0, 0.45), turned(30, 160), 6.2);
+        // valves beside the aortic valve: AV, LA, RA, TV, RVOT, PV and the atrial septum. The
+        // sector turns 10 degrees in the plane toward the patient's left, so the main PA runs
+        // round the aorta down the right of the sector
+        const n = turned(30, 160);
+        probe(av.clone().addScaledVector(n0, 0.45), n, 6.2, V3(-0.45, -0.15, -1).applyAxisAngle(n, THREE.MathUtils.degToRad(-10)));
       }
       break;
     }
@@ -970,10 +974,10 @@ export class EchoView {
     // even-odd over all the wall loops at once, with the edges sorted into 2.5 mm bands of depth
     // so that a point tests only the edges at its own depth
     const BAND = 0.25, bands = new Map();
-    for (const L of loops) {
+    for (const [li, L] of loops.entries()) {
       const P = L.pts;
       for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
-        const e = [P[j][0], P[j][1], P[i][0], P[i][1]];
+        const e = [P[j][0], P[j][1], P[i][0], P[i][1], li];
         for (let b = Math.floor(Math.min(e[1], e[3]) / BAND); b <= Math.floor(Math.max(e[1], e[3]) / BAND); b++) {
           if (!bands.has(b)) bands.set(b, []);
           bands.get(b).push(e);
@@ -1003,7 +1007,38 @@ export class EchoView {
       const d = bd || 1;
       return [q[0] + ((q[0] - p[0]) / d) * 0.06, q[1] + ((q[1] - p[1]) / d) * 0.06];
     });
-    const periPts = peri.map((L) => clearOf(L.pts));
+    // it also runs through a lumen in places, most round the pulmonary artery, which the model
+    // re-shapes as it loads (gl/pabend.js): a point of its line in blood (inside an even number
+    // of wall loops) and more than 1.2 mm from every wall is dropped, as a coronary ring is
+    const odd = new Uint8Array(loops.length);
+    const loopsAround = (x, y) => {
+      const list = bands.get(Math.floor(y / BAND)) || [];
+      for (const e of list) odd[e[4]] = 0;
+      let k = 0;
+      for (const [xj, yj, xi, yi, li] of list) if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) k += (odd[li] ^= 1) ? 1 : -1;
+      return k;
+    };
+    const nearWall = (x, y, r) => {
+      for (let b = Math.floor((y - r) / BAND); b <= Math.floor((y + r) / BAND); b++) {
+        for (const [ax, ay, bx, by] of bands.get(b) || []) {
+          const ux = bx - ax, uy = by - ay, l2 = ux * ux + uy * uy || 1e-9;
+          const t = Math.max(0, Math.min(1, ((x - ax) * ux + (y - ay) * uy) / l2));
+          if (Math.hypot(x - ax - t * ux, y - ay - t * uy) <= r) return true;
+        }
+      }
+      return false;
+    };
+    const inLumen = (p) => { const k = loopsAround(p[0], p[1]); return k > 0 && k % 2 === 0 && !nearWall(p[0], p[1], 0.12); };
+    const periPts = [], periRefs = [];
+    for (const L of peri) {
+      const pts = clearOf(L.pts);
+      let run = [], rr = [];
+      for (let i = 0; i <= pts.length; i++) {
+        if (i < pts.length && !inLumen(pts[i])) { run.push(pts[i]); if (L.ref) rr.push(L.ref[i]); continue; }
+        if (run.length > 1) { periPts.push(run); periRefs.push(rr); }
+        run = []; rr = [];
+      }
+    }
     this.periDrawn = periPts;          // the pericardium line as drawn, plane coordinates
     const items = [
       { polys: liver, e: DB.liver },
@@ -1021,7 +1056,7 @@ export class EchoView {
       { borders: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, spec: 6, closed: true },
       { polys: tri(extra.chords), e: DB.chord - 7 },
       { polys: tri(extra.chordsCore), e: DB.chord },
-      { borders: periPts, refs: ref(peri), e: 8, spec: 10, w: 0.15, all: true },
+      { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: 8, spec: 10, w: 0.15, all: true },
       { polys: leaf, e: DB.valve },
       { borders: leaf, e: DB.valve, spec: 7, w: 0.06, closed: true },
       { polys: hotLeaf, e: hotDb, shadow: hotShadow },
@@ -1174,10 +1209,9 @@ export class EchoView {
       an.rl = C.clone().addScaledVector(rl, 0.75);
       an.raphe = C.clone().addScaledVector(rl, 0.3);
     }
-    const bif = V3(...VESSELS.paBif);
-    an.mpa = an.pv.clone().lerp(bif, 0.5);
-    an.rpa = bif.clone().addScaledVector(BODY.left, -2.6).addScaledVector(BODY.ant, -0.8);
-    an.lpa = bif.clone().addScaledVector(BODY.left, 2.4).addScaledVector(BODY.ant, -0.8);
+    an.mpa = V3(...VESSELS.paMid);
+    an.rpa = V3(...VESSELS.rpaMid);
+    an.lpa = V3(...VESSELS.lpaMid);
     return an;
   }
 

@@ -37,8 +37,9 @@ export const VIEWS = {
   // ---- parasternal short axis
   // the great-vessel levels, as ASE draws them (Mitchell 2019, Table 2, rows 2.7-2.10): at the aortic
   // valve, the RVOT across the front from the tricuspid to the pulmonic valve, the valve in the
-  // middle, the right atrium on the left, the left atrium below and the atrial septum between
-  psax_av: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, aortic valve level', lab: 'PSAX_(level_great_vessels)', plane: 'psax_av', depth: 13,
+  // middle, the right atrium on the left, the left atrium below and the atrial septum between.
+  // 86 degrees wide: the tricuspid valve at the left edge and the main PA down the right
+  psax_av: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, aortic valve level', lab: 'PSAX_(level_great_vessels)', plane: 'psax_av', depth: 13, angle: 86,
     labels: [['av', 'AV'], ['la', 'LA'], ['ra', 'RA'], ['rvot', 'RVOT'], ['tv', 'TV'], ['pv', 'PV'], ['ias', 'IAS']] }),
   // tilted up: the aorta above the valve in cross-section, the pulmonic valve, the trunk and
   // the start of both branches
@@ -124,7 +125,12 @@ export const VESSELS = {
   desc: [0.9, 3.0, -5.8],
   descLow: [0.62, -2.0, -6.0],
   ivc: [-3.3, -4.4, 2.4],
-  paBif: [0.8, 6.8, -1.0],
+  // the pulmonary artery as gl/pabend.js shapes it, on its axes: the trunk 1.75 cm from its
+  // valve, the bifurcation, the RPA 2.6 cm and the LPA 1.6 cm from where each leaves
+  paMid: [1.97, 4.85, 1.06],
+  paBif: [2.61, 5.46, -0.74],
+  rpaMid: [-0.4, 5.77, -1.69],
+  lpaMid: [3.91, 5.11, -2.07],
   svc: [-3.06, 4.81, 2.2],        // superior vena cava, middle of the modelled segment
   lmca: [0.85, 2.3, -0.45],       // left main coronary artery at its origin
   rca: [-0.16, 2.4, 1.56],        // right coronary artery at its origin
