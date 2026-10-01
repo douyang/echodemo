@@ -60,6 +60,14 @@ The **Heart** menu in the header sets the heart for the whole page, and the page
 | --- | --- | --- |
 | ![Ischemic cardiomyopathy in chapter 07: the dilated, rounded LV in the apical four-chamber cut and echo](docs/screenshots/heart-icm.webp) | ![Bicuspid aortic stenosis in chapter 12: the short axis shows two cusps and a slit in systole](docs/screenshots/heart-bav.webp) | ![Barlow mitral valve in chapter 15: severe regurgitation from thick, billowing leaflets](docs/screenshots/heart-barlow.webp) |
 
+## Music
+
+**Music** in the header plays a loop in time with the heart (`src/music.js`). It is off when the page opens; a click turns it on, and another turns it off.
+
+- **One beat per heartbeat.** The tempo is the heart rate the page shows: 70 a minute, and up to 118 at tamponade on the pericardium page. Where the heart on the page beats in real time (chapters 07, 08 and 11 to 18), the kick falls on its first heart sound, mitral closure 25 ms after the R wave. Chapters that slow the beat for study (05 Cycle, 06 Loop, 09 Eject, 10 Segments) and chapters with no heart keep the rate without the lock. So does a page that draws too few frames to keep its heart in real time.
+- **The loop.** D major, I–V–vi–IV, one chord to a bar of four beats, with the voicings of the video's soundtrack: a kick on every beat, a clap on two and four, sixteenth-note hats, an off-beat bass, and a pad and a plucked arpeggio that dip on each kick, with a short reverb. It is synthesized in the browser (Web Audio), so there is nothing to download.
+- **Sound starts only after a click**, as browsers require: until the button is pressed the page makes no audio context. The music stops while the tab is hidden.
+
 ## Views and the lab's annotation classes
 
 Chapter 07 covers the ASE comprehensive transthoracic views (Mitchell 2019, Tables 2.1–2.27). Each view carries the class name from the lab's annotation list (`lab` in `src/views.js`), for example `PLAX_IVS_LVPW_LVIDD`, `PSAX_(level_great_vessels)_focus_on_PV_and_PA`, `Subcostal_IVC`, `SSN_aortic_arch`. Six views have no class in that list: the coronary artery origins, the zoomed tricuspid valve, LV apex and aortic valve (apical), the zoomed atrial septum (subcostal) and the suprasternal short axis.
@@ -142,6 +150,8 @@ src/cflow.js        the scanner format (kept, off): flow elements, pulse-pair es
 src/views.js        view catalog: planes, lab classes, structures, probe moves
 src/echo.js         plane geometry, plane changes, cross-sections and the echo views cut from the heart mesh
 src/cyclemodel.js   one heartbeat (pressures, volume, valve events)
+src/music.js        the music: a loop in time with the heart on the page (Web Audio)
+src/gl/pabend.js    the pulmonary artery, re-shaped as the model loads
 src/norms.js        normal values and cut-offs
 src/refs.js         references
 assets/             heart mesh (JSON), anatomy landmarks, poster image
@@ -190,6 +200,8 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 
 ## Checks run before this commit
 
+- Music: the page opens with the button off and no audio context; a click starts the music, a second click stops it (the context suspends), and a hidden tab suspends it. Kicks against the first heart sound on the page, 8 s per chapter (headless): the aortic stenosis page 6.6 ms after it at the median and 9.4 ms at worst, with beats of 847 to 862 ms; the pericardium page at tamponade (508 ms beats) 4.0 and 7.4 ms, and at a mild effusion (836 ms) 4.7 and 8.6 ms. Cycle and Pulse keep 857 ms beats. At 4 frames a second (chapter 07 under software rendering) the beat stays at 857 ms without the lock; at 9, the beats stay within 12% of 857 ms while the lock settles. Recorded output: −17.7 LUFS integrated, sample peak −1.9 dBFS. All 18 chapters with the music on, and at 1440 × 900 and 390 × 844 with it off: no page errors, no sideways scroll.
+- Header with the music button: layout audit at the 14 screen sizes, 11 states each over chapters 01, 07, 12 and 17: no findings, no sideways scroll, no page errors. README screenshots: all 24 retaken with the new header.
 - Pulmonary artery re-shape. In the browser the bent heart wall and pulmonary valve match the Python reference used to tune them within 5 × 10⁻⁷ cm, and the pericardium and coronary arteries within 0.2 mm. Crossings on 240 planes through the great vessels at end-diastole and end-systole, in the normal and amyloid hearts: no new crossing of the PA with the aorta, the LA or the RV, or of the RV inflow with the outflow. 28 crossings of the PA's inner surface with its outer surface remain, all within 0.8 mm of the closed opening in the bifurcation's roof. The PA crosses the pericardium at more points (252 against 163 at end-diastole) and, in the amyloid heart, the coronary arteries at up to 7 more. The loaded bounding boxes enclose the bent meshes with every morph target on.
 - Section topology in every view at end-diastole and end-systole: the loops are unchanged except where the plane or the PA moved (great-vessel short axis, RV outflow, suprasternal short axis) and in the zoomed apical two- and three-chamber views, whose new loops lie beyond their 14 cm depth. Against ASE 2019 (Table 2): at the aortic valve level (row 2.8) the main PA runs round the aorta down the right of the sector; one level up (row 2.7) the trunk divides behind the aorta, the RPA under it and the LPA to the right; in the RV outflow view (row 2.5) the trunk runs in the plane from the valve to the bifurcation. The four disease hearts show these views as the normal heart does, at end-diastole and end-systole.
 - Pericardium in blood: before this change its line ran through a blood pool in 16 of 35 views (4.4 cm of line in the RV inflow view); now in 9, at most 1.0 cm, all of it within 1.2 mm of a wall.

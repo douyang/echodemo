@@ -224,6 +224,9 @@ export class Stage3D {
     return { dir, up: new THREE.Vector3(0, 1, 0), target: this.center.clone(), dist: 3.0 };
   }
 
+  /** The heart for the music (music.js): its beat, and its phase while it beats. */
+  pulse() { return { rr: RR, phase: this.opts.beat && !reducedMotion ? this.phase : null }; }
+
   tick(dt) {
     if (!this.heart) return;
     this.clock += dt;

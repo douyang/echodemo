@@ -445,6 +445,7 @@ export default {
   },
   enter() { startEcho(); },
   warm() { startEcho(); },
+  pulse: () => beat.pulse(),
   anim(dt, s, set) {
     playSeverity(dt, s, set, KEY, BANDS);
     if (beat.tick(dt, true) && sheet) sheet.dirty = true;

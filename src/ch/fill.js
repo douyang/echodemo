@@ -289,6 +289,7 @@ export default {
     BANDS = bands((s) => gradeLabel(s * 3));
     paintBands(document.getElementById('fill-grades'), BANDS, LEVEL, { 'normal LAP': '' });
   },
+  pulse: () => beat.pulse(),
   anim(dt, s, set) {
     // Play walks the pattern from normal to restrictive (the slider runs 0 to 3)
     if (s.anim) {

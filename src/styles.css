@@ -195,6 +195,10 @@ a:hover { text-decoration-color: var(--accent); }
 }
 .tool:hover { border-color: var(--ink-2); }
 .tool svg { width: 15px; height: 15px; }
+/* music: a crossed speaker while off, a speaker with sound while on */
+.tool-music .i-on, .tool-music[aria-pressed="true"] .i-off { display: none; }
+.tool-music[aria-pressed="true"] .i-on { display: block; }
+.tool-music[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 /* the heart the page shows: a select inside a pill */
 .heart-pick { position: relative; padding-right: 26px; }
 .heart-pick select {

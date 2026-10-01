@@ -139,6 +139,7 @@ export default {
   defaults: { win: 'plax', view: 'plax', wcine: true, wlabels: true, wbody: false, wmeas: '' },
   watch: ['win', 'view', 'wcine', 'wlabels', 'wbody', 'wmeas'],
   figure(f) { fig = f; return null; },
+  pulse: () => (stage ? stage.pulse() : null),
   init({ state, set }) {
     st = state;
     setState = set;
