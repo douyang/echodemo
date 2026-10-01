@@ -11,7 +11,9 @@
 //  - Cross-section: the heart cut on the plane and seen square to it, with the site's tags;
 //  - Ultrasound image: the echo the same plane cuts from the mesh (src/echo.js, src/bmode.js).
 // The two 3D panes are two pencil renderers (src/gl/pencil.js) that draw the one scene with
-// the one camera in turn: before each pass the camera is posed and the cut set or cleared.
+// the one camera in turn: before each pass the camera is posed and the cut set or cleared. In
+// the subcostal views both draw the liver (src/gl/liver3d.js) as the site does, faded in and out
+// across each move.
 import * as THREE from '../vendor/three.bundle.min.js';
 import { FPS, BEAT, DISSOLVE, SIZE, layout, segAt, windowsOf, cycleMs } from './timeline.js';
 import { CUTS, caption, WIN_NAME } from './cuts.js';
@@ -330,6 +332,7 @@ async function initScene() {
     const P = still(v);
     setPlane(P);
     pose(sectionPose(P), S);
+    echo.liver3d.set(liverAt(P, false));
     TAGS[v] = { items: echo.sectionLabels(0), box: echo.sectorBox() };
     FIT[v] = fitPoints(drawnPoints());
   }
@@ -575,6 +578,20 @@ function keySite(P) {
   try { key.setView(wb, target, P.g.r, spec); } finally { delete key.site; }
 }
 
+/**
+ * The liver's alphas for plane P (src/echo.js _liverFor): in a subcostal view the liver the
+ * plane cuts, or the four-chamber view's near-field layer; with the body, the whole liver. In a
+ * move each goes from the one view's to the other's with the plane.
+ */
+function liverAt(P, body) {
+  const of = (v) => {
+    const V = VIEWS[v], sub = V.win === 'sub', four = sub && V.plane === 'sc4c';
+    return { liver: sub && (body || !four) ? 1 : 0, layer: four && !body ? 1 : 0 };
+  };
+  const a = of(P.from), b = of(P.to), k = P.from === P.to ? 0 : P.e;
+  return { liver: lerp(a.liver, b.liver, k), layer: lerp(a.layer, b.layer, k) };
+}
+
 // ---------------------------------------------------------------- panes
 function renderPanes(t) {
   // the beat at t: the model's cycle, 70 per minute, mitral closure on each grid beat
@@ -593,13 +610,18 @@ function renderPanes(t) {
   const B = panes.body;
   pose(bodyPose(P), B);
   stage.heart.setCut(null);
+  echo.liver3d.setCut(null);
+  echo.liver3d.set(liverAt(P, true));
   keySite(P);
-  bodyPencil.render(stage.scene, stage.camera, stage.heart, { boil, amyloid: a, tools: stage.tools, inset: key.frame(stage.camera, B.w, B.h) });
+  bodyPencil.render(stage.scene, stage.camera, stage.heart, { boil, amyloid: a, tools: stage.tools, layer: echo.liver3d, inset: key.frame(stage.camera, B.w, B.h) });
   // 2. cross-section: the heart cut on the plane, seen square to it
   const S = panes.section;
   pose(sectionPose(P), S);
-  stage.heart.setCut(new THREE.Plane().setFromNormalAndCoplanarPoint(P.g.n, P.g.O));
-  stage.pencil.render(stage.scene, stage.camera, stage.heart, { boil, amyloid: a, tools: stage.tools, inset: null });
+  const cut = new THREE.Plane().setFromNormalAndCoplanarPoint(P.g.n, P.g.O);
+  stage.heart.setCut(cut);
+  echo.liver3d.setCut(cut);
+  echo.liver3d.set(liverAt(P, false));
+  stage.pencil.render(stage.scene, stage.camera, stage.heart, { boil, amyloid: a, tools: stage.tools, layer: echo.liver3d, inset: null });
   // 3. the echo. Where the near field changes kind, the two images cross over inside the
   // sector only; the scanner's lettering and the ECG come from one image, the one of the
   // view the move is closer to

@@ -37,7 +37,7 @@ export function beneath(target, d, wall) {
 }
 
 /** Join vertices that share a position (a sphere repeats its seam), so sections close. */
-function weld(g) {
+export function weld(g) {
   const p = g.attributes.position, map = new Map(), idx = [], pos = [];
   const remap = new Int32Array(p.count);
   for (let i = 0; i < p.count; i++) {
@@ -152,9 +152,16 @@ function liver(heart) {
   return new THREE.Mesh(weld(g));
 }
 
+/** The liver alone, built once per heart model (the 3D views draw it: gl/liver3d.js). */
+const livers = new WeakMap();
+export function buildLiver(heart) {
+  if (!livers.has(heart)) livers.set(heart, liver(heart));
+  return livers.get(heart);
+}
+
 /** The meshes, built once from the heart model. */
 export function buildAbdomen(heart) {
-  const out = { liver: liver(heart) };
+  const out = { liver: new THREE.Mesh(buildLiver(heart).geometry) };
   for (const [k, t] of Object.entries(ABD)) out[k] = tube(t.pts, t.r[0], t.r[1], k === 'spine' ? 20 : 16);
   for (const m of Object.values(out)) m.updateMatrixWorld(true);
   return out;

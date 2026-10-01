@@ -21,7 +21,7 @@ let stage = null, echo = null, model = null, ready = null, failed = false, fig =
 let st = null, setState = null;
 let group = null, crossLines = null, marker = null, anchors = null, geoms = null, EM = null, pv = -1;
 const fans = new Map();
-let ink = null, labelBoxes = [], tick = 0, down = null;
+let ink = null, labelBoxes = [], tick = 0, down = null, hover = null;   // hover: the view a click on the 3D heart would take
 let freeFan = null, nearFan = null, nearInfo = null;
 const FREE_KEYS = ['prot', 'ptilt', 'prock', 'pslide', 'psweep'];
 // labels for a plane that is not a standard view: any structure lying on it
@@ -394,7 +394,7 @@ function style() {
   for (const [k, f] of fans) {
     const focus = k === st.pfocus;
     const has = S ? HAS[k].includes(S) : true;
-    const near = st.pfree && nearInfo && nearInfo.near && nearInfo.k === k;
+    const near = (st.pfree && nearInfo && nearInfo.near && nearInfo.k === k) || hover === k;
     f.mat.uniforms.uAlpha.value = S ? (has ? (focus ? 0.3 : 0.16) : 0.025) : (focus ? 0.3 : near ? 0.2 : 0.07);
     f.lmat.opacity = S ? (has ? 0.95 : 0.14) : (focus || near ? 1 : 0.42);
     f.probe.material.opacity = S && !has ? 0.1 : focus ? 0.85 : 0.35;
@@ -645,6 +645,40 @@ function focusView(k) {
   setState({ pviews: list.join(','), pfocus: k, playing: false });
 }
 
+/**
+ * The view whose sector is under the pointer (a client point), or null: of the sectors there,
+ * the nearest one that is not the focused view, else the focused one.
+ */
+function fanAt(cx, cy) {
+  if (!stage || !on || !fans.size) return null;
+  const c = stage.pencil.canvas.getBoundingClientRect();
+  if (!c.width || !c.height) return null;
+  const ray = new T.Raycaster();
+  ray.setFromCamera(new T.Vector2(((cx - c.left) / c.width) * 2 - 1, -((cy - c.top) / c.height) * 2 + 1), stage.camera);
+  const meshes = [];
+  for (const [k, f] of fans) {
+    const m = f.obj.children[0];
+    m.userData.view = k;
+    meshes.push(m);
+  }
+  const hits = ray.intersectObjects(meshes, false);
+  if (!hits.length) return null;
+  const other = hits.find((h) => h.object.userData.view !== st.pfocus);
+  return (other || hits[0]).object.userData.view;
+}
+
+/** A click on a plane: its view in focus and the camera square to it, as its echo is turned. */
+function clickPlane(k) {
+  if (st.pfree) {
+    if (st.pcam !== 'plane') setState({ pcam: 'plane' });
+    goTo(k);
+    return;
+  }
+  const list = sel();
+  if (!list.includes(k)) list.push(k);
+  setState({ pviews: list.join(','), pfocus: k, pcam: 'plane', playing: false });
+}
+
 function buildChips() {
   const host = document.getElementById('planes-views');
   if (!host) return;
@@ -736,13 +770,28 @@ export default {
     ink = fig.querySelector('#planes-ink');
     const host = fig.querySelector('.pane-3d');
     host.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
-    host.addEventListener('click', (e) => {
-      if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
+    // a click (not a drag) on a plane's tag or on its sector focuses that view
+    const tagAt = (e) => {
       const r = host.getBoundingClientRect();
       const x = e.clientX - r.left, y = e.clientY - r.top;
-      const hit = labelBoxes.find((b) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1);
-      if (hit) focusView(hit.key);
+      return labelBoxes.find((b) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1);
+    };
+    host.addEventListener('click', (e) => {
+      if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
+      const hit = tagAt(e);
+      if (hit) { focusView(hit.key); return; }
+      const k = fanAt(e.clientX, e.clientY);
+      if (k) clickPlane(k);
     });
+    // on hover, the sector a click would take lights up as a near view does
+    const hoverOn = (k) => { if (k !== hover) { hover = k; style(); } };
+    host.addEventListener('pointermove', (e) => {
+      if (e.buttons || e.pointerType === 'touch') return;
+      const tag = tagAt(e), k = tag ? tag.key : fanAt(e.clientX, e.clientY);
+      host.style.cursor = k ? 'pointer' : '';
+      hoverOn(k || null);
+    });
+    host.addEventListener('pointerleave', () => { host.style.cursor = ''; hoverOn(null); });
     buildChips();
     for (const k of FREE_KEYS) document.getElementById(k)?.addEventListener('change', release);
     document.getElementById('pfree-reset')?.addEventListener('click', () => startGlide());
@@ -762,6 +811,7 @@ export default {
   enter() { enter(); },
   leave() {
     on = false;
+    hover = null;
     if (freeFan) { dropFan(freeFan); freeFan = null; }
     if (nearFan) { dropFan(nearFan); nearFan = null; }
     if (group) group.visible = false;
@@ -803,7 +853,8 @@ export default {
       if ('pfree' in ch || 'pfocus' in ch || FREE_KEYS.some((k) => k in ch)) syncFree('pfocus' in ch);
     } else if ('pfocus' in ch && s.pfocus) echo.setView(s.pfocus);
     if ('pheart' in ch) stage.heart.group.visible = s.pheart;
-    if ('pcam' in ch) camera();
+    // square to the plane: a new focus turns the camera with it (the free plane turns it in syncFree)
+    if ('pcam' in ch || ('pfocus' in ch && s.pcam === 'plane' && !s.pfree)) camera();
   },
   key_(k, set, s) {
     if (k !== '[' && k !== ']') return;

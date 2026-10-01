@@ -7,7 +7,9 @@
 //         shows through wherever nothing is drawn.
 // Tools (the probe) go through passes 1 and 2 with the heart; setToolInk draws them in a pencil
 // of their own. An inset (the body key) runs the same passes in its corner: its solids hatched,
-// its body as an outline in the third pass.
+// its body as an outline in the third pass. A layer (the liver, gl/liver3d.js) goes through
+// passes 1 and 2 on targets of its own; the composite draws it in the same pencil, its cut in a
+// hatch of its own, and lays it over the heart where it is nearer, at the alpha it fades by.
 import * as THREE from '../../vendor/three.bundle.min.js';
 
 const QUAD_VS = /* glsl */`
@@ -37,6 +39,11 @@ uniform vec3 uLift;
 uniform vec3 uCongo;
 uniform vec3 uTool;
 uniform float uToolOn;
+uniform sampler2D tData2;
+uniform sampler2D tNormal2;
+uniform sampler2D tDepth2;
+uniform float uLayer;
+uniform float uLayerA;
 varying vec2 vUv;
 
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
@@ -92,6 +99,35 @@ float hatch(vec2 p, float ang, float gap, float width, float seed) {
 }
 
 vec4 over(vec4 dst, vec3 c, float a) { return vec4(c * a + dst.rgb * (1.0 - a), a + dst.a * (1.0 - a)); }
+
+// The layer (the liver) in the heart's pencil: hatched by tone, its outline from its own normals
+// and depth, its cut in a sparser hatch the other way. Out: its cover, depth and alpha here.
+vec4 layerColor(vec2 uv, vec2 p, vec2 wob, out float cover, out float depth, out float alpha) {
+  vec4 d = texture2D(tData2, uv);
+  cover = d.a;
+  alpha = d.g;
+  depth = texture2D(tDepth2, uv).r;
+  float cap = step(0.9, d.b);
+  float e = edges(tNormal2, tDepth2, uv + wob, 1.0 * uDpr, 1.0);
+  e = max(e, 0.55 * edges(tNormal2, tDepth2, uv - wob * 0.6, 1.9 * uDpr, 1.0));
+  e *= 0.72 + 0.28 * noise(p * 0.35 + uBoil);
+  float t = mix(d.r, 1.0 - d.r, uDark);
+  float ink = 0.0;
+  if (uDark < 0.5) {
+    ink = max(ink, 0.50 * hatch(p, 0.72, 6.5, 0.9, 1.0) * smoothstep(0.74, 0.60, t));
+    ink = max(ink, 0.55 * hatch(p, -0.62, 5.8, 0.9, 2.0) * smoothstep(0.55, 0.42, t));
+    ink = max(ink, 0.60 * hatch(p, 0.18, 5.2, 0.9, 3.0) * smoothstep(0.38, 0.26, t));
+  } else {
+    ink = max(ink, 0.42 * hatch(p, 0.72, 6.5, 0.9, 1.0) * smoothstep(0.30, 0.48, 1.0 - t));
+    ink = max(ink, 0.50 * hatch(p, -0.62, 5.8, 0.9, 2.0) * smoothstep(0.50, 0.66, 1.0 - t));
+  }
+  ink *= cover * (1.0 - cap);
+  float lift = (1.0 - uDark) * 0.55 * hatch(p, 1.05, 5.6, 1.2, 4.0) * smoothstep(0.80, 0.93, d.r) * cover * (1.0 - cap);
+  ink = max(ink, cap * 0.36 * hatch(p, -0.785, 7.4, 0.85, 6.0));
+  ink = max(ink, e);
+  vec4 col = over(vec4(0.0), uLift, clamp(lift, 0.0, 1.0));
+  return over(col, uInk, clamp(ink, 0.0, 1.0) * 0.92);
+}
 
 void main() {
   // the part of the targets this quad shows: all of them, or an inset's corner
@@ -162,6 +198,17 @@ void main() {
   vec3 pencil = mix(uInk, uCongo, warm * step(peri, ink));
   pencil = mix(pencil, uTool, toolNear * uToolOn * step(peri, ink));
   col = over(col, pencil, clamp(max(ink, peri), 0.0, 1.0) * 0.92);
+
+  // the layer: over the heart where it is nearer, faded by its alpha; where neither has a
+  // surface, its outline over the heart's
+  if (uLayer > 0.5) {
+    float cL, zL, aL;
+    vec4 colL = layerColor(uv, p, wob, cL, zL, aL);
+    float a = cL > 0.5 ? aL : uLayerA;
+    float zH = texture2D(tDepth, uv).r;
+    if (cL > 0.5 && (cover < 0.5 || zL < zH)) col = mix(col, colL, a);
+    else if (cover < 0.5) col = colL * a + col * (1.0 - colL.a * a);
+  }
   gl_FragColor = col;
 }`;
 
@@ -221,6 +268,11 @@ export class Pencil {
         uCongo: { value: new THREE.Vector3(0.7, 0.23, 0.18) },
         uTool: { value: new THREE.Vector3(0.13, 0.15, 0.17) },
         uToolOn: { value: 0 },
+        tData2: { value: null },
+        tNormal2: { value: null },
+        tDepth2: { value: null },
+        uLayer: { value: 0 },
+        uLayerA: { value: 0 },
       },
       depthTest: false,
       depthWrite: false,
@@ -266,6 +318,7 @@ export class Pencil {
     this.rtNormal.setSize(W, H);
     this.rtData.setSize(W, H);
     this.rtPeri.setSize(W, H);
+    if (this.rtNormal2) { this.rtNormal2.setSize(W, H); this.rtData2.setSize(W, H); }
     this.post.uniforms.uRes.value.set(W, H);
     this.post.uniforms.uDpr.value = dpr;
   }
@@ -284,6 +337,8 @@ export class Pencil {
 
     const periVisible = heart.peri ? heart.peri.visible : false;
     const tools = opts.tools || [];   // {mesh, data, normal}: meshes in the scene, beside the heart
+    const layer = opts.layer && opts.layer.alpha > 0 ? opts.layer : null;
+    if (opts.layer) opts.layer.group.visible = false;
 
     // pass 1: normals + depth
     if (heart.peri) heart.peri.visible = false;
@@ -300,6 +355,8 @@ export class Pencil {
     r.setRenderTarget(this.rtData);
     r.clear(true, true, true);
     r.render(scene, camera);
+
+    if (layer) this.renderLayer(scene, camera, layer);
 
     // pass 3: pericardium on its own
     r.setRenderTarget(this.rtPeri);
@@ -325,7 +382,10 @@ export class Pencil {
     r.setRenderTarget(null);
     r.setClearColor(0x000000, 0);
     r.clear(true, true, true);
+    u.uLayer.value = layer ? 1 : 0;
+    u.uLayerA.value = layer ? layer.alpha : 0;
     r.render(this.quadScene, this.quadCam);
+    u.uLayer.value = 0;
     if (opts.overlayScene) {
       r.clearDepth();
       r.render(opts.overlayScene, camera);
@@ -353,6 +413,53 @@ export class Pencil {
       r.outputColorSpace = THREE.LinearSRGBColorSpace;
       r.setClearColor(0x000000, 0);
     }
+  }
+
+  /**
+   * Passes 1 and 2 of a layer, on its own targets: normals and depth, then data. Each solid of
+   * the layer that shows (alpha above 0) is drawn in turn with its own cut cap, the stencil
+   * cleared between them. Everything else in the scene but the lights is hidden meanwhile.
+   * layer: { group, solids: [{ root, items: [{mesh, data, normal}], alpha }], alpha }
+   */
+  renderLayer(scene, camera, layer) {
+    const r = this.renderer, u = this.post.uniforms;
+    if (!this.rtNormal2) {
+      const dt = new THREE.DepthTexture(1, 1);
+      dt.format = THREE.DepthStencilFormat;
+      dt.type = THREE.UnsignedInt248Type;
+      this.rtNormal2 = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: true, stencilBuffer: true, depthTexture: dt });
+      this.rtData2 = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: true, stencilBuffer: true, type: THREE.HalfFloatType });
+      const W = Math.max(1, Math.round(this.w * this.dpr)), H = Math.max(1, Math.round(this.h * this.dpr));
+      this.rtNormal2.setSize(W, H);
+      this.rtData2.setSize(W, H);
+      u.tData2.value = this.rtData2.texture;
+      u.tNormal2.value = this.rtNormal2.texture;
+      u.tDepth2.value = this.rtNormal2.depthTexture;
+    }
+    const hidden = [];
+    for (const o of scene.children) {
+      if (o === layer.group || o.isLight || o.isCamera || !o.visible) continue;
+      o.visible = false;
+      hidden.push(o);
+    }
+    layer.group.visible = true;
+    const shown = layer.solids.filter((sd) => sd.alpha > 0);
+    for (const sd of layer.solids) sd.root.visible = false;
+    r.setClearColor(0x000000, 0);
+    for (const [rt, key] of [[this.rtNormal2, 'normal'], [this.rtData2, 'data']]) {
+      r.setRenderTarget(rt);
+      r.clear(true, true, true);
+      for (const sd of shown) {
+        sd.root.visible = true;
+        for (const it of sd.items) it.mesh.material = it[key];
+        r.render(scene, camera);
+        sd.root.visible = false;
+        r.clear(false, false, true);
+      }
+    }
+    for (const sd of shown) sd.root.visible = true;
+    layer.group.visible = false;
+    for (const o of hidden) o.visible = true;
   }
 
   /**

@@ -109,6 +109,7 @@ export class Stage3D {
     this.onFrame = null;
     this.inset = null;    // a key in a corner (gl/bodykey.js): frame(camera, w, h) -> { scene, camera, rect }
     this.tools = [];      // pencil items of meshes in the scene beside the heart (the probe)
+    this.layer = null;    // a layer drawn over the heart, fading in and out (gl/liver3d.js)
     this.tween = null;
     this.ready = this._load();
   }
@@ -261,6 +262,7 @@ export class Stage3D {
     // the 2D figure that follows the model (labels, echo) and the 3D view fail apart
     if (this.onFrame) { try { this.onFrame(this); } catch (err) { this.report(err); } }
     const boil = reducedMotion ? 0 : Math.floor(this.clock * 7) * 1.37;
+    if (this.layer) this.layer.step();
     this.pencil.render(this.scene, this.camera, this.heart, {
       boil,
       amyloid: a,
@@ -270,6 +272,7 @@ export class Stage3D {
       site: o.site,
       overlayScene: this.overlayScene.children.length ? this.overlayScene : null,
       tools: this.tools,
+      layer: this.layer,
       inset: this.inset ? this.inset.frame(this.camera, this.pencil.w, this.pencil.h) : null,
     });
   }

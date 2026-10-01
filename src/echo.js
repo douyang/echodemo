@@ -8,6 +8,7 @@ import { ecg as ecgStrip } from './scope.js';
 import { bmode, DB } from './bmode.js';
 import { reducedMotion } from './state.js';
 import { ABD, buildAbdomen, beneath } from './abdomen.js';
+import { Liver3D } from './gl/liver3d.js';
 import { pencilProbe, placeProbe } from './gl/probe3d.js';
 
 export { VIEWS };
@@ -562,12 +563,30 @@ export class EchoView {
     this.overlay = new THREE.Group();
     this.overlay.add(this.fan, this.fanLine);
     s.overlayScene.add(this.overlay);
+    // the liver of the subcostal views, a layer of the stage's pencil over the heart
+    this.liver3d = new Liver3D(this.model.heart, this.geoms.sc4c, VIEWS.sc4c);
+    s.scene.add(this.liver3d.group);
   }
 
-  /** Show or hide the fan and the probe (a chapter that shares the stage hides them). */
+  /** Show or hide the fan, the probe and the liver (a chapter that shares the stage hides them). */
   showOverlay(on) {
     if (this.overlay) this.overlay.visible = on;
     if (this.probeRoot) this.probeRoot.visible = on;
+    if (this.liver3d) {
+      if (on) this.stage.layer = this.liver3d;
+      else if (this.stage.layer === this.liver3d) this.stage.layer = null;
+    }
+  }
+
+  /**
+   * The liver for view key, fading over T ms: in a subcostal view, the liver the plane cuts
+   * (IVC and aorta views), or the near-field layer of the four-chamber view; with the probe
+   * and body, the whole liver in every subcostal view. None in the other windows.
+   */
+  _liverFor(key, T) {
+    if (!this.liver3d) return;
+    const v = VIEWS[key], sub = !!v && v.win === 'sub', four = sub && v.plane === 'sc4c';
+    this.liver3d.fadeTo({ liver: sub && (this.bodyOn || !four) ? 1 : 0, layer: four && !this.bodyOn ? 1 : 0 }, T);
   }
 
   retheme() {
@@ -598,6 +617,7 @@ export class EchoView {
     if (!g) return;
     const spec = this.specOf(this.view);
     this._place3d(this.g, spec);
+    this._liverFor(this.view);
     if (on) {
       this._keySite();
       this.stage.opts.labeled = false;
@@ -661,6 +681,7 @@ export class EchoView {
       }
     } else { this.tr = null; this.cur = null; }
     if (!this.stage || !this.fan) return;
+    this._liverFor(key, this.tr ? this.tr.T : 700);
     if (!g1) {
       this.stage.heart.setCut(null);
       this.fan.visible = this.fanLine.visible = this.probe.visible = false;
@@ -706,11 +727,12 @@ export class EchoView {
     const half = THREE.MathUtils.degToRad(spec.angle / 2);
     const out = [];
     for (const [id, txt] of spec.labels || []) {
-      // the liver and the abdominal vessels are drawn in the echo only, not on the 3D heart
-      if (ECHO_ONLY.has(id)) continue;
+      // the abdominal vessels are drawn in the echo only, not on the 3D heart; the liver too,
+      // unless the 3D view shows it (gl/liver3d.js)
+      if (ECHO_ONLY.has(id) && !(id === 'liver' && this.liverShown())) continue;
       let q;
       {
-        const P = id === 'wallL' || id === 'wallR' ? this.wallPoint(id === 'wallR' ? 1 : -1, s || 0, g) : an[id];
+        const P = id === 'liver' ? this.liverPoint(g, spec) : id === 'wallL' || id === 'wallR' ? this.wallPoint(id === 'wallR' ? 1 : -1, s || 0, g) : an[id];
         if (!P) continue;
         q = this.toPlane(P, g);
         if (Math.abs(q[2]) > (ROOMY.has(id) ? 2.8 : 1.8) || q[1] < 0.5) continue;
@@ -721,6 +743,40 @@ export class EchoView {
       out.push({ id, x: p.x, y: p.y, text: FULL[txt] || txt.charAt(0).toUpperCase() + txt.slice(1) });
     }
     return out;
+  }
+
+  /** True when the 3D cross-section shows a liver, or is fading one in. */
+  liverShown() {
+    const L = this.liver3d, on = (sd) => (sd.fade ? sd.fade.a1 : sd.alpha) > 0;
+    return !!L && !this.bodyOn && (on(L.liver) || on(L.layer));
+  }
+
+  /**
+   * Where the liver tag points on plane g: the middle of the four-chamber view's near-field
+   * layer, or the middle of the part of the liver's section inside the sector.
+   */
+  liverPoint(g, spec) {
+    const L = this.liver3d;
+    if ((L.layer.fade ? L.layer.fade.a1 : L.layer.alpha) > 0) return g.O.clone().addScaledVector(g.d, (1.5 + spec.near) / 2);
+    const loops = this.abd.liver.section(g).filter((l) => l.closed && l.pts.length > 2).map((l) => l.pts);
+    const inside = (x, y) => loops.some((P) => {
+      let c = false;
+      for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+        const [xi, yi] = P[i], [xj, yj] = P[j];
+        if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+      }
+      return c;
+    });
+    const half = THREE.MathUtils.degToRad(spec.angle / 2);
+    let su = 0, sv = 0, n = 0;
+    for (let z = 1; z < spec.depth; z += 0.5) {
+      for (let k = -8; k <= 8; k++) {
+        const th = (half * k) / 8.5, x = z * Math.sin(th), y = z * Math.cos(th);
+        if (inside(x, y)) { su += x; sv += y; n++; }
+      }
+    }
+    if (!n) return null;
+    return g.O.clone().addScaledVector(g.r, su / n).addScaledVector(g.d, sv / n);
   }
 
   /** Screen box (px) of the sector on the 3D stage, for the tag columns beside it. */
@@ -792,7 +848,9 @@ export class EchoView {
     this.fanLine.geometry = new THREE.BufferGeometry();
     this.fanLine.geometry.setAttribute('position', new THREE.Float32BufferAttribute(line, 3));
     placeProbe(this.probe, g.O, g.d, g.r);
-    if (this.cutOn !== false) this.stage.heart.setCut(new THREE.Plane().setFromNormalAndCoplanarPoint(g.n.clone(), g.O));
+    const cut = this.cutOn !== false ? new THREE.Plane().setFromNormalAndCoplanarPoint(g.n.clone(), g.O) : null;
+    if (cut) this.stage.heart.setCut(cut);
+    if (this.liver3d) this.liver3d.setCut(cut);
   }
 
   /**
@@ -812,6 +870,7 @@ export class EchoView {
     // a view with its own heart plans only its own plane (setView plans another when asked)
     for (const k of this.own ? [this.view] : Object.keys(VIEWS)) { const g = viewGeometry(this.anat, k); if (g) this.geoms[k] = g; }
     if (free) this.geoms.free = free;
+    if (this.liver3d && this.geoms.sc4c) this.liver3d.setPlane4c(this.geoms.sc4c, VIEWS.sc4c);
     if (first) return;
     this.tr = null;
     this.cur = null;

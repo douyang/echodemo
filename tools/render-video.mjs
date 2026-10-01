@@ -57,7 +57,7 @@ async function segment(a, b, file, label = '') {
     await frame(i);
     const buf = await capture();
     if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once('drain', r));
-    if ((i - a) % 150 === 0 && i > a) {
+    if ((i - a) % 30 === 0 && i > a) {   // every 30 frames: often enough to follow a long render
       const el = (Date.now() - t0) / 1000, n = i - a;
       console.log(`${label}frame ${i}/${b} · ${(el / n).toFixed(2)} s/frame · eta ${(((b - i) * el) / n / 60).toFixed(1)} min`);
     }
