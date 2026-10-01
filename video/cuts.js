@@ -17,7 +17,7 @@ const CORE = ['plax', 'rv_in', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a5c', 'a
 const QUICK = ['plax', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a2c', 'a3c', 'sc4c', 'sc_ivc', 'ssn'];
 
 // title and end cards; the title's second line is the first sentence of chapter 07's dek (index.html)
-const CARDS = { title: 'Echo views', sub: 'Each standard view is one plane through the heart.', end: 'The Heart in Sound' };
+const CARDS = { title: 'Echo views', sub: 'Each standard view is one plane through the heart.', end: 'The Heart by Ultrasound' };
 
 export const CUTS = {
   // (A) full tour: every major view, window by window; 8 beats a view

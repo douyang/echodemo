@@ -1,4 +1,4 @@
-/* The Heart in Sound: graphite and chalk on cool drawing paper, one cobalt accent,
+/* The Heart by Ultrasound: graphite and chalk on cool drawing paper, one cobalt accent,
    scanner panels in black. Red marks a value outside its normal range.
    Layout: text panel on the left, the figure on the right, chapter bar below. */
 
@@ -164,7 +164,8 @@ a:hover { text-decoration-color: var(--accent); }
   margin: 0;
   white-space: nowrap;
   font: 400 var(--step-4)/0.98 var(--serif);
-  font-size: min(var(--step-4), calc((var(--panel-w) - 2 * var(--gutter)) / 8.2));
+  /* one line across the panel: the title is 10.72 em wide in this face */
+  font-size: min(var(--step-4), calc((var(--panel-w) - 2 * var(--gutter)) / 10.9));
   font-variation-settings: "opsz" 72;
   letter-spacing: -0.015em;
 }
@@ -798,7 +799,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 @media (max-width: 480px) {
   /* three rows: the eyebrow beside the three icons, the title across the full width, the
      subtitle beside the heart picker */
-  :root { --title-size: clamp(1.3rem, 8.4vw, 1.75rem); }
+  :root { --title-size: clamp(1.3rem, 8.2vw, 1.75rem); }
   .masthead { padding-top: 14px; padding-bottom: 8px; padding-right: var(--gutter); }
   .eyebrow { display: flex; align-items: center; min-height: 34px; margin-bottom: 4px; padding-right: 128px; }
   .title { font-size: var(--title-size); }
