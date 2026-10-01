@@ -55,7 +55,11 @@ export function viewGeometry(anat, key) {
   };
   switch (spec.plane) {
     case 'a4c': apical(spec.aim ? aims[spec.aim] : mv.clone().lerp(tv, 0.45), mv.clone().sub(tv)); break;
-    case 'a5c': apical(mv.clone().lerp(tv, 0.4).lerp(av, 0.55), mv.clone().sub(tv)); break;
+    // the four-chamber plane tilted anteriorly 10 degrees (ASE 2019, Table 2, row 2.17): the beam
+    // aims 85% of the way from the four-chamber target to the aortic valve, so the LVOT, the valve
+    // and the root lie in the plane, between the RA and the LA (at 55% the plane missed the valve
+    // by 1 cm and showed four chambers)
+    case 'a5c': apical(mv.clone().lerp(tv, 0.4).lerp(av, 0.85), mv.clone().sub(tv)); break;
     case 'a3c': apical(spec.aim ? aims[spec.aim] : mv.clone().lerp(av, 0.5), av.clone().sub(mv)); break;
     case 'a2c': {
       // the third apical plane: about 60 degrees from both the four-chamber and the long-axis
