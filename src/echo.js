@@ -467,7 +467,7 @@ export class EchoView {
     this.measure = {};
     this.geo = model.sizes;
     this.pv = -1;         // the version of the heart it last took (model3d.js); the first frame takes it
-    this.noSys = false;   // true: the heart's own systolic change is off (chapter 10 sets the motion)
+    this.noSys = false;   // true: the heart's own systolic change is off (chapter 09 sets the motion)
     this.own = null;      // a heart of this view's own (setBurden), in place of the page's
     this.ownAnat = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
@@ -512,7 +512,7 @@ export class EchoView {
 
   /**
    * Show the model's own amyloid heart at burden a (0 normal .. 1 the amyloid corner), whatever
-   * heart the page shows; null: the page's heart again. Chapter 18 sets it.
+   * heart the page shows; null: the page's heart again. Chapter 17 sets it.
    */
   setBurden(a) {
     if (a === null || a === undefined) {
@@ -598,8 +598,10 @@ export class EchoView {
   }
 
   /**
-   * Probe and body (chapter 07): the whole heart from the front, head up, with the plane and
-   * the probe, and the body key in a corner (gl/bodykey.js). Off: the cut, seen square to it.
+   * Probe and body: the whole heart from the front, head up, with the plane and the probe, and
+   * the body key in a corner (gl/bodykey.js). Off: the cut, seen square to it. No page calls it
+   * now: chapter 07 draws the body key in its All planes pane (ch/windows.js), and the views
+   * video draws this view in its own pane (video/app.js).
    */
   async setBody(on) {
     this.bodyOn = !!on;
@@ -654,6 +656,7 @@ export class EchoView {
    * Show a view. With animate (the default once a plane is on screen), the plane moves from
    * where it is to the new one: it turns along the shortest rotation while the point it
    * images slides across, the way a probe is tilted, rotated and slid, never from nothing.
+   * opts.T: the move's length (ms); opts.instant: the 3D camera goes to the plane at once.
    */
   setView(key, opts = {}) {
     const from = this.g;
@@ -690,21 +693,22 @@ export class EchoView {
     this.fan.visible = this.fanLine.visible = this.probe.visible = true;
     this._place3d(this.g, spec);
     if (this.bodyOn) this._keySite();   // the camera stays where the viewer put it
-    else this._aim(g1, spec);
+    else this._aim(g1, spec, !!opts.instant);
   }
 
   /**
    * The 3D camera for plane g: obliquely onto the cut, or square to it (section), turned as
-   * the echo is: the probe at the top, screen-right the same side. It eases there.
+   * the echo is: the probe at the top, screen-right the same side. It eases there, unless
+   * instant (a plane that follows a slider).
    */
-  _aim(g, spec) {
+  _aim(g, spec, instant = false) {
     if (!this.stage || !g) return;
     const target = g.O.clone().addScaledVector(g.d, spec.depth * (this.section ? 0.5 : 0.45));
     this.stage.opts.labeled = !!this.section;
-    if (this.section) this.stage.view(g.n.clone(), g.d.clone().negate(), 0.137 * spec.depth, target);
+    if (this.section) this.stage.view(g.n.clone(), g.d.clone().negate(), 0.137 * spec.depth, target, instant);
     else {
       const look = g.n.clone().addScaledVector(g.r, -0.55).addScaledVector(g.d, 0.35).normalize();
-      this.stage.view(look, g.d.clone().negate(), 2.7, target);
+      this.stage.view(look, g.d.clone().negate(), 2.7, target, instant);
     }
   }
 
@@ -717,9 +721,10 @@ export class EchoView {
 
   /**
    * Label points for the cross-section: the view's structures that lie on the plane and in
-   * the sector, as screen points of the 3D stage. Returns [{ id, x, y, text }].
+   * the sector, as screen points of the 3D stage. Returns [{ id, x, y, text }]: the full names,
+   * or with short the view's own (RVOT, IVS), for a narrow pane.
    */
-  sectionLabels(s) {
+  sectionLabels(s, short = false) {
     const g = this.g;
     if (!g || !this.stage) return [];
     const spec = this.specOf(this.view);
@@ -740,7 +745,7 @@ export class EchoView {
       if (Math.abs(Math.atan2(q[0], q[1])) > half || Math.hypot(q[0], q[1]) > spec.depth) continue;
       const p = this.stage.project(g.O.clone().addScaledVector(g.r, q[0]).addScaledVector(g.d, q[1]));
       if (p.z > 1) continue;
-      out.push({ id, x: p.x, y: p.y, text: FULL[txt] || txt.charAt(0).toUpperCase() + txt.slice(1) });
+      out.push({ id, x: p.x, y: p.y, text: (!short && FULL[txt]) || txt.charAt(0).toUpperCase() + txt.slice(1) });
     }
     return out;
   }
@@ -941,7 +946,10 @@ export class EchoView {
       const cx = W / 2 - cu * scale, top0 = top + boxH / 2 - cv * scale;
       return { X: (u) => cx + u * scale, Y: (v) => top0 + v * scale, scale, cx, top: top0, half, ecgH, spec, zoomed: true, boxTop: top, boxH };
     }
-    const scale = Math.min((H - top - ecgH - (off ? 6 : 40)) / spec.depth, (W - (off ? 6 : 36)) / (2 * spec.depth * Math.sin(half)));
+    // the depth labels (draw(): 10 px mono, 12 px right of the sector edge) stay inside a narrow canvas
+    const d5 = Math.ceil(spec.depth / 5 - 1) * 5, room = W / 2 - 16 - 6.5 * String(d5).length;
+    const label = off || d5 <= 0 || room <= 0 ? Infinity : room / (d5 * Math.sin(half));
+    const scale = Math.min((H - top - ecgH - (off ? 6 : 40)) / spec.depth, (W - (off ? 6 : 36)) / (2 * spec.depth * Math.sin(half)), label);
     const cx = W / 2;
     return { X: (u) => cx + u * scale, Y: (v) => top + v * scale, scale, cx, top, half, ecgH, spec };
   }
@@ -1032,7 +1040,7 @@ export class EchoView {
     };
     const cor = (extra.cor || []).filter(closed).map((L) => L.pts).filter((C) => !inBlood(C));
     // the pericardium mesh dips into the myocardium in places (up to about 3 mm), and more where
-    // a wall moves on its own (chapter 10): a point of its line inside a wall moves out to the
+    // a wall moves on its own (chapter 09): a point of its line inside a wall moves out to the
     // wall's outer surface and 0.6 mm beyond, so the line never runs through muscle
     // even-odd over all the wall loops at once, with the edges sorted into 2.5 mm bands of depth
     // so that a point tests only the edges at its own depth
@@ -1164,7 +1172,7 @@ export class EchoView {
       this.boxPath.rect(8, m.boxTop, W - 16, m.boxH);
     }
     if (off) {
-      // no header, scale or labels: a page draws its own; calipers when it asks (chapter 18)
+      // no header, scale or labels: a page draws its own; calipers when it asks (chapter 17)
       if (this.calipers && this.view === 'plax' && !this.tr) this.drawCalipers(tissue, X, Y);
       else this.measure = {};
       return;

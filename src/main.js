@@ -14,6 +14,10 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const KEYS = CHAPTERS.map((c) => c.key);
+// old addresses: 07 Windows and 08 Planes are one chapter (key windows), 07 Views
+const ALIAS = { planes: 'windows', views: 'windows' };
+/** The chapter index of an address's #key, or -1. */
+const chapterOf = (hash) => { const h = (hash || '').slice(1); return KEYS.indexOf(ALIAS[h] || h); };
 const CH = Object.fromEntries(KEYS.map((k, i) => [k, i]));
 
 // a chapter article left out of CHAPTERS (the report, chapters.js) stays hidden, its citations unnumbered
@@ -35,7 +39,7 @@ const sheets = {};
 function applyTheme(mode) {
   if (mode) document.documentElement.dataset.theme = mode;
   $('#theme-label').textContent = currentTheme() === 'dark' ? 'Paper' : 'Slate';
-  for (const sh of Object.values(sheets)) sh.retheme?.();
+  for (const sh of Object.values(sheets)) sh?.retheme?.();   // a 3D chapter's figure() returns null
   for (const c of CHAPTERS) c.retheme?.();
   dirtyAll();
 }
@@ -57,7 +61,7 @@ musicBtn.addEventListener('click', async () => {
 });
 // cues for changes on screen: a new chapter; a new view, set of views or heart, or any switch or
 // tick box (bindControls adds their keys; the grades of a playing severity page ring from sev.js)
-const BELL_KEYS = new Set(['view', 'pfocus', 'pviews', 'pheno']);
+const BELL_KEYS = new Set(['view', 'pviews', 'pheno']);
 subscribe((s, ch) => {
   if ('chapter' in ch) cue('chapter');
   else if (Object.keys(ch).some((k) => BELL_KEYS.has(k))) cue('bell');
@@ -499,14 +503,13 @@ function start() {
   refIndex = numberCitations();
   applyTheme();
   syncControls();
-  const h = (location.hash || '').slice(1);
-  const fromHash = KEYS.indexOf(h);
+  const fromHash = chapterOf(location.hash);
   renderAllText();
   if (fromHash > 0) set({ chapter: fromHash }); else showChapter();
   // a new #key in the address bar opens that chapter (showChapter writes the hash with
   // replaceState, which fires no hashchange)
   window.addEventListener('hashchange', () => {
-    const i = KEYS.indexOf((location.hash || '').slice(1));
+    const i = chapterOf(location.hash);
     if (i >= 0 && i !== state.chapter) goChapter(i);
   });
   window.addEventListener('resize', () => {

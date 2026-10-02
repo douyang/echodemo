@@ -1,4 +1,4 @@
-// 17 Pericardium: one slider from no effusion through mild, moderate and severe (large)
+// 16 Pericardium: one slider from no effusion through mild, moderate and severe (large)
 // effusion to tamponade. The fluid layer at end-diastole sets the size grade (ESC 2015 and 2025:
 // <10, 10-20, >20 mm). As the sac fills, the pressure in it rises; when it reaches the right
 // atrial pressure the right heart is compressed first: the RA folds in from late diastole, the

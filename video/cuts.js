@@ -7,9 +7,14 @@
 // 'full' (name, probe, structures) or 'compact' (name, probe).
 //
 // Caption wording comes from the site: the name is VIEWS[].name and the probe line is
-// WINDOWS[].probe (src/views.js, read at run time); the structures are the view's labels
-// (VIEWS[].labels) with the names the cross-section tags use (src/echo.js).
-import { VIEWS, WINDOWS } from '../src/views.js';
+// WINDOWS[].probe, or the probe's move to the view, MOVE[] (src/views.js, read at run time); the
+// structures are the view's labels (VIEWS[].labels) with the names the cross-section tags use
+// (src/echo.js).
+//
+// Cut P is the video of chapter 07: its left pane is All planes (left: 'planes'), the planes of the
+// nine standard views with the current plane in ink and the body figure in a corner, as the
+// chapter draws them; its cards are the chapter's (chapter: the chapter's key; video/app.js).
+import { VIEWS, WINDOWS, MOVE } from '../src/views.js';
 
 const ALL = ['plax', 'plax_asc', 'rv_in', 'rv_out', 'psax_av', 'psax_pa', 'psax_tv', 'psax_mv', 'psax_pm', 'psax_ap',
   'a4c', 'a4c_rv', 'a5c', 'a2c', 'a3c', 'sc4c', 'sc_ivc', 'sc_aorta', 'ssn', 'ssn_sax'];
@@ -32,6 +37,10 @@ export const CUTS = {
   // (D) vertical, stacked for phones; the core views, 6 beats a view
   D: { id: 'D', name: 'Vertical', aspect: '9:16', theme: 'dark', views: CORE, caption: 'full', cards: CARDS,
     intro: 3, hold: 4, move: 2, winHold: 3, winMove: 3, lastHold: 4, outro: 4 },
+  // (P) chapter 07: All planes, the cross-section and the echo, one plane moving through all
+  // three; the core views, 7 beats a view; the probe line is the move to each view
+  P: { id: 'P', name: 'Views and planes', aspect: '16:9', theme: 'dark', views: CORE, caption: 'full', probe: 'move', left: 'planes', chapter: 'windows',
+    cards: CARDS, intro: 4, hold: 5, move: 2, winHold: 4, winMove: 3, lastHold: 6, outro: 6 },
 };
 
 /** Structures in each view: its labels (VIEWS[].labels), named as the cross-section names them. */
@@ -69,10 +78,10 @@ PROBE.psax = 'Left sternal border, rotated 90° clockwise from the long axis';
 /** Window names for the progress line: WINDOWS[].name. */
 export const WIN_NAME = Object.fromEntries(WINDOWS.map((w) => [w.key, w.name]));
 
-/** The caption of a view: { win, window, name, probe, shows }. */
-export function caption(view) {
+/** The caption of a view: { win, window, name, probe, shows }. probe: 'move', the probe's move to the view. */
+export function caption(view, probe = 'window') {
   const v = VIEWS[view];
-  return { win: v.win, window: WIN_NAME[v.win], name: v.name, probe: PROBE[v.win], shows: SHOWS[view] };
+  return { win: v.win, window: WIN_NAME[v.win], name: v.name, probe: probe === 'move' ? MOVE[view] : PROBE[v.win], shows: SHOWS[view] };
 }
 
 export { ALL };

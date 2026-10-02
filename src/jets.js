@@ -1,4 +1,4 @@
-// The color Doppler format of the valve pages (chapters 12 to 16).
+// The color Doppler format of the valve pages (chapters 11 to 15).
 //   'plume': each jet from a model of its flow (echo2d.js jet()): flow convergence (PISA) upstream
 //     of the orifice and a flame-shaped jet downstream, at the page's aliasing velocity, over the
 //     grey image. Jets only.

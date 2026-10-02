@@ -1,8 +1,7 @@
-// The eighteen chapters in reading order, grouped into seven parts.
+// The seventeen chapters in reading order, grouped into seven parts.
 import pulse from './ch/pulse.js';
 import image from './ch/image.js';
 import windows from './ch/windows.js';
-import planes from './ch/planes.js';
 import cycle from './ch/cycle.js';
 import loop from './ch/loop.js';
 import shift from './ch/shift.js';
@@ -20,7 +19,7 @@ import amyloidPage from './ch/amyloid.js';
 import report from './ch/report.js';
 
 // The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come
-// back as chapter 19 when this is true (main.js shows the article of every chapter listed here).
+// back as chapter 18 when this is true (main.js shows the article of every chapter listed here).
 // The Normal values table opens from it.
 const SHOW_REPORT = false;
 
@@ -35,4 +34,4 @@ export const PARTS = [
   ...(SHOW_REPORT ? [{ key: 'report', num: 'VIII', name: 'Report' }] : []),
 ];
 
-export const CHAPTERS = [pulse, image, shift, pressure, cycle, loop, windows, planes, eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, ...(SHOW_REPORT ? [report] : [])];
+export const CHAPTERS = [pulse, image, shift, pressure, cycle, loop, windows, eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, ...(SHOW_REPORT ? [report] : [])];

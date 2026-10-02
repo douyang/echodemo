@@ -1,5 +1,5 @@
-// The chapter videos (video/chapter.html?ch=key): one for each chapter but 07, which has the
-// views video (video/cuts.js). No DOM: the page, the render tool and the score read it.
+// The chapter videos (video/chapter.html?ch=key): one for each chapter but 07, whose video is cut
+// P of the views video (video/cuts.js). No DOM: the page, the render tool and the score read it.
 //
 // A video: the title card (intro, in beats; one beat = 60/70 s), then the chapter's figure
 // through its steps, then the end card (outro). The steps follow the chapter's own tour (its
@@ -102,19 +102,7 @@ export const VIDEOS = {
       { preset: 'mr', via: { pv: 'custom' }, pick: [0, 1], track: 'Volume load', move: 4, hold: 7 },
     ],
   },
-  // 08: the tour's four sets of planes (PRESETS in src/ch/planes.js), each seen from its own side
-  planes: {
-    pane: '',   // the figure names its two panes itself
-    side: false,
-    steps: [
-      { set: { pviews: 'plax,psax_av,psax_mv,psax_pm,a4c,a2c,a3c,sc4c,ssn', pfocus: 'plax', pcam: 'front', pstruct: 'none', pheart: true, pcut: false, plines: true, pfree: false },
-        name: 'Nine standard imaging planes', line: 'Each standard view is a plane through the same heart.', track: 'Nine views', hold: 9 },
-      { set: { pviews: 'a4c,a5c,a2c,a3c', pfocus: 'a2c', pcam: 'apex' }, name: 'Apical planes, viewed from the apex', line: 'The apical four-, two- and three-chamber planes intersect along the LV long axis.', track: 'Apical', move: 4, hold: 9 },
-      { set: { pviews: 'psax_av,psax_mv,psax_pm,psax_ap', pfocus: 'psax_mv', pcam: 'side' }, name: 'Parallel short-axis planes', line: 'The parasternal short-axis planes are nearly parallel sections through the heart.', track: 'Short axis', move: 4, hold: 9 },
-      { set: { pviews: 'plax,psax_av,psax_mv,psax_pm,a4c,a2c,a3c,sc4c,ssn', pfocus: 'a3c', pcam: 'front', pstruct: 'av' }, name: 'Aortic valve in several views', track: 'Aortic valve', pick: [2], move: 4, hold: 9 },
-    ],
-  },
-  // 09: a dilated LV with a low EF, foreshortening, then the RV
+  // 08: a dilated LV with a low EF, foreshortening, then the RV
   eject: {
     pane: 'Volumes and function',
     quant: { edv: 1, ef: 1, fore: 1, tapse: 0.5, sPrime: 0.5, fac: 1 },
@@ -126,7 +114,7 @@ export const VIDEOS = {
       { set: { tapse: 12, sPrime: 7, fac: 27 }, name: 'RV systolic dysfunction', track: 'RV dysfunction', pick: [0], move: 4, hold: 7 },
     ],
   },
-  // 10: the three coronary territories, akinetic
+  // 09: the three coronary territories, akinetic
   segments: {
     pane: '17-segment model',
     steps: [
@@ -136,7 +124,7 @@ export const VIDEOS = {
       { set: { culprit: 'lcx' }, track: 'Circumflex', pick: [0, 1], move: 4, hold: 9 },
     ],
   },
-  // 11: from normal filling to grade 3
+  // 10: from normal filling to grade 3
   fill: {
     pane: 'Diastolic function',
     quant: { fstate: 0.05 },
@@ -147,7 +135,7 @@ export const VIDEOS = {
       { set: { fstate: 3 }, track: 'Grade 3', line: '{s0} The E/A ratio is {E/A}, and the average E/e′ is {Average E/e′}.', move: 4, hold: 9 },
     ],
   },
-  // 12-17: the severity pages, a step in the middle of each grade band (the page's slider)
+  // 11-16: the severity pages, a step in the middle of each grade band (the page's slider)
   as: {
     pane: '2D and Doppler',
     side: false,
@@ -224,7 +212,7 @@ export const VIDEOS = {
       { set: { periS: 0.85 }, name: 'Tamponade', track: 'Tamponade', pick: [0, 1, 4], move: 4, hold: 7 },
     ],
   },
-  // 18: the walls thicken; the echo criteria are met; the apex is spared
+  // 17: the walls thicken; the echo criteria are met; the apex is spared
   amyloid: {
     pane: 'Echocardiographic signs',
     side: false,

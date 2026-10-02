@@ -1,4 +1,4 @@
-// 12 Aortic stenosis: one slider from a normal valve to severe stenosis, then to the late stage
+// 11 Aortic stenosis: one slider from a normal valve to severe stenosis, then to the late stage
 // in which the LV fails, the stroke volume falls and the gradient falls with it. The valve area
 // sets the jet by the continuity equation; the LV thickens, then fails. Illustrative values.
 import { Sheet, clamp, mix, MONO } from '../sketch.js';
