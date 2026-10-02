@@ -186,8 +186,10 @@ async function chapters(list) {
   console.log(`chapter ${k}: ${L.duration.toFixed(2)} s, ${L.frames} frames, in order in one job`);
   const errs = await segment(0, L.frames, silent, `[${k}] `, open);
   if (wav) {
+    // the soundtrack runs to the last frame: padded with silence where a frame ends after it (with
+    // -shortest, ffmpeg cut the last frames of the end card when the video ran 10 ms past the audio)
     await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', silent, '-i', wav, '-map', '0:v', '-map', '1:a', '-c:v', 'copy',
-      '-c:a', 'aac', '-aac_coder', 'fast', '-b:a', '256k', '-shortest', '-movflags', '+faststart', mp4]);
+      '-af', 'apad', '-c:a', 'aac', '-aac_coder', 'fast', '-b:a', '256k', '-t', (L.frames / FPS).toFixed(4), '-movflags', '+faststart', mp4]);
     fs.unlinkSync(silent);
   } else {
     await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', silent, '-c', 'copy', '-movflags', '+faststart', mp4]);
