@@ -168,7 +168,7 @@ src/gl/rvdetail.js  the left pulmonary veins, the papillary muscles and the RV's
 src/norms.js        normal values and cut-offs
 src/refs.js         references
 assets/             heart mesh (JSON), anatomy landmarks, poster image, favicon (SVG; PNGs for Safari and the iPhone home screen)
-video/              the views video and the chapter videos: pages, cuts, chapter steps, timing, fonts
+video/              the views video, the chapter videos and the intro: pages, cuts, chapter steps, intro clips, timing, fonts
 tools/              video tools: render, storyboard
 tools/score/        the video soundtracks: Bright pulse (pulse.py) on the InVision sound engine (synth.py); the first brand scores (score.py), kept (Python)
 ```
@@ -249,6 +249,44 @@ python3 tools/score/pulse.py as video/out/chapter-as.wav
 node tools/render-video.mjs --ch=as --audio=video/out/chapter-as.wav
 node tools/render-video.mjs --ch=all --jobs=3 --audio=auto     # every chapter video, three at a time
 node tools/storyboard.mjs --ch=as                              # one frame of each step on one sheet
+```
+
+## The intro
+
+`video/out/intro.mp4` introduces the series in 71 seconds: a title card, one clip from each of nine chapters, and the end card. A review of the 17 chapter videos and the views video picked the clips. Each clip is the most striking and most useful moment of its part of the site. No two clips teach the same lesson or show the same layout.
+
+| Start (s) | Chapter | Clip |
+|---|---|---|
+| 0.0 | | Title card: the site's name and the start of its description |
+| 4.6 | 02 Image | The sweep draws a frame, one scan line at a time |
+| 9.1 | 05 Cycle | The cursor runs through one beat, and the echo follows it |
+| 16.0 | 07 Windows | The probe turns 90° at the left sternal border, from the long axis to the short axis |
+| 22.9 | 08 Planes | The nine planes in one heart, then the apical planes from the apex |
+| 29.7 | 10 Segments | Normal, then an LAD occlusion |
+| 36.6 | 12 Aortic stenosis | No stenosis, then severe |
+| 43.4 | 15 Mitral regurgitation | No regurgitation, then severe with LV dysfunction |
+| 50.3 | 17 Pericardium | No effusion, then tamponade |
+| 57.1 | 18 Cardiac amyloidosis | A normal wall, then apical sparing |
+| 64.0 | | End card |
+
+Left out, with the reason:
+- 01, 03, 04: diagrams. The valve clips show Doppler in use.
+- 06: the cycle clip and the valve clips show its loads.
+- 09, 11: dense panels. LV function shows in the segments and amyloid clips.
+- 13, 14, 16: the layout of 12 and 15.
+
+How it is built:
+- `video/reel.js` holds the clips. A chapter clip is a chapter video script with its holds and moves in bars. The clip of 07 is a cut of the views video.
+- Each clip renders on its own page: `video/chapter.html?reel=k`, or `video/index.html?reel=k` for 07. The page draws the progress line of the intro, which names the nine chapters and runs on the time of the whole.
+- The score is *Bright pulse* at 105 BPM (`tools/score/pulse.py intro`, seed 9300). A bar is 8/3 heartbeats, so a clip of 3 bars is 8 heartbeats. Each cut falls on a bar line.
+- The clips are the windows of the score. The bass starts at the second clip, and the pluck and the pad brighten clip by clip.
+- At each cut the panes and the caption dip to the frame for 0.4 s. The progress line stays.
+- The captions are the chapters' own text: the live sentence at the step's state, a readout, or a sentence from the chapter's page.
+
+```
+python3 tools/score/pulse.py intro video/out/intro.wav
+node tools/render-video.mjs --reel --jobs=3 --audio=auto       # the nine clips, three at a time, joined in order
+node tools/render-video.mjs --reel --stills=7,42.5             # PNG stills at those times of the intro
 ```
 
 ## Checks run before this commit

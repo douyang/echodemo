@@ -245,14 +245,15 @@ export const KEYS = Object.keys(VIDEOS);
 /**
  * Holds, moves and the two cards of a chapter video, in beats and in seconds, and its length.
  * The last hold takes up to 6 more beats, so that the music's tempo (whole phrases of four bars
- * to the end card) comes closest to 109.3 BPM.
+ * to the end card) comes closest to 109.3 BPM; an `exact` video (a clip of the intro, video/reel.js)
+ * keeps its own lengths.
  */
 export function chapterLayout(v) {
   const intro = v.intro ?? 4, outro = v.outro ?? 5;
   const holds = v.steps.map((st) => st.hold ?? STEP.hold), moves = v.steps.map((st, k) => (k ? st.move ?? STEP.move : 0));
   const base = intro + holds.reduce((a, b) => a + b, 0) + moves.reduce((a, b) => a + b, 0);
   let pad = 0, best = Infinity;
-  for (let p = 0; p <= 6; p++) {
+  for (let p = 0; p <= (v.exact ? 0 : 6); p++) {
     const tEnd = (base + p) * BEAT, n = Math.max(1, Math.round(tEnd / PHRASE));
     const off = Math.abs(tEnd / n - PHRASE) / PHRASE;
     if (off < best - 1e-9) { best = off; pad = p; }

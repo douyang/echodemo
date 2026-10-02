@@ -40,6 +40,16 @@ export async function openChapter({ ch, base, browser = null }) {
   return openPage(`${base}/video/chapter.html?ch=${ch}`, SIZE['16:9'], browser);
 }
 
+/**
+ * Open clip k of the intro (video/reel.js) with ?reel=k. The clip of 07 opens on the views video
+ * page. The other clips open on the chapter video page. info.frames is the frame count of the clip.
+ */
+export async function openReel({ k, base, browser = null }) {
+  const { reelLayout } = await import('../video/reel.js');
+  const c = reelLayout().clips[k];
+  return openPage(`${base}/video/${c.cut ? 'index' : 'chapter'}.html?reel=${k}`, SIZE['16:9'], browser);
+}
+
 async function openPage(url, [W, H], browser) {
   const own = !browser;
   browser = browser || await launch();
