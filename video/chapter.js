@@ -2,7 +2,8 @@
 // site's own code (src/ch/*.js), steps through the chapter's states on the beat (video/chapters.js)
 // in the frame of the views video (video/app.js): the progress line, the panes, the caption, and
 // the title and end cards. tools/render-video.mjs --ch=as calls window.__video.frame(i) for
-// i = 0, 1, 2 ... and captures each frame.
+// i = 0, 1, 2 ... and captures each frame. ?reel=k draws clip k of the intro (video/reel.js):
+// its script, the progress line and title card of the intro, and its frames of the whole.
 //
 // The clock (video/chapter.html): performance.now() reads the time of the frame being drawn. The
 // chapter's own motion (its anim(): the beat of a severity page, the cursor of chapter 05) runs in
@@ -10,6 +11,7 @@
 // run: frame(i) runs the steps it needs first, without drawing them. Frames come in order.
 import { FPS, BEAT, DISSOLVE, SIZE, segAt, cycleMs } from './timeline.js';
 import { VIDEOS, chapterLayout, stepStates } from './chapters.js';
+import { REEL, reelLayout, clipVideo, reelTrack, reelDip } from './reel.js';
 import { CHAPTERS } from '../src/chapters.js';
 import { state, set, subscribe, declare } from '../src/state.js';
 import { RR } from '../src/cyclemodel.js';
@@ -46,14 +48,21 @@ const plain = (html) => { const d = h('div', '', html); return d.textContent.rep
 
 // ---------------------------------------------------------------- the chapter and its video
 const params = new URLSearchParams(location.search);
-const KEY = (params.get('ch') || 'as').toLowerCase();
-const V = VIDEOS[KEY];
+/** A clip of the intro (?reel=k): its place in the whole, or null for a chapter video. */
+const RL = params.has('reel') ? reelLayout() : null;
+const CLIP = RL ? RL.clips[Number(params.get('reel'))] : null;
+if (RL && !CLIP?.video) throw new Error(`no chapter clip ${params.get('reel')} in the intro`);
+const KEY = CLIP ? CLIP.ch : (params.get('ch') || 'as').toLowerCase();
+const V = CLIP ? clipVideo(CLIP.k) : VIDEOS[KEY];
 if (!V) throw new Error(`no video for chapter ${KEY}`);
 const IDX = CHAPTERS.findIndex((c) => c.key === KEY);
 const C = CHAPTERS[IDX];
 const NUM = String(IDX + 1).padStart(2, '0');
 const [W, H] = SIZE['16:9'];
 const L = chapterLayout(V);
+/** A clip draws frames F0 to F1 of the intro. Its first frame is `offset` s after its bar line. */
+const T0 = CLIP ? CLIP.offset : 0;
+const FRAMES = CLIP ? CLIP.frames : L.frames;
 let STATES = stepStates(V, {});   // with the chapter's presets once its module is in (init)
 // a trial: &side=0|1 and &zoom=1.4 override the video's own
 const SIDE = params.has('side') ? params.get('side') !== '0' : V.side !== false;
@@ -165,10 +174,10 @@ function build(src) {
   card.id = 'card';
   const title = h('div');
   const T = LAY.title;
-  const eye = h('p', 'card-eye', `${NUM} <span>·</span> ${esc(PART_NAME)}`);
-  const t1 = h('p', 'card-title', esc(C.title));
+  const eye = h('p', 'card-eye', CLIP ? esc(REEL.title.eye) : `${NUM} <span>·</span> ${esc(PART_NAME)}`);
+  const t1 = h('p', 'card-title', esc(CLIP ? REEL.title.name : C.title));
   const rule = h('div', 'card-rule');
-  const sub = h('p', 'card-sub', esc(SUB));
+  const sub = h('p', 'card-sub', esc(CLIP ? REEL.title.sub : SUB));
   Object.assign(eye.style, { left: `${T.x + 6}px`, top: `${T.y - 54}px` });
   Object.assign(t1.style, { left: `${T.x}px`, top: `${T.y}px` });
   Object.assign(rule.style, { left: `${T.x + 6}px`, top: `${T.y + 196}px`, width: '132px' });
@@ -186,10 +195,23 @@ function build(src) {
   card.append(title, end, trace);
   F.appendChild(card);
   cardEls = { card, title, end, eye, t1, rule, sub, e1, trace };
-  // the progress line: one segment a step, named
+  // the progress line: one segment a step, named. In a clip of the intro, one segment a clip.
   const track = h('div');
   track.id = 'track';
   px(track, LAY.track);
+  if (CLIP) {
+    trackEls = RL.clips.map((c) => {
+      const el = h('div', 'win');
+      el.style.setProperty('--wc', 'var(--accent)');
+      const ln = h('div', 'line'), fill = h('div', 'fill'), lab = h('div', 'lab', esc(c.title));
+      ln.appendChild(fill);
+      el.append(lab, ln);
+      track.appendChild(el);
+      return { el, fill, lab };
+    });
+    F.appendChild(track);
+    return;
+  }
   const n = V.steps.length, gap = 14, segW = (LAY.track.w - gap * (n - 1)) / n;
   trackEls = V.steps.map((st, i) => {
     const el = h('div', 'win');
@@ -208,7 +230,23 @@ function build(src) {
 const panes = {};
 
 /** The steps' names on the progress line: their own, or their captions'. */
-function labelTrack() { trackEls.forEach((w, i) => { w.lab.textContent = V.steps[i].track || CAPS[i].name; }); }
+function labelTrack() { if (!CLIP) trackEls.forEach((w, i) => { w.lab.textContent = V.steps[i].track || CAPS[i].name; }); }
+
+/**
+ * The progress line of the intro, with the fonts in. Each clip is as wide as the name of its
+ * chapter, plus an equal share of the room left. So every name fits on one line.
+ */
+function sizeReelTrack() {
+  if (!CLIP) return;
+  const gap = 14, need = trackEls.map((w) => w.lab.scrollWidth);
+  const spare = (LAY.track.w - gap * (trackEls.length - 1) - need.reduce((a, b) => a + b, 0)) / trackEls.length;
+  if (spare < 8) throw new Error('the intro\'s chapter names do not fit on the progress line');
+  let x = 0;
+  trackEls.forEach((w, i) => {
+    Object.assign(w.el.style, { left: `${x.toFixed(1)}px`, width: `${(need[i] + spare).toFixed(1)}px` });
+    x += need[i] + spare + gap;
+  });
+}
 
 /** A step's span on the progress line: from the middle of the move into it to the middle of the move out. */
 function spanOf(i) {
@@ -246,6 +284,7 @@ function mix(a, b, p) {
 }
 /** The chapter's state at video time u: a step's, drifting across its hold, or between two steps across a move. */
 function scriptAt(u) {
+  u = Math.max(0, u);
   const s = segAt(L, u);
   if (s.kind === 'title') return STATES[0].a;
   if (s.kind === 'end') return STATES[STATES.length - 1].b;
@@ -260,7 +299,7 @@ function advance(n) {
   if (n < simN) throw new Error(`frame ${n} after frame ${simN}: frames come in order`);
   while (simN < n) {
     simN++;
-    set(scriptAt(simN / FPS));
+    set(scriptAt(simN / FPS + T0));
     C.anim?.(1 / FPS, state, set);
   }
 }
@@ -388,6 +427,16 @@ function fitCaption() {
 // ---------------------------------------------------------------- progress line
 function updateTrack(t, fade) {
   $('#track').style.opacity = (1 - fade).toFixed(3);
+  if (CLIP) {
+    // the line of the intro runs on the time of the whole
+    reelTrack(RL, CLIP.T0 + t).forEach(({ f, on }, i) => {
+      const w = trackEls[i];
+      w.el.classList.toggle('cur', on);
+      w.fill.style.width = `${(f * 100).toFixed(3)}%`;
+      w.fill.style.opacity = on ? '1' : '0.45';
+    });
+    return;
+  }
   trackEls.forEach((w, i) => {
     const f = clamp01((t - w.span.a) / (w.span.b - w.span.a));
     const cur = t >= w.span.a && (t < w.span.b || i === trackEls.length - 1) && t >= L.tour.t0;
@@ -400,8 +449,9 @@ function updateTrack(t, fade) {
 // ---------------------------------------------------------------- cards
 function updateCards(t) {
   const a = L.tour.t0, b = L.tour.t1, d = DISSOLVE / 2;
-  const titleOn = 1 - ease((t - (a - d)) / DISSOLVE);
-  const endOn = ease((t - (b - d)) / DISSOLVE);
+  // only the first clip of the intro has the title card. Only the last clip has the end card.
+  const titleOn = CLIP && !CLIP.intro ? 0 : 1 - ease((t - (a - d)) / DISSOLVE);
+  const endOn = CLIP && !CLIP.outro ? 0 : ease((t - (b - d)) / DISSOLVE);
   const E = cardEls;
   E.card.style.opacity = Math.max(titleOn, endOn).toFixed(3);
   E.title.style.display = titleOn > 0 ? '' : 'none';
@@ -445,7 +495,7 @@ function drawTrace(t, t0) {
 // ---------------------------------------------------------------- frames
 /** Frame i: everything on screen at t = i / FPS. The panes are not drawn while a card covers them. */
 function frame(i) {
-  const t = i / FPS;
+  const t = i / FPS + T0;
   window.__clock.set(10000 + t * 1000);
   advance(i);
   const { titleOn, endOn } = updateCards(t);
@@ -458,6 +508,13 @@ function frame(i) {
   }
   updateCaption(t);
   updateTrack(t, endOn);
+  if (CLIP) {
+    // between two clips the panes and the caption dip to the frame (video/reel.js)
+    const k = reelDip(CLIP, t, easeOut, ease);
+    for (const el of $$('#frame > .pane')) el.style.opacity = k.toFixed(3);
+    const cap = $('#caption');
+    cap.style.opacity = (Number(cap.style.opacity || 1) * k).toFixed(3);
+  }
   return { t };
 }
 
@@ -497,9 +554,11 @@ async function init() {
   labelTrack();
   set(STATES[0].a);
   fitCaption();
+  sizeReelTrack();
   window.__clock.start();
   return {
-    fps: FPS, frames: L.frames, duration: L.duration, width: W, height: H, ch: KEY, name: C.title, num: NUM, capScale,
+    fps: FPS, frames: FRAMES, duration: CLIP ? CLIP.duration : L.duration, width: W, height: H, ch: KEY, name: C.title, num: NUM, capScale,
+    clip: CLIP ? { k: CLIP.k, F0: CLIP.F0, F1: CLIP.F1, offset: CLIP.offset, T0: CLIP.T0, T1: CLIP.T1 } : null,
     segs: L.segs.map((s) => ({ kind: s.kind, i: s.i ?? null, from: s.from ?? null, to: s.to ?? null, t0: s.t0, t1: s.t1 })),
     caps: CAPS,
   };
@@ -518,7 +577,7 @@ function bands(key) {
   }
   return out;
 }
-window.__video = { ready, frame, layout: L, video: V, key: KEY, bands };
+window.__video = { ready, frame, layout: L, video: V, key: KEY, bands, clip: CLIP };
 // preview in a browser: video/chapter.html?ch=as&t=12.5 shows that moment
 ready.then(() => {
   const at = params.get('t');

@@ -12,6 +12,10 @@
 //        A chapter video renders in order in one job (its frames depend on the frames before:
 //        video/chapter.js); --jobs runs that many chapters at once. --audio=auto takes
 //        video/out/chapter-<key>.wav (tools/score/pulse.py <key>).
+//   node tools/render-video.mjs --reel --jobs=3 --audio=auto    the intro (video/reel.js)
+//        Each clip renders in order in one job, --jobs clips at once. The tool joins the clips in
+//        order into video/out/intro.mp4, with video/out/intro.wav (tools/score/pulse.py intro).
+//        [--clips=0,3] renders only those clips. [--stills=4.8,30] writes PNG stills at those times.
 // Serve the repository root first: python3 -m http.server 8790
 //
 // Chromium steps window.__video.frame(i) and captures the frame over CDP; ffmpeg encodes the
@@ -26,7 +30,8 @@ import path from 'node:path';
 import { CUTS } from '../video/cuts.js';
 import { VIDEOS, KEYS } from '../video/chapters.js';
 import { FPS, layout } from '../video/timeline.js';
-import { openCut, openChapter } from './video-page.mjs';
+import { openCut, openChapter, openReel } from './video-page.mjs';
+import { reelLayout } from '../video/reel.js';
 
 const arg = (k, d) => {
   const a = process.argv.find((x) => x.startsWith(`--${k}=`));
@@ -41,6 +46,7 @@ const theme = arg('theme', '');
 const jobs = Math.max(1, Number(arg('jobs', '1')));
 const worker = arg('segment', '');   // internal: frames a:b into this file
 const ch = arg('ch', '');
+const reel = process.argv.includes('--reel');
 fs.mkdirSync(out, { recursive: true });
 
 // the JPEGs are full-range BT.601; the video is limited-range BT.709
@@ -81,6 +87,10 @@ async function segment(a, b, file, label = '', open = () => openCut({ cut, base,
 
 if (ch) {
   await chapters(ch);
+  process.exit(0);
+}
+if (reel) {
+  await intro();
   process.exit(0);
 }
 if (!CUTS[cut]) throw new Error(`no cut ${cut}`);
@@ -197,4 +207,59 @@ async function chapters(list) {
   }
   console.log('wrote', mp4, `in ${((Date.now() - t0) / 60000).toFixed(1)} min`);
   if (errs.length) process.exit(2);
+}
+
+// ---------------------------------------------------------------- the intro
+/** The intro: its clips (one process each, `jobs` at a time), joined in order, with the score. */
+async function intro() {
+  const R = reelLayout(), self = fileURLToPath(import.meta.url);
+  const clip = arg('clip', '');
+  if (clip !== '') {
+    // one clip, in order in one job, into the file that the parent names
+    const k = Number(clip), c = R.clips[k];
+    const errs = await segment(0, c.frames, arg('file', ''), `[${k} ${c.ch}] `, () => openReel({ k, base }));
+    process.exit(errs.length ? 2 : 0);
+  }
+  if (stills) {
+    for (const s of stills.split(',').map(Number).sort((x, y) => x - y)) {
+      const g = Math.min(R.frames - 1, Math.round(s * FPS)), c = R.clips.find((x) => g >= x.F0 && g < x.F1);
+      const { capture, frame, errors, close } = await openReel({ k: c.k, base });
+      await frame(g - c.F0);
+      const file = path.join(out, `still-intro-${s.toFixed(2).padStart(7, '0')}.png`);
+      fs.writeFileSync(file, await capture('png'));
+      await close();
+      console.log('still', file, `(clip ${c.k}, ${c.ch})`, errors.length ? errors.join('; ') : '');
+    }
+    return;
+  }
+  const only = arg('clips', '') ? arg('clips', '').split(',').map(Number) : R.clips.map((c) => c.k);
+  const t0 = Date.now(), failed = [], files = R.clips.map((c) => path.join(out, `.intro-${c.k}.mp4`));
+  console.log(`intro: ${R.duration.toFixed(2)} s, ${R.frames} frames, ${R.clips.length} clips; rendering ${only.join(',')}, ${jobs} at a time`);
+  // the longest clips first, so that the lanes finish together
+  const queue = [...only].sort((a, b) => R.clips[b].frames - R.clips[a].frames);
+  const lane = async () => {
+    while (queue.length) {
+      const k = queue.shift();
+      await run('node', [self, '--reel', `--clip=${k}`, `--file=${files[k]}`, `--base=${base}`, `--out=${out}`]).catch((e) => failed.push(`${k}: ${e.message}`));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(jobs, only.length) }, lane));
+  if (failed.length) throw new Error(`clips failed: ${failed.join('; ')}`);
+  const missing = files.filter((f) => !fs.existsSync(f));
+  if (missing.length) {
+    console.log(`rendered ${only.join(',')}; not joined: ${missing.length} clip(s) still to render`);
+    return;
+  }
+  // the clips have the same encoder settings, so they join without a new encode
+  const list = path.join(out, '.intro-clips.txt'), silent = path.join(out, '.intro-video.mp4');
+  fs.writeFileSync(list, files.map((f) => `file '${path.resolve(f)}'`).join('\n'));
+  await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', silent]);
+  fs.unlinkSync(list);
+  const wav = audio === 'auto' ? path.join(out, 'intro.wav') : audio;
+  const mp4 = path.join(out, `intro${wav ? '' : '-silent'}.mp4`);
+  await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', silent, ...(wav ? ['-i', wav, '-map', '0:v', '-map', '1:a'] : []),
+    '-c:v', 'copy', ...(wav ? ['-af', 'apad', '-c:a', 'aac', '-aac_coder', 'fast', '-b:a', '256k'] : []),
+    '-t', (R.frames / FPS).toFixed(4), '-movflags', '+faststart', mp4]);
+  fs.unlinkSync(silent);
+  console.log('wrote', mp4, `in ${((Date.now() - t0) / 60000).toFixed(1)} min; clips kept in ${out}/.intro-*.mp4`);
 }

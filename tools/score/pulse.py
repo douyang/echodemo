@@ -11,6 +11,8 @@ side/mid 0.10; -15 LUFS with linear gain, true peak under -2.5 dBTP (AAC adds up
 fixed seed per cut, so a mix rebuilds exactly; cut C's seed is the one reviewed.
   python3 tools/score/pulse.py A video/out/echo-views-A.wav [--lufs=-15] [--tp=-2.5]
   python3 tools/score/pulse.py as video/out/chapter-as.wav       a chapter video: its steps are the windows
+  python3 tools/score/pulse.py intro video/out/intro.wav         the intro: the clips are the windows. Its
+                                                                 layout is in bars of 105 BPM, so the tempo is 105 BPM.
 """
 import os
 import subprocess
@@ -34,6 +36,7 @@ SEEDS = {'A': 9201, 'B': 9202, 'C': 9102, 'D': 9204}
 SEEDS.update({'PULSE': 9301, 'IMAGE': 9302, 'SHIFT': 9303, 'PRESSURE': 9304, 'CYCLE': 9305, 'LOOP': 9306,
               'PLANES': 9308, 'EJECT': 9309, 'SEGMENTS': 9310, 'FILL': 9311, 'AS': 9312, 'AR': 9313,
               'MS': 9314, 'MR': 9315, 'TR': 9316, 'PERI': 9317, 'AMYLOID': 9318})
+SEEDS['INTRO'] = 9300                             # the intro (video/reel.js): 93 and chapter 00
 PROG = ['C', 'Am', 'F', 'G']
 CHORD = {'C': (0, [0, 4, 7]), 'Am': (9, [9, 0, 4]), 'F': (5, [5, 9, 0]), 'G': (7, [7, 11, 2])}
 ARP = [0, 2, 1, 3, 2, 4, 3, 1]                    # the brand's arpeggio pattern

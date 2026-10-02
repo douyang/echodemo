@@ -2,7 +2,8 @@
 // One cut (?cut=A|B|C|D), one frame at a time: tools/render-video.mjs calls
 // window.__video.frame(i) and captures the frame. Nothing here runs on a clock of its own: the
 // heartbeat, the plane, the cameras and the text follow t = i / FPS alone, so any frame renders
-// the same whether it is drawn alone or in a sequence.
+// the same whether it is drawn alone or in a sequence. ?reel=k draws the clip of 07 in the intro
+// (video/reel.js): its cut, the progress line of the intro, its eyebrow and its frames of the whole.
 //
 // Three panes, drawn from the one heart mesh by the site's own code:
 //  - Probe and body: the whole heart from the front with the imaging plane (the overlay of
@@ -17,6 +18,7 @@
 import * as THREE from '../vendor/three.bundle.min.js';
 import { FPS, BEAT, DISSOLVE, SIZE, layout, segAt, windowsOf, cycleMs } from './timeline.js';
 import { CUTS, caption, WIN_NAME } from './cuts.js';
+import { reelLayout, clipCut, reelTrack, reelDip } from './reel.js';
 import { VIEWS } from '../src/views.js';
 import { RR, cycleAt } from '../src/cyclemodel.js';
 import { loadModel } from '../src/model3d.js';
@@ -57,12 +59,21 @@ const px = (el, r) => Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px
 
 // ---------------------------------------------------------------- the cut and its layout
 const params = new URLSearchParams(location.search);
-const CUT = CUTS[(params.get('cut') || 'A').toUpperCase()];
+/** The clip of 07 in the intro (?reel=k): its place in the whole, or null for a cut. */
+const RL = params.has('reel') ? reelLayout() : null;
+const CLIP = RL ? RL.clips[Number(params.get('reel'))] : null;
+if (RL && !CLIP?.cut) throw new Error(`no views clip ${params.get('reel')} in the intro`);
+const CUT = CLIP ? clipCut(CLIP.k, CUTS.C.cards) : CUTS[(params.get('cut') || 'A').toUpperCase()];
 if (!CUT) throw new Error(`no cut ${params.get('cut')}`);
 if (params.get('theme')) CUT.theme = params.get('theme');
 const [W, H] = SIZE[CUT.aspect];
 const L = layout(CUT);
 const WINS = windowsOf(CUT, L);
+/** A clip draws frames F0 to F1 of the intro. Its first frame is `offset` s after its bar line. */
+const T0 = CLIP ? CLIP.offset : 0;
+const FRAMES = CLIP ? CLIP.frames : L.frames;
+/** The eyebrow of the clip: the chapter, as the chapter clips show it. */
+const REEL_EYE = CLIP ? `${CLIP.num} · ${CLIP.title}` : '';
 
 /**
  * Frame layouts (px). Panes: box, zoom; body: the key's box and the part of the canvas left
@@ -206,10 +217,23 @@ function build() {
   card.append(title, end, trace);
   F.appendChild(card);
   cardEls = { card, title, end, t1, rule, sub, e1, trace };
-  // the five windows, one segment each, a tick for each view
+  // the five windows, one segment each, a tick for each view. In the intro, one segment a clip.
   const track = h('div');
   track.id = 'track';
   px(track, LAY.track);
+  if (CLIP) {
+    trackEls = RL.clips.map((c) => {
+      const el = h('div', 'win');
+      el.style.setProperty('--wc', 'var(--accent)');
+      const ln = h('div', 'line'), fill = h('div', 'fill'), lab = h('div', 'lab', esc(c.title));
+      ln.appendChild(fill);
+      el.append(lab, ln);
+      track.appendChild(el);
+      return { el, fill, lab };
+    });
+    F.appendChild(track);
+    return;
+  }
   const gap = 14, segW = (LAY.track.w - gap * (WINS.length - 1)) / WINS.length;
   trackEls = WINS.map((w, i) => {
     const el = h('div', 'win');
@@ -243,6 +267,19 @@ function spanOf(i) {
     return s ? (s.t0 + s.t1) / 2 : WINS[k].t0;
   };
   return { a: i ? into(i) : WINS[0].t0, b: i + 1 < WINS.length ? into(i + 1) : L.tour.t1 };
+}
+
+/** The progress line of the intro, with the fonts in: each clip as wide as its name (video/chapter.js). */
+function sizeReelTrack() {
+  if (!CLIP) return;
+  const gap = 14, need = trackEls.map((w) => w.lab.scrollWidth);
+  const spare = (LAY.track.w - gap * (trackEls.length - 1) - need.reduce((a, b) => a + b, 0)) / trackEls.length;
+  if (spare < 8) throw new Error('the intro\'s chapter names do not fit on the progress line');
+  let x = 0;
+  trackEls.forEach((w, i) => {
+    Object.assign(w.el.style, { left: `${x.toFixed(1)}px`, width: `${(need[i] + spare).toFixed(1)}px` });
+    x += need[i] + spare + gap;
+  });
 }
 
 // ---------------------------------------------------------------- the scene
@@ -704,8 +741,9 @@ function updateCaption(t) {
   }
   const A = caption(a), B = caption(b);
   $('#caption').style.opacity = alpha.toFixed(3);
-  capEls.eye.style.setProperty('--wc', `var(--w-${(k < 0.5 ? A : B).win})`);
-  setLine(capEls.eye, A.window, B.window, k, 4);
+  // in the intro the eyebrow names the chapter in the accent, as the chapter clips do
+  capEls.eye.style.setProperty('--wc', CLIP ? 'var(--accent)' : `var(--w-${(k < 0.5 ? A : B).win})`);
+  setLine(capEls.eye, CLIP ? REEL_EYE : A.window, CLIP ? REEL_EYE : B.window, k, 4);
   setLine(capEls.name, A.name, B.name, k);
   // a row's label goes out and in with its text
   capEls.probe.previousSibling.style.opacity = setLine(capEls.probe, A.probe, B.probe, k, 5).toFixed(3);
@@ -744,6 +782,16 @@ function fitCaption() {
 // ---------------------------------------------------------------- progress line
 function updateTrack(t, fade) {
   $('#track').style.opacity = (1 - fade).toFixed(3);
+  if (CLIP) {
+    // the line of the intro runs on the time of the whole
+    reelTrack(RL, CLIP.T0 + t).forEach(({ f, on }, i) => {
+      const w = trackEls[i];
+      w.el.classList.toggle('cur', on);
+      w.fill.style.width = `${(f * 100).toFixed(3)}%`;
+      w.fill.style.opacity = on ? '1' : '0.45';
+    });
+    return;
+  }
   trackEls.forEach((w, i) => {
     const f = clamp01((t - w.span.a) / (w.span.b - w.span.a));
     const cur = t >= w.span.a && (t < w.span.b || i === WINS.length - 1) && t >= L.tour.t0;
@@ -757,8 +805,9 @@ function updateTrack(t, fade) {
 // ---------------------------------------------------------------- cards
 function updateCards(t) {
   const a = L.tour.t0, b = L.tour.t1, d = DISSOLVE / 2;
-  const titleOn = 1 - ease((t - (a - d)) / DISSOLVE);
-  const endOn = ease((t - (b - d)) / DISSOLVE);
+  // the clip of 07 has no cards. The first clip has the title card, and the last clip has the end card.
+  const titleOn = CLIP ? 0 : 1 - ease((t - (a - d)) / DISSOLVE);
+  const endOn = CLIP ? 0 : ease((t - (b - d)) / DISSOLVE);
   const C = cardEls;
   C.card.style.opacity = Math.max(titleOn, endOn).toFixed(3);
   C.title.style.display = titleOn > 0 ? '' : 'none';
@@ -805,7 +854,7 @@ function drawTrace(t, t0) {
 // ---------------------------------------------------------------- frames
 /** Frame i: everything on screen at t = i / FPS. The panes are not drawn while a card covers them. */
 function frame(i) {
-  const t = i / FPS;
+  const t = i / FPS + T0;
   const { titleOn, endOn } = updateCards(t);
   if (Math.max(titleOn, endOn) < 1) {
     renderPanes(t);
@@ -813,6 +862,13 @@ function frame(i) {
   }
   updateCaption(t);
   updateTrack(t, endOn);
+  if (CLIP) {
+    // between two clips the panes and the caption dip to the frame (video/reel.js)
+    const k = reelDip(CLIP, t, easeOut, ease);
+    for (const el of document.querySelectorAll('#frame > .pane')) el.style.opacity = k.toFixed(3);
+    const cap = $('#caption');
+    cap.style.opacity = (Number(cap.style.opacity || 1) * k).toFixed(3);
+  }
   return { dirty: true, t };
 }
 
@@ -823,15 +879,17 @@ async function init() {
     '600 20px Caveat', '400 20px Caveat', '400 20px Newsreader', 'italic 400 20px Newsreader'].map((f) => document.fonts.load(f)));
   await document.fonts.ready;
   fitCaption();
+  sizeReelTrack();
   await initScene();
   return {
-    fps: FPS, frames: L.frames, duration: L.duration, width: W, height: H, cut: CUT.id, name: CUT.name, capScale,
+    fps: FPS, frames: FRAMES, duration: CLIP ? CLIP.duration : L.duration, width: W, height: H, cut: CUT.id, name: CUT.name, capScale,
+    clip: CLIP ? { k: CLIP.k, F0: CLIP.F0, F1: CLIP.F1, offset: CLIP.offset, T0: CLIP.T0, T1: CLIP.T1 } : null,
     segs: L.segs.map((s) => ({ kind: s.kind, view: s.view || null, from: s.from || null, to: s.to || null, t0: s.t0, t1: s.t1 })),
   };
 }
 
 const ready = init();
-window.__video = { ready, frame, layout: L, cut: CUT, planeAt: (t) => planeAt(t) };
+window.__video = { ready, frame, layout: L, cut: CUT, planeAt: (t) => planeAt(t), clip: CLIP };
 // preview in a browser: video/index.html?cut=A&t=12.5 shows that moment
 ready.then(() => {
   const at = params.get('t');

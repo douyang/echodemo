@@ -3,11 +3,19 @@
 // video/chapters.js chapterLayout), the events and the windows (a chapter's steps).
 //   node tools/score/events.mjs A > /tmp/A.json        a cut of the views video
 //   node tools/score/events.mjs as > /tmp/as.json      the video of chapter 12 (its key)
+//   node tools/score/events.mjs intro > /tmp/i.json    the intro (video/reel.js)
 import { CUTS } from '../../video/cuts.js';
 import { VIDEOS, chapterEvents } from '../../video/chapters.js';
 import { BEAT, events, windowsOf } from '../../video/timeline.js';
+import { REEL, reelEvents } from '../../video/reel.js';
 
 const key = process.argv[2] || 'A';
+if (key.toLowerCase() === REEL.key) {
+  // the intro (video/reel.js): the clips are the windows
+  const { n, lastBeat, ...E } = reelEvents();
+  process.stdout.write(JSON.stringify(E, null, 1));
+  process.exit(0);
+}
 const cut = CUTS[key.toUpperCase()];
 const video = VIDEOS[key.toLowerCase()];
 if (!cut && !video) throw new Error(`no cut or chapter video ${key}`);
