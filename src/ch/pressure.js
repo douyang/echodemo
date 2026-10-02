@@ -224,7 +224,7 @@ export default {
         { k: 'RA pressure', v: fmt(F.rap), u: 'mmHg', flag: F.rap > 3 },
         { k: 'RV systolic pressure', v: fmt(F.rvsp), u: 'mmHg', flag: s.trV >= 2.8 },
       ],
-      live: `The LVOT measures ${fmt(F.dm, 2)} cm${s.calErr ? ` (true ${fmt(F.d, 2)} cm)` : ''}, so the stroke volume reads ${fmt(F.svM)} mL${s.calErr ? `: <span class="k-red">${F.err > 0 ? '+' : ''}${fmt(F.err * 100)}% from a ${fmt(Math.abs(s.calErr), 1)} mm caliper error</span>, because the diameter is squared` : ''}${cite('zoghbi2017,baumgartner2017')}. A TR peak of ${fmt(s.trV, 2)} m/s is ${g}${cite('mukherjee2025')}: 4 × ${fmt(s.trV, 2)}² = ${fmt(F.grad)} mmHg, plus an RA pressure of ${F.rap} mmHg from the IVC, gives an RV systolic pressure of ${fmt(F.rvsp)} mmHg${cite('quinones2002')}.`,
+      live: `The measured LVOT diameter is ${fmt(F.dm, 2)} cm${s.calErr ? ` (true diameter ${fmt(F.d, 2)} cm)` : ''}, so the calculated stroke volume is ${fmt(F.svM)} mL${s.calErr ? `; <span class="k-red">the ${fmt(Math.abs(s.calErr), 1)} mm caliper error produces a stroke volume error of ${F.err > 0 ? '+' : ''}${fmt(F.err * 100)}%</span>, because the diameter is squared` : ''}${cite('zoghbi2017,baumgartner2017')}. A peak TR velocity of ${fmt(s.trV, 2)} m/s is ${g}${cite('mukherjee2025')}; the RV–RA pressure gradient is 4 × ${fmt(s.trV, 2)}² = ${fmt(F.grad)} mmHg, and with an RA pressure of ${F.rap} mmHg estimated from the IVC, the RV systolic pressure is ${fmt(F.rvsp)} mmHg${cite('quinones2002')}.`,
     };
   },
 };

@@ -23,7 +23,7 @@ export const PV_PRESETS = {
   // higher. With V0 = 0 the larger end-systolic volume at a normal pressure gives a lower Ees.
   mr: { edp: 11.5, ees: 1.7, ea: 1.05, stiff: 0.15, rf: 0.53 },
 };
-const PNAME = { normal: 'Normal', hfref: 'Weak ventricle (HFrEF)', hfpef: 'Stiff ventricle (HFpEF)', as: 'Pressure load', mr: 'Volume load (mitral regurgitation)', custom: 'Your settings' };
+const PNAME = { normal: 'Normal', hfref: 'Hypocontractile ventricle (HFrEF)', hfpef: 'Stiff ventricle (HFpEF)', as: 'Pressure load', mr: 'Volume load (mitral regurgitation)', custom: 'Custom settings' };
 
 // With a mitral leak the LA is a second outlet. Blood goes back whenever LV pressure is above LA
 // pressure, from mitral closure to mitral opening, so neither isovolumic phase is isovolumic. The
@@ -321,7 +321,7 @@ export default {
   },
   text(s, { cite }) {
     const L = pvState(s);
-    const work = `Stroke work, the area of the loop, is ${fmt(area(loopPath(L)) * 1.333e-4, 2)} J.`;
+    const work = `The stroke work, equal to the area of the loop, is ${fmt(area(loopPath(L)) * 1.333e-4, 2)} J.`;
     if (L.rf > 0) {
       const preset = s.pv === 'mr';   // the sliders can move the loop off the chronic MR heart
       const back = Math.round(L.sv) - Math.round(L.fwd);   // so that the two parts add up as shown
@@ -339,7 +339,7 @@ export default {
           { k: 'End-systolic pressure', v: fmt(L.pes), u: 'mmHg' },
           { k: 'Ea / Ees', v: fmt(L.ratio, 2), flag: L.ratio > 1.2 },
         ],
-        live: `<b>${PNAME[s.pv] || PNAME.custom}.</b> ${preset ? 'The dilated, compliant ventricle' : 'The ventricle'} fills to ${fmt(L.edv)} mL at an end-diastolic pressure of ${fmt(s.edp, 1)} mmHg${preset ? cite('neema2025,klabunde_mr') : ''}. It ejects ${fmt(L.sv)} mL: ${fmt(L.fwd)} mL into the aorta and ${back} mL back into the LA, a regurgitant fraction of ${fmt(L.rf * 100)}%. The leak starts at mitral closure, so the volume falls before the aortic valve opens${cite('neema2025,klabunde_mr')}. After aortic closure the LV still empties into the LA; the mitral valve opens early, at a high LA pressure${cite('neema2025,klabunde_mr')}.${preset ? ` The LA is a second outlet with a low resistance, so Ea is low${cite('klabunde_mr')}.` : ''} EF ${fmt(L.ef * 100)}%; in severe primary MR an LVEF of 60% or less already means LV dysfunction${cite('otto2020')}. ${work}`,
+        live: `<b>${PNAME[s.pv] || PNAME.custom}.</b> ${preset ? 'The dilated, compliant ventricle' : 'The ventricle'} fills to an end-diastolic volume of ${fmt(L.edv)} mL at an end-diastolic pressure of ${fmt(s.edp, 1)} mmHg${preset ? cite('neema2025,klabunde_mr') : ''}. Of a total stroke volume of ${fmt(L.sv)} mL, ${fmt(L.fwd)} mL is ejected into the aorta and ${back} mL back into the LA, a regurgitant fraction of ${fmt(L.rf * 100)}%. Regurgitation begins at mitral valve closure, so LV volume decreases before the aortic valve opens${cite('neema2025,klabunde_mr')}. After aortic valve closure, the LV continues to empty into the LA, and the mitral valve opens early, at a high LA pressure${cite('neema2025,klabunde_mr')}.${preset ? ` The LA is a second, low-resistance outlet for LV ejection, so Ea is low${cite('klabunde_mr')}.` : ''} The EF is ${fmt(L.ef * 100)}%; in severe primary MR, an LVEF of 60% or less already indicates LV dysfunction${cite('otto2020')}. ${work}`,
       };
     }
     const lo = L.ef < 0.52;
@@ -352,7 +352,7 @@ export default {
         { k: 'End-systolic pressure', v: fmt(L.pes), u: 'mmHg' },
         { k: 'Ea / Ees', v: fmt(L.ratio, 2), flag: L.ratio > 1.2 },
       ],
-      live: `<b>${PNAME[s.pv] || PNAME.custom}.</b> At an end-diastolic pressure of ${fmt(s.edp, 1)} mmHg the ventricle fills to ${fmt(L.edv)} mL. It ejects ${fmt(L.sv)} mL against an end-systolic pressure of ${fmt(L.pes)} mmHg: EF ${fmt(L.ef * 100)}%, Ea/Ees ${fmt(L.ratio, 2)}${cite('mongegarcia2020')}. ${work}`,
+      live: `<b>${PNAME[s.pv] || PNAME.custom}.</b> At an end-diastolic pressure of ${fmt(s.edp, 1)} mmHg, the ventricle fills to an end-diastolic volume of ${fmt(L.edv)} mL. It ejects a stroke volume of ${fmt(L.sv)} mL against an end-systolic pressure of ${fmt(L.pes)} mmHg, with an EF of ${fmt(L.ef * 100)}% and an Ea/Ees ratio of ${fmt(L.ratio, 2)}${cite('mongegarcia2020')}. ${work}`,
     };
   },
 };

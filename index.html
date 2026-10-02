@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart by Ultrasound</title>
-<meta name="description" content="An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and cardiac amyloidosis.">
+<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valvular disease, pericardial disease and cardiac amyloidosis.">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -17,13 +17,13 @@
 <div class="app" id="app">
 
   <header class="masthead">
-    <p class="eyebrow"><span class="eyebrow-long">An illustrated study · </span>Echocardiography</p>
+    <p class="eyebrow"><span class="eyebrow-long">An illustrated, interactive guide · </span>Echocardiography</p>
     <h1 class="title">The Heart by <em>Ultrasound.</em></h1>
-    <p class="subtitle">From a sound pulse to a diagnosis</p>
+    <p class="subtitle">Ultrasound physics, cardiac physiology, the standard views, ventricular function and cardiac disease</p>
   </header>
 
   <div class="tools">
-    <label class="tool heart-pick" title="The heart every chapter shows">
+    <label class="tool heart-pick" title="Heart model shown in every chapter">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13.5S2.5 10.2 2.5 6.1A2.9 2.9 0 0 1 8 4.6a2.9 2.9 0 0 1 5.5 1.5C13.5 10.2 8 13.5 8 13.5Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
       <span class="t">Heart</span>
       <select id="pheno" aria-label="Heart shown">
@@ -43,12 +43,12 @@
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h8.5a1.5 1.5 0 0 1 1.5 1.5v9.5H4.5A1.5 1.5 0 0 1 3 12V2.5Z M3 12a1.5 1.5 0 0 1 1.5-1.5H13" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
       <span class="t">Sources</span>
     </button>
-    <button class="tool tool-music" id="btn-music" type="button" aria-pressed="false" aria-label="Sound: music in time with the heart, and cues" title="Sound: music in time with the heart, and cues">
+    <button class="tool tool-music" id="btn-music" type="button" aria-pressed="false" aria-label="Sound: music synchronized with the heartbeat, and cues" title="Sound: music synchronized with the heartbeat, and cues">
       <svg class="i-off" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6h2.5L8 3v10L4.5 10H2Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M10.5 6l4 4M14.5 6l-4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       <svg class="i-on" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6h2.5L8 3v10L4.5 10H2Z" fill="currentColor" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.3 6.3 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       <span class="t">Sound</span>
     </button>
-    <button class="tool" id="btn-theme" type="button" aria-label="Switch paper and slate">
+    <button class="tool" id="btn-theme" type="button" aria-label="Switch between the paper and slate themes">
       <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11Z" fill="currentColor"/></svg>
       <span class="t" id="theme-label">Slate</span>
     </button>
@@ -58,15 +58,15 @@
   <main class="stage" id="stage">
     <figure class="fig is-active" id="fig-pulse">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">A transducer sends a short pulse into the chest. The pulse crosses the chest wall, the right ventricle, the septum, the left ventricle and the posterior wall. Echoes return from each boundary. An amplitude trace and one brightness line show the echoes by depth.</figcaption>
+      <figcaption class="sr-only">A transducer sends a short pulse into the chest. The pulse crosses the chest wall, the right ventricle, the septum, the left ventricle and the posterior wall. Echoes return from each boundary. An amplitude (A-mode) trace and a single brightness (B-mode) line display the echoes by depth.</figcaption>
     </figure>
     <figure class="fig" id="fig-image">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">A sector image of the heart builds one scan line at a time. A chosen artifact is drawn into the image.</figcaption>
+      <figcaption class="sr-only">A sector image of the heart is acquired one scan line at a time. A selected artifact is added to the image.</figcaption>
     </figure>
     <figure class="fig" id="fig-shift">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">An ultrasound beam meets flowing blood at an angle. Below, the Doppler display shows the measured velocity, the Nyquist limit and aliasing.</figcaption>
+      <figcaption class="sr-only">An ultrasound beam intersects flowing blood at an angle. The Doppler display below shows the measured velocity, the Nyquist limit and aliasing.</figcaption>
     </figure>
     <figure class="fig" id="fig-pressure">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -94,7 +94,7 @@
         <div class="pane-3d"><div class="gl-host"></div><canvas class="ink" id="planes-ink" aria-hidden="true"></canvas><p class="pane-label">All planes</p><p class="fig-note" id="planes-note">Drag to orbit · Scroll or pinch to zoom · Click a tag</p></div>
         <div class="pane-2d"><canvas class="fig-canvas" id="planes-canvas" aria-hidden="true"></canvas><p class="pane-label" id="planes-label">Apical four-chamber</p></div>
       </div>
-      <figcaption class="sr-only">A three-dimensional heart with the imaging planes of the chosen standard views drawn through it, each in the color of its acoustic window, with the lines where the planes cross. Beside it, the echo view of the focused plane.</figcaption>
+      <figcaption class="sr-only">A three-dimensional heart with the imaging planes of the chosen standard views drawn through it, each in the color of its acoustic window, with the lines where the planes cross. Beside it, the echocardiographic view of the focused plane.</figcaption>
     </figure>
     <figure class="fig" id="fig-eject">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -108,11 +108,11 @@
           <button type="button" data-val="none">Normal</button><button type="button" data-val="lad">LAD</button><button type="button" data-val="rca">RCA</button><button type="button" data-val="lcx">LCX</button>
         </div>
       </div>
-      <figcaption class="sr-only">Buttons for a normal heart and for an occluded LAD, RCA or circumflex artery. Seventeen-segment bullseye colored by the wall motion score of each segment, with the occluded artery drawn on it, and the apical four-, two- and three-chamber echo views, in which each segment moves by its score. The numbered segment buttons under the controls change the scores.</figcaption>
+      <figcaption class="sr-only">Buttons for a normal heart and for an occluded LAD, RCA or circumflex artery. Seventeen-segment bullseye colored by the wall motion score of each segment, with the occluded artery drawn on it, and the apical four-, two- and three-chamber echo views, in which each segment moves according to its score. The numbered segment buttons under the controls change the scores.</figcaption>
     </figure>
     <figure class="fig" id="fig-fill">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Diastolic function from normal to restrictive filling: an apical four-chamber view with the left atrium to scale, mitral inflow, septal and lateral tissue Doppler, pulmonary vein flow, left atrial strain and the tricuspid jet, with the 2025 diastolic algorithm and the path the current values take.</figcaption>
+      <figcaption class="sr-only">Diastolic function from normal to restrictive filling: an apical four-chamber view with the left atrium to scale, mitral inflow, septal and lateral tissue Doppler, pulmonary vein flow, left atrial strain and the tricuspid jet, with the 2025 diastolic algorithm and the path that the current values follow through it.</figcaption>
     </figure>
     <figure class="fig" id="fig-as">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -136,7 +136,7 @@
     </figure>
     <figure class="fig" id="fig-peri">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Pericardial effusion from none to tamponade: an apical four-chamber view with the fluid round the heart and, in tamponade, the right atrium and right ventricle folding in; mitral inflow, tricuspid inflow and hepatic vein flow over a breath; a parasternal long-axis view with the fluid in front of the descending aorta; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
+      <figcaption class="sr-only">Pericardial effusion from none to tamponade: an apical four-chamber view with the fluid around the heart and, in tamponade, collapse of the right atrium and right ventricle; mitral inflow, tricuspid inflow and hepatic vein flow through one respiratory cycle; a parasternal long-axis view with the fluid in front of the descending aorta; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-amyloid">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -154,8 +154,8 @@
 
     <!-- ======================================================== Physics -->
     <article class="chapter is-active" id="ch-pulse">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">01</span><div><h2 class="ch-title">Pulse</h2><p class="ch-kicker">The sound</p></div></div>
-      <p class="dek" data-part="dek">An echo image starts as one short pulse of sound. The scanner times each echo and changes the time into depth.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">01</span><div><h2 class="ch-title">Pulse</h2><p class="ch-kicker">The pulse-echo principle</p></div></div>
+      <p class="dek" data-part="dek">Each scan line of an echocardiographic image is formed from a short ultrasound pulse and the echoes that return from tissue boundaries. The ultrasound system measures the arrival time of each echo and converts it to depth.</p>
       <div class="controls">
         <div class="control">
           <label for="freq">Transducer frequency <output data-for="freq"></output></label>
@@ -179,33 +179,33 @@
       <dl class="readouts"></dl>
       <p class="live"></p>
       <div class="prose" data-part="prose">
-        <h3>Time becomes depth</h3>
-        <p>The scanner assumes one speed of sound in all soft tissue: 1540 m/s<span class="cite" data-ref="iaea2014"></span>. Depth is speed × time ÷ 2, because the pulse goes to the reflector and back<span class="cite" data-ref="iaea2014"></span>. The round trip takes about 13 µs for each centimeter of depth, so an echo from 10 cm arrives after about 130 µs<span class="cite" data-ref="efrimescu2024"></span>.</p>
-        <h3>Wavelength sets the detail</h3>
+        <h3>Echo arrival time and depth</h3>
+        <p>The ultrasound system assumes that sound travels at 1540 m/s in all soft tissue<span class="cite" data-ref="iaea2014"></span>. Depth is calculated as speed × time ÷ 2, because the pulse travels to the reflector and back<span class="cite" data-ref="iaea2014"></span>. The round trip takes approximately 13 µs for each centimeter of depth, so the echo from a reflector at 10 cm arrives after approximately 130 µs<span class="cite" data-ref="efrimescu2024"></span>.</p>
+        <h3>Wavelength and axial resolution</h3>
         <p class="eq">wavelength = speed ÷ frequency &nbsp;·&nbsp; axial resolution = cycles × wavelength ÷ 2</p>
-        <p>At 7 MHz the wavelength is about 0.22 mm<span class="cite" data-ref="openstax2022"></span>. Axial resolution is half the length of the pulse, because the pulse makes a round trip<span class="cite" data-ref="iaea2014"></span>. A higher frequency or fewer cycles give a shorter pulse, and two reflectors closer together show as two echoes.</p>
-        <h3>Echoes come from steps in impedance</h3>
-        <p>Acoustic impedance is density × speed of sound<span class="cite" data-ref="iaea2014"></span>. At each boundary the reflected fraction of the intensity is ((Z2 − Z1) ÷ (Z2 + Z1))². Fat on muscle reflects about 1.4% of the intensity<span class="cite" data-ref="openstax2022"></span>. Soft tissue on air reflects almost all of it: the lung stops the beam, and the image ends there.</p>
-        <h3>Attenuation limits the depth</h3>
-        <p>Tissue absorbs and scatters the pulse. The loss increases approximately in proportion to frequency<span class="cite" data-ref="iaea2014"></span>. The textbook average for soft tissue is 0.5 dB per cm per MHz; blood loses much less (0.17 dB/cm at 1 MHz) and muscle more (1.2 dB/cm)<span class="cite" data-ref="iaea2014"></span>. The figure adds the loss layer by layer.</p>
+        <p>At 7 MHz the wavelength is approximately 0.22 mm<span class="cite" data-ref="openstax2022"></span>. Axial resolution equals half the spatial pulse length, because the echo travels a round trip<span class="cite" data-ref="iaea2014"></span>. A higher transmit frequency or fewer cycles per pulse shorten the pulse, so that two reflectors that lie closer together along the beam are displayed as two separate echoes.</p>
+        <h3>Acoustic impedance and reflection</h3>
+        <p>Acoustic impedance is the product of tissue density and the speed of sound<span class="cite" data-ref="iaea2014"></span>. At each boundary the reflected fraction of the incident intensity is ((Z2 − Z1) ÷ (Z2 + Z1))². A fat–muscle boundary reflects approximately 1.4% of the intensity<span class="cite" data-ref="openstax2022"></span>. A boundary between soft tissue and air reflects almost all of the intensity, so the lung blocks the beam and no image is formed beyond it.</p>
+        <h3>Attenuation and penetration depth</h3>
+        <p>Absorption and scattering in tissue attenuate the pulse, and the attenuation increases approximately in proportion to frequency<span class="cite" data-ref="iaea2014"></span>. The textbook average attenuation coefficient for soft tissue is 0.5 dB per cm per MHz; attenuation is much lower in blood (0.17 dB/cm at 1 MHz) and higher in muscle (1.2 dB/cm)<span class="cite" data-ref="iaea2014"></span>. In the figure, the attenuation is summed layer by layer along the beam.</p>
         <ul>
-        <li>Adult transthoracic studies use 2.0 to 5.0 MHz<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li>ASE recommends the highest frequency that still reaches the depth of interest<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li>Time gain compensation amplifies late, deep echoes to offset attenuation<span class="cite" data-ref="mitchell2019"></span>. It amplifies the noise too.</li>
+        <li>Adult transthoracic studies use transmit frequencies of 2.0 to 5.0 MHz<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>The ASE recommends the highest transmit frequency that still penetrates to the depth of interest<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>Time gain compensation amplifies the late echoes from deep structures to offset attenuation<span class="cite" data-ref="mitchell2019"></span>. It also amplifies the noise.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Depth comes from time: about 13 µs per centimeter, round trip.</li>
-        <li>A higher frequency gives finer axial detail and less depth.</li>
-        <li>Large impedance steps give bright echoes. Air and bone block the beam.</li>
+        <li>Depth is calculated from the echo arrival time; the round trip takes approximately 13 µs per centimeter of depth.</li>
+        <li>A higher transmit frequency improves axial resolution and reduces the depth of penetration.</li>
+        <li>Large differences in acoustic impedance at a boundary produce bright echoes. Air and bone block the ultrasound beam.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
     <article class="chapter" id="ch-image">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">02</span><div><h2 class="ch-title">Image</h2><p class="ch-kicker">The picture</p></div></div>
-      <p class="dek" data-part="dek">A sector image is many scan lines, one after another. Depth, sector width and line density set how many frames the scanner can make each second.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">02</span><div><h2 class="ch-title">Image</h2><p class="ch-kicker">Image formation and artifacts</p></div></div>
+      <p class="dek" data-part="dek">A two-dimensional echocardiographic sector image is formed from many scan lines acquired in sequence. Imaging depth, sector width and line density determine the number of frames that the ultrasound system can acquire each second.</p>
       <div class="controls">
         <div class="row2">
           <div class="control">
@@ -239,24 +239,24 @@
       <div class="prose" data-part="prose">
         <h3>Frame rate</h3>
         <p class="eq">time per line ≈ 2 × depth ÷ c &nbsp;·&nbsp; time per frame = lines × time per line</p>
-        <p>Each scan line waits for the echoes from the deepest point before the next pulse goes out<span class="cite" data-ref="iaea2014"></span>. More lines, more depth or more focal zones make each frame slower. In the ASE example, 17 cm with a narrow sector gave 84 frames a second; 24 cm and a wide sector gave 43<span class="cite" data-ref="mitchell2019"></span>.</p>
-        <p>To increase the frame rate, decrease the depth, narrow the sector, use fewer focal zones or use write zoom<span class="cite" data-ref="mitchell2019"></span>. The heart moves fast, so temporal resolution is important<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <p>The next pulse is transmitted only after the echoes from the deepest point of the current scan line have returned<span class="cite" data-ref="iaea2014"></span>. A greater number of scan lines, a greater depth or more focal zones increase the time required to acquire each frame. In an example in the ASE guideline, a depth of 17 cm with a narrow sector gave 84 frames per second, and a depth of 24 cm with a wide sector gave 43<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <p>The frame rate increases when the depth is reduced, the sector is narrowed, fewer focal zones are used or write zoom is applied<span class="cite" data-ref="mitchell2019"></span>. Because the heart moves rapidly, temporal resolution is important in echocardiography<span class="cite" data-ref="mitchell2019"></span>.</p>
         <h3>Lateral resolution</h3>
-        <p>Detail across the beam depends on the beam width. The beam is narrowest at the focus, and lateral resolution is typically 1 to 2 mm<span class="cite" data-ref="iaea2014"></span>. Put the focus at the depth of the structure<span class="cite" data-ref="mitchell2019"></span>. More, closer lines give better lateral detail but a lower frame rate<span class="cite" data-ref="zander2020"></span>.</p>
+        <p>Lateral resolution, the resolution perpendicular to the beam, depends on the beam width. The beam is narrowest at the focus, and lateral resolution is typically 1 to 2 mm<span class="cite" data-ref="iaea2014"></span>. The focus should be placed at the depth of the structure of interest<span class="cite" data-ref="mitchell2019"></span>. More scan lines, spaced more closely, improve lateral resolution but lower the frame rate<span class="cite" data-ref="zander2020"></span>.</p>
         <h3>Artifacts</h3>
-        <p>The scanner assumes that sound travels in a straight line, reflects once, comes only from the beam axis, and returns at a time proportional to depth<span class="cite" data-ref="bertrand2016"></span>. Each artifact breaks one of these assumptions.</p>
+        <p>The ultrasound system assumes that the pulse travels in a straight line and is reflected only once, that every echo originates on the beam axis, and that each echo returns after a time proportional to the depth of its reflector<span class="cite" data-ref="bertrand2016"></span>. Each artifact arises when one of these assumptions is violated.</p>
         <ul>
-        <li><b>Reverberation.</b> Sound bounces between two strong reflectors. Copies appear at 2 and 3 times the distance<span class="cite" data-ref="bertrand2016"></span>.</li>
-        <li><b>Shadowing.</b> A strong reflector or attenuator, such as a prosthetic ring or calcium, removes the echoes behind it<span class="cite" data-ref="bertrand2016"></span>.</li>
-        <li><b>Mirror.</b> A strong reflector, often the pleura, places a copy of the structures in front of it behind it<span class="cite" data-ref="bertrand2016"></span>.</li>
-        <li><b>Side lobe.</b> Off-axis energy from a strong reflector shows as if it came from the main beam, often as an arc<span class="cite" data-ref="bertrand2016"></span>.</li>
+        <li><b>Reverberation.</b> Ultrasound is reflected back and forth between two strong reflectors. Copies of the deeper reflector appear at 2 and 3 times the distance between the reflectors, measured from the shallower reflector<span class="cite" data-ref="bertrand2016"></span>.</li>
+        <li><b>Shadowing.</b> A strong reflector or attenuator, such as a prosthetic ring or calcium, eliminates the echoes from the region behind it<span class="cite" data-ref="bertrand2016"></span>.</li>
+        <li><b>Mirror image.</b> A strong reflector, often the pleura, produces a copy of the structures in front of it at a position behind it<span class="cite" data-ref="bertrand2016"></span>.</li>
+        <li><b>Side lobe.</b> Echoes of off-axis energy from a strong reflector are displayed as if they originated in the main beam, often as an arc<span class="cite" data-ref="bertrand2016"></span>.</li>
         </ul>
-        <p>Harmonic imaging forms the image from twice the transmit frequency, and ASE recommends it<span class="cite" data-ref="mitchell2019"></span>. It decreases side-lobe artifacts<span class="cite" data-ref="starkoff2014"></span>, but it can make valve leaflets look thicker<span class="cite" data-ref="hawkins2008"></span>.</p>
+        <p>Harmonic imaging forms the image from echoes at twice the transmit frequency and is recommended by the ASE<span class="cite" data-ref="mitchell2019"></span>. It reduces side-lobe artifacts<span class="cite" data-ref="starkoff2014"></span>, but it can make valve leaflets appear thicker<span class="cite" data-ref="hawkins2008"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Frame rate = 1 ÷ (lines × time per line).</li>
-        <li>Decrease depth and sector width to make the frame rate higher.</li>
-        <li>Name the broken assumption to name the artifact.</li>
+        <li>The frame rate equals 1 ÷ (number of scan lines × time per line).</li>
+        <li>A reduction in imaging depth and sector width increases the frame rate.</li>
+        <li>Each artifact can be identified from the assumption of image formation that it violates.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -264,7 +264,7 @@
 
     <article class="chapter" id="ch-shift">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">03</span><div><h2 class="ch-title">Shift</h2><p class="ch-kicker">The Doppler effect</p></div></div>
-      <p class="dek" data-part="dek">Doppler measures blood velocity from the frequency shift of the echoes. The beam angle and the Nyquist limit decide what the scanner can report.</p>
+      <p class="dek" data-part="dek">Doppler echocardiography measures blood velocity from the frequency shift of the returning echoes. The angle between the beam and the direction of flow, together with the Nyquist limit, determines the velocity that the ultrasound system can report.</p>
       <div class="controls">
         <div class="control">
           <span class="label">Mode</span>
@@ -296,32 +296,32 @@
       <div class="prose" data-part="prose">
         <h3>The Doppler equation</h3>
         <p class="eq">Δf = 2 × f0 × v × cos θ ÷ c</p>
-        <p>Flow toward the transducer gives a positive shift, and flow away a negative shift<span class="cite" data-ref="quinones2002"></span>. The equation uses c = 1540 m/s<span class="cite" data-ref="quinones2002"></span>. With blood at about 1 m/s and MHz transducers, the shift is a few kHz: an audible sound<span class="cite" data-ref="iaea2014"></span>.</p>
-        <h3>The angle</h3>
-        <p>Cardiac Doppler assumes the beam is parallel to the flow (θ = 0)<span class="cite" data-ref="quinones2002"></span>. A 20° angle underestimates the velocity by only about 6%<span class="cite" data-ref="mitchell2019"></span>. At 60° the scanner reports half the true velocity (cos 60° = 0.5, a calculation). ASE does not recommend angle correction: align the beam with the flow, use several windows, and report the highest velocity<span class="cite" data-ref="mitchell2019,quinones2002"></span>.</p>
-        <h3>Pulsed wave and the Nyquist limit</h3>
-        <p>Pulsed-wave Doppler measures at one depth, but it must wait for each echo before the next pulse. The deepest sample sets the pulse repetition frequency (PRF), and the highest velocity without aliasing is c² ÷ (8 × depth × f0)<span class="cite" data-ref="iaea2014"></span>. The Nyquist limit is PRF ÷ 2; faster flow wraps to the other side of the baseline<span class="cite" data-ref="quinones2002"></span>.</p>
+        <p>Flow toward the transducer produces a positive frequency shift, and flow away from the transducer produces a negative shift<span class="cite" data-ref="quinones2002"></span>. The speed of sound in the equation is c = 1540 m/s<span class="cite" data-ref="quinones2002"></span>. For a blood velocity of approximately 1 m/s and transducer frequencies in the MHz range, the shift is a few kHz, which lies within the audible range<span class="cite" data-ref="iaea2014"></span>.</p>
+        <h3>Beam angle to the flow</h3>
+        <p>Cardiac Doppler measurement assumes that the beam is parallel to the flow (θ = 0)<span class="cite" data-ref="quinones2002"></span>. An angle of 20° between the beam and the flow underestimates the velocity by only approximately 6%<span class="cite" data-ref="mitchell2019"></span>. At 60° the ultrasound system reports half the true velocity (by calculation, cos 60° = 0.5). The ASE does not recommend angle correction; the beam should be aligned with the flow, several windows should be used, and the highest velocity should be reported<span class="cite" data-ref="mitchell2019,quinones2002"></span>.</p>
+        <h3>Pulsed-wave Doppler and the Nyquist limit</h3>
+        <p>Pulsed-wave (PW) Doppler measures velocity at a single depth, but the echo from each pulse must return before the next pulse is transmitted. The depth of the sample volume therefore determines the pulse repetition frequency (PRF), and the highest velocity that can be measured without aliasing is c² ÷ (8 × depth × f0)<span class="cite" data-ref="iaea2014"></span>. The Nyquist limit is PRF ÷ 2; flow faster than this limit wraps around to the opposite side of the baseline<span class="cite" data-ref="quinones2002"></span>.</p>
         <ul>
-        <li>Move the sample volume closer, or use a lower Doppler frequency, to increase the limit.</li>
-        <li>High-PRF Doppler adds sample volumes to increase the limit, and accepts range ambiguity<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li>Continuous wave has no Nyquist limit, and no depth information<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>A sample volume closer to the transducer or a lower Doppler frequency increases the Nyquist limit.</li>
+        <li>High-PRF Doppler adds sample volumes to increase the Nyquist limit but introduces range ambiguity<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>Continuous-wave (CW) Doppler has no Nyquist limit but provides no depth information<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
         <h3>Color Doppler</h3>
-        <p>Color shows the mean velocity at many sample volumes<span class="cite" data-ref="iaea2014"></span>: red toward the transducer, blue away<span class="cite" data-ref="mitchell2019"></span>. It is a pulsed method, so it aliases too. ASE suggests a scale of 50 to 70 cm/s for routine color, and about 30 cm/s for slow flow<span class="cite" data-ref="mitchell2019"></span>. A small, shallow color box keeps the frame rate high<span class="cite" data-ref="mitchell2019"></span>.</p>
-        <p>A wide spectrum does not always mean turbulent flow; a large sample volume or high gain also widen it<span class="cite" data-ref="paeng2025,mitchell2019"></span>.</p>
+        <p>Color Doppler displays the mean velocity at many sample volumes<span class="cite" data-ref="iaea2014"></span>, with flow toward the transducer in red and flow away from the transducer in blue<span class="cite" data-ref="mitchell2019"></span>. Because color Doppler is a pulsed technique, it is also subject to aliasing. The ASE suggests a velocity scale of 50 to 70 cm/s for routine color Doppler imaging and approximately 30 cm/s for low-velocity flow<span class="cite" data-ref="mitchell2019"></span>. A small, shallow color box maintains a high frame rate<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <p>Spectral broadening does not always indicate turbulent flow; a large sample volume or a high gain setting also broadens the spectrum<span class="cite" data-ref="paeng2025,mitchell2019"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Measured velocity = true velocity × cos θ.</li>
-        <li>Deeper sample, higher frequency: lower Nyquist limit.</li>
-        <li>For high velocities, use continuous wave.</li>
+        <li>The measured velocity equals the true velocity × cos θ, where θ is the angle between the beam and the flow.</li>
+        <li>A deeper sample volume or a higher Doppler frequency lowers the Nyquist limit.</li>
+        <li>High velocities should be measured with continuous-wave Doppler.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
     <article class="chapter" id="ch-pressure">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">04</span><div><h2 class="ch-title">Pressure</h2><p class="ch-kicker">Flow and gradients</p></div></div>
-      <p class="dek" data-part="dek">Two Doppler calculations appear in almost every report: stroke volume from the LV outflow tract, and RV systolic pressure from the tricuspid jet.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">04</span><div><h2 class="ch-title">Pressure</h2><p class="ch-kicker">Doppler hemodynamics</p></div></div>
+      <p class="dek" data-part="dek">Almost every echocardiographic report includes two Doppler calculations: stroke volume from the LV outflow tract and RV systolic pressure from the tricuspid regurgitant jet. Stroke volume is the product of the LVOT area and the LVOT VTI. RV systolic pressure is the pressure difference calculated from the peak TR velocity with the simplified Bernoulli equation plus the RA pressure estimated from the IVC.</p>
       <div class="controls">
         <div class="row2">
           <div class="control">
@@ -361,23 +361,23 @@
       <div class="prose" data-part="prose">
         <h3>Stroke volume</h3>
         <p class="eq">SV = 0.785 × d² × VTI &nbsp;(d, VTI in cm; SV in mL)</p>
-        <p>The outflow tract is taken as a circle with diameter d<span class="cite" data-ref="zoghbi2017"></span>. Measure d in a zoomed parasternal long-axis view, inner edge to inner edge, in mid-systole<span class="cite" data-ref="baumgartner2017"></span>. Record the LVOT velocity with pulsed wave from the apical five-chamber or long-axis view, just below the valve<span class="cite" data-ref="mitchell2019"></span>. Take both at the same level<span class="cite" data-ref="baumgartner2017"></span>.</p>
-        <p>The diameter is squared, so a small error becomes a large one. Repeated LVOT measurements vary by 5 to 8%, the largest error in the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. A 2 mm error on a 2.0 cm outflow tract changes the stroke volume by about 20%.</p>
-        <p>Normal resting values from catheter studies: stroke volume 60 to 100 mL, cardiac output 4 to 8 L/min, cardiac index 2.5 to 4.0 L/min/m²<span class="cite" data-ref="humbert2022"></span>.</p>
-        <h3>Pressure from velocity</h3>
+        <p>The LV outflow tract is assumed to be circular, with diameter d<span class="cite" data-ref="zoghbi2017"></span>. The LVOT diameter is measured in a zoomed parasternal long-axis view from inner edge to inner edge in mid-systole<span class="cite" data-ref="baumgartner2017"></span>. The LVOT velocity is recorded with pulsed-wave Doppler from the apical five-chamber or apical long-axis view, with the sample volume just below the aortic valve<span class="cite" data-ref="mitchell2019"></span>. Both measurements should be made at the same level<span class="cite" data-ref="baumgartner2017"></span>.</p>
+        <p>Because the diameter is squared, a small error in its measurement produces a large error in the calculated stroke volume. Repeated LVOT diameter measurements vary by 5 to 8%, which is the largest source of error in the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. A 2 mm error in the diameter of a 2.0 cm outflow tract changes the calculated stroke volume by approximately 20%.</p>
+        <p>Normal resting values from catheterization studies are a stroke volume of 60 to 100 mL, a cardiac output of 4 to 8 L/min and a cardiac index of 2.5 to 4.0 L/min/m²<span class="cite" data-ref="humbert2022"></span>.</p>
+        <h3>Pressure gradients and RV systolic pressure</h3>
         <p class="eq">ΔP = 4 v² &nbsp;·&nbsp; RVSP = 4 × (peak TR velocity)² + RA pressure</p>
-        <p>The simplified Bernoulli equation gives the pressure difference in mmHg from a velocity in m/s<span class="cite" data-ref="baumgartner2017"></span>. It holds when the velocity before the narrowing is 1.5 m/s or less<span class="cite" data-ref="quinones2002"></span>. The TR jet gives the pressure difference between the RV and the RA; add the RA pressure from the IVC<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p>The simplified Bernoulli equation calculates the pressure difference in mmHg from a velocity in m/s<span class="cite" data-ref="baumgartner2017"></span>. It is valid when the velocity proximal to the narrowing is 1.5 m/s or less<span class="cite" data-ref="quinones2002"></span>. The peak TR velocity gives the pressure difference between the RV and the RA, and the RA pressure estimated from the IVC is added to obtain the RV systolic pressure<span class="cite" data-ref="mukherjee2025"></span>.</p>
         <ul>
-        <li>IVC ≤2.1 cm that collapses ≥50% with a sniff: RA pressure 3 mmHg.</li>
-        <li>IVC >2.1 cm that collapses &lt;50%: 15 mmHg. Other combinations: 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        <li>Report one number, not a range<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li>An IVC diameter ≤2.1 cm with ≥50% collapse on sniffing corresponds to an RA pressure of 3 mmHg.</li>
+        <li>An IVC diameter >2.1 cm with &lt;50% collapse corresponds to an RA pressure of 15 mmHg. Other combinations correspond to 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li>The RA pressure should be reported as a single value, not as a range<span class="cite" data-ref="mukherjee2025"></span>.</li>
         </ul>
-        <p>A resting peak TR velocity of 2.9 m/s or more, or 2.8 m/s with two other signs, suggests pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p>A resting peak TR velocity of 2.9 m/s or more, or of 2.8 m/s or more with two other echocardiographic signs, suggests pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>SV = area × VTI; the diameter error is squared.</li>
-        <li>ΔP = 4v².</li>
-        <li>RVSP = 4 × TR² + RA pressure from the IVC.</li>
+        <li>Stroke volume equals the LVOT area × the LVOT VTI, and an error in the LVOT diameter is squared in the calculation.</li>
+        <li>The simplified Bernoulli equation gives the pressure difference as ΔP = 4v².</li>
+        <li>RV systolic pressure equals 4 × (peak TR velocity)² plus the RA pressure estimated from the IVC.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -385,50 +385,50 @@
 
     <!-- ======================================================== Physiology -->
     <article class="chapter" id="ch-cycle">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">05</span><div><h2 class="ch-title">Cycle</h2><p class="ch-kicker">One heartbeat</p></div></div>
-      <p class="dek" data-part="dek">One heartbeat has four valve events. Echo times each event from the ECG, from valve motion and from Doppler.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">05</span><div><h2 class="ch-title">Cycle</h2><p class="ch-kicker">The cardiac cycle</p></div></div>
+      <p class="dek" data-part="dek">Mitral and aortic valve opening and closure divide the cardiac cycle into isovolumic contraction, ejection, isovolumic relaxation and filling. Echocardiography times each event from the ECG, from valve motion and from Doppler flow.</p>
       <div class="controls">
         <div class="control">
           <label for="tcycle">Time after the R wave <output data-for="tcycle"></output></label>
           <input type="range" id="tcycle" data-key="tcycle" min="0" max="856" step="1">
-          <div class="ticks" aria-hidden="true"><span>R wave</span><span>systole</span><span>diastole</span><span>next R</span></div>
+          <div class="ticks" aria-hidden="true"><span>R wave</span><span>systole</span><span>diastole</span><span>next R wave</span></div>
         </div>
-        <div class="toggles"><label class="check"><input type="checkbox" id="c-run" data-key="crun"> Run the beat</label></div>
+        <div class="toggles"><label class="check"><input type="checkbox" id="c-run" data-key="crun"> Animate the cycle</label></div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
       <div class="prose" data-part="prose">
         <h3>The Wiggers diagram</h3>
-        <p>The diagram plots LV pressure, LV volume, LA pressure and aortic pressure against time, and marks the valve events<span class="cite" data-ref="mitchellwang2014"></span>. Mitral closure makes the first heart sound and aortic closure the second<span class="cite" data-ref="mitchellwang2014"></span>. Electrical events come before mechanical events: the QRS comes before contraction<span class="cite" data-ref="mitchellwang2014"></span>.</p>
-        <h3>Intervals</h3>
-        <p>In 1,969 healthy adults, isovolumic contraction lasted 40 ± 10 ms, ejection 292 ± 23 ms and isovolumic relaxation 96 ± 19 ms<span class="cite" data-ref="alhakak2025"></span>. The model uses these means at 70 beats a minute. Isovolumic relaxation becomes longer with age<span class="cite" data-ref="alhakak2025"></span>.</p>
-        <h3>Timing on echo</h3>
+        <p>The Wiggers diagram plots LV pressure, LV volume, LA pressure and aortic pressure against time and marks mitral and aortic valve opening and closure<span class="cite" data-ref="mitchellwang2014"></span>. Mitral valve closure coincides with the first heart sound (S1), and aortic valve closure coincides with the second heart sound (S2)<span class="cite" data-ref="mitchellwang2014"></span>. Electrical events precede mechanical events; for example, the QRS complex precedes ventricular contraction<span class="cite" data-ref="mitchellwang2014"></span>.</p>
+        <h3>Phase durations</h3>
+        <p>In 1,969 healthy adults, the isovolumic contraction time is 40 ± 10 ms, the ejection time 292 ± 23 ms and the isovolumic relaxation time 96 ± 19 ms<span class="cite" data-ref="alhakak2025"></span>. The model in the figure uses these mean values at a heart rate of 70 beats per minute. The isovolumic relaxation time increases with age<span class="cite" data-ref="alhakak2025"></span>.</p>
+        <h3>Echocardiographic timing</h3>
         <ul>
-        <li><b>End-diastole</b> is the first frame after mitral valve closure, or the frame with the largest LV; the QRS or the R wave can stand in<span class="cite" data-ref="lang2015,voigt2015"></span>.</li>
-        <li><b>End-systole</b> is the frame at or after aortic valve closure<span class="cite" data-ref="lang2015"></span>, near the end of the T wave<span class="cite" data-ref="schimpf2008"></span>.</li>
-        <li><b>Mitral inflow:</b> the E wave peaks after the T wave; the A wave comes after the P wave<span class="cite" data-ref="nagueh2025"></span>.</li>
-        <li><b>IVRT</b> runs from the end of LVOT flow to the start of mitral inflow. Record it with CW Doppler through the LVOT, from the apical five-chamber or long-axis view, so that both signals show<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>End-diastole</b> is the first frame after mitral valve closure or the frame with the largest LV dimension; the QRS complex or the R wave can be used instead<span class="cite" data-ref="lang2015,voigt2015"></span>.</li>
+        <li><b>End-systole</b> is the frame at or after aortic valve closure<span class="cite" data-ref="lang2015"></span> and lies near the end of the T wave<span class="cite" data-ref="schimpf2008"></span>.</li>
+        <li>In the <b>mitral inflow</b> velocity recording, the E wave peaks after the T wave, and the A wave occurs after the P wave<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>IVRT</b> extends from the end of LVOT flow to the onset of mitral inflow. It is recorded with CW Doppler through the LVOT in the apical five-chamber or apical long-axis view, so that the LVOT outflow and mitral inflow signals are displayed together<span class="cite" data-ref="nagueh2025"></span>.</li>
         </ul>
-        <p>A short IVRT (under 70 ms) in a patient with heart disease suggests a high LA pressure<span class="cite" data-ref="nagueh2025"></span>. IVRT is age-dependent, so do not use one normal value for all ages<span class="cite" data-ref="nagueh2025"></span>.</p>
-        <p>Early filling brings most of the blood into the LV; atrial contraction adds the rest, about one fifth in the example of Mitchell and Wang<span class="cite" data-ref="mitchellwang2014"></span>.</p>
+        <p>In a patient with heart disease, an IVRT shorter than 70 ms suggests elevated LA pressure<span class="cite" data-ref="nagueh2025"></span>. IVRT lengthens with age, so a single normal value should not be applied across all ages<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <p>Most of the LV filling volume enters during early diastolic filling; atrial contraction contributes the remainder, about one fifth of the filling volume in the example of Mitchell and Wang<span class="cite" data-ref="mitchellwang2014"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>S1 = mitral closure; S2 = aortic closure.</li>
-        <li>End-diastole: first frame after mitral closure. End-systole: aortic closure.</li>
-        <li>IVRT: end of LVOT flow to start of the E wave.</li>
+        <li>Mitral valve closure coincides with S1, and aortic valve closure coincides with S2.</li>
+        <li>End-diastole is the first frame after mitral valve closure, and end-systole is the frame at or after aortic valve closure.</li>
+        <li>IVRT is measured from the end of LVOT flow to the onset of the mitral E wave.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
     <article class="chapter" id="ch-loop">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">06</span><div><h2 class="ch-title">Loop</h2><p class="ch-kicker">Pressure and volume</p></div></div>
-      <p class="dek" data-part="dek">The pressure–volume loop shows one beat as a shape. Contractility, afterload and chamber stiffness move its corners, and the ejection fraction follows them.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">06</span><div><h2 class="ch-title">Loop</h2><p class="ch-kicker">LV pressure–volume analysis</p></div></div>
+      <p class="dek" data-part="dek">The LV pressure–volume loop plots LV pressure against LV volume over one cardiac cycle. Changes in contractility, afterload and chamber stiffness alter the position and shape of the loop and change the ejection fraction.</p>
       <div class="controls">
         <div class="control">
           <span class="label">Heart</span>
           <div class="seg" role="group" aria-label="Loop preset" data-key="pv">
-            <button type="button" data-val="normal">Normal</button><button type="button" data-val="hfref">Weak (HFrEF)</button><button type="button" data-val="hfpef">Stiff (HFpEF)</button><button type="button" data-val="as">Pressure load</button><button type="button" data-val="mr">Volume load (MR)</button>
+            <button type="button" data-val="normal">Normal</button><button type="button" data-val="hfref">Hypocontractile (HFrEF)</button><button type="button" data-val="hfpef">Stiff (HFpEF)</button><button type="button" data-val="as">Pressure load</button><button type="button" data-val="mr">Volume load (MR)</button>
           </div>
         </div>
         <div class="row2">
@@ -453,32 +453,32 @@
       <dl class="readouts"></dl>
       <p class="live"></p>
       <div class="prose" data-part="prose">
-        <h3>The four sides</h3>
-        <p>The loop runs counterclockwise: isovolumic contraction, ejection, isovolumic relaxation and filling<span class="cite" data-ref="bastos2020"></span>. The width of the loop is the stroke volume; its area is the stroke work<span class="cite" data-ref="bastos2020"></span>.</p>
-        <h3>Three lines</h3>
+        <h3>Phases of the loop</h3>
+        <p>The loop is traversed counterclockwise through four phases: isovolumic contraction, ejection, isovolumic relaxation and filling<span class="cite" data-ref="bastos2020"></span>. The width of the loop is the stroke volume, and its area is the stroke work<span class="cite" data-ref="bastos2020"></span>.</p>
+        <h3>ESPVR, EDPVR and arterial elastance</h3>
         <ul>
-        <li><b>ESPVR.</b> The end-systolic points lie on a near-straight line, P = Ees × (V − V0)<span class="cite" data-ref="bastos2020"></span>. Its slope, Ees, is a relatively load-independent measure of contractility<span class="cite" data-ref="bastos2020,suga1973"></span>.</li>
-        <li><b>EDPVR.</b> The end-diastolic relation is curved, close to exponential, and shows the passive stiffness of the chamber<span class="cite" data-ref="bastos2020"></span>.</li>
-        <li><b>Ea.</b> Effective arterial elastance is end-systolic pressure ÷ stroke volume: the slope of the line from the EDV on the volume axis to the end-systolic point<span class="cite" data-ref="bastos2020,kelly1992"></span>.</li>
+        <li><b>ESPVR.</b> The end-systolic pressure–volume points lie on a nearly straight line, P = Ees × (V − V0)<span class="cite" data-ref="bastos2020"></span>. Its slope, Ees, is a relatively load-independent measure of contractility<span class="cite" data-ref="bastos2020,suga1973"></span>.</li>
+        <li><b>EDPVR.</b> The end-diastolic pressure–volume relation is curvilinear and close to exponential, and it describes the passive stiffness of the chamber<span class="cite" data-ref="bastos2020"></span>.</li>
+        <li><b>Ea.</b> Effective arterial elastance is end-systolic pressure ÷ stroke volume, which equals the absolute value of the slope of the line from the EDV on the volume axis to the end-systolic point<span class="cite" data-ref="bastos2020,kelly1992"></span>.</li>
         </ul>
-        <h3>Coupling and EF</h3>
+        <h3>Ventricular–arterial coupling and ejection fraction</h3>
         <p class="eq">EF = Ees ÷ (Ees + Ea) &nbsp;(with V0 taken as 0)</p>
-        <p>EF is a ratio of the heart and its load, not a pure measure of contractility<span class="cite" data-ref="mongegarcia2020"></span>. A higher afterload decreases EF even when contractility does not change. Stroke work is largest when Ea equals Ees; efficiency is highest at a lower Ea/Ees<span class="cite" data-ref="burkhoffsagawa1986"></span>. At rest, healthy adults have an Ea/Ees of about 0.5 to 1.0, depending on the method<span class="cite" data-ref="bastos2020,chantlerlakatta2012"></span>.</p>
-        <p>Without a catheter, end-systolic pressure is often estimated as 0.9 × the systolic cuff pressure<span class="cite" data-ref="antonini2013"></span>.</p>
-        <h3>The presets</h3>
+        <p>EF depends on both the ventricle and its load and is therefore not a pure measure of contractility<span class="cite" data-ref="mongegarcia2020"></span>. An increase in afterload decreases EF even when contractility is unchanged. Stroke work is maximal when Ea equals Ees, and efficiency is highest at a lower Ea/Ees<span class="cite" data-ref="burkhoffsagawa1986"></span>. In healthy adults at rest, Ea/Ees is about 0.5 to 1.0, depending on the method of measurement<span class="cite" data-ref="bastos2020,chantlerlakatta2012"></span>.</p>
+        <p>Without invasive pressure measurement, end-systolic pressure is often estimated as 0.9 × the systolic cuff pressure<span class="cite" data-ref="antonini2013"></span>.</p>
+        <h3>Preset conditions</h3>
         <ul>
-        <li><b>Weak ventricle.</b> Low Ees: the ventricle dilates and ejects a small fraction.</li>
-        <li><b>Stiff ventricle.</b> Steep EDPVR: filling pressure is high at a normal volume, and EF stays normal.</li>
-        <li><b>Pressure load.</b> High Ea, as with aortic stenosis or hypertension: the loop is tall.</li>
-        <li><b>Volume load (MR).</b> Chronic severe primary mitral regurgitation, the loop of the Barlow heart. The loop is wide and shifted right: EDV is much larger, EDP only a little higher<span class="cite" data-ref="neema2025"></span>. The LV ejects into the LA from the start of contraction, so there is no isovolumic contraction; the mitral valve opens early<span class="cite" data-ref="neema2025,klabunde_mr"></span>. Only part of the stroke volume goes forward<span class="cite" data-ref="klabunde_mr"></span>.</li>
+        <li><b>Hypocontractile ventricle (HFrEF).</b> With a low Ees, the ventricle dilates and ejects a small fraction of its end-diastolic volume.</li>
+        <li><b>Stiff ventricle (HFpEF).</b> With a steep EDPVR, filling pressure is high at a normal volume, and EF remains normal.</li>
+        <li><b>Pressure load.</b> With a high Ea, as in aortic stenosis or hypertension, the loop rises to a high systolic pressure.</li>
+        <li><b>Volume load (MR).</b> This preset reproduces the loop of the Barlow MR heart, with chronic severe primary mitral regurgitation. The loop is wide and shifted to the right; EDV is much larger, and EDP is only slightly higher<span class="cite" data-ref="neema2025"></span>. The LV ejects into the LA from the onset of contraction, so there is no isovolumic contraction, and the mitral valve opens early<span class="cite" data-ref="neema2025,klabunde_mr"></span>. Only part of the stroke volume is ejected forward into the aorta<span class="cite" data-ref="klabunde_mr"></span>.</li>
         </ul>
-        <p>Preload is the stretch of the muscle before contraction; afterload is the load against which the ventricle ejects<span class="cite" data-ref="vincent2008,norton2001"></span>.</p>
+        <p>Preload is the stretch of the myocardium before contraction, and afterload is the load against which the ventricle ejects<span class="cite" data-ref="vincent2008,norton2001"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Ees (slope of the ESPVR) indexes contractility.</li>
-        <li>Ea = end-systolic pressure ÷ stroke volume.</li>
-        <li>EF depends on both: Ees ÷ (Ees + Ea).</li>
-        <li>Mitral regurgitation: no isovolumic contraction; a wide loop, shifted right.</li>
+        <li>Ees, the slope of the ESPVR, is an index of contractility.</li>
+        <li>Effective arterial elastance is calculated as Ea = end-systolic pressure ÷ stroke volume.</li>
+        <li>EF depends on both Ees and Ea, as EF = Ees ÷ (Ees + Ea).</li>
+        <li>In chronic severe mitral regurgitation, the loop has no isovolumic contraction phase and is wide and shifted to the right.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -486,8 +486,8 @@
 
     <!-- ======================================================== Views -->
     <article class="chapter" id="ch-windows">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">07</span><div><h2 class="ch-title">Windows</h2><p class="ch-kicker">The views</p></div></div>
-      <p class="dek" data-part="dek">Each standard view is one plane through the heart. The probe position, the rotation of the marker and the tilt of the beam select the plane.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">07</span><div><h2 class="ch-title">Windows</h2><p class="ch-kicker">Standard transthoracic views</p></div></div>
+      <p class="dek" data-part="dek">Each standard transthoracic view is a single imaging plane through the heart. The plane is determined by the position of the probe, the rotation of its marker and the tilt of the beam.</p>
       <div class="controls">
         <div class="control">
           <span class="label">Window</span>
@@ -507,37 +507,37 @@
       <dl class="readouts"></dl>
       <p class="live"></p>
       <div class="prose" data-part="prose">
-        <h3>Four windows</h3>
-        <p>ASE describes four acoustic windows: parasternal, apical, subcostal and suprasternal notch<span class="cite" data-ref="mitchell2019"></span>. Parasternal and apical imaging is done with the patient on the left side; subcostal and suprasternal imaging with the patient supine<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <h3>Acoustic windows</h3>
+        <p>The ASE guideline describes four acoustic windows: parasternal, apical, subcostal and suprasternal notch<span class="cite" data-ref="mitchell2019"></span>. Parasternal and apical imaging is performed with the patient in the left lateral decubitus position, and subcostal and suprasternal imaging with the patient supine<span class="cite" data-ref="mitchell2019"></span>.</p>
         <ul>
-        <li><b>Parasternal long axis.</b> Third or fourth left intercostal space, marker toward the right shoulder, 9 to 10 o’clock<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Parasternal short axis.</b> Rotate 90° clockwise from the long axis; the marker points to the left shoulder<span class="cite" data-ref="mitchell2019"></span>. Tilt the beam to step from the great vessels to the mitral valve, the papillary muscles and the apex<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Apical.</b> At the apical impulse, marker at 4 to 5 o’clock<span class="cite" data-ref="mitchell2019"></span>. From the four-chamber view, rotate about 60° counterclockwise for the two-chamber view and 60° more for the three-chamber view<span class="cite" data-ref="mitchell2019"></span>. Tilt anteriorly for the five-chamber view<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Subcostal.</b> Below the xiphoid. It shows the heart, the pericardium, the RV free wall and the inferior vena cava<span class="cite" data-ref="mitchell2019"></span>; angled a little to the patient's left, the abdominal aorta.</li>
-        <li><b>Suprasternal.</b> It shows the ascending aorta, the arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Parasternal long axis.</b> The probe is placed in the third or fourth left intercostal space, with the marker toward the right shoulder at 9 to 10 o’clock<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Parasternal short axis.</b> The probe is rotated 90° clockwise from the long-axis position, so that the marker points to the left shoulder<span class="cite" data-ref="mitchell2019"></span>. The beam is then tilted inferiorly to move the plane from the great vessels to the mitral valve and the papillary muscles; for the apical level, the probe is moved one or two intercostal spaces lower and more laterally<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Apical window.</b> The probe is placed at the apical impulse, with the marker at 4 to 5 o’clock<span class="cite" data-ref="mitchell2019"></span>. From the four-chamber view, the two-chamber view is obtained by a counterclockwise rotation of about 60°, and the three-chamber view by a further 60°<span class="cite" data-ref="mitchell2019"></span>. The five-chamber view is obtained by tilting the beam anteriorly<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Subcostal window.</b> The probe is placed below the xiphoid. The subcostal views show the heart, the pericardium, the RV free wall and the inferior vena cava (IVC)<span class="cite" data-ref="mitchell2019"></span>; with the beam angled slightly to the patient's left, they show the abdominal aorta.</li>
+        <li><b>Suprasternal window.</b> The suprasternal views show the ascending aorta, the aortic arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
-        <h3>The figure</h3>
-        <p>Left: the heart model cut on the imaging plane and seen square to it, turned as the echo is. <b>Labels</b> names the structures on the model. <b>Probe and body</b> shows the whole heart from the front with the plane through it and the probe, and a small figure of the body: the probe on the skin at the window, the heart inside the chest, and the head and the patient's left, turned as the heart is. Right: the echo view that the same plane cuts from the model. A change of view moves the plane from where it is, as the probe would move.</p>
-        <p>Below the diaphragm, the liver, the inferior vena cava, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views; they are not part of the heart model and the 3D heart does not show them. Each view carries the class name that the lab uses to annotate it, where the lab's list has one. The model is a normal adult heart; in a patient, the position of the heart changes the angles.</p>
-        <h3>A good apical view</h3>
-        <p>An apical view that is not foreshortened shows about two thirds LV and one third LA along the long axis<span class="cite" data-ref="mitchell2019"></span>. A plane that misses the true apex makes the LV look short and round, and its volumes read low<span class="cite" data-ref="lang2015"></span>.</p>
-        <p>The British Society of Echocardiography lists a minimum dataset of views in scanning order, and asks for at least two cardiac cycles for each clip<span class="cite" data-ref="bse2020"></span>.</p>
+        <h3>The interactive figure</h3>
+        <p>The left panel shows the heart model sectioned in the imaging plane and viewed perpendicular to that plane, in the orientation of the echocardiographic image. The <b>Labels</b> option displays the names of the structures on the model. The <b>Probe and body</b> option shows the whole heart from the front, with the imaging plane through it and the probe. This option also shows a small figure of the body, oriented as the heart is, with the probe on the skin at the acoustic window, the heart within the chest, the head and the patient's left side. The right panel shows the echocardiographic image of the same plane through the model. When another view is selected, the plane moves from its current position, as the probe would move.</p>
+        <p>Below the diaphragm, the liver, the IVC, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views. These structures are not part of the heart model and do not appear in the 3D heart. Each view is labeled with its view class name for image annotation, where the annotation list contains the view. The model is a normal adult heart; in a patient, the angles vary with the position of the heart.</p>
+        <h3>Apical foreshortening</h3>
+        <p>In an apical view without foreshortening, the LV occupies about two thirds and the LA about one third of the long axis<span class="cite" data-ref="mitchell2019"></span>. When the plane does not pass through the true apex, the LV appears short and round, and LV volumes are underestimated<span class="cite" data-ref="lang2015"></span>.</p>
+        <p>The minimum dataset of the British Society of Echocardiography lists the views in scanning order and specifies at least two cardiac cycles for each clip<span class="cite" data-ref="bse2020"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Parasternal long → short: rotate 90° clockwise.</li>
-        <li>Apical four → two → three chamber: rotate about 60° counterclockwise each step.</li>
-        <li>Measure the IVC 1 to 2 cm from the right atrium, in the subcostal view<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li>The parasternal short-axis view is obtained by rotating the probe 90° clockwise from the parasternal long-axis view.</li>
+        <li>The apical two-chamber and three-chamber views are obtained from the four-chamber view by successive counterclockwise rotations of about 60°.</li>
+        <li>The IVC diameter is measured in the subcostal view, 1 to 2 cm from the junction with the right atrium<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
     <article class="chapter" id="ch-planes">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">08</span><div><h2 class="ch-title">Planes</h2><p class="ch-kicker">All views in one heart</p></div></div>
-      <p class="dek" data-part="dek">The standard views are planes through one heart. Seen together, the planes show which views share a line, which views are parallel, and which views show a structure.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">08</span><div><h2 class="ch-title">Planes</h2><p class="ch-kicker">The standard imaging planes</p></div></div>
+      <p class="dek" data-part="dek">Each standard view is a plane through the same heart. Displayed together, the planes show which views intersect along a common line, which views are parallel and which views contain a given structure.</p>
       <div class="controls">
         <div class="control">
-          <span class="label">Sets</span>
+          <span class="label">View sets</span>
           <div class="seg" role="group" aria-label="View sets" id="planes-sets">
             <button type="button" data-set="nine">Nine views</button><button type="button" data-set="long">Parasternal long</button><button type="button" data-set="stack">Short-axis stack</button><button type="button" data-set="apical">Apical</button><button type="button" data-set="all">All</button><button type="button" data-set="none">Clear</button>
           </div>
@@ -551,14 +551,14 @@
           <div class="seg" role="group" aria-label="Structure" data-key="pstruct"><button type="button" data-val="none">None</button></div>
         </div>
         <div class="control">
-          <span class="label">Look from</span>
+          <span class="label">Viewpoint</span>
           <div class="seg" role="group" aria-label="Camera" data-key="pcam">
-            <button type="button" data-val="front">Front</button><button type="button" data-val="apex">The apex</button><button type="button" data-val="side">The side</button><button type="button" data-val="plane">Square to the plane</button>
+            <button type="button" data-val="front">Front</button><button type="button" data-val="apex">Apex</button><button type="button" data-val="side">Side</button><button type="button" data-val="plane">En face</button>
           </div>
         </div>
         <div class="toggles">
           <label class="check"><input type="checkbox" data-key="pheart"> Heart</label>
-          <label class="check"><input type="checkbox" data-key="plines"> Where the focused plane crosses</label>
+          <label class="check"><input type="checkbox" data-key="plines"> Intersections with the focused plane</label>
           <label class="check"><input type="checkbox" data-key="pcut"> Cut at the focused plane</label>
           <label class="check"><input type="checkbox" data-key="pfree"> Free plane</label>
         </div>
@@ -601,30 +601,30 @@
       <p class="live"></p>
       <div class="table-wrap"><table class="vt matrix" id="planes-matrix"></table></div>
       <div class="prose" data-part="prose">
-        <h3>How the views relate</h3>
+        <h3>Spatial relations of the views</h3>
         <ul>
-        <li><b>The apical views share one line.</b> The four-, two- and three-chamber planes all contain the long axis of the LV. ASE rotates about 60° between them<span class="cite" data-ref="mitchell2019"></span>; the figure shows the angles of this model. Look from the apex to see the three planes as a star.</li>
-        <li><b>The short-axis levels are parallel.</b> Tilting the probe steps the plane from the mitral valve to the papillary muscles and the apex<span class="cite" data-ref="mitchell2019"></span>. Look from the side to see the stack.</li>
-        <li><b>Long and short axis cross at right angles.</b> The short axis comes from a 90° rotation of the long axis<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Small tilts make new views.</b> From the parasternal long axis, tilt toward the right hip for RV inflow, and anteriorly for RV outflow. From the four-chamber view, tilt anteriorly to add the LVOT and the aortic valve<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>The apical planes intersect along the LV long axis.</b> The apical four-, two- and three-chamber planes all contain the long axis of the LV. According to the ASE guideline, the probe is rotated about 60° between these views<span class="cite" data-ref="mitchell2019"></span>; the angles of this model are given in the figure. Viewed from the apex, the three planes radiate from the long axis.</li>
+        <li><b>The short-axis planes are nearly parallel.</b> Tilting the probe moves the plane in steps from the mitral valve level to the papillary muscle level and the apex<span class="cite" data-ref="mitchell2019"></span>. Viewed from the side, the planes form a stack.</li>
+        <li><b>The long- and short-axis planes are perpendicular.</b> The parasternal short-axis view is obtained by a 90° rotation of the probe from the parasternal long-axis view<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Small tilts produce additional views.</b> From the parasternal long-axis view, a tilt toward the right hip produces the RV inflow view, and an anterior tilt produces the RV outflow view. From the apical four-chamber view, an anterior tilt brings the LVOT and the aortic valve into the plane<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
         <h3>Free plane</h3>
-        <p>Turn on <b>Free plane</b> to move a plane away from the focused view the way a probe moves: rotate it about the beam, tilt the beam across the plane, rock it within the plane, slide the probe along the plane and sweep it across. The echo pane shows what that plane cuts; <b>Square to the plane</b> turns the 3D heart to face it. In this model, a turn of 60° counterclockwise from the four-chamber view gives the two-chamber view, and a turn of 120° gives the three-chamber view. A turn of 90° clockwise from the parasternal long axis gives the short axis at the mitral valve.</p>
-        <p>The probe stays in the window of the focused view, so the free plane is compared only with the standard views of that window. A plane from another window can cut the heart almost the same way (the apical and subcostal four-chamber planes do), but it is a different view. The comparison uses the angle between the planes, with the marker on the same side, and how far the view's centre lies off the free plane. The same plane with the marker on the other side gives a mirrored image, and the panel says so. Within 20° and 3 cm the nearest view is marked; within 10° and 1.5 cm the plane settles onto it when you let go of the control.</p>
-        <p><b>Back to the focused view</b> moves the probe in steps: slide and sweep first, then tilt and rock, then rotate. Each step starts before the previous step ends, so the move does not stop between steps. <b>Go to a view</b> takes the free plane to any standard view. For a view in the same window, the new view becomes the focused view. The controls then show the present plane relative to it and move to zero. For a view in another window, the probe first returns to the focused view. Then it moves across the chest to the new window.</p>
-        <h3>What each view shows</h3>
-        <p>The table lists the structures that ASE names for each view on show<span class="cite" data-ref="mitchell2019"></span>. Choose a structure to light the views that contain it. The figure shows each parent view only, not its zoomed or LV-focused variants.</p>
-        <h3>Why it matters</h3>
+        <p>The <b>Free plane</b> controls move a plane away from the focused view in the same ways that a probe is moved: rotation about the beam, tilt of the beam across the plane, rock of the beam within the plane, slide of the probe along the plane and sweep of the probe across it. The echocardiographic image displays the section that this plane cuts from the heart, and the <b>En face</b> viewpoint turns the 3D heart so that the plane is viewed perpendicular to its surface. In this model, a rotation of 60° counterclockwise from the four-chamber view produces the two-chamber view, and a rotation of 120° produces the three-chamber view. A rotation of 90° clockwise from the parasternal long axis produces the short axis at the mitral valve level.</p>
+        <p>The probe remains in the acoustic window of the focused view, so the free plane is compared only with the standard views of that window. A plane from another window can cut the heart in almost the same section, as the apical and subcostal four-chamber planes do, but it constitutes a different view. The comparison uses the angle between the planes, with the orientation marker on the same side, and the distance of the view's center from the free plane. The same plane with the marker on the opposite side produces a mirror image, and the free-plane panel reports the reversed marker. Within 20° and 3 cm, the nearest view is marked; within 10° and 1.5 cm, the plane settles onto that view when the control is released.</p>
+        <p><b>Back to the focused view</b> returns the probe to the focused view in steps: slide and sweep first, then tilt and rock, and rotation last. Each step begins before the previous step ends, so the movement is continuous. <b>Go to a view</b> moves the free plane to any standard view. For a view in the same window, the selected view becomes the focused view; the control values are then recalculated relative to that view and return to zero. For a view in another window, the probe first returns to the focused view and then moves across the chest to the new window.</p>
+        <h3>Structures in each view</h3>
+        <p>The table lists the structures that the ASE guideline names for each displayed view<span class="cite" data-ref="mitchell2019"></span>. Selection of a structure highlights the views that contain it. The figure shows only the parent views, not their zoomed or LV-focused variants.</p>
+        <h3>Clinical relevance</h3>
         <ul>
-        <li>Confirm a finding in two views that cross it at different angles.</li>
-        <li>Some measurements need two views at one site: the LVOT diameter (zoomed parasternal long axis) and the LVOT velocity (apical five-chamber) must come from the same level<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li>Each apical view shows two opposite walls of the LV, and together the three views cover the 17 segments<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>A finding should be confirmed in two views that intersect it at different angles.</li>
+        <li>Some measurements combine two views of the same site; the LVOT diameter (zoomed parasternal long-axis view) and the LVOT velocity (apical five-chamber view) must be obtained at the same level<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>Each apical view shows two opposite walls of the LV, and together the three apical views include all 17 segments<span class="cite" data-ref="lang2015"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Apical planes rotate about the LV long axis.</li>
-        <li>Short-axis planes are parallel slices.</li>
-        <li>Every structure appears in several views: use at least two.</li>
+        <li>The apical four-, two- and three-chamber planes are related by rotation about the LV long axis.</li>
+        <li>The parasternal short-axis planes are nearly parallel sections through the heart.</li>
+        <li>Each structure appears in several views and should be examined in at least two of them.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -632,8 +632,8 @@
 
     <!-- ======================================================== Function -->
     <article class="chapter" id="ch-eject">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">09</span><div><h2 class="ch-title">Eject</h2><p class="ch-kicker">Systolic function</p></div></div>
-      <p class="dek" data-part="dek">LVEF is the fraction of the end-diastolic volume that the LV ejects. Measure it from biplane volumes; the right ventricle needs its own measures.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">09</span><div><h2 class="ch-title">Eject</h2><p class="ch-kicker">Ventricular systolic function</p></div></div>
+      <p class="dek" data-part="dek">LVEF is the fraction of the end-diastolic volume that the LV ejects. It is measured from biplane LV volumes, and RV systolic function is assessed with separate measures.</p>
       <div class="controls">
         <div class="control">
           <span class="label">Ventricle</span>
@@ -683,37 +683,37 @@
       <dl class="readouts"></dl>
       <p class="live"></p>
       <div class="prose" data-part="prose">
-        <h3>Biplane volumes</h3>
-        <p>The biplane method of disks (modified Simpson’s rule) is the recommended 2D method; use 3D when it is available and the images are good<span class="cite" data-ref="lang2015"></span>. Trace the LV at end-diastole and end-systole in the apical four- and two-chamber views. The software divides the LV into a stack of thin disks and adds their volumes. Do not calculate volumes from linear dimensions<span class="cite" data-ref="lang2015"></span>.</p>
-        <p>Trace the border between the compacted myocardium and the cavity. Close it with a straight line across the mitral annulus. L runs from the middle of that line to the farthest point of the border. Use the longer L of the two views<span class="cite" data-ref="lang2015"></span>. In the figure, each echo view shows its tracing, L and the 20 disks. The drawing under each view is the model LV that the view cuts.</p>
-        <p>Foreshortened views make the volumes read low<span class="cite" data-ref="lang2015"></span>. A depth set on the LV makes foreshortening less likely<span class="cite" data-ref="lang2015"></span>. In a foreshortened view the apex looks more round<span class="cite" data-ref="mitchell2019"></span>. In the figure, both volumes fall by the same fraction, so the EF changes little while the volumes are wrong.</p>
+        <h3>Biplane method of disks</h3>
+        <p>The biplane method of disks (modified Simpson’s rule) is the recommended 2D method; 3D echocardiography should be used when it is available and image quality is good<span class="cite" data-ref="lang2015"></span>. The LV is traced at end-diastole and end-systole in the apical four- and two-chamber views. The software divides the LV into a stack of thin disks and sums their volumes. LV volumes should not be calculated from linear dimensions<span class="cite" data-ref="lang2015"></span>.</p>
+        <p>The border is traced at the interface between the compacted myocardium and the cavity and is closed by a straight line across the mitral annulus. The LV length, L, is measured from the midpoint of that line to the most distant point of the border, and the longer L of the two views is used<span class="cite" data-ref="lang2015"></span>. In the figure, each echocardiographic view displays its tracing, L and the 20 disks; the drawing below each view shows the model LV in the plane of that view.</p>
+        <p>Foreshortening of the apical views leads to underestimation of the LV volumes<span class="cite" data-ref="lang2015"></span>. An imaging depth set on the LV reduces the likelihood of foreshortening<span class="cite" data-ref="lang2015"></span>. In a foreshortened view, the apex has a more rounded contour<span class="cite" data-ref="mitchell2019"></span>. In the figure, foreshortening reduces both volumes by the same fraction, so the EF changes little although both volumes are underestimated.</p>
         <h3>Normal values</h3>
         <ul>
-        <li>LVEF normal: 52 to 72% in men, 54 to 74% in women. Mildly abnormal: 41 to 51% (men) or 41 to 53% (women); moderately 30 to 40%; severely below 30%<span class="cite" data-ref="lang2015"></span>.</li>
-        <li>Heart failure categories by LVEF: reduced ≤40%, mildly reduced 41 to 49%, preserved ≥50%<span class="cite" data-ref="heidenreich2022"></span>.</li>
-        <li>Global longitudinal strain: normal more negative than −18%, borderline −16 to −18%, abnormal less negative than −16%<span class="cite" data-ref="thomas2025"></span>.</li>
+        <li>Normal LVEF is 52–72% in men and 54–74% in women. LVEF is mildly abnormal at 41–51% in men and 41–53% in women, moderately abnormal at 30–40% and severely abnormal below 30%<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>The heart failure categories by LVEF are reduced (≤40%), mildly reduced (41–49%) and preserved (≥50%)<span class="cite" data-ref="heidenreich2022"></span>.</li>
+        <li>Global longitudinal strain is normal when more negative than −18%, borderline from −16% to −18% and abnormal when less negative than −16%<span class="cite" data-ref="thomas2025"></span>.</li>
         </ul>
-        <p>Report one LVEF, with its method<span class="cite" data-ref="taub2025"></span>. On serial 2D studies of stable patients, EF varied by more than 10 points; non-contrast 3D varied by about 6<span class="cite" data-ref="thavendiranathan2013"></span>.</p>
-        <h3>The right ventricle</h3>
-        <p>ASE grades three simple measures of RV systolic function<span class="cite" data-ref="mukherjee2025"></span>:</p>
+        <p>A single LVEF should be reported, together with the method of measurement<span class="cite" data-ref="taub2025"></span>. In serial 2D studies of stable patients, the EF varied by more than 10 percentage points; with non-contrast 3D echocardiography, it varied by about 6 percentage points<span class="cite" data-ref="thavendiranathan2013"></span>.</p>
+        <h3>RV systolic function</h3>
+        <p>The ASE guideline grades three simple measures of RV systolic function<span class="cite" data-ref="mukherjee2025"></span>:</p>
         <ul>
-        <li><b>TAPSE.</b> M-mode excursion of the lateral tricuspid annulus toward the apex, in the RV-focused four-chamber view<span class="cite" data-ref="mitchell2019"></span>. Normal above 1.7 cm.</li>
-        <li><b>S′.</b> Tissue Doppler velocity of the same point. Normal above 9.5 cm/s.</li>
-        <li><b>Fractional area change.</b> (end-diastolic area − end-systolic area) ÷ end-diastolic area. Normal above 35%<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>TAPSE.</b> TAPSE is the M-mode excursion of the lateral tricuspid annulus toward the apex, recorded in the RV-focused four-chamber view<span class="cite" data-ref="mitchell2019"></span>. It is normal above 1.7 cm.</li>
+        <li><b>S′.</b> S′ is the systolic tissue Doppler velocity of the same point of the annulus. It is normal above 9.5 cm/s.</li>
+        <li><b>Fractional area change.</b> The fractional area change (FAC) of the RV is (end-diastolic area − end-systolic area) ÷ end-diastolic area. It is normal above 35%<span class="cite" data-ref="mukherjee2025"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Biplane disks in two apical views; avoid foreshortening.</li>
-        <li>Normal LVEF starts at 52% (men) and 54% (women).</li>
-        <li>Report at least one measure of RV function<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>LV volumes are measured by the biplane method of disks in the apical four- and two-chamber views, and foreshortening should be avoided.</li>
+        <li>The lower limit of normal LVEF is 52% in men and 54% in women.</li>
+        <li>At least one measure of RV function should be reported<span class="cite" data-ref="taub2025"></span>.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
     <article class="chapter" id="ch-segments">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">10</span><div><h2 class="ch-title">Segments</h2><p class="ch-kicker">Regional function</p></div></div>
-      <p class="dek" data-part="dek">The LV wall has 17 segments. A coronary artery usually supplies one set of segments, so the pattern of abnormal motion points to the artery.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">10</span><div><h2 class="ch-title">Segments</h2><p class="ch-kicker">Regional wall motion</p></div></div>
+      <p class="dek" data-part="dek">In the standard model, the LV wall is divided into 17 segments. Each coronary artery usually supplies a specific set of segments, so the distribution of abnormal wall motion indicates the artery involved.</p>
       <div class="controls">
         <div class="control">
           <span class="label">Wall motion of the affected segments</span>
@@ -729,37 +729,37 @@
       <dl class="readouts"></dl>
       <p class="live"></p>
       <div class="prose" data-part="prose">
-        <h3>Names and numbers</h3>
-        <p>Start at the anterior junction of the septum and the RV free wall and go counterclockwise: anteroseptal, inferoseptal, inferior, inferolateral, anterolateral, anterior<span class="cite" data-ref="lang2015"></span>. The basal and mid levels have six segments each, the apical level four, and the apical cap is segment 17<span class="cite" data-ref="lang2015"></span>.</p>
+        <h3>Segment nomenclature</h3>
+        <p>The segments are named counterclockwise from the anterior junction of the septum and the RV free wall: anteroseptal, inferoseptal, inferior, inferolateral, anterolateral and anterior<span class="cite" data-ref="lang2015"></span>. The basal and mid levels each contain six segments, the apical level contains four, and the apical cap is segment 17<span class="cite" data-ref="lang2015"></span>.</p>
         <ul>
-        <li>Use 16 segments to score wall motion, and 17 for perfusion or to compare with other modalities<span class="cite" data-ref="lang2015"></span>.</li>
-        <li>Score each segment: 1 normal or hyperkinetic, 2 hypokinetic, 3 akinetic, 4 dyskinetic<span class="cite" data-ref="lang2015"></span>. The 2025 reporting guideline adds 5, aneurysmal<span class="cite" data-ref="taub2025"></span>. In the figure, tap a segment on the bull's-eye or on an apical view, or use its numbered button, to move it to the next score.</li>
-        <li>The wall motion score index is the mean of the scores; 1.00 is normal<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>Wall motion should be scored in 16 segments, and 17 segments should be used for perfusion or for comparison with other imaging modalities<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>Each segment is scored as follows: 1, normal or hyperkinetic; 2, hypokinetic; 3, akinetic; 4, dyskinetic<span class="cite" data-ref="lang2015"></span>. The 2025 reporting guideline adds a score of 5 for an aneurysmal segment<span class="cite" data-ref="taub2025"></span>. In the figure, a tap on a segment in the bull's-eye or in an apical view, or on its numbered button, advances that segment to the next score.</li>
+        <li>The wall motion score index is the mean of the segment scores, and a value of 1.00 is normal<span class="cite" data-ref="lang2015"></span>.</li>
         </ul>
-        <h3>Views and walls</h3>
-        <p>The apical four-chamber view shows the inferoseptal and anterolateral walls; the two-chamber view the inferior and anterior walls; the three-chamber view the inferolateral and anteroseptal walls<span class="cite" data-ref="lang2015"></span>.</p>
-        <h3>What each occlusion shows</h3>
+        <h3>Apical views and LV walls</h3>
+        <p>The apical four-chamber view shows the inferoseptal and anterolateral walls, the two-chamber view the inferior and anterior walls, and the three-chamber view the inferolateral and anteroseptal walls<span class="cite" data-ref="lang2015"></span>.</p>
+        <h3>Wall motion patterns of coronary occlusion</h3>
         <ul>
-        <li><b>LAD.</b> The anterior wall in the two-chamber view and the anteroseptal wall in the three-chamber view, each from base to apex; the apical septum in the four-chamber view; the apex in all three<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
-        <li><b>RCA.</b> The inferior wall in the two-chamber view, from base to apex, and the basal and mid inferoseptum in the four-chamber view. The three-chamber view stays normal<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
-        <li><b>Circumflex.</b> The anterolateral wall in the four-chamber view and the inferolateral wall in the three-chamber view. The two-chamber view stays normal<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
+        <li><b>LAD.</b> LAD occlusion affects the anterior wall in the two-chamber view and the anteroseptal wall in the three-chamber view, each from base to apex; the apical septum in the four-chamber view; and the apex in all three views<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
+        <li><b>RCA.</b> RCA occlusion affects the inferior wall in the two-chamber view, from base to apex, and the basal and mid inferoseptum in the four-chamber view; the three-chamber view remains normal<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
+        <li><b>Circumflex.</b> Circumflex occlusion affects the anterolateral wall in the four-chamber view and the inferolateral wall in the three-chamber view; the two-chamber view remains normal<span class="cite" data-ref="javadi2010"></span><span class="cite" data-ref="lang2015"></span>.</li>
         </ul>
-        <h3>Territories</h3>
-        <p>In the standard map, the LAD supplies segments 1, 2, 7, 8, 13, 14 and 17; the right coronary artery 3, 4, 9, 10 and 15; the circumflex 5, 6, 11, 12 and 16<span class="cite" data-ref="javadi2010"></span>. Supply varies: in one CT study, 72% of patients had at least one segment supplied by a different artery<span class="cite" data-ref="javadi2010"></span>. Treat the map as a guide, not a rule.</p>
-        <p>Regional strain values are not recommended for clinical decisions, because they vary between tests and vendors<span class="cite" data-ref="thomas2025"></span>.</p>
+        <h3>Coronary territories</h3>
+        <p>In the standard map, the LAD supplies segments 1, 2, 7, 8, 13, 14 and 17; the right coronary artery supplies segments 3, 4, 9, 10 and 15; and the circumflex supplies segments 5, 6, 11, 12 and 16<span class="cite" data-ref="javadi2010"></span>. Coronary supply varies between patients; in one CT study, 72% of patients had at least one segment supplied by a different artery<span class="cite" data-ref="javadi2010"></span>. The map should therefore be regarded as a guide rather than a fixed rule.</p>
+        <p>Regional strain values are not recommended for clinical decision-making, because they vary between repeated examinations and between vendors<span class="cite" data-ref="thomas2025"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>16 segments for wall motion; the index is their mean score.</li>
-        <li>Each apical view shows two opposite walls.</li>
-        <li>Anterior wall, anteroseptum and apex: think LAD. Inferior wall and basal inferoseptum: RCA. Lateral walls: circumflex.</li>
+        <li>Wall motion is scored in 16 segments, and the wall motion score index is the mean of their scores.</li>
+        <li>Each apical view shows two opposite walls of the LV.</li>
+        <li>Abnormal motion of the anterior wall, the anteroseptum and the apex suggests LAD occlusion. Abnormal motion of the inferior wall and the basal and mid inferoseptum suggests RCA occlusion, and abnormal motion of the lateral walls suggests circumflex occlusion.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
     <article class="chapter" id="ch-fill">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">11</span><div><h2 class="ch-title">Fill</h2><p class="ch-kicker">Diastolic function</p></div></div>
-      <p class="dek" data-part="dek">Diastolic function decides how high the LA pressure must be to fill the LV. As the LV relaxes more slowly and then stiffens, the inflow, the annulus, the pulmonary veins and the LA change together; the 2025 ASE algorithm reads them.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">11</span><div><h2 class="ch-title">Fill</h2><p class="ch-kicker">LV diastolic function</p></div></div>
+      <p class="dek" data-part="dek">LV diastolic function determines the LA pressure that is required to fill the LV. As LV relaxation slows and the LV then stiffens, the mitral inflow, the mitral annular velocities, the pulmonary venous flow and the LA change together. The 2025 ASE algorithm uses these measurements to classify the LA pressure as normal or raised and to grade diastolic dysfunction.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
@@ -779,39 +779,39 @@
         </table>
       </div>
       <div class="prose" data-part="prose">
-        <h3>As the grade rises</h3>
+        <h3>Grades of diastolic dysfunction</h3>
         <ol class="steps">
-        <li><b>Grade 1.</b> Relaxation slows: e′ falls, and E/A falls to 0.8 or less. E/e′ and the PA pressure stay normal, so the LA pressure is normal<span class="cite" data-ref="nagueh2025"></span>.</li>
-        <li><b>Grade 2.</b> The LA pressure rises (mild to moderate) and E/A stays below 2: the inflow can look normal again, a pseudonormal pattern<span class="cite" data-ref="nagueh2025"></span>. E/e′ and the TR velocity rise; pulmonary vein S/D falls to 0.67 or less; LA reservoir strain falls to 18% or less<span class="cite" data-ref="nagueh2025"></span>.</li>
-        <li><b>Grade 3.</b> A marked rise in LA pressure with E/A ≥2, the restrictive pattern<span class="cite" data-ref="nagueh2025"></span>. With a normal EF, a restrictive pattern with a dilated LA carries a poor prognosis<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>In <b>grade 1</b> diastolic dysfunction, LV relaxation is slowed; e′ decreases, and E/A decreases to 0.8 or less. E/e′ and the PA pressure remain normal, and the LA pressure is therefore normal<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>In <b>grade 2</b>, the LA pressure is mildly to moderately raised and E/A remains below 2, so the mitral inflow can appear normal again, a pattern termed pseudonormal<span class="cite" data-ref="nagueh2025"></span>. E/e′ and the TR velocity increase, the pulmonary vein S/D ratio decreases to 0.67 or less, and LA reservoir strain decreases to 18% or less<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>Grade 3</b> is defined by a markedly raised LA pressure with E/A ≥2, the restrictive filling pattern<span class="cite" data-ref="nagueh2025"></span>. In patients with a normal LVEF, a restrictive pattern with a dilated LA is associated with a poor prognosis<span class="cite" data-ref="nagueh2025"></span>.</li>
         </ol>
-        <p>The values on the page are illustrative. With a normal EF, S/D can stay above 0.67 although the filling pressures are high; LA strain ≤18% is specific but can miss raised pressure<span class="cite" data-ref="nagueh2025"></span>.</p>
-        <h3>What the signals mean</h3>
+        <p>The values in the figure are illustrative. In patients with a normal LVEF, the pulmonary vein S/D ratio can remain above 0.67 although the filling pressures are high; an LA reservoir strain ≤18% is specific for a raised LA pressure, but a higher strain does not exclude it<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <h3>Doppler variables</h3>
         <ul>
-        <li><b>Mitral E and A.</b> Early filling (E) and atrial filling (A). Slow relaxation decreases early filling relative to late filling, so E/A falls<span class="cite" data-ref="nagueh2025"></span>.</li>
-        <li><b>e′.</b> The tissue Doppler velocity of the mitral annulus in early diastole. It depends directly on LV relaxation, so it is the first value in the algorithm<span class="cite" data-ref="nagueh2025"></span>.</li>
-        <li><b>E/e′.</b> Rises with LA pressure. In an early study, lateral E/e′ tracked wedge pressure (r = 0.87)<span class="cite" data-ref="nagueh1997"></span>.</li>
-        <li><b>TR velocity.</b> Without lung or pulmonary vascular disease, a peak of 2.8 m/s or more supports a raised LA pressure<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>The mitral inflow <b>E and A</b> velocities represent early diastolic filling and atrial filling. Slow LV relaxation reduces early filling relative to atrial filling, so E/A decreases<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>The early diastolic velocity of the mitral annulus, <b>e′</b>, is measured with tissue Doppler. It depends directly on LV relaxation and is therefore the first variable in the algorithm<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>The ratio <b>E/e′</b> increases with LA pressure. In an early study, lateral E/e′ correlated with the pulmonary capillary wedge pressure (r = 0.87)<span class="cite" data-ref="nagueh1997"></span>.</li>
+        <li>In the absence of lung or pulmonary vascular disease, a peak <b>TR velocity</b> of 2.8 m/s or more supports a raised LA pressure<span class="cite" data-ref="nagueh2025"></span>.</li>
         </ul>
-        <h3>The 2025 algorithm, sinus rhythm</h3>
+        <h3>The 2025 ASE algorithm in sinus rhythm</h3>
         <ol class="steps">
-        <li>Check three values: e′ reduced (septal ≤6, lateral ≤7 or average ≤6.5 cm/s); E/e′ raised (septal ≥15, lateral ≥13 or average ≥14); TR ≥2.8 m/s, or PA systolic pressure ≥35 mmHg when the RA pressure is known<span class="cite" data-ref="nagueh2025"></span>.</li>
-        <li>All three normal: normal LA pressure and normal diastolic function.</li>
-        <li>Only e′ reduced and E/A ≤0.8: normal LA pressure, grade 1.</li>
-        <li>One or two abnormal (other cases): check pulmonary vein S/D ≤0.67, LA reservoir strain ≤18% or LA volume index >34 mL/m². One or more abnormal: raised LA pressure. None: normal LA pressure<span class="cite" data-ref="nagueh2025"></span>.</li>
-        <li>All three abnormal: raised LA pressure.</li>
-        <li>With raised LA pressure: E/A &lt;2 is grade 2; E/A ≥2 is grade 3<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>The first step assesses three variables: reduced e′ (septal ≤6, lateral ≤7 or average ≤6.5 cm/s); raised E/e′ (septal ≥15, lateral ≥13 or average ≥14); and a peak TR velocity ≥2.8 m/s, or a PA systolic pressure ≥35 mmHg when the RA pressure is known<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>If all three first-step variables are normal, the LA pressure is normal and diastolic function is normal.</li>
+        <li>If reduced e′ is the only abnormal variable and E/A is ≤0.8, the LA pressure is normal, and diastolic dysfunction is classified as grade 1.</li>
+        <li>In the other cases with one or two abnormal first-step variables, the second step assesses whether the pulmonary vein S/D ratio is ≤0.67, the LA reservoir strain is ≤18% or the LA volume index is >34 mL/m². One or more abnormal second-step variables indicate a raised LA pressure; if none is abnormal, the LA pressure is normal<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>If all three first-step variables are abnormal, the LA pressure is raised.</li>
+        <li>When the LA pressure is raised, E/A &lt;2 indicates grade 2 and E/A ≥2 indicates grade 3 diastolic dysfunction<span class="cite" data-ref="nagueh2025"></span>.</li>
         </ol>
-        <p>In a validation study of 951 patients with catheter pressures, the algorithm left 2 patients unclassified (the 2016 approach left 38) and was 86% accurate<span class="cite" data-ref="lababidi2025"></span>.</p>
-        <h3>Where it does not apply</h3>
-        <p>Do not use it in atrial fibrillation, mitral stenosis, severe primary mitral regurgitation, moderate or severe annular calcification, after mitral repair or replacement, after heart transplant, with an LV assist device, with pericardial constriction, or with pulmonary hypertension of non-cardiac cause<span class="cite" data-ref="nagueh2025"></span>. The guideline does not apply to children, to normal pregnancy, or during surgery<span class="cite" data-ref="nagueh2025"></span>.</p>
-        <p>If the grade is uncertain, report whether the LA pressure is normal or raised<span class="cite" data-ref="nagueh2025"></span>. e′ decreases with age; age-adjusted limits can replace the fixed cut-offs<span class="cite" data-ref="nagueh2025"></span>.</p>
-        <p>In advanced cardiac amyloidosis, the annular s′, e′ and a′ can all fall below 5 cm/s: the “5-5-5” sign<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <p>In a validation study of 951 patients with catheter-measured pressures, 2 patients remained unclassified by the algorithm (38 by the 2016 approach), and the accuracy of the algorithm was 86%<span class="cite" data-ref="lababidi2025"></span>.</p>
+        <h3>Exclusions and limitations</h3>
+        <p>The algorithm should not be applied in atrial fibrillation, mitral stenosis, severe primary mitral regurgitation or moderate or severe mitral annular calcification, after mitral valve repair or replacement or heart transplantation, or in patients with an LV assist device, pericardial constriction or pulmonary hypertension of non-cardiac cause<span class="cite" data-ref="nagueh2025"></span>. The guideline does not apply to children, to normal pregnancy or to patients during surgery<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <p>If the grade is uncertain, the report should state whether the LA pressure is normal or raised<span class="cite" data-ref="nagueh2025"></span>. The e′ velocity decreases with age, and age-adjusted limits can be used in place of the fixed cut-off values<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <p>In advanced cardiac amyloidosis, the mitral annular s′, e′ and a′ velocities can all be below 5 cm/s, a finding termed the “5-5-5” sign<span class="cite" data-ref="nagueh2025"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>First step: e′, E/e′, TR velocity.</li>
-        <li>Second step, if needed: pulmonary vein S/D, LA strain, LA volume.</li>
-        <li>Grade from E/A once the LA pressure is raised.</li>
+        <li>The first step of the algorithm assesses e′, E/e′ and the peak TR velocity.</li>
+        <li>When the first step is inconclusive, the second step assesses the pulmonary vein S/D ratio, LA reservoir strain and the LA volume index.</li>
+        <li>Once the LA pressure is classified as raised, E/A determines the grade of diastolic dysfunction.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -819,8 +819,8 @@
 
     <!-- ======================================================== Valves -->
     <article class="chapter" id="ch-as">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">12</span><div><h2 class="ch-title">Aortic stenosis</h2><p class="ch-kicker">Pressure load</p></div></div>
-      <p class="dek" data-part="dek">As a calcified aortic valve narrows, the jet speeds up and the LV wall thickens against the pressure. Late, the LV fails: the stroke volume falls, and the gradient falls with it.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">12</span><div><h2 class="ch-title">Aortic stenosis</h2><p class="ch-kicker">LV pressure load</p></div></div>
+      <p class="dek" data-part="dek">In calcific aortic stenosis, the valve orifice narrows, the transvalvular jet velocity increases and the LV wall thickens in response to the pressure load. In the late stage, LV systolic dysfunction reduces the stroke volume, and the transvalvular gradient decreases with it.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
@@ -835,41 +835,41 @@
       <p class="live"></p>
       <div class="table-wrap"><table class="vt grade" id="as-table"></table></div>
       <div class="prose" data-part="prose">
-        <h3>What changes, in order</h3>
+        <h3>Natural history</h3>
         <ol class="steps">
-        <li><b>Progressive stenosis.</b> Mild: peak velocity 2.0–2.9 m/s or mean gradient below 20 mmHg. Moderate: 3.0–3.9 m/s or 20–39 mmHg. Early LV diastolic dysfunction can be present; the LVEF is normal<span class="cite" data-ref="otto2020"></span>.</li>
-        <li><b>Severe stenosis.</b> Peak velocity ≥4 m/s or mean gradient ≥40 mmHg; the area is typically ≤1.0 cm². The LV shows diastolic dysfunction and mild hypertrophy, with a normal LVEF<span class="cite" data-ref="otto2020"></span>. Very severe: ≥5 m/s or ≥60 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
-        <li><b>LV dysfunction.</b> Severe stenosis with an LVEF below 50%<span class="cite" data-ref="otto2020"></span>.</li>
-        <li><b>Low flow, low gradient.</b> The failing LV cannot open the valve fully: area ≤1.0 cm² with a velocity below 4 m/s or a mean gradient below 40 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
+        <li>In <b>progressive stenosis</b>, mild stenosis has a peak velocity of 2.0–2.9 m/s or a mean gradient below 20 mmHg, and moderate stenosis has a peak velocity of 3.0–3.9 m/s or a mean gradient of 20–39 mmHg. Early LV diastolic dysfunction can be present, and the LVEF is normal<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Severe stenosis</b> is defined by a peak velocity ≥4 m/s or a mean gradient ≥40 mmHg, and the valve area is typically ≤1.0 cm². The LV has diastolic dysfunction and mild hypertrophy, with a normal LVEF<span class="cite" data-ref="otto2020"></span>. Very severe stenosis is defined by a peak velocity ≥5 m/s or a mean gradient ≥60 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>LV dysfunction</b> in severe stenosis is defined by an LVEF below 50%<span class="cite" data-ref="otto2020"></span>.</li>
+        <li>In <b>low-flow, low-gradient stenosis</b>, LV systolic dysfunction reduces the transvalvular flow; the area is ≤1.0 cm², with a peak velocity below 4 m/s or a mean gradient below 40 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
         </ol>
-        <p>The letter stages also need the symptoms: stage C has none, stage D has them<span class="cite" data-ref="otto2020"></span>. The page follows the echo findings only.</p>
+        <p>The ACC/AHA stages also require the symptom status: patients in stage C have no symptoms, and patients in stage D have symptoms<span class="cite" data-ref="otto2020"></span>. The figure models the echocardiographic findings only.</p>
         <h3>Grading</h3>
         <p class="eq">AVA = LVOT area × VTI(LVOT) ÷ VTI(AV) &nbsp;·&nbsp; mean gradient = mean of 4v² over ejection</p>
         <ul>
-        <li>Find the highest jet velocity with continuous wave from several windows, and report the window; do not use angle correction<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li>Any one of peak velocity ≥4.0 m/s, mean gradient ≥40 mmHg or area &lt;1.0 cm² suggests severe stenosis; ideally all three agree<span class="cite" data-ref="baumgartner2017"></span>. A velocity ratio below 0.25 also indicates severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li>With more severe obstruction the peak comes later in systole and the curve is more rounded; mild stenosis peaks early, with a triangular curve<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li>At normal flow, a mean gradient of 40 mmHg matches an area nearer 0.8 than 1.0 cm²<span class="cite" data-ref="baumgartner2017"></span>. The “area” band on the slider is this gap.</li>
+        <li>The highest jet velocity should be recorded with continuous-wave (CW) Doppler from several acoustic windows, and the window that gives it should be reported; angle correction should not be used<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>A peak velocity ≥4.0 m/s, a mean gradient ≥40 mmHg or an area &lt;1.0 cm² each suggests severe stenosis; ideally, all three criteria are concordant<span class="cite" data-ref="baumgartner2017"></span>. A velocity ratio below 0.25 also indicates severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>As the obstruction becomes more severe, the velocity peaks later in systole and the Doppler envelope becomes more rounded; in mild stenosis, the velocity peaks early and the envelope is triangular<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>At normal flow, a mean gradient of 40 mmHg corresponds to an area nearer 0.8 than 1.0 cm²<span class="cite" data-ref="baumgartner2017"></span>. The band labeled “area” on the slider represents this range, in which the area and the gradient criteria are discordant.</li>
         </ul>
-        <h3>When the gradient falls</h3>
+        <h3>Low-flow, low-gradient aortic stenosis</h3>
         <ul>
-        <li>A stroke volume index below 35 mL/m² is low flow<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li><b>Low EF.</b> Area &lt;1.0 cm², mean gradient &lt;40 mmHg, LVEF &lt;50%: classical low-flow, low-gradient stenosis<span class="cite" data-ref="baumgartner2017"></span>. Low-dose dobutamine: a velocity ≥4.0 m/s with an area that stays ≤1.0 cm² confirms severe stenosis; an area that rises above 1.0 cm² suggests pseudo-severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li><b>Normal EF.</b> A small LV with a low stroke volume can give a low gradient through a severe stenosis: paradoxical low flow<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>Low flow is defined as a stroke volume index below 35 mL/m²<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li><b>Classical low-flow, low-gradient stenosis</b> is defined by an area &lt;1.0 cm², a mean gradient &lt;40 mmHg and an LVEF &lt;50%<span class="cite" data-ref="baumgartner2017"></span>. During low-dose dobutamine echocardiography, a velocity ≥4.0 m/s with an area that remains ≤1.0 cm² confirms severe stenosis, whereas an increase in area to above 1.0 cm² suggests pseudo-severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>With a normal LVEF, a small LV with a low stroke volume can produce a low gradient across a severe stenosis; this condition is termed <b>paradoxical low-flow, low-gradient stenosis</b><span class="cite" data-ref="baumgartner2017"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Severe: 4 m/s, 40 mmHg, 1.0 cm², ideally all three.</li>
-        <li>The LV thickens first; the EF falls late.</li>
-        <li>A falling gradient with a falling EF is not a better valve: check the flow.</li>
+        <li>The thresholds for severe aortic stenosis are a peak velocity of 4 m/s, a mean gradient of 40 mmHg and a valve area of 1.0 cm²; ideally, all three criteria are concordant.</li>
+        <li>LV wall thickening develops first, and the LVEF falls only late in the course of the disease.</li>
+        <li>A fall in gradient that accompanies a fall in LVEF does not indicate a less severe stenosis; the flow must be assessed.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
     <article class="chapter" id="ch-ar">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">13</span><div><h2 class="ch-title">Aortic regurgitation</h2><p class="ch-kicker">Volume and pressure load</p></div></div>
-      <p class="dek" data-part="dek">A leaking aortic valve returns blood to the LV in diastole. The LV receives blood from the LA and from the aorta, dilates, and ejects a large stroke volume; late, it fails.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">13</span><div><h2 class="ch-title">Aortic regurgitation</h2><p class="ch-kicker">LV volume and pressure load</p></div></div>
+      <p class="dek" data-part="dek">In aortic regurgitation, blood flows back from the aorta through the incompetent aortic valve into the LV during diastole. The LV receives blood from both the LA and the aorta, dilates and ejects a large stroke volume. In the late stage, LV systolic dysfunction develops.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
@@ -884,33 +884,33 @@
       <p class="live"></p>
       <div class="table-wrap"><table class="vt grade" id="ar-table"></table></div>
       <div class="prose" data-part="prose">
-        <h3>What changes, in order</h3>
+        <h3>Grading and staging</h3>
         <ol class="steps">
-        <li><b>Mild.</b> A small central jet, a faint or incomplete CW signal, a pressure half-time above 500 ms and a brief early diastolic reversal in the descending aorta<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Moderate.</b> The LV is normal or dilated; half-time 500–200 ms; regurgitant volume 30–59 mL<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Severe.</b> Vena contracta &gt;0.6 cm, jet width ≥65% of the LVOT, regurgitant volume ≥60 mL, fraction ≥50%, EROA ≥0.30 cm², half-time below 200 ms, holodiastolic reversal<span class="cite" data-ref="zoghbi2017"></span>. Holodiastolic reversal in the abdominal aorta is consistent with severe AR<span class="cite" data-ref="zoghbi2017"></span>. EACVI uses an end-diastolic velocity ≥20 cm/s in the proximal descending aorta<span class="cite" data-ref="lancellotti2022"></span>. Chronic severe AR also requires LV dilation<span class="cite" data-ref="otto2020"></span>.</li>
-        <li><b>LV dysfunction.</b> ACC/AHA stage C1: LVEF &gt;55% and end-systolic diameter &lt;50 mm. Stage C2: LVEF ≤55%, or diameter &gt;50 mm or &gt;25 mm/m²<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Mild</b> aortic regurgitation is characterized by a small central jet, a faint or incomplete CW Doppler signal, a pressure half-time above 500 ms and brief early diastolic flow reversal in the descending aorta<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>In <b>moderate</b> aortic regurgitation, the LV is normal in size or dilated, the pressure half-time is 500–200 ms and the regurgitant volume is 30–59 mL<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li><b>Severe</b> aortic regurgitation is indicated by a vena contracta &gt;0.6 cm, a jet width ≥65% of the LVOT diameter, a regurgitant volume ≥60 mL, a regurgitant fraction ≥50%, an EROA ≥0.30 cm², a pressure half-time below 200 ms and holodiastolic flow reversal in the descending aorta<span class="cite" data-ref="zoghbi2017"></span>. Holodiastolic flow reversal in the abdominal aorta is consistent with severe AR<span class="cite" data-ref="zoghbi2017"></span>. The EACVI uses an end-diastolic velocity ≥20 cm/s in the proximal descending aorta as a criterion of severe AR<span class="cite" data-ref="lancellotti2022"></span>. The diagnosis of chronic severe AR also requires LV dilation<span class="cite" data-ref="otto2020"></span>.</li>
+        <li>In asymptomatic severe AR, ACC/AHA stage C1 has an LVEF &gt;55% and an LV end-systolic diameter ≤50 mm; stage C2, with <b>LV dysfunction</b>, has an LVEF ≤55%, or an end-systolic diameter &gt;50 mm or &gt;25 mm/m²<span class="cite" data-ref="otto2020"></span>.</li>
         </ol>
-        <h3>Why the LVOT velocity rises</h3>
-        <p>The LV ejects the forward volume plus the volume that returns in diastole. The regurgitant volume is the stroke volume through the leaking valve minus the stroke volume through a competent valve<span class="cite" data-ref="zoghbi2017"></span>. On the page, the LVOT VTI rises as the leak grows.</p>
+        <h3>LVOT velocity in aortic regurgitation</h3>
+        <p>The LV ejects the forward stroke volume plus the volume that returns to the LV in diastole. The regurgitant volume is the stroke volume through the regurgitant valve minus the stroke volume through a competent valve<span class="cite" data-ref="zoghbi2017"></span>. In the figure, the LVOT VTI increases as the regurgitation becomes more severe.</p>
         <h3>Pitfalls</h3>
         <ul>
-        <li>The half-time shortens as the LV diastolic pressure rises and can lengthen in chronic adaptation to severe AR<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>The length of the jet into the LV is not a reliable measure of severity<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>The pressure half-time shortens as the LV diastolic pressure rises, and it can lengthen with chronic adaptation to severe AR<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>The length of the color Doppler jet in the LV is not a reliable measure of severity<span class="cite" data-ref="zoghbi2017"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Severe: vena contracta &gt;0.6 cm, jet ≥65% of the LVOT, volume ≥60 mL.</li>
-        <li>Holodiastolic reversal in the abdominal aorta: severe.</li>
-        <li>LVEF ≤55% or end-systolic diameter &gt;50 mm: stage C2.</li>
+        <li>Severe aortic regurgitation is indicated by a vena contracta &gt;0.6 cm, a jet width ≥65% of the LVOT diameter and a regurgitant volume ≥60 mL.</li>
+        <li>Holodiastolic flow reversal in the abdominal aorta indicates severe aortic regurgitation.</li>
+        <li>In asymptomatic severe AR, an LVEF ≤55% or an LV end-systolic diameter &gt;50 mm defines ACC/AHA stage C2.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
     <article class="chapter" id="ch-ms">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">14</span><div><h2 class="ch-title">Mitral stenosis</h2><p class="ch-kicker">Inflow obstruction</p></div></div>
-      <p class="dek" data-part="dek">In rheumatic mitral stenosis the commissures fuse and the leaflets dome. As the orifice narrows, the LA pressure rises: the LA enlarges, the pulmonary pressure rises and the right heart follows.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">14</span><div><h2 class="ch-title">Mitral stenosis</h2><p class="ch-kicker">LV inflow obstruction</p></div></div>
+      <p class="dek" data-part="dek">In rheumatic mitral stenosis, the commissures fuse and the leaflets dome in diastole. As the mitral orifice narrows, LA pressure increases, the LA enlarges and pulmonary artery pressure rises, with secondary involvement of the right heart.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
@@ -929,32 +929,32 @@
       <p class="live"></p>
       <div class="table-wrap"><table class="vt grade" id="ms-table"></table></div>
       <div class="prose" data-part="prose">
-        <h3>What changes, in order</h3>
+        <h3>Echocardiographic findings by stage</h3>
         <ol class="steps">
-        <li><b>Progressive stenosis.</b> Commissural fusion and diastolic doming; area &gt;1.5 cm², pressure half-time &lt;150 ms; mild to moderate LA enlargement; normal pulmonary pressure at rest<span class="cite" data-ref="otto2020"></span>.</li>
-        <li><b>Severe stenosis.</b> Area ≤1.5 cm², pressure half-time ≥150 ms; severe LA enlargement; PA systolic pressure above 50 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
+        <li>In <b>progressive stenosis</b>, the commissures are fused and the leaflets dome in diastole; the valve area is &gt;1.5 cm², the pressure half-time is &lt;150 ms, LA enlargement is mild to moderate and pulmonary artery pressure is normal at rest<span class="cite" data-ref="otto2020"></span>.</li>
+        <li>In <b>severe stenosis</b>, the valve area is ≤1.5 cm² and the pressure half-time is ≥150 ms; LA enlargement is severe, and the PA systolic pressure is above 50 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
         </ol>
-        <p>ASE divides progressive stenosis into mild (area &gt;2.5 cm², half-time &lt;100 ms, mean gradient &lt;5 mmHg, PA systolic pressure &lt;30 mmHg) and moderate (2.5–1.6 cm², 100–149 ms, 5–9 mmHg, 30–49 mmHg)<span class="cite" data-ref="pandian2023"></span>.</p>
-        <h3>Measuring the area</h3>
+        <p>The ASE divides progressive stenosis into mild stenosis (valve area &gt;2.5 cm², pressure half-time &lt;100 ms, mean gradient &lt;5 mmHg, PA systolic pressure &lt;30 mmHg) and moderate stenosis (valve area 2.5–1.6 cm², pressure half-time 100–149 ms, mean gradient 5–9 mmHg, PA systolic pressure 30–49 mmHg)<span class="cite" data-ref="pandian2023"></span>.</p>
+        <h3>Measurement of valve area and gradient</h3>
         <p class="eq">MVA = 220 ÷ pressure half-time</p>
         <ul>
-        <li><b>Planimetry.</b> The short axis shows the commissural fusion and allows planimetry of the orifice<span class="cite" data-ref="otto2020"></span>. When the methods disagree, planimetry is the reference<span class="cite" data-ref="baumgartner2009"></span>.</li>
-        <li><b>Pressure half-time.</b> The time for the peak gradient to fall by half; the velocity falls to about 70% of its peak<span class="cite" data-ref="pandian2023,quinones2002"></span>. The constant 220 is empirical<span class="cite" data-ref="baumgartner2009"></span>; Hatle described the method in 1979<span class="cite" data-ref="hatle1979"></span>. The half-time is not reliable just after balloon valvotomy, with severe aortic regurgitation, or with abnormal LV compliance<span class="cite" data-ref="baumgartner2009"></span>.</li>
-        <li><b>Mean gradient.</b> It changes with heart rate and flow, so it is not a severity criterion; report it with the heart rate<span class="cite" data-ref="otto2020"></span>. Move the heart rate: the same valve gives a higher gradient at a faster rate.</li>
+        <li><b>Planimetry</b> of the mitral orifice is performed in the parasternal short-axis view, which also displays the commissural fusion<span class="cite" data-ref="otto2020"></span>. When the methods give discordant areas, planimetry is the reference method<span class="cite" data-ref="baumgartner2009"></span>.</li>
+        <li>The <b>pressure half-time</b> is the time required for the peak transmitral pressure gradient to fall by half; at that time, the velocity has fallen to about 70% of its peak<span class="cite" data-ref="pandian2023,quinones2002"></span>. The constant 220 is empirical<span class="cite" data-ref="baumgartner2009"></span>; Hatle described the method in 1979<span class="cite" data-ref="hatle1979"></span>. The pressure half-time is not reliable immediately after balloon valvotomy or in the presence of severe aortic regurgitation or abnormal LV compliance<span class="cite" data-ref="baumgartner2009"></span>.</li>
+        <li>The <b>mean gradient</b> varies with heart rate and transmitral flow, so it is not a criterion of severity; it should be reported together with the heart rate<span class="cite" data-ref="otto2020"></span>. In the figure, the same valve produces a higher mean gradient at a faster heart rate.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Severe: area ≤1.5 cm² and half-time ≥150 ms.</li>
-        <li>The LA and the pulmonary pressure carry the consequence.</li>
-        <li>Report the gradient with the heart rate.</li>
+        <li>Mitral stenosis is severe when the valve area is ≤1.5 cm² and the pressure half-time is ≥150 ms.</li>
+        <li>The hemodynamic consequences of mitral stenosis are LA enlargement and a rise in pulmonary artery pressure.</li>
+        <li>The mean gradient should be reported together with the heart rate at which it is measured.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
     <article class="chapter" id="ch-mr">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">15</span><div><h2 class="ch-title">Mitral regurgitation</h2><p class="ch-kicker">Volume load, left heart</p></div></div>
-      <p class="dek" data-part="dek">A leaking mitral valve sends part of each stroke back into the LA. The LV and LA dilate to carry the extra volume; late, the LV fails.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">15</span><div><h2 class="ch-title">Mitral regurgitation</h2><p class="ch-kicker">Left heart volume overload</p></div></div>
+      <p class="dek" data-part="dek">In mitral regurgitation, part of the LV stroke volume flows back into the LA through the incompetent mitral valve during systole. The LV and LA dilate to accommodate the additional volume, and LV systolic dysfunction develops late in the course.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
@@ -975,40 +975,40 @@
       <p class="live"></p>
       <div class="table-wrap"><table class="vt grade" id="mr-table"></table></div>
       <div class="prose" data-part="prose">
-        <h3>What changes, in order</h3>
+        <h3>Echocardiographic findings by grade and stage</h3>
         <ol class="steps">
-        <li><b>Mild.</b> A small central jet, normal leaflets, a vena contracta below 0.3 cm, no flow convergence and A-wave-dominant inflow: the regurgitation is mild<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Moderate.</b> The LV and LA are normal or mildly dilated; pulmonary vein flow is normal or blunted in systole<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Severe.</b> EROA ≥0.40 cm², regurgitant volume ≥60 mL, regurgitant fraction ≥50%, vena contracta ≥0.7 cm<span class="cite" data-ref="zoghbi2017"></span>. The LV and LA dilate; the CW signal is dense and triangular; systolic flow in the pulmonary veins stops or reverses; mitral E exceeds 1.2 m/s<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>LV dysfunction.</b> ACC/AHA stage C1: LVEF &gt;60% and LV end-systolic diameter &lt;40 mm. Stage C2: LVEF ≤60% or diameter ≥40 mm<span class="cite" data-ref="otto2020"></span>.</li>
+        <li>A small central jet, normal leaflets, a vena contracta below 0.3 cm, absent flow convergence and A-wave-dominant mitral inflow indicate <b>mild</b> regurgitation<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>In <b>moderate</b> regurgitation, the LV and LA are normal in size or mildly dilated, and pulmonary vein flow is normal or shows systolic blunting<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>In <b>severe</b> regurgitation, the EROA is ≥0.40 cm², the regurgitant volume ≥60 mL, the regurgitant fraction ≥50% and the vena contracta ≥0.7 cm<span class="cite" data-ref="zoghbi2017"></span>. The LV and LA are dilated, the CW Doppler signal is dense and triangular, systolic flow in the pulmonary veins is absent or reversed, and the mitral E velocity exceeds 1.2 m/s<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>In the ACC/AHA classification, stage C1 is defined by an LVEF &gt;60% and an LV end-systolic diameter &lt;40 mm, and stage C2, with <b>LV dysfunction</b>, by an LVEF ≤60% or an LV end-systolic diameter ≥40 mm<span class="cite" data-ref="otto2020"></span>.</li>
         </ol>
-        <h3>The PISA method</h3>
+        <h3>PISA method</h3>
         <p class="eq">flow = 2π r² × Va &nbsp;·&nbsp; EROA = flow ÷ peak velocity &nbsp;·&nbsp; RVol = EROA × VTI</p>
-        <p>Blood speeds up as it converges on the orifice; at the aliasing velocity Va the color changes, and that shell is a hemisphere of radius r<span class="cite" data-ref="zoghbi2017"></span>. Shift the baseline toward the jet to lower Va to about 30 to 40 cm/s; measure the radius at the time of the peak jet velocity<span class="cite" data-ref="zoghbi2017"></span>. A radius of 1.0 cm or more at this setting is specific for severe MR<span class="cite" data-ref="zoghbi2017"></span>.</p>
+        <p>Blood accelerates as it converges on the regurgitant orifice; at the aliasing velocity (Va), the color changes, and the isovelocity surface at Va is a hemisphere of radius r<span class="cite" data-ref="zoghbi2017"></span>. The color baseline should be shifted toward the jet to lower Va to about 30 to 40 cm/s, and the radius should be measured at the time of the peak jet velocity<span class="cite" data-ref="zoghbi2017"></span>. At this setting, a radius of 1.0 cm or more is specific for severe MR<span class="cite" data-ref="zoghbi2017"></span>.</p>
         <ul>
-        <li>The radius is squared: errors of 10 to 25% are common, even among experts<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>An elliptical orifice, common in secondary MR, makes PISA underestimate the flow<span class="cite" data-ref="zoghbi2017"></span>. In secondary MR, an EROA ≥0.30 cm² by 2D PISA may still be severe<span class="cite" data-ref="zoghbi2017"></span>; EACVI accepts ≥0.30 cm² or ≥45 mL<span class="cite" data-ref="lancellotti2022"></span>.</li>
-        <li>For regurgitation in only part of systole, use the regurgitant volume; one frame overestimates the EROA<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>The radius is squared in the flow equation; errors of 10 to 25% are common, even among experts<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>An elliptical orifice, which is common in secondary MR, causes PISA to underestimate the flow<span class="cite" data-ref="zoghbi2017"></span>. In secondary MR, an EROA ≥0.30 cm² by 2D PISA may still indicate severe regurgitation<span class="cite" data-ref="zoghbi2017"></span>; the EACVI accepts an EROA ≥0.30 cm² or a regurgitant volume ≥45 mL as severe<span class="cite" data-ref="lancellotti2022"></span>.</li>
+        <li>When regurgitation occupies only part of systole, the regurgitant volume should be used, because a measurement from a single frame overestimates the EROA<span class="cite" data-ref="zoghbi2017"></span>.</li>
         </ul>
         <h3>Pitfalls</h3>
         <ul>
-        <li>A normal LA size generally excludes severe chronic MR; a dilated LA alone does not prove it<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>Color jet area helps to exclude MR but is unreliable to grade it; set the color scale to 50 to 70 cm/s for jets<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>Systolic flow reversal in the pulmonary veins is specific for severe regurgitation but not sensitive<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>A normal LA size generally excludes severe chronic MR, whereas a dilated LA alone does not establish it<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>Color jet area is useful to exclude MR but is unreliable for grading its severity; for the assessment of regurgitant jets, the color scale should be set to 50 to 70 cm/s<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>Systolic flow reversal in the pulmonary veins is specific for severe regurgitation but is not sensitive<span class="cite" data-ref="zoghbi2017"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Severe: EROA ≥0.40 cm², volume ≥60 mL, fraction ≥50%.</li>
-        <li>Support it with E ≥1.2 m/s and pulmonary vein reversal.</li>
-        <li>LVEF ≤60% or end-systolic diameter ≥40 mm: stage C2.</li>
+        <li>Mitral regurgitation is severe when the EROA is ≥0.40 cm², the regurgitant volume is ≥60 mL and the regurgitant fraction is ≥50%.</li>
+        <li>A mitral E velocity &gt;1.2 m/s and systolic flow reversal in the pulmonary veins support a severe grade.</li>
+        <li>An LVEF ≤60% or an LV end-systolic diameter ≥40 mm indicates ACC/AHA stage C2.</li>
         </ol>
       </div>
       <div class="quiz"></div>
     </article>
 
     <article class="chapter" id="ch-tr">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">16</span><div><h2 class="ch-title">Tricuspid regurgitation</h2><p class="ch-kicker">Volume load, right heart</p></div></div>
-      <p class="dek" data-part="dek">A leaking tricuspid valve loads the right heart. The RV, the annulus and the RA dilate and the veins fill; at the torrential end the jet slows, because the RV and RA pressures come close.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">16</span><div><h2 class="ch-title">Tricuspid regurgitation</h2><p class="ch-kicker">Right heart volume overload</p></div></div>
+      <p class="dek" data-part="dek">Tricuspid regurgitation imposes a volume overload on the right heart. The RV, the tricuspid annulus and the RA dilate, and the systemic veins distend. In torrential regurgitation, the jet velocity falls because the RV and RA pressures approach each other.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
@@ -1030,25 +1030,25 @@
       <div class="table-wrap"><table class="vt grade" id="tr-table"></table></div>
       <div class="table-wrap"><table class="vt grade" id="tr-table2"></table></div>
       <div class="prose" data-part="prose">
-        <h3>What changes, in order</h3>
+        <h3>Echocardiographic findings by grade</h3>
         <ol class="steps">
-        <li><b>Mild.</b> A small, narrow central jet; a faint CW signal; systolic dominance in the hepatic veins; IVC below 2 cm<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Moderate.</b> The RV and RA are normal or mildly dilated; the hepatic veins show systolic blunting; vena contracta 0.3–0.69 cm; EROA 0.20–0.39 cm²<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li><b>Severe.</b> Vena contracta ≥0.7 cm, EROA ≥0.40 cm², regurgitant volume ≥45 mL, PISA radius &gt;0.9 cm (baseline shifted to 28 cm/s), jet area &gt;10 cm²; systolic reversal in the hepatic veins; tricuspid E &gt;1.0 m/s; IVC &gt;2.5 cm<span class="cite" data-ref="zoghbi2017"></span>. ACC/AHA adds a dilated RV and RA and a raised RA pressure with a c-V wave<span class="cite" data-ref="otto2020"></span>.</li>
-        <li><b>Beyond severe.</b> Massive: vena contracta 14–20 mm, EROA 60–79 mm², volume 60–74 mL. Torrential: ≥21 mm, ≥80 mm², ≥75 mL<span class="cite" data-ref="lancellotti2022"></span>. A report can name them as subgroups of severe TR<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>In <b>mild</b> regurgitation, the jet is small, narrow and central, the CW Doppler signal is faint, hepatic vein flow is systolic-dominant and the IVC diameter is below 2 cm<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>In <b>moderate</b> regurgitation, the RV and RA are normal in size or mildly dilated, hepatic vein flow shows systolic blunting, the vena contracta is 0.3–0.69 cm and the EROA is 0.20–0.39 cm²<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>In <b>severe</b> regurgitation, the vena contracta is ≥0.7 cm, the EROA ≥0.40 cm², the regurgitant volume ≥45 mL, the PISA radius &gt;0.9 cm (with the color baseline shifted to an aliasing velocity of 28 cm/s) and the jet area &gt;10 cm²; hepatic vein flow shows systolic reversal, the tricuspid E velocity is &gt;1.0 m/s and the IVC diameter is &gt;2.5 cm<span class="cite" data-ref="zoghbi2017"></span>. The ACC/AHA criteria add a dilated RV and RA and an elevated RA pressure with a c-V wave<span class="cite" data-ref="otto2020"></span>.</li>
+        <li>Two grades beyond severe are defined: <b>massive</b> regurgitation, with a vena contracta of 14–20 mm, an EROA of 60–79 mm² and a regurgitant volume of 60–74 mL, and <b>torrential</b> regurgitation, with a vena contracta ≥21 mm, an EROA ≥80 mm² and a regurgitant volume ≥75 mL<span class="cite" data-ref="lancellotti2022"></span>. An echocardiography report may describe massive and torrential TR as subgroups of severe TR<span class="cite" data-ref="taub2025"></span>.</li>
         </ol>
         <h3>Pitfalls</h3>
         <ul>
-        <li>The TR velocity does not show the regurgitant volume. Very severe TR often has a low velocity, about 2 m/s, because the RV and RA pressures equalize<span class="cite" data-ref="zoghbi2017"></span>; EACVI gives a peak below 2 m/s in massive TR<span class="cite" data-ref="lancellotti2022"></span>.</li>
-        <li>Hepatic vein systolic reversal is specific for severe TR, after other causes (atrial fibrillation, pacing, RA or RV compliance) are excluded<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>The volume limit for severe TR (45 mL) is lower than for MR (60 mL) at the same EROA, because the TR velocity is lower<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>At left-sided valve surgery, a tricuspid annulus above 4.0 cm in diastole makes tricuspid repair reasonable, even with less than severe TR<span class="cite" data-ref="otto2020"></span>.</li>
+        <li>The TR velocity does not indicate the regurgitant volume. Very severe TR often has a low peak velocity, about 2 m/s, because the RV and RA pressures equalize<span class="cite" data-ref="zoghbi2017"></span>; the EACVI lists a peak velocity below 2 m/s for massive TR<span class="cite" data-ref="lancellotti2022"></span>.</li>
+        <li>Systolic flow reversal in the hepatic veins is specific for severe TR once other causes (atrial fibrillation, pacing, altered RA or RV compliance) have been excluded<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>The regurgitant volume threshold for severe TR (45 mL) is lower than that for severe MR (60 mL) at the same EROA, because the TR velocity is lower<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        <li>At the time of left-sided valve surgery, tricuspid repair is reasonable when the tricuspid annulus measures more than 4.0 cm in diastole, even with less than severe TR<span class="cite" data-ref="otto2020"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Severe: vena contracta ≥0.7 cm, EROA ≥0.40 cm², volume ≥45 mL.</li>
-        <li>Hepatic vein systolic reversal is specific.</li>
-        <li>A low jet velocity does not exclude severe TR.</li>
+        <li>Tricuspid regurgitation is severe when the vena contracta is ≥0.7 cm, the EROA is ≥0.40 cm² and the regurgitant volume is ≥45 mL.</li>
+        <li>Systolic flow reversal in the hepatic veins is specific for severe tricuspid regurgitation.</li>
+        <li>A low TR jet velocity does not exclude severe tricuspid regurgitation.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -1056,8 +1056,8 @@
 
     <!-- ======================================================== Pericardium -->
     <article class="chapter" id="ch-peri">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Pericardium</h2><p class="ch-kicker">Effusion and tamponade</p></div></div>
-      <p class="dek" data-part="dek">Fluid in the pericardial sac shows as an echo-free space round the heart. As it collects, the pressure in the sac rises; when it reaches the pressure in the right heart, the chambers cannot fill: tamponade.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Pericardium</h2><p class="ch-kicker">Pericardial effusion and tamponade</p></div></div>
+      <p class="dek" data-part="dek">A pericardial effusion appears on echocardiography as an echo-free space around the heart. As the fluid accumulates, the pressure in the pericardial sac rises; when it reaches the pressure in the right heart, the cardiac chambers cannot fill normally, a condition termed tamponade.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
@@ -1073,37 +1073,37 @@
       <div class="table-wrap"><table class="vt grade" id="peri-table"></table></div>
       <div class="table-wrap"><table class="vt grade" id="peri-table2"></table></div>
       <div class="prose" data-part="prose">
-        <h3>What changes, in order</h3>
+        <h3>Effusion size and progression to tamponade</h3>
         <ol class="steps">
-        <li><b>None.</b> The normal sac holds 10–50 mL of fluid<span class="cite" data-ref="adler2015"></span>. A separation seen only in systole is a trivial effusion; a separation in systole and diastole means more than 50 mL<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>Mild (small).</b> An echo-free space below 10 mm, measured at end-diastole between the epicardium and the parietal pericardium<span class="cite" data-ref="adler2015"></span>. ASE gives 50–100 mL for a small effusion and calls the volumes arbitrary<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>Moderate.</b> 10–20 mm<span class="cite" data-ref="adler2015"></span>, about 100–500 mL<span class="cite" data-ref="klein2013"></span>. In this model the pressure in the sac stays below the pressure in the right heart, so no chamber collapses.</li>
-        <li><b>Severe (large).</b> More than 20 mm<span class="cite" data-ref="adler2015"></span>; ASE adds very large, more than 25 mm<span class="cite" data-ref="klein2013"></span>. The heart can swing in the fluid. ESC links the swing to electrical alternans on the ECG<span class="cite" data-ref="adler2015"></span>.</li>
-        <li><b>Tamponade.</b> The pressure in the sac reaches the pressure in the right heart. A chamber collapses in its relaxation phase, when its pressure falls below the pressure in the sac<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>None.</b> The normal pericardial sac contains 10–50 mL of fluid<span class="cite" data-ref="adler2015"></span>. A separation of the pericardial layers seen only in systole is a trivial effusion; a separation in both systole and diastole indicates more than 50 mL of fluid<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Mild (small).</b> The echo-free space between the epicardium and the parietal pericardium, measured at end-diastole, is less than 10 mm<span class="cite" data-ref="adler2015"></span>. The ASE guideline assigns 50–100 mL to a small effusion and describes these volumes as arbitrary<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Moderate.</b> The echo-free space measures 10–20 mm<span class="cite" data-ref="adler2015"></span>, which corresponds to approximately 100–500 mL<span class="cite" data-ref="klein2013"></span>. In this model, the pressure in the sac remains below the pressure in the right heart, and at most a brief RA inversion occurs.</li>
+        <li><b>Severe (large).</b> The echo-free space exceeds 20 mm<span class="cite" data-ref="adler2015"></span>; the ASE guideline defines an additional very large category of more than 25 mm<span class="cite" data-ref="klein2013"></span>. The heart can swing within the fluid, and the ESC guideline associates this swinging motion with electrical alternans on the ECG<span class="cite" data-ref="adler2015"></span>.</li>
+        <li><b>Tamponade.</b> The pressure in the sac reaches the pressure in the right heart. A cardiac chamber collapses during its relaxation phase, when the pressure within it falls below the pressure in the sac<span class="cite" data-ref="klein2013"></span>.</li>
         </ol>
-        <h3>Signs of tamponade</h3>
+        <h3>Echocardiographic signs of tamponade</h3>
         <ul>
-        <li><b>Right atrium.</b> The wall folds in near the peak of the R wave. It stays in until filling in ventricular systole raises the atrial pressure<span class="cite" data-ref="klein2013"></span>. Collapse for more than a third of the cycle is nearly 100% sensitive and specific<span class="cite" data-ref="klein2013"></span>. In the first study, a collapse time above 0.34 of the cycle gave 94% sensitivity and 100% specificity<span class="cite" data-ref="gillam1983"></span>.</li>
-        <li><b>Right ventricle.</b> The free wall collapses in early diastole, after the T wave<span class="cite" data-ref="klein2013"></span>. This occurs when cardiac output is about 20% lower but blood pressure has not fallen<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>Left atrium.</b> The LA also collapses in about a quarter of patients; this sign is highly specific<span class="cite" data-ref="spodick2003"></span>.</li>
-        <li><b>IVC.</b> Wider than 2.1 cm, with less than 50% collapse in inspiration. This occurs in more than 90% of patients, but many other heart diseases also cause it<span class="cite" data-ref="klein2013"></span>. ESC 2025 uses 20 mm: sensitivity 97%, specificity 40%<span class="cite" data-ref="schulzmenger2025"></span>.</li>
-        <li><b>Filling with breathing.</b> With inspiration, mitral E falls more than 25–30% and tricuspid E increases more than 40–60%<span class="cite" data-ref="schulzmenger2025"></span>. The RV gets larger and the LV smaller in inspiration, and the reverse occurs in expiration<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>Hepatic veins.</b> On the first beat of expiration, diastolic flow falls or reverses<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Right atrium.</b> The RA wall inverts near the peak of the R wave and remains inverted until atrial filling during ventricular systole raises the atrial pressure<span class="cite" data-ref="klein2013"></span>. RA collapse for more than one third of the cardiac cycle is nearly 100% sensitive and specific for tamponade<span class="cite" data-ref="klein2013"></span>. In the original study, an RA collapse time of more than 0.34 of the cardiac cycle had a sensitivity of 94% and a specificity of 100%<span class="cite" data-ref="gillam1983"></span>.</li>
+        <li><b>Right ventricle.</b> The RV free wall collapses in early diastole, after the T wave<span class="cite" data-ref="klein2013"></span>. RV diastolic collapse occurs when the cardiac output has decreased by about 20% but the systemic blood pressure has not fallen<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Left atrium.</b> LA collapse also occurs in about one quarter of patients with tamponade and is a highly specific sign<span class="cite" data-ref="spodick2003"></span>.</li>
+        <li><b>IVC.</b> The IVC is wider than 2.1 cm and collapses by less than 50% with inspiration. This finding is present in more than 90% of patients with tamponade, but many other cardiac diseases also cause it<span class="cite" data-ref="klein2013"></span>. The ESC 2025 guideline uses an IVC diameter cut-off of 20 mm, which has a sensitivity of 97% and a specificity of 40%<span class="cite" data-ref="schulzmenger2025"></span>.</li>
+        <li><b>Respiratory variation of inflow.</b> With inspiration, the mitral E velocity falls by more than 25–30% and the tricuspid E velocity increases by more than 40–60%<span class="cite" data-ref="schulzmenger2025"></span>. The RV enlarges and the LV becomes smaller during inspiration, and the reverse occurs during expiration<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Hepatic veins.</b> Diastolic forward flow in the hepatic veins decreases or reverses on the first beat of expiration<span class="cite" data-ref="klein2013"></span>.</li>
         </ul>
         <h3>Pitfalls</h3>
         <ul>
-        <li>Size does not define tamponade. The rate of accumulation matters more than the volume<span class="cite" data-ref="adler2015"></span>. Fluid that collects fast, as in haemopericardium, can cause tamponade at 200–300 mL; a slow effusion can reach 1–2 L first<span class="cite" data-ref="schulzmenger2025"></span>.</li>
-        <li>Tamponade is a clinical diagnosis: history, symptoms and signs, with echo confirmation<span class="cite" data-ref="schulzmenger2025"></span>. Pulsus paradoxus is an inspiratory fall in systolic pressure of more than 10 mmHg<span class="cite" data-ref="adler2015"></span>.</li>
-        <li>A brief RA inversion occurs without tamponade, so measure its duration. An M-mode line through the wall shows the timing best<span class="cite" data-ref="klein2013"></span>.</li>
-        <li>No chamber collapse gives a negative predictive value above 90%. RV hypertrophy, severe pulmonary hypertension or severe LV dysfunction can delay or prevent collapse<span class="cite" data-ref="klein2013"></span>.</li>
-        <li>Pericardial or pleural fluid: in the parasternal long axis, pericardial fluid lies between the descending aorta and the heart. Pleural fluid runs behind the aorta<span class="cite" data-ref="klein2013"></span>.</li>
-        <li>Respiratory variation of inflow is not a criterion alone. Under positive-pressure ventilation it is minimal, even in tamponade<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>Effusion size does not define tamponade; the rate of fluid accumulation is more important than the volume<span class="cite" data-ref="adler2015"></span>. Rapid accumulation, as in hemopericardium, can cause tamponade at 200–300 mL, whereas a slowly accumulating effusion can reach 1–2 L before tamponade develops<span class="cite" data-ref="schulzmenger2025"></span>.</li>
+        <li>Tamponade is a clinical diagnosis based on the history, symptoms and signs and confirmed by echocardiography<span class="cite" data-ref="schulzmenger2025"></span>. Pulsus paradoxus is an inspiratory fall in systolic blood pressure of more than 10 mmHg<span class="cite" data-ref="adler2015"></span>.</li>
+        <li>A brief RA inversion also occurs in the absence of tamponade, so the duration of the inversion should be measured. An M-mode recording through the RA wall displays the timing most clearly<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>The absence of chamber collapse has a negative predictive value of more than 90% for tamponade. RV hypertrophy, severe pulmonary hypertension or severe LV dysfunction can delay or prevent chamber collapse<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>Pericardial fluid is distinguished from pleural fluid in the parasternal long-axis view, in which pericardial fluid lies between the descending aorta and the heart and pleural fluid extends posterior to the descending aorta<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>Respiratory variation of inflow is not a diagnostic criterion on its own. During positive-pressure ventilation, the variation is minimal, even in tamponade<span class="cite" data-ref="klein2013"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>End-diastolic echo-free space: mild &lt;10 mm, moderate 10–20 mm, severe (large) &gt;20 mm.</li>
-        <li>RA collapse for more than a third of the cycle and RV collapse in early diastole: tamponade physiology.</li>
-        <li>The rate of accumulation, not the size, sets the tolerance. Tamponade is a clinical diagnosis.</li>
+        <li>Effusion size is graded by the end-diastolic echo-free space: mild &lt;10 mm, moderate 10–20 mm and severe (large) &gt;20 mm.</li>
+        <li>RA collapse for more than one third of the cardiac cycle and RV free wall collapse in early diastole indicate tamponade physiology.</li>
+        <li>The rate of fluid accumulation, rather than the size of the effusion, determines how well the effusion is tolerated. Tamponade is a clinical diagnosis.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -1111,8 +1111,8 @@
 
     <!-- ======================================================== Cardiomyopathy -->
     <article class="chapter" id="ch-amyloid">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Cardiac amyloidosis</h2><p class="ch-kicker">The echo signs</p></div></div>
-      <p class="dek" data-part="dek">Amyloid fibrils collect between the heart muscle cells. The walls thicken round a small cavity, filling becomes restrictive, and the base stops shortening before the apex. The echo raises the suspicion.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Cardiac amyloidosis</h2><p class="ch-kicker">Echocardiographic signs</p></div></div>
+      <p class="dek" data-part="dek">In cardiac amyloidosis, amyloid fibrils accumulate between the myocardial cells. The LV walls thicken around a small cavity, LV filling becomes restrictive, and the base loses longitudinal shortening before the apex. These echocardiographic findings raise the suspicion of cardiac amyloidosis.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
@@ -1128,43 +1128,43 @@
       <div class="table-wrap"><table class="vt" id="amy-table"></table></div>
       <div class="table-wrap"><table class="vt" id="amy-table2"></table></div>
       <div class="prose" data-part="prose">
-        <h3>Signs on the echo</h3>
+        <h3>Structural findings</h3>
         <ul>
-        <li><b>Walls.</b> An LV wall of 12 mm or more with no other cause, such as aortic valve disease or hypertension<span class="cite" data-ref="moody2023"></span>. Alone, this cut-off has high sensitivity and low specificity<span class="cite" data-ref="moody2023"></span>.</li>
-        <li><b>Cavity.</b> The cavity is small and the relative wall thickness is high. In 1,187 patients, concentric remodeling was among the best single signs<span class="cite" data-ref="boldrini2020"></span>.</li>
-        <li><b>Atria and septum.</b> Both atria enlarge; an LA volume index above 34 mL/m² is abnormal<span class="cite" data-ref="lang2015"></span>. An interatrial septum thicker than 5 mm is characteristic, and the valve leaflets thicken<span class="cite" data-ref="moody2023"></span>.</li>
-        <li><b>Right ventricle.</b> Measure the free wall at end-diastole in the parasternal long-axis or subcostal view<span class="cite" data-ref="moody2023"></span>. Above 5 mm is hypertrophy<span class="cite" data-ref="rudski2010"></span>. With a thick LV, it points to an infiltrative disease<span class="cite" data-ref="moody2023"></span>.</li>
-        <li><b>Pericardium.</b> An effusion occurs in more than half of patients. It is not specific<span class="cite" data-ref="moody2023"></span>.</li>
-        <li><b>Texture.</b> A granular, “sparkling” or “speckled” myocardium was long described. BSE advises against the term: other diseases show it, and harmonic imaging confounds it<span class="cite" data-ref="moody2023"></span>.</li>
+        <li><b>LV wall thickness.</b> The LV wall thickness is 12 mm or more in the absence of another cause, such as aortic valve disease or hypertension<span class="cite" data-ref="moody2023"></span>. Used alone, this cut-off has high sensitivity and low specificity<span class="cite" data-ref="moody2023"></span>.</li>
+        <li><b>LV cavity.</b> The LV cavity is small and the relative wall thickness is high. In a study of 1,187 patients, concentric remodeling was among the best single diagnostic signs<span class="cite" data-ref="boldrini2020"></span>.</li>
+        <li><b>Atria and interatrial septum.</b> Both atria enlarge; an LA volume index of more than 34 mL/m² is abnormal<span class="cite" data-ref="lang2015"></span>. An interatrial septum thicker than 5 mm is characteristic, and the valve leaflets thicken<span class="cite" data-ref="moody2023"></span>.</li>
+        <li><b>Right ventricle.</b> The RV free wall is measured at end-diastole in the parasternal long-axis or subcostal view<span class="cite" data-ref="moody2023"></span>. A free wall thickness of more than 5 mm indicates RV hypertrophy<span class="cite" data-ref="rudski2010"></span>. RV hypertrophy together with a thick LV wall suggests an infiltrative disease<span class="cite" data-ref="moody2023"></span>.</li>
+        <li><b>Pericardium.</b> A pericardial effusion is present in more than half of patients but is not specific<span class="cite" data-ref="moody2023"></span>.</li>
+        <li><b>Myocardial texture.</b> A granular, “sparkling” or “speckled” myocardium was long described as a sign of amyloidosis. The BSE advises against the term, because other diseases produce the same appearance and harmonic imaging confounds it<span class="cite" data-ref="moody2023"></span>.</li>
         </ul>
-        <h3>Doppler</h3>
+        <h3>Doppler findings</h3>
         <ul>
-        <li>Relaxation slows first: E/A 0.8 or less with a normal filling pressure (grade 1). As the pressure rises, E/A increases (grade 2). At E/A 2 or more, filling is restrictive (grade 3)<span class="cite" data-ref="nagueh2025"></span>.</li>
-        <li>A clear restrictive pattern seldom appears before the late stages<span class="cite" data-ref="moody2023"></span>. Then the deceleration time falls below 150 ms and the annular e′ falls to 3–4 cm/s<span class="cite" data-ref="nagueh2016"></span>.</li>
-        <li>Septal s′, e′ and a′ all below 5 cm/s, the “5-5-5” sign, is one of the three ESC findings<span class="cite" data-ref="esc2021"></span>.</li>
-        <li>A small A wave suggests poor atrial function and a higher risk of thrombus<span class="cite" data-ref="moody2023"></span>.</li>
+        <li>LV relaxation is slowed first, with an E/A ratio of 0.8 or less and a normal filling pressure (grade 1). As the filling pressure rises, the E/A ratio increases (grade 2). At an E/A ratio of 2 or more, filling is restrictive (grade 3)<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>A clear restrictive filling pattern seldom appears before the late stages of the disease<span class="cite" data-ref="moody2023"></span>. In these stages, the deceleration time falls below 150 ms and the mitral annular e′ velocity falls to 3–4 cm/s<span class="cite" data-ref="nagueh2016"></span>.</li>
+        <li>The “5-5-5” sign, in which the septal s′, e′ and a′ velocities are all below 5 cm/s, is one of the three findings of the ESC echocardiographic criteria<span class="cite" data-ref="esc2021"></span>.</li>
+        <li>A small A wave suggests reduced atrial function and a higher risk of atrial thrombus<span class="cite" data-ref="moody2023"></span>.</li>
         </ul>
-        <h3>Strain</h3>
+        <h3>Longitudinal strain</h3>
         <ul>
-        <li>Longitudinal strain falls most at the base. On the bull’s-eye the apex stays red while the base turns pale: relative apical sparing<span class="cite" data-ref="phelan2012"></span>.</li>
-        <li>Relative apical LS is the mean apical strain divided by the sum of the mean basal and mean mid strain. In the first study, 1.0 or more separated amyloidosis from hypertrophic cardiomyopathy and aortic stenosis: sensitivity 93%, specificity 82%<span class="cite" data-ref="phelan2012"></span>.</li>
-        <li>A multicentre study found apical sparing in 32% of patients in whom amyloidosis was suspected and then excluded, and in 6% of healthy people<span class="cite" data-ref="cotella2024"></span>.</li>
-        <li>The gradient follows the total amyloid mass, which is largest at the base<span class="cite" data-ref="bravo2019"></span>.</li>
-        <li>An EF ÷ |GLS| above 4.1 separated amyloidosis from other thick hearts: sensitivity 89.7%, specificity 91.7%<span class="cite" data-ref="pagourelias2017"></span>. A normal EF can hide poor long-axis function.</li>
-        <li>Normal GLS is near −20%; the lower limit depends on the vendor<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>Longitudinal strain is reduced most at the base. On the bull’s-eye plot, the apical segments remain red while the basal segments become pale, a pattern termed relative apical sparing<span class="cite" data-ref="phelan2012"></span>.</li>
+        <li>Relative apical LS is the mean apical strain divided by the sum of the mean basal and mean mid-ventricular strain. In the original study, a value of 1.0 or more distinguished amyloidosis from hypertrophic cardiomyopathy and aortic stenosis with a sensitivity of 93% and a specificity of 82%<span class="cite" data-ref="phelan2012"></span>.</li>
+        <li>A multicenter study found apical sparing in 32% of patients in whom amyloidosis was suspected and then excluded, and in 6% of healthy individuals<span class="cite" data-ref="cotella2024"></span>.</li>
+        <li>The base-to-apex strain gradient corresponds to the total amyloid mass in each region, which is largest at the base<span class="cite" data-ref="bravo2019"></span>.</li>
+        <li>An EF ÷ |GLS| ratio of more than 4.1 distinguished amyloidosis from other causes of increased LV wall thickness with a sensitivity of 89.7% and a specificity of 91.7%<span class="cite" data-ref="pagourelias2017"></span>. A normal EF can mask impaired long-axis function.</li>
+        <li>Normal GLS is approximately −20%, and the lower limit of normal depends on the vendor<span class="cite" data-ref="lang2015"></span>.</li>
         </ul>
-        <h3>The ESC 2021 echo criteria</h3>
-        <p>An unexplained LV wall of 12 mm or more, plus two of the three findings in the first table, or a score of 8 or more in the second<span class="cite" data-ref="esc2021"></span>. The score gives points for a thick wall round a small cavity, a high E/e′, a low TAPSE, a low GLS and a spared septal apex<span class="cite" data-ref="boldrini2020"></span>. The criteria raise the suspicion. The ESC diagnostic pathways use them together with other tests<span class="cite" data-ref="esc2021"></span>.</p>
-        <h3>Measuring</h3>
+        <h3>ESC 2021 echocardiographic criteria</h3>
+        <p>The criteria require an unexplained LV wall thickness of 12 mm or more together with either two of the three findings in the first table or a score of 8 or more in the second table<span class="cite" data-ref="esc2021"></span>. The score assigns points for a thick wall around a small cavity, a high E/e′, a low TAPSE, a low GLS and relative sparing of the apical septum<span class="cite" data-ref="boldrini2020"></span>. The criteria raise the suspicion of cardiac amyloidosis. In the ESC diagnostic pathways, they are used together with other tests<span class="cite" data-ref="esc2021"></span>.</p>
+        <h3>Measurement</h3>
         <ul>
-        <li>Measure the walls at end-diastole, square to the LV long axis, at the tips of the mitral leaflets<span class="cite" data-ref="lang2015"></span>.</li>
-        <li>The score uses (IVS + PW) ÷ LVIDd<span class="cite" data-ref="esc2021"></span>. ASE uses 2 × PW ÷ LVIDd, with a cut-off of 0.42<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>Wall thickness is measured at end-diastole, perpendicular to the LV long axis, at the level of the mitral leaflet tips<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>In the score, relative wall thickness is calculated as (IVS + PW) ÷ LVIDd<span class="cite" data-ref="esc2021"></span>; the ASE guideline defines it as 2 × PW ÷ LVIDd, with a cut-off of 0.42<span class="cite" data-ref="lang2015"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>A wall of 12 mm or more with no cause, a small cavity and two large atria: think of amyloid.</li>
-        <li>Restrictive filling, septal s′, e′ and a′ below 5 cm/s and a spared apex support it.</li>
-        <li>The echo criteria raise the suspicion. They do not make the diagnosis alone.</li>
+        <li>An LV wall thickness of 12 mm or more without another cause, a small LV cavity and enlargement of both atria suggest cardiac amyloidosis.</li>
+        <li>Restrictive filling, septal s′, e′ and a′ velocities below 5 cm/s and relative apical sparing of longitudinal strain support the diagnosis.</li>
+        <li>The echocardiographic criteria raise the suspicion of cardiac amyloidosis but do not establish the diagnosis alone.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -1172,8 +1172,8 @@
 
     <!-- ======================================================== Report (hidden: SHOW_REPORT in src/chapters.js) -->
     <article class="chapter" id="ch-report" hidden>
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">The study comes together</p></div></div>
-      <p class="dek" data-part="dek">The report changes the study into a decision. The summary statement comes first; each structure follows, structure before function; every number is called normal or abnormal.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">Standardized echocardiography reporting</p></div></div>
+      <p class="dek" data-part="dek">The standardized echocardiography report presents the findings of a study in a fixed order, so that the referring clinician can decide the next step. The summary statement is placed first. The findings for each structure follow, with structure described before function, and every measured value is classified as normal or abnormal.</p>
       <div class="controls">
         <div class="control">
           <span class="label">Case</span>
@@ -1192,7 +1192,7 @@
       <p class="live"></p>
       <div class="table-wrap">
         <table class="vt" id="report-inputs">
-          <caption>The values behind the report</caption>
+          <caption>Derived values used in the report</caption>
           <thead><tr><th>Measurement</th><th class="num">Value</th></tr></thead>
           <tbody></tbody>
         </table>
@@ -1202,33 +1202,33 @@
         <span class="t">Normal values</span>
       </button></p>
       <div class="prose" data-part="prose">
-        <h3>Order</h3>
+        <h3>Order of the report</h3>
         <ol class="steps">
-        <li>Demographics, essential history, the indication and the priority go at the top<span class="cite" data-ref="taub2025"></span>.</li>
-        <li>The summary statement comes next, in every report<span class="cite" data-ref="taub2025"></span>.</li>
-        <li>Then one heading for each structure: LV, septum, RV, LA, atrial septum, RA, the four valves, aorta, pulmonary artery, IVC, SVC, pericardium<span class="cite" data-ref="taub2025"></span>.</li>
-        <li>Under each heading, structure first, then function; keep the Doppler findings with their structure<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Demographic data, the essential clinical history, the indication for the study and its priority are stated at the top of the report<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>The summary statement follows and is included in every report<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>The findings are then reported under a separate heading for each structure: the LV, ventricular septum, RV, LA, atrial septum, RA, the four cardiac valves, aorta, pulmonary artery, IVC, SVC and pericardium<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Under each heading, the structure is described before its function, and the Doppler findings are reported with the structure to which they apply<span class="cite" data-ref="taub2025"></span>.</li>
         </ol>
-        <h3>The summary statement</h3>
-        <p>It names five things: LV and RV function; significant valve disease, or none; other important positive findings; pertinent negatives for the indication; and a comparison with prior studies<span class="cite" data-ref="taub2025"></span>. Relate it to the indication, so the referring clinician can decide the next step<span class="cite" data-ref="taub2025"></span>. Label critical findings, put them first, and record who received them<span class="cite" data-ref="taub2025"></span>.</p>
-        <h3>Words and numbers</h3>
+        <h3>Summary statement</h3>
+        <p>The summary statement contains five elements: LV and RV function; significant valve disease, or its absence; other important positive findings; pertinent negative findings for the indication; and a comparison with prior studies<span class="cite" data-ref="taub2025"></span>. The summary statement should be related to the indication for the study, so that the referring clinician can decide the next step in management<span class="cite" data-ref="taub2025"></span>. Critical findings should be labeled as critical and listed first, and the person who received them should be recorded<span class="cite" data-ref="taub2025"></span>.</p>
+        <h3>Terminology and numerical values</h3>
         <ul>
-        <li>Call every structure and number normal or abnormal. Grade only where guidelines grade<span class="cite" data-ref="taub2025"></span>.</li>
-        <li>Write “trace” for less than mild regurgitation. Avoid “mild-to-moderate” unless you explain why<span class="cite" data-ref="taub2025"></span>.</li>
-        <li>Give one LVEF, with its method<span class="cite" data-ref="taub2025"></span>.</li>
-        <li>Pressures, volumes and EF as whole numbers; velocity, area and length to 0.1<span class="cite" data-ref="taub2025"></span>.</li>
-        <li>Numbers and words must agree: “normal LA size” with an LA volume index of 50 mL/m² is an error<span class="cite" data-ref="taub2025"></span>.</li>
-        <li>State image quality: excellent, good, fair, poor or non-diagnostic<span class="cite" data-ref="taub2025"></span>. Measure the blood pressure at the bedside at the start of the study<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Each structure and each measured value should be described as normal or abnormal. A severity grade should be assigned only where a guideline defines one<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Regurgitation that is less than mild should be described as “trace”. The term “mild-to-moderate” should be avoided unless the reason for its use is stated<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>A single LVEF value should be reported, together with the method by which it was measured<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Pressures, volumes and EF should be reported as whole numbers, and velocities, areas and lengths to the nearest 0.1<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>The descriptive terms must agree with the measured values; for example, “normal LA size” with an LA volume index of 50 mL/m² is an error<span class="cite" data-ref="taub2025"></span>.</li>
+        <li>Image quality should be stated as excellent, good, fair, poor or non-diagnostic<span class="cite" data-ref="taub2025"></span>. Blood pressure should be measured at the bedside at the start of the study<span class="cite" data-ref="taub2025"></span>.</li>
         </ul>
-        <h3>Accreditation</h3>
-        <p>IAC requires standard reports across a laboratory. Routine inpatient studies must be read within 24 hours, outpatient studies by the end of the next business day, and STAT findings at once<span class="cite" data-ref="iac2025"></span>. Every structure that is not well seen must be noted, and the text must agree with the numbers<span class="cite" data-ref="iac2025"></span>.</p>
-        <h3>The cases</h3>
-        <p>Four simulated cases use the same models as the other figures. Change the sex: the normal ranges change, and so can the words. In the stiff-ventricle case, an LV mass index of 100 g/m² is hypertrophy in a woman and normal in a man<span class="cite" data-ref="lang2015"></span>.</p>
+        <h3>Accreditation standards</h3>
+        <p>The IAC requires that all reports within a laboratory be standardized. Routine inpatient studies must be interpreted within 24 hours, outpatient studies by the end of the next business day, and STAT findings immediately<span class="cite" data-ref="iac2025"></span>. Every structure that is not adequately visualized must be noted in the report, and the text must agree with the measured values<span class="cite" data-ref="iac2025"></span>.</p>
+        <h3>Simulated cases</h3>
+        <p>The four simulated cases are computed with the same models as the figures in the other chapters. Selecting the other sex changes the normal ranges and can change the descriptive terms in the report. In the HFpEF case, an LV mass index of 100 g/m² is classified as LV hypertrophy in a woman and as normal in a man<span class="cite" data-ref="lang2015"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Summary statement at the top: five elements.</li>
-        <li>Structure before function, under each heading.</li>
-        <li>One LVEF with its method; words that match the numbers.</li>
+        <li>The summary statement is placed at the top of the report, after the demographic data and the indication, and contains five elements.</li>
+        <li>Under each structure heading, the structural findings are described before the functional findings.</li>
+        <li>A single LVEF is reported with its method of measurement, and the descriptive terms must agree with the measured values.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -1252,8 +1252,8 @@
   <div class="dlg-head"><h2 id="refs-title">Sources</h2><button class="tool" type="button" data-close>Close</button></div>
   <div class="dlg-body">
     <div class="about">
-      <p>Each guideline value on this page carries its source. Cut-offs come from the American Society of Echocardiography (ASE), the European Association of Cardiovascular Imaging (EACVI), the British Society of Echocardiography (BSE), the ACC/AHA, the ESC and the ESC/ERS.</p>
-      <p>The figures run simple models, set to agree with these sources. The diastolic values and the Doppler and strain values of the amyloid heart are illustrative, not patient data. All images are simulated: the drawings, the heart model and the echo views.</p>
+      <p>Each guideline value on this page is cited to its source. The cut-off values are taken from the American Society of Echocardiography (ASE), the European Association of Cardiovascular Imaging (EACVI), the British Society of Echocardiography (BSE), the ACC/AHA, the ESC and the ESC/ERS.</p>
+      <p>The figures are generated by simple models calibrated to agree with these sources. The diastolic values and the Doppler and strain values of the amyloid heart are illustrative and are not patient data. All images are simulated, including the drawings, the heart model and the echocardiographic views.</p>
     </div>
     <h3 class="dlg-sub">Sources, in reading order</h3>
     <ol class="reflist" id="reflist"></ol>
@@ -1265,7 +1265,7 @@
   <div class="dlg-body" id="norms-body"></div>
 </dialog>
 
-<noscript><p style="padding:16px">This study needs JavaScript for its drawings. The text is readable without it.</p></noscript>
+<noscript><p style="padding:16px">The figures require JavaScript. The text can be read without it.</p></noscript>
 <script type="module" src="src/main.js"></script>
 </body>
 </html>

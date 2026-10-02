@@ -172,7 +172,7 @@ function drawTiming(sh, t, T, x, y, w, narrow) {
   put([`${n} lines × ${T.tLine.toFixed(0)} µs = ${T.frameMs.toFixed(1)} ms`, `${n} × ${T.tLine.toFixed(0)} µs = ${T.frameMs.toFixed(1)} ms`], by + bh + 20, { family: MONO, weight: 500, size: narrow ? 11 : 12 });
   put(`${T.fps.toFixed(0)} frames per second`, by + bh + (narrow ? 38 : 44), { size: narrow ? 16 : 20, color: T.fps < 30 ? t.flag : t.ink });
   const slow = ((SLOW * T.frameMs) / 1000).toFixed(1);
-  if (!reducedMotion) put([`the sweep is shown ${SLOW}× slower: ${slow} s a frame`, `shown ${SLOW}× slower: ${slow} s a frame`, `${SLOW}× slower: ${slow} s a frame`], by + bh + (narrow ? 54 : 64), { family: MONO, weight: 400, size: narrow ? 10 : 11, color: t.ink3 });
+  if (!reducedMotion) put([`the sweep is shown ${SLOW}× slower: ${slow} s per frame`, `shown ${SLOW}× slower: ${slow} s per frame`, `${SLOW}× slower: ${slow} s per frame`], by + bh + (narrow ? 54 : 64), { family: MONO, weight: 400, size: narrow ? 10 : 11, color: t.ink3 });
 }
 
 function drawBeam(sh, t, x, y, w, h) {
@@ -194,7 +194,7 @@ function drawBeam(sh, t, x, y, w, h) {
   sh.curve(Rr, { width: 1.3, seed: 23, rough: 0.5 });
   const put = (forms, xx, yy, o) => { const f = sh.fit(forms, sh.w - 8 - xx, o, 0.8); sh.text(f.str, xx, yy, { ...o, size: f.size }); };
   put(['narrowest at the focus:', 'narrowest at focus:'], cxb + half(F) + 12, Y(F) - 4, { size: 16 });
-  put(['sharpest side-to-side detail', 'sharpest lateral detail'], cxb + half(F) + 12, Y(F) + 14, { size: 16, color: t.ink2 });
+  put(['finest lateral resolution', 'sharpest lateral detail'], cxb + half(F) + 12, Y(F) + 14, { size: 16, color: t.ink2 });
   if (D - F > D * 0.25) put(['wider beam, more blur', 'wider, more blur'], cxb + half(D) + 10, Y(D) - 4, { size: 16, color: t.ink2 });
   ctx.save();
   ctx.fillStyle = t.accent;
@@ -383,10 +383,10 @@ export default {
     const T = timing(s);
     const notes = {
       none: '',
-      reverb: ' A mechanical valve returns so much energy that the pulse bounces between its faces: <b>reverberations</b> repeat behind it at equal spacing.',
-      shadow: ' The same valve blocks the beam: nothing is drawn behind it, an <b>acoustic shadow</b>.',
-      mirror: ' The pericardium behind the heart acts as a mirror: the scanner draws a <b>duplicate</b> of the structures in front of it, behind it.',
-      lobe: ' Weak beams off the main axis still return from a strong reflector, and the scanner draws them on the main beam: a <b>side-lobe arc</b> at the reflector\'s depth.',
+      reverb: ' A mechanical mitral prosthesis is so strong a reflector that the pulse is reflected back and forth between its surfaces, and <b>reverberations</b> appear behind it at equal intervals.',
+      shadow: ' The mechanical prosthesis blocks the beam, so that no echoes are displayed behind it; the resulting dark region is an <b>acoustic shadow</b>.',
+      mirror: ' The posterior pericardium acts as an acoustic mirror, and the ultrasound system displays a <b>duplicate</b> of the structures in front of it at a position behind it.',
+      lobe: ' Echoes that return from a strong reflector via weak off-axis side lobes are displayed along the main beam as a <b>side-lobe arc</b> at the depth of the reflector.',
     };
     return {
       readouts: [
@@ -394,7 +394,7 @@ export default {
         { k: 'Time per line', v: T.tLine.toFixed(0), u: 'µs' },
         { k: 'Frame rate', v: T.fps.toFixed(0), u: '/s', flag: T.fps < 30 },
       ],
-      live: `At ${s.depth} cm each line waits ${T.tLine.toFixed(0)} µs for its deepest echo. ${T.lines} lines make one frame in ${T.frameMs.toFixed(1)} ms: <b>${T.fps.toFixed(0)} frames per second</b>.${notes[s.artifact]}`,
+      live: `At an imaging depth of ${s.depth} cm, the echo from the deepest point of each scan line returns after ${T.tLine.toFixed(0)} µs. A frame of ${T.lines} scan lines takes ${T.frameMs.toFixed(1)} ms, which corresponds to a frame rate of <b>${T.fps.toFixed(0)} frames per second</b>.${notes[s.artifact]}`,
     };
   },
 };

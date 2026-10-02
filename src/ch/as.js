@@ -72,6 +72,8 @@ export function gradeOf(s, m = null) {
   return g;
 }
 const LEV = { ...LEVEL, 'severe, LV dysfunction': 4, 'severe, low flow': 5 };
+// the bold lead of the caption for each grade
+const LEAD = { none: 'No aortic stenosis', 'severe (area only)': 'Severe stenosis by valve area only', 'severe, LV dysfunction': 'Severe aortic stenosis with LV dysfunction', 'severe, low flow': 'Classical low-flow, low-gradient aortic stenosis' };
 let BANDS = [];
 
 let sheet = null, st = null;
@@ -224,9 +226,9 @@ export default {
     const g = m.grade;
     const sevr = /severe/.test(g);
     let why = '';
-    if (g === 'severe (area only)') why = ` <span class="k-red">The area says severe; the velocity and gradient do not.</span> At normal flow a mean gradient of 40 mmHg needs an area nearer 0.8 than 1.0 cm²${cite('baumgartner2017')}.`;
-    else if (g === 'severe, low flow') why = ` <span class="k-red">The LV fails: LVEF ${fmt(m.ef)}%, stroke volume index ${fmt(m.svi)} mL/m². The gradient falls although the valve is tighter.</span> This is classical low-flow, low-gradient stenosis; low-dose dobutamine tells true severe stenosis from pseudo-severe${cite('baumgartner2017')}.`;
-    else if (sevr) why = ` The LV answers the pressure load: septum ${fmt(m.wall, 1)} cm, LV mass index ${fmt(m.lvmi)} g/m², average E/e′ ${fmt(m.ee)}${cite('otto2020')}.`;
+    if (g === 'severe (area only)') why = ` <span class="k-red">The valve area meets the criterion for severe stenosis; the peak velocity and the mean gradient do not.</span> At normal flow, a mean gradient of 40 mmHg corresponds to an area nearer 0.8 than 1.0 cm²${cite('baumgartner2017')}.`;
+    else if (g === 'severe, low flow') why = ` <span class="k-red">The failing LV has an LVEF of ${fmt(m.ef)}% and a stroke volume index of ${fmt(m.svi)} mL/m². The transvalvular gradient falls although the valve area is smaller.</span> These findings define classical low-flow, low-gradient stenosis; low-dose dobutamine echocardiography distinguishes true severe stenosis from pseudo-severe stenosis${cite('baumgartner2017')}.`;
+    else if (sevr) why = ` The LV wall thickens in response to the pressure load (septum ${fmt(m.wall, 1)} cm, LV mass index ${fmt(m.lvmi)} g/m²); the average E/e′ is ${fmt(m.ee)}${cite('otto2020')}.`;
     return {
       readouts: [
         { k: 'AVA (continuity)', v: fmt(m.ava, 2), u: 'cm²', flag: m.ava < 1 },
@@ -236,7 +238,7 @@ export default {
         { k: 'LVEF', v: fmt(m.ef), u: '%', flag: m.ef < 50 },
         { k: 'Grade', v: g, text: true, flag: sevr },
       ],
-      live: `<b>${g[0].toUpperCase()}${g.slice(1)}${g === 'none' ? ': no stenosis' : ' aortic stenosis'}.</b> Area ${fmt(m.ava, 2)} cm² by the continuity equation; peak velocity ${fmt(m.vmax, 1)} m/s, mean gradient ${fmt(m.mg)} mmHg${cite('baumgartner2017')}.${why}`,
+      live: `<b>${LEAD[g] || `${g[0].toUpperCase()}${g.slice(1)} aortic stenosis`}.</b> The aortic valve area by the continuity equation is ${fmt(m.ava, 2)} cm², the peak velocity is ${fmt(m.vmax, 1)} m/s and the mean gradient is ${fmt(m.mg)} mmHg${cite('baumgartner2017')}.${why}`,
       extra: (art) => gradeTable(art.querySelector('#as-table'), tableRows(m), 'Baumgartner 2017 grading (Table 3)', ['Sclerosis', 'Mild', 'Moderate', 'Severe']),
     };
   },

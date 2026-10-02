@@ -465,7 +465,7 @@ async function ensure() {
       group.add(crossLines, marker);
       stage.overlayScene.add(group);
       return true;
-    })().catch((err) => { failed = true; console.error('Planes 3D failed:', err); note('This device could not start the 3D view.'); throw err; });
+    })().catch((err) => { failed = true; console.error('Planes 3D failed:', err); note('The 3D view could not be started on this device.'); throw err; });
   }
   return ready;
 }
@@ -734,7 +734,7 @@ function matrix() {
   if (!views.length) { t.innerHTML = ''; return; }
   const S = st.pstruct !== 'none' ? st.pstruct : null;
   const rows = STRUCTS.filter((s) => s.id === S || views.some((k) => HAS[k].includes(s.id)));
-  t.innerHTML = `<caption>What each view shows</caption>
+  t.innerHTML = `<caption>Structures in each view</caption>
     <thead><tr><th scope="col">Structure</th>${views.map((k) => `<th scope="col" class="v${k === st.pfocus ? ' fcol' : ''}" data-view="${k}" style="--c: var(--w-${VIEWS[k].win})" title="${VIEWS[k].name}"><span>${CODE[k]}</span></th>`).join('')}</tr></thead>
     <tbody>${rows.map((s) => `<tr data-struct="${s.id}"${s.id === S ? ' class="cur"' : ''}><th scope="row">${s.name}</th>${views.map((k) => `<td class="${k === st.pfocus ? 'fcol' : ''}" style="--c: var(--w-${VIEWS[k].win})">${HAS[k].includes(s.id) ? '●' : ''}</td>`).join('')}</tr>`).join('')}</tbody>`;
 }
@@ -883,30 +883,30 @@ export default {
       { k: 'Focused view', v: k ? CODE[k] : '–' },
       { k: 'Window', v: k ? WNAME[VIEWS[k].win] : '–', text: true },
     ];
-    if (k) readouts.push({ k: 'How to get there', v: MOVE[k], text: true });
+    if (k) readouts.push({ k: 'Probe movement', v: MOVE[k], text: true });
     const nb = s.pfree && geoms && T ? nearest(freePose(s), s.pfocus) : null;
     if (nb) readouts.push({ k: 'Free plane', v: nb.on && !moved(s) ? `on ${CODE[nb.k]}` : nb.flip ? `${CODE[nb.flip]} plane, marker reversed` : `${Math.round(nb.deg)}° · ${nb.cm.toFixed(1)} cm off ${CODE[nb.k]}`, text: true });
     let live = '';
     if (nb) {
-      live += `<b>Free plane.</b> ${nb.on && !moved(s) ? `It lies on ${VIEWS[nb.k].name}.` : nb.near ? `It is ${Math.round(nb.deg)}° from the plane of ${VIEWS[nb.k].name}, whose centre lies ${nb.cm.toFixed(1)} cm off it.` : nb.flip ? `It is the plane of ${CODE[nb.flip]} with the marker on the other side, so the image is mirrored. Turn the probe 180° to get the view.` : 'No standard view is near.'} `;
-      live += `The probe stays in the ${site(s.pfocus)} window, so only the views of that window count. Within ${NEAR.deg}° and ${NEAR.cm} cm the nearest view is marked; within ${ON.deg}° and ${ON.cm} cm the plane settles onto it when you let go. `;
+      live += `<b>Free plane.</b> ${nb.on && !moved(s) ? `The plane coincides with a standard view (${VIEWS[nb.k].name}).` : nb.near ? `The plane lies ${Math.round(nb.deg)}° from the plane of the nearest view (${VIEWS[nb.k].name}), whose center lies ${nb.cm.toFixed(1)} cm from the free plane.` : nb.flip ? `The plane is that of ${CODE[nb.flip]} with the marker on the opposite side, so the image is mirrored. A 180° rotation of the probe produces the standard view.` : 'No standard view lies near the plane.'} `;
+      live += `The probe remains in the ${site(s.pfocus)} window, so the plane is compared only with the views of that window. Within ${NEAR.deg}° and ${NEAR.cm} cm, the nearest view is marked; within ${ON.deg}° and ${ON.cm} cm, the plane settles onto that view when the control is released. `;
     }
     if (k) {
-      live += `<b>${VIEWS[k].name}.</b> Shows ${HAS[k].map((id) => SNAME[id].short).join(', ')}${cite('mitchell2019')}. `;
+      live += `<b>${VIEWS[k].name}.</b> This view shows the following structures: ${HAS[k].map((id) => SNAME[id].short).join(', ')}${cite('mitchell2019')}. `;
       if (geoms && geoms[k]) {
         const rel = views.filter((j) => j !== k && geoms[j]).map((j) => ({ j, a: planeAngle(geoms[k], geoms[j]), same: VIEWS[j].win === VIEWS[k].win }));
         const par = rel.filter((r) => r.a < 3);
         // views of the same window first (the rotations and tilts between them), then the nearest others
         const cross = [...rel.filter((r) => r.a >= 3 && r.same).sort((x, y) => x.a - y.a), ...rel.filter((r) => r.a >= 3 && !r.same).sort((x, y) => x.a - y.a)].slice(0, 3);
-        if (cross.length) live += `In this model it lies ${cross.map((r) => `${Math.round(r.a)}° from ${CODE[r.j]}`).join(', ')}. `;
-        if (par.length) live += `${listNames(par.map((r) => r.j))} ${par.length > 1 ? 'are' : 'is'} parallel to it, ${par.map((r) => `${Math.abs(geoms[r.j].O.clone().sub(geoms[k].O).dot(geoms[k].n)).toFixed(1)} cm`).join(', ')} away. `;
+        if (cross.length) live += `In this model, its plane lies ${cross.map((r) => `${Math.round(r.a)}° from ${CODE[r.j]}`).join(', ')}. `;
+        if (par.length) live += `${listNames(par.map((r) => r.j))} ${par.length > 1 ? 'are' : 'is'} parallel to this plane, ${par.map((r) => `${Math.abs(geoms[r.j].O.clone().sub(geoms[k].O).dot(geoms[k].n)).toFixed(1)} cm`).join(', ')} away. `;
       }
-    } else live += 'Choose a view. ';
+    } else live += 'No view is selected. ';
     if (S) {
       const inViews = views.filter((j) => HAS[j].includes(S.id));
       const all = Object.keys(HAS).filter((j) => HAS[j].includes(S.id));
-      live += `<span class="k-red">${S.name}</span>: in ${all.length} of the ${Object.keys(HAS).length} standard views${inViews.length ? `; of the planes on, ${listNames(inViews)}` : ''}.`;
-      if (!S.anchor) live += ' The heart model has no marker for it.';
+      live += `The selected structure (<span class="k-red">${S.name}</span>) appears in ${all.length} of the ${Object.keys(HAS).length} standard views${inViews.length ? `; of the planes displayed, it lies in ${listNames(inViews)}` : ''}.`;
+      if (!S.anchor) live += ' The heart model has no marker for this structure.';
     }
     return { readouts, live, extra: () => matrix() };
   },

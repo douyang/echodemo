@@ -408,7 +408,7 @@ function table(host, cap, head, body) {
 }
 function criteriaTable(art, m) {
   const yes = (b) => (b ? 'yes' : 'no');
-  table(art.querySelector('#amy-table'), 'ESC 2021 echo criteria', ['Finding', 'Cut-off', 'Value', 'Present'], [
+  table(art.querySelector('#amy-table'), 'ESC 2021 echocardiographic criteria', ['Finding', 'Cut-off', 'Value', 'Present'], [
     [['LV wall at end-diastole, no other cause', '≥12 mm', `${fmt(m.wall, 1)} mm`, yes(m.thick)], m.thick],
     [['Diastolic dysfunction', 'grade 2 or worse', m.dd.grade === null ? 'not graded' : GRADE[m.dd.grade], yes(m.find.dd)], m.find.dd],
     [['Septal s′, e′ and a′', 'all <5 cm/s', `${fmt(m.sSep, 1)} · ${fmt(m.sep, 1)} · ${fmt(m.aSep, 1)}`, yes(m.find.tdi)], m.find.tdi],
@@ -455,14 +455,14 @@ export default {
   tourTick(tt, set) { set({ amyS: Math.round(clamp((tt - 1) / 14, 0, 1) * 400) / 400 }); },
   text(s, { cite }) {
     const m = model(q(s[KEY]));
-    const dd = m.dd.grade === null ? 'filling not graded' : m.dd.grade === 0 ? 'normal filling' : `${GRADE[m.dd.grade]} diastolic dysfunction`;
+    const dd = m.dd.grade === null ? 'a filling pattern that is not graded' : m.dd.grade === 0 ? 'normal diastolic function' : `${GRADE[m.dd.grade]} diastolic dysfunction`;
     const found = [m.find.dd && 'grade 2 or worse diastolic dysfunction', m.find.tdi && 'septal s′, e′ and a′ all below 5 cm/s', m.find.gls && 'GLS below 15% in absolute value'].filter(Boolean);
     const list = found.length ? `${['', 'one of the three findings', 'two of the three findings', 'all three findings'][found.length]} (${found.join('; ')})` : 'none of the three findings';
     let head;
-    if (m.met) head = `<b>ESC echo criteria met.</b> A ${fmt(m.wall, 1)} mm wall, ${list}${m.score >= 8 ? `, and a score of ${m.score}` : ''}${cite('esc2021')}.`;
-    else if (m.thick) head = `<b>Wall ${fmt(m.wall, 1)} mm, criteria not met.</b> ${list[0].toUpperCase()}${list.slice(1)} and a score of ${m.score}: the criteria need two findings or 8 points${cite('esc2021')}.`;
-    else head = `<b>Wall ${fmt(m.wall, 1)} mm.</b> The ESC echo criteria start at an unexplained wall of 12 mm${cite('esc2021')}.`;
-    const live = `${head} Filling: ${dd}, E/A ${fmt(m.ea, 1)}, deceleration time ${fmt(m.DT)} ms, average E/e′ ${fmt(m.eeAvg, 1)}${cite('nagueh2025')}. GLS ${sgn(m.gls, 1)}%, relative apical LS ${fmt(m.relaps, 2)}${m.relaps >= 1 ? ': the apex is spared' : ''}${cite('phelan2012')}.`;
+    if (m.met) head = `<b>ESC echocardiographic criteria met.</b> An LV wall thickness of ${fmt(m.wall, 1)} mm is accompanied by ${list}${m.score >= 8 ? `, and the score is ${m.score}` : ''}${cite('esc2021')}.`;
+    else if (m.thick) head = `<b>LV wall thickness ${fmt(m.wall, 1)} mm, criteria not met.</b> ${list[0].toUpperCase()}${list.slice(1)} is present, and the score is ${m.score}; the criteria require two of the three findings or a score of 8 or more${cite('esc2021')}.`;
+    else head = `<b>LV wall thickness ${fmt(m.wall, 1)} mm.</b> The ESC echocardiographic criteria require an unexplained LV wall thickness of 12 mm or more${cite('esc2021')}.`;
+    const live = `${head} The Doppler findings indicate ${dd}, with an E/A ratio of ${fmt(m.ea, 1)}, a deceleration time of ${fmt(m.DT)} ms and an average E/e′ of ${fmt(m.eeAvg, 1)}${cite('nagueh2025')}. GLS is ${sgn(m.gls, 1)}% and the relative apical LS is ${fmt(m.relaps, 2)}${m.relaps >= 1 ? ', which indicates relative apical sparing' : ''}${cite('phelan2012')}.`;
     return {
       readouts: [
         { k: 'IVSd', v: fmt(m.ivs, 1), u: 'mm', flag: m.ivs >= 12 },
@@ -471,7 +471,7 @@ export default {
         { k: 'GLS', v: sgn(m.gls, 1), u: '%', flag: Math.abs(m.gls) < 15 },
         { k: 'Relative apical LS', v: fmt(m.relaps, 2), flag: m.relaps >= 1 },
         { k: 'Score', v: `${m.score}`, u: 'of 10', flag: m.score >= 8 },
-        { k: 'ESC echo criteria', v: m.met ? 'met' : 'not met', text: true, flag: m.met },
+        { k: 'ESC criteria', v: m.met ? 'met' : 'not met', text: true, flag: m.met },
       ],
       live,
       extra: (art) => criteriaTable(art, m),

@@ -252,7 +252,7 @@ function renderText(i) {
 function renderAllText() { for (let i = 0; i < CHAPTERS.length; i++) renderText(i); }
 
 // ---------------------------------------------------------------- quizzes
-// The "Check yourself" questions are off; the questions stay in quiz.js.
+// The review questions are off; the questions stay in quiz.js.
 const SHOW_QUIZ = false;
 function buildQuizzes() {
   if (!SHOW_QUIZ) return;
@@ -260,7 +260,7 @@ function buildQuizzes() {
     const host = document.querySelector(`#ch-${c.key} .quiz`);
     const quiz = c.quiz || QUIZ[c.key];
     if (!host || !quiz) continue;
-    host.innerHTML = `<h3 class="quiz-head">Check yourself</h3>` + quiz.map((it, i) => `
+    host.innerHTML = `<h3 class="quiz-head">Review questions</h3>` + quiz.map((it, i) => `
       <div class="q" data-q="${i}">
         <p>${it.q}</p>
         <div class="opts">${it.opts.map((o, j) => `<button type="button" data-o="${j}">${o}</button>`).join('')}</div>

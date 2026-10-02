@@ -1,6 +1,6 @@
 # The Heart by Ultrasound
 
-An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and cardiac amyloidosis. Eighteen chapters in seven parts. Chapters 11 to 18 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. A menu in the header changes the heart that every chapter shows: normal, cardiac amyloidosis, ischemic cardiomyopathy, a Barlow mitral valve with severe regurgitation, or a bicuspid aortic valve with severe stenosis. Every guideline value carries its source.
+An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valvular disease, pericardial disease and cardiac amyloidosis. Eighteen chapters in seven parts. Chapters 11 to 18 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. A menu in the header changes the heart that every chapter shows: normal, cardiac amyloidosis, ischemic cardiomyopathy, a Barlow mitral valve with severe regurgitation, or a bicuspid aortic valve with severe stenosis. Every guideline value carries its source.
 
 ![Chapter 08, Planes: the standard views as planes through one heart, with the mitral valve selected](docs/screenshots/planes.webp)
 
@@ -13,18 +13,18 @@ An illustrated, interactive study of echocardiography for trainees: ultrasound p
 | | 03 Shift | Doppler equation, beam angle, Nyquist limit, pulsed, continuous and color Doppler |
 | | 04 Pressure | Stroke volume from LVOT area × VTI; RV systolic pressure from the TR jet and the IVC |
 | Physiology | 05 Cycle | Wiggers diagram with ECG, heart sounds, mitral and LVOT Doppler, and the four-chamber frame at the cursor |
-| | 06 Loop | Pressure–volume loop: ESPVR, EDPVR, arterial elastance, EF = Ees ÷ (Ees + Ea); presets for a weak, a stiff, a pressure-loaded and a volume-loaded ventricle (chronic severe mitral regurgitation, the Barlow heart's loop) |
+| | 06 Loop | Pressure–volume loop: ESPVR, EDPVR, arterial elastance, EF = Ees ÷ (Ees + Ea); presets for a hypocontractile, a stiff, a pressure-loaded and a volume-loaded ventricle (chronic severe mitral regurgitation, the Barlow heart's loop) |
 | Views | 07 Windows | 35 standard views: the heart cut on the imaging plane and labeled (or whole, with the plane through it), and the echo view that plane cuts from the same mesh; the plane moves from view to view as a probe does |
 | | 08 Planes | All standard view planes in one heart: crossings, parallel stacks, which views show a structure, and a free plane that settles onto the nearest standard view and moves to any view on request |
 | Function | 09 Eject | Biplane method of disks: apical four- and two-chamber echo views with the traced border and disks, each above the disk model of the same LV; foreshortening; TAPSE, S′ and fractional area change |
 | | 10 Segments | Buttons on the figure occlude the LAD, RCA or circumflex: its territory turns hypokinetic, akinetic or dyskinetic on the 17-segment bull's-eye, which draws the artery with its block, and in the apical four-, two- and three-chamber views, echo cine sectors cut from the heart mesh in which each segment moves by its score. The text names the walls to watch in each view. Any segment can also be scored by tapping it; the wall motion score index follows |
 | | 11 Fill | Diastolic dysfunction, normal to restrictive: four-chamber view with the LA to scale, mitral inflow, tissue Doppler, pulmonary veins, LA strain, TR jet, and the 2025 ASE algorithm run live |
-| Valves | 12 Aortic stenosis | Normal valve to severe stenosis, then LV failure and low flow: PLAX with hypertrophy, short-axis orifice to scale, CW and LVOT Doppler, mitral inflow |
+| Valves | 12 Aortic stenosis | Normal valve to severe stenosis, then LV dysfunction and low flow: PLAX with wall thickening, short-axis orifice to scale, CW and LVOT Doppler, mitral inflow |
 | | 13 Aortic regurgitation | Mild to severe with LV dysfunction: jet width in the LVOT, pressure half-time, descending aorta reversal, LVOT VTI, LV dilation |
 | | 14 Mitral stenosis | Normal valve to severe rheumatic stenosis: apical four-chamber view with doming leaflets, the LA to scale and the color inflow jet with its flow convergence at 40 cm/s; pressure half-time, the gradient at any heart rate, PA pressure, planimetry |
 | | 15 Mitral regurgitation | Mild to severe with LV dysfunction: color jet and flow convergence at 30 cm/s with the PISA radius; CW jet, pulmonary vein flow reversal, E wave, LV and LA dilation. Under the Barlow heart the leak starts in mid-systole until it is severe |
 | | 16 Tricuspid regurgitation | Mild to torrential: color jet and flow convergence at 28 cm/s with the PISA radius; RV, annulus and RA dilation, hepatic vein reversal, IVC, septal flattening, a jet that slows at the torrential end |
-| Pericardium | 17 Pericardium | No effusion through mild, moderate and severe (large) effusion to tamponade: four-chamber view with the fluid round the heart, the RA and RV folding in and the septum moving with each breath; mitral, tricuspid and hepatic vein Doppler over a breath; PLAX with the fluid in front of the descending aorta; IVC M-mode |
+| Pericardium | 17 Pericardium | No effusion through mild, moderate and severe (large) effusion to tamponade: four-chamber view with the fluid round the heart, RA and RV collapse and the septal shift with each breath; mitral, tricuspid and hepatic vein Doppler over a breath; PLAX with the fluid in front of the descending aorta; IVC M-mode |
 | Cardiomyopathy | 18 Cardiac amyloidosis | Normal heart to advanced amyloid cardiomyopathy: the parasternal long axis at end-diastole with calipers and the apical four-chamber view, both cut from the heart mesh at the chosen amyloid burden; mitral inflow and septal tissue Doppler; the 17-segment strain bull's-eye; the ESC 2021 echo criteria and the multiparametric score, run live |
 
 The report chapter (four simulated cases in the ASE 2025 structure) is hidden: `SHOW_REPORT` in `src/chapters.js`. Its module and markup stay, and it comes back as chapter 19 when that is true (`src/main.js` shows the article of each chapter in the list). The **Normal values** table opens from the report, under its table of values; the header button is hidden with it (`#btn-norms`, kept).
@@ -50,7 +50,7 @@ The **Heart** menu in the header sets the heart for the whole page, and the page
   - **Barlow mitral valve**: thick, redundant leaflets that billow into the LA, a wide annulus, a large LA, and an LV of 183 mL with an EF of 67%.
   - **Bicuspid aortic valve**: the right and left cusps fused along a raphe; the valve domes and opens as a slit. The LV walls thicken to 12.5 mm and the ascending aorta widens to 3.9 cm.
 - **The 2D views draw the heart's valves** (`setHeart` in `src/echo2d.js`). Under the bicuspid heart the short axis shows two cusps, a raphe and a slit, and the long axis closes off-centre. Under the Barlow heart the mitral leaflets are 3 mm thick and 30% longer, and in systole they billow up to 1 cm past the annulus. Walls and chamber sizes stay each page's own.
-- **Chapters open at the heart's values** (`src/pheno.js`). Loop opens at the heart's loop (a stiff ventricle under amyloidosis, a weak one under ischemic cardiomyopathy, a pressure load under the bicuspid valve, a volume load under Barlow), also when the heart is chosen on another chapter. Eject opens at the heart's volumes and EF, Segments at the LAD occlusion, Fill at the heart's diastolic grade, and the heart's own valve page at its severity (aortic valve area 0.76 cm²; mitral EROA 0.46 cm²). The pericardium page opens at a 7 mm effusion and the amyloid page at full burden under amyloidosis. The other valve pages open with no lesion, the amyloid page opens normal under the other disease hearts, and no page plays on its own.
+- **Chapters open at the heart's values** (`src/pheno.js`). Loop opens at the heart's loop (a stiff ventricle under amyloidosis, a hypocontractile one under ischemic cardiomyopathy, a pressure load under the bicuspid valve, a volume load under Barlow), also when the heart is chosen on another chapter. Eject opens at the heart's volumes and EF, Segments at the LAD occlusion, Fill at the heart's diastolic grade, and the heart's own valve page at its severity (aortic valve area 0.76 cm²; mitral EROA 0.46 cm²). The pericardium page opens at a 7 mm effusion and the amyloid page at full burden under amyloidosis. The other valve pages open with no lesion, the amyloid page opens normal under the other disease hearts, and no page plays on its own.
 - **The Barlow heart's loop** (chapter 06, *Volume load (MR)*, `src/ch/loop.js`): chronic severe primary MR. The EDPVR is flat, so the LV fills to 183 mL at an EDP of 11.5 mmHg; EF 67%, as on the mesh; regurgitant fraction 53%, as on the MR page. The LA is a second outlet: blood goes back whenever LV pressure is above LA pressure, at a flow that goes with the square root of the difference, so the volume falls 4 mL before the aortic valve opens and 10 mL after it closes. LA pressure rises through systole to a v wave of 20 mmHg (LA compliance 8 mL/mmHg, a model value), and the mitral valve opens at it. Stroke volume 123 mL: 58 forward, 65 back into the LA. Ees is 1.70: with V0 fixed at 0, a larger end-systolic volume at a normal pressure gives a lower slope. The leak after aortic closure adds to the EF, so Ees ÷ (Ees + Ea) no longer gives it; the figure's card shows EF = SV ÷ EDV and the forward and regurgitant parts. Sources: Neema and Panidapu 2025 and Klabunde's *Cardiovascular Physiology Concepts*.
 - **The report** (hidden) has a case for each heart, with its button next to the four standard cases.
 - **Sizes.** The LV volumes come from 50 short-axis slices of each shape. The slices read 6% over the model's own normal volumes (118 and 42 mL against 112 and 39), so each heart's values are scaled by 0.945.
@@ -144,6 +144,10 @@ Every echo image is simulated. The anatomy comes from sections of the heart mesh
 - The figures run simple models set to agree with these sources. The diastolic values and the Doppler and strain values of the amyloid page are illustrative, not patient data. All images are simulated; there are no patient images.
 - Normal values for the **Normal values** dialog (it opens from the report chapter) and the grading helpers live in one place: `src/norms.js`.
 
+## The text
+
+The text reads as a clinical echocardiography text or a guideline: statements of fact in the third person, with the side, chamber, valve, phase, view, method and unit named. It has no taglines, no figurative verbs and no second person, and it addresses no group of readers. A recommendation uses "should", as a guideline does. Each live caption begins with a bold lead that names the state shown (for example, *Severe aortic stenosis with LV dysfunction*); the chapter videos and the intro take their step names from these leads. The rewrite to this register kept every number, unit, grade term and citation of the text before it, and a script compared them chapter by chapter. Five values were then corrected against their sources; the checks below list them.
+
 ## How it is built
 
 A static site with no build step: ES modules, a canvas sketch layer (`src/sketch.js`, rough.js) and a WebGL pencil renderer for the 3D heart (three.js). Echo views are live cross-sections of the heart mesh (`src/echo.js`) or parametric views (`src/echo2d.js`), imaged by `src/bmode.js`. The heart mesh, pencil renderer and 3D stage are adapted from *The Amyloid Heart*. Vendored libraries and their licenses are in `vendor/`.
@@ -226,23 +230,23 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 
 | Chapter | Steps | Length |
 |---|---|---|
-| 01 Pulse | 2, 3.5, 5 and 7 MHz; time gain compensation | 0:48 |
-| 02 Image | 16 and 24 cm deep; reverberation, acoustic shadow, mirror image, side lobe | 0:49 |
-| 03 Shift | 0° and 60° to the flow; past the Nyquist limit; continuous wave; color, then color aliasing | 0:49 |
-| 04 Pressure | Stroke volume; a 2 mm caliper error; RV systolic pressure at TR 2.4, 3.0 and 3.5 m/s | 0:48 |
-| 05 Cycle | The seven phases of one beat, the cursor running through each | 0:50 |
+| 01 Pulse | Transmit frequency 2, 3.5, 5 and 7 MHz; time gain compensation | 0:48 |
+| 02 Image | Imaging depth 16 and 24 cm; reverberation, acoustic shadow, mirror image, side-lobe artifact | 0:49 |
+| 03 Shift | Beam at 0° and 60° to the flow; aliasing above the Nyquist limit; continuous-wave Doppler; color Doppler, then aliasing on color Doppler | 0:49 |
+| 04 Pressure | Stroke volume; an LVOT diameter error of 2 mm; RV systolic pressure at a peak TR velocity of 2.4, 3.0 and 3.5 m/s | 0:48 |
+| 05 Cycle | The seven phases of the cardiac cycle, the cursor running through each | 0:50 |
 | 06 Loop | Normal, HFrEF, HFpEF, pressure load, volume load | 0:48 |
-| 08 Planes | Nine views; the apical planes from the apex; the short-axis stack from the side; the aortic valve in several views | 0:49 |
-| 09 Eject | Normal LV; dilated LV, EF 30%; foreshortened views; normal RV; RV dysfunction | 0:48 |
-| 10 Segments | Normal; LAD, RCA and circumflex occlusion | 0:48 |
-| 11 Fill | Normal; grades 1, 2 and 3 | 0:48 |
+| 08 Planes | Nine standard imaging planes; the apical planes from the apex; the parallel short-axis planes from the side; the aortic valve in several views | 0:49 |
+| 09 Eject | Normal LV systolic function; dilated LV with an LVEF of 30%; foreshortened apical views; normal RV systolic function; RV systolic dysfunction | 0:48 |
+| 10 Segments | Normal wall motion; LAD, RCA and circumflex occlusion | 0:48 |
+| 11 Fill | Normal diastolic function; grades 1, 2 and 3 | 0:48 |
 | 12 Aortic stenosis | The eight grade bands, none to severe with low flow | 0:57 |
 | 13 Aortic regurgitation | None to severe with LV dysfunction | 0:48 |
-| 14 Mitral stenosis | None to severe; severe at 110 beats a minute | 0:48 |
+| 14 Mitral stenosis | None to severe; severe at a heart rate of 110/min | 0:48 |
 | 15 Mitral regurgitation | None to severe with LV dysfunction | 0:48 |
 | 16 Tricuspid regurgitation | None to torrential | 0:48 |
-| 17 Pericardium | No effusion to tamponade | 0:48 |
-| 18 Cardiac amyloidosis | A normal wall to apical sparing | 0:48 |
+| 17 Pericardium | No pericardial effusion to tamponade | 0:48 |
+| 18 Cardiac amyloidosis | A normal wall to relative apical sparing | 0:48 |
 
 ```
 python3 tools/score/pulse.py as video/out/chapter-as.wav
@@ -258,15 +262,15 @@ node tools/storyboard.mjs --ch=as                              # one frame of ea
 | Start (s) | Chapter | Clip |
 |---|---|---|
 | 0.0 | | Title card: the site's name and the start of its description |
-| 4.6 | 02 Image | The sweep draws a frame, one scan line at a time |
-| 9.1 | 05 Cycle | The cursor runs through one beat, and the echo follows it |
+| 4.6 | 02 Image | The sweep acquires a frame scan line by scan line |
+| 9.1 | 05 Cycle | The cursor runs through one cardiac cycle, and the four-chamber view follows it |
 | 16.0 | 07 Windows | The probe turns 90° at the left sternal border, from the long axis to the short axis |
-| 22.9 | 08 Planes | The nine planes in one heart, then the apical planes from the apex |
-| 29.7 | 10 Segments | Normal, then an LAD occlusion |
+| 22.9 | 08 Planes | The nine standard imaging planes, then the apical planes from the apex |
+| 29.7 | 10 Segments | Normal wall motion, then an LAD occlusion |
 | 36.6 | 12 Aortic stenosis | No stenosis, then severe |
 | 43.4 | 15 Mitral regurgitation | No regurgitation, then severe with LV dysfunction |
-| 50.3 | 17 Pericardium | No effusion, then tamponade |
-| 57.1 | 18 Cardiac amyloidosis | A normal wall, then apical sparing |
+| 50.3 | 17 Pericardium | No pericardial effusion, then tamponade |
+| 57.1 | 18 Cardiac amyloidosis | A normal wall, then relative apical sparing |
 | 64.0 | | End card |
 
 Left out, with the reason:
@@ -291,6 +295,14 @@ node tools/render-video.mjs --reel --stills=7,42.5             # PNG stills at t
 
 ## Checks run before this commit
 
+- Text rewrite, chapter by chapter, against the text before it: the numbers, the citation markers, the markup outside the prose, the JavaScript outside its strings, the strings the code compares and the right answer of each quiz question are unchanged, except for the corrections in the next item.
+- Corrections against the sources. The severe band of the TR regurgitant volume beyond severe is 45–59 mL (the table had 40–59, the band of the EROA row; massive 60–74 mL, torrential ≥75 mL). In aortic regurgitation, ACC/AHA stage C1 has an LV end-systolic diameter ≤50 mm (the text had <50). In severe MR the mitral E velocity is >1.2 m/s (a key point had ≥1.2). The LVEF bands are named mildly, moderately and severely abnormal, as in Lang 2015 Table 4; the code said "reduced", the term of the heart failure category at 41–49%. The AS caption says that the LV wall thickens: at the severe step the LV mass index (103 g/m²) is normal for a man, so "hypertrophy" was wrong. The tamponade caption names RV collapse and pulsus paradoxus only past the thresholds of its own sign table. Two values were checked against the ASE 2017 PDF and kept: a PISA radius ≥1.0 cm at a Nyquist limit of 30–40 cm/s is a specific criterion of severe MR, and >0.9 cm is the TR criterion.
+- MR and TR captions name the vein flow from the value that their panel draws (rounded to 0.02 m/s). At the MR video's severe step the caption said that systolic flow reverses while the panel said no systolic flow (S = −0.025 m/s); both now say that it stops. The TR video steps keep their text; 14 of 1,001 TR slider states change.
+- Every caption state of the slider chapters, computed by the modules: aortic stenosis, aortic regurgitation, mitral stenosis, mitral regurgitation, tricuspid regurgitation, pericardium and amyloid at 201 slider positions, Fill at 61, Cycle at 86. They give 73 distinct leads, and none contains "undefined", NaN or an unfilled template.
+- All 18 chapters at 1440 × 900 and 390 × 844: no console errors, no sideways scroll, a caption on each. Every module parsed in ES module mode.
+- Video captions measured in the frame at the middle of each hold, in the 17 chapter videos and the 8 intro clips that use a chapter page: every step name on one line, its text on three lines at most and inside the caption box (lowest line at 1048 of 1080 px); the title-card subtitles on one or two lines.
+- Chapter videos: all 17 rendered with the new captions in 53.4 min, three at a time; 15 rendered again after the vein-flow fix. Each holds every frame of its layout (1440 to 1697), and no frame undoes the one before it (A, B, A). A frame at the middle of each hold was read against the chapter's text. Audio in the MP4s −14.8 to −14.9 LUFS, true peak −2.8 to −4.1 dBFS; 4.6 to 21.9 MiB each. The views video (07) keeps its text and was not rendered again.
+- Intro: the eight chapter clips rendered again (6.5 min, two at a time); the clip of 07 is unchanged. 2,126 frames decoded, the number the layout gives (70.87 s, 22.6 MiB); no flicker. At each cut the last frame of the clip is at the level of the frame background (29 to 34 of 255, gray, at 320 × 180) and the first frame of the next clip at 29 to 64; eight frames later the next clip is fully in. Audio in the MP4 −15.0 LUFS, true peak −4.1 dBTP.
 - Intro: 2,126 frames decoded, the number the layout gives (70.87 s, 22.4 MiB). No clip shows flicker (A, B, A) or a still stretch longer than 2 frames. The biggest changes inside a clip are the moves of the site: the probe in 07, the camera in 08, the LAD territory in 10.
 - Intro cuts: the last frame of each clip and the first frame of the next are near the level of the frame background (29 to 64 of 255, gray, at 320 × 180). Eight frames later the next clip is fully in.
 - Intro audio in the MP4: −15.0 LUFS, true peak −4.1 dBTP. The score alone: 28 bars at 105.0 BPM to the end card, −15.0 LUFS.

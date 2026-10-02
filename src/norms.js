@@ -10,7 +10,7 @@ export const NORM_TABLES = [
       ['LV ejection time', '292 ± 23 ms', '248–336 ms'],
       ['Isovolumic relaxation time', '96 ± 19 ms', '59–134 ms'],
     ],
-    note: 'Copenhagen City Heart Study, 1,969 adults, color tissue Doppler M-mode. IVRT becomes longer with age.',
+    note: 'Copenhagen City Heart Study: 1,969 adults, color tissue Doppler M-mode. IVRT lengthens with age.',
     ref: 'alhakak2025',
   },
   {
@@ -26,7 +26,7 @@ export const NORM_TABLES = [
       ['Cardiac index', '2.5–4.0 L/min/m²'],
       ['Stroke volume', '60–100 mL'],
     ],
-    note: 'Pulmonary hypertension: mean PA pressure above 20 mmHg at rest. The same guideline gives 12 mmHg as the upper limit of normal wedge pressure.',
+    note: 'Pulmonary hypertension is defined by a mean PA pressure above 20 mmHg at rest. The same guideline gives 12 mmHg as the upper limit of normal for the wedge pressure.',
     ref: 'humbert2022',
   },
   {
@@ -39,7 +39,7 @@ export const NORM_TABLES = [
       ['Right ventricle, peak systolic', '25 (15–30) mmHg'],
       ['Right ventricle, end-diastolic', '4 (0–8) mmHg'],
     ],
-    note: 'Adapted from Fowler, 1980. A textbook table, not a guideline.',
+    note: 'Adapted from Fowler (1980). These are textbook values, not guideline criteria.',
     ref: 'merck_pressures',
   },
   {
@@ -51,7 +51,7 @@ export const NORM_TABLES = [
       ['>2.1 cm and <50% collapse', '15 (10–20) mmHg'],
       ['>2.5 cm, <50%, dilated hepatic veins, echo contrast or reflux', '20 mmHg'],
     ],
-    note: 'Collapse with a sniff. Report one value, not a range.',
+    note: 'Collapse is assessed with a sniff. A single value, not a range, should be reported.',
     ref: 'mukherjee2025',
   },
   {
@@ -69,7 +69,7 @@ export const NORM_TABLES = [
       ['Relative wall thickness', '≤0.42', '≤0.42'],
       ['LA volume index (mL/m²)', '16–34', '16–34'],
     ],
-    note: 'Mean ± 2 SD of healthy adults. LVEF: mildly abnormal 41–51% (men) or 41–53% (women), moderately 30–40%, severely <30%. LA volume index: mildly 35–41, moderately 42–48, severely >48 mL/m².',
+    note: 'Values are the mean ± 2 SD of healthy adults. LVEF is mildly abnormal at 41–51% in men and 41–53% in women, moderately abnormal at 30–40% and severely abnormal below 30%. The LA volume index is mildly abnormal at 35–41, moderately at 42–48 and severely above 48 mL/m².',
     ref: 'lang2015',
   },
   {
@@ -80,7 +80,7 @@ export const NORM_TABLES = [
       ['Borderline', '−16% to −18%'],
       ['Abnormal', 'less negative than −16%'],
     ],
-    note: 'On serial studies, a relative change of 10–15% is likely significant. Use the same vendor and software.',
+    note: 'On serial studies, a relative change of 10–15% is likely to be significant; the same vendor and software should be used.',
     ref: 'thomas2025',
   },
   {
@@ -92,7 +92,7 @@ export const NORM_TABLES = [
       ['HFpEF (preserved)', '≥50%'],
       ['HFimpEF (improved)', 'was ≤40%, now >40%'],
     ],
-    note: 'HFmrEF and HFpEF also need evidence of raised filling pressure at rest or with stress.',
+    note: 'The diagnosis of HFmrEF or HFpEF also requires evidence of raised filling pressure at rest or during stress.',
     ref: 'heidenreich2022',
   },
   {
@@ -110,7 +110,7 @@ export const NORM_TABLES = [
       ['RA volume index (mL/m²)', '<30', '30–36', '>36 to 41', '>41'],
       ['Peak TR velocity (m/s)', '<2.8', '2.8–3.1', '3.2–3.5', '≥3.6'],
     ],
-    note: 'Abnormal = mild or worse. A resting TR velocity ≥2.9 m/s, or ≥2.8 m/s with two other signs, suggests pulmonary hypertension.',
+    note: 'Abnormal denotes mild or worse. A resting TR velocity ≥2.9 m/s, or ≥2.8 m/s with two other signs, suggests pulmonary hypertension.',
     ref: 'mukherjee2025',
   },
   {
@@ -128,7 +128,7 @@ export const NORM_TABLES = [
       ['E/A, once LA pressure is high', '<2 grade 2; ≥2 grade 3'],
       ['E/A, reduced e′ the only finding', '≤0.8 grade 1'],
     ],
-    note: 'Not for atrial fibrillation, mitral stenosis, severe primary MR, moderate or severe annular calcification, mitral repair or replacement, transplant, LVAD, constriction or non-cardiac pulmonary hypertension.',
+    note: 'The algorithm does not apply in atrial fibrillation, mitral stenosis, severe primary MR, moderate or severe annular calcification, mitral repair or replacement, heart transplantation, LVAD support, constriction or non-cardiac pulmonary hypertension.',
     ref: 'nagueh2025',
   },
   {
@@ -140,7 +140,7 @@ export const NORM_TABLES = [
       ['Moderate', '3.0–4.0', '20–40', '1.0–1.5', '0.60–0.85', '0.25–0.50'],
       ['Severe', '≥4.0', '≥40', '<1.0', '<0.6', '<0.25'],
     ],
-    note: 'Any one criterion suggests severe stenosis; ideally all agree. Very severe: Vmax ≥5 m/s or mean gradient ≥60 mmHg.',
+    note: 'Any one criterion suggests severe stenosis; concordance of all criteria is preferred. Very severe stenosis is defined by a Vmax ≥5 m/s or a mean gradient ≥60 mmHg.',
     ref: 'baumgartner2017,otto2020',
   },
   {
@@ -151,7 +151,7 @@ export const NORM_TABLES = [
       ['Progressive, moderate', '1.6–2.5', '100–149', '5–9', '30–49'],
       ['Severe', '≤1.5', '≥150', '≥10', '≥50'],
     ],
-    note: 'Mean gradient at a heart rate of 60–80 bpm. The ACC/AHA definition of severe: MVA ≤1.5 cm², pressure half-time ≥150 ms.',
+    note: 'The mean gradient applies at a heart rate of 60–80 bpm. ACC/AHA defines severe stenosis as an MVA ≤1.5 cm², which corresponds to a pressure half-time ≥150 ms.',
     ref: 'pandian2023,otto2020',
   },
   {
@@ -167,7 +167,7 @@ export const NORM_TABLES = [
       ['CW signal', 'faint, partial', 'dense, partial', 'dense, triangular'],
       ['Pulmonary vein flow', 'systolic dominant', 'systolic blunting', 'systolic reversal'],
     ],
-    note: 'Severe EROA and volume can be lower in secondary MR (crescent-shaped orifice) and in low flow.',
+    note: 'In secondary MR (crescent-shaped orifice) and in low-flow states, the EROA and the regurgitant volume of severe regurgitation can be lower.',
     ref: 'zoghbi2017',
   },
   {
@@ -182,7 +182,7 @@ export const NORM_TABLES = [
       ['Pressure half-time (ms)', '>500', '500–200', '<200'],
       ['Descending aorta reversal', 'brief, early', 'intermediate', 'holodiastolic'],
     ],
-    note: 'Pressure half-time becomes shorter as LV diastolic pressure rises.',
+    note: 'The pressure half-time shortens as LV diastolic pressure rises.',
     ref: 'zoghbi2017',
   },
   {
@@ -197,7 +197,7 @@ export const NORM_TABLES = [
       ['Hepatic vein flow', 'systolic dominant', 'systolic blunting', 'systolic reversal'],
       ['IVC diameter (cm)', '<2.0', '2.1–2.5', '>2.5'],
     ],
-    note: 'Beyond severe (EACVI): massive, vena contracta 14–20 mm; torrential, ≥21 mm.',
+    note: 'Grades beyond severe (EACVI): massive, with a vena contracta of 14–20 mm, and torrential, with a vena contracta ≥21 mm.',
     ref: 'zoghbi2017,lancellotti2022',
   },
 ];
@@ -207,9 +207,9 @@ export const NORM_TABLES = [
 export function lvefBand(ef, sex = 'M') {
   const lo = sex === 'F' ? 54 : 52;
   if (ef >= lo) return ef > 74 ? 'hyperdynamic' : 'normal';
-  if (ef >= 41) return 'mildly reduced';
-  if (ef >= 30) return 'moderately reduced';
-  return 'severely reduced';
+  if (ef >= 41) return 'mildly abnormal';
+  if (ef >= 30) return 'moderately abnormal';
+  return 'severely abnormal';
 }
 // HF category by LVEF (Heidenreich 2022).
 export function hfCategory(ef) {

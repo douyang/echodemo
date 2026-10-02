@@ -234,8 +234,8 @@ export default {
         { k: 'Grade', v: g, text: true, flag: g === 'severe' },
       ],
       live: g === 'none'
-        ? `Normal mitral valve: area ${fmt(m.mva, 1)} cm², pressure half-time ${fmt(m.pht)} ms. Press play to follow rheumatic stenosis.`
-        : `<b>${g[0].toUpperCase()}${g.slice(1)} mitral stenosis.</b> Area ${fmt(m.mva, 2)} cm², pressure half-time ${fmt(m.pht)} ms; at ${Math.round(m.hr)} beats a minute the mean gradient is ${fmt(m.mg, 1)} mmHg${cite('pandian2023')}. The LA enlarges (${fmt(m.lavi)} mL/m²) and the PA systolic pressure rises to ${fmt(m.pasp)} mmHg${m.pasp > 50 ? `: above 50 mmHg, a consequence ACC/AHA lists for severe stenosis${cite('otto2020')}` : ''}.`,
+        ? `<b>No mitral stenosis.</b> The mitral valve is normal, with an area of ${fmt(m.mva, 1)} cm² and a pressure half-time of ${fmt(m.pht)} ms. The play control animates the progression of rheumatic mitral stenosis.`
+        : `<b>${g[0].toUpperCase()}${g.slice(1)} mitral stenosis.</b> The mitral valve area is ${fmt(m.mva, 2)} cm² and the pressure half-time is ${fmt(m.pht)} ms; at a heart rate of ${Math.round(m.hr)} beats per minute, the mean gradient is ${fmt(m.mg, 1)} mmHg${cite('pandian2023')}. The LA volume index increases to ${fmt(m.lavi)} mL/m² and the PA systolic pressure to ${fmt(m.pasp)} mmHg${m.pasp > 50 ? `; the ACC/AHA guideline lists a PA systolic pressure above 50 mmHg as a consequence of severe stenosis${cite('otto2020')}` : ''}.`,
       extra: (art) => gradeTable(art.querySelector('#ms-table'), tableRows(m), 'ASE 2023 grading (Pandian, Table 1)', ['Progressive, mild', 'Progressive, moderate', 'Severe']),
     };
   },

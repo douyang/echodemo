@@ -9,9 +9,9 @@ import { scanner } from '../scanner.js';
 let sheet = null, st = null, scan = null, ev = null, evKey = '', lastT = -1, frameTick = 0, pv = -1;
 
 const PHASES = [
-  { a: EV.mvc, b: EV.avo, name: 'isovolumic contraction', short: 'IVC' },
+  { a: EV.mvc, b: EV.avo, name: 'isovolumic contraction', short: 'IVCT' },
   { a: EV.avo, b: EV.avc, name: 'ejection', short: 'ejection' },
-  { a: EV.avc, b: EV.mvo, name: 'isovolumic relaxation', short: 'IVR' },
+  { a: EV.avc, b: EV.mvo, name: 'isovolumic relaxation', short: 'IVRT' },
   { a: EV.mvo, b: EV.eEnd, name: 'rapid filling', short: 'rapid filling' },
   { a: EV.eEnd, b: EV.aOn, name: 'diastasis', short: 'diastasis' },
   { a: EV.aOn, b: RR, name: 'atrial contraction', short: 'atrial' },
@@ -61,7 +61,7 @@ function draw(sh, t) {
     if (!narrow || X(p.b) - X(p.a) > 40) sh.text(narrow ? p.short.split(' ')[0] : p.short, mid, top - 22, { family: SANS, weight: 500, size: narrow ? 9 : 11, align: 'center', color: t.ink2 });
   });
   // valve events
-  const evs = [[EV.mvc, 'MV shuts'], [EV.avo, 'AV opens'], [EV.avc, 'AV shuts'], [EV.mvo, 'MV opens']];
+  const evs = [[EV.mvc, 'MV closes'], [EV.avo, 'AV opens'], [EV.avc, 'AV closes'], [EV.mvo, 'MV opens']];
   for (const [ms, label] of evs) {
     sh.line(X(ms), top - 8, X(ms), bottom, { width: 0.8, rough: 0.3, seed: ms, stroke: t.ink3, dash: [3, 4] });
     if (!narrow) sh.text(label, X(ms) + 3, yP + hP - 4, { family: SANS, weight: 400, size: 10, color: t.ink3, rotate: -Math.PI / 2 });
@@ -169,7 +169,7 @@ function draw(sh, t) {
     ctx.drawImage(E.canvas, fx, fy, fw, fh);
     if (!narrow) {
       sh.text('apical four-chamber at the cursor', fx, fy + fh + 22, { size: 17 });
-      const mv = c.mvOpen ? 'open' : 'shut', av = c.avOpen ? 'open' : 'shut';
+      const mv = c.mvOpen ? 'open' : 'closed', av = c.avOpen ? 'open' : 'closed';
       sh.text(`mitral ${mv} · aortic ${av}`, fx, fy + fh + 44, { family: MONO, weight: 500, size: 12, color: t.ink2 });
     }
   } else {
@@ -179,13 +179,13 @@ function draw(sh, t) {
 
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 const NOTE = {
-  'Isovolumic contraction': 'Both valves are shut. LV pressure rises and the volume does not change, until LV pressure is higher than aortic pressure. The mitral valve closed with S1.',
-  'Rapid ejection': 'The aortic valve is open and LV volume falls fast. LVOT flow runs below the baseline and peaks early.',
-  'Reduced ejection': 'Outflow slows. LV pressure falls below aortic pressure, and the aortic valve shuts at the dicrotic notch, with S2.',
-  'Isovolumic relaxation': 'Both valves are shut again. LV pressure falls and the volume does not change. On Doppler this is the IVRT: from the end of LVOT flow to the start of the E wave.',
-  'Rapid filling': 'LV pressure falls below LA pressure and the mitral valve opens. The pressure difference drives the E wave.',
-  Diastasis: 'The pressures are almost equal, and flow nearly stops.',
-  'Atrial contraction': 'After the P wave the atrium contracts and adds the A wave: the last part of LV filling before the next beat.',
+  'Isovolumic contraction': 'The mitral and aortic valves are closed. LV pressure rises at constant volume until it exceeds aortic pressure and the aortic valve opens. Mitral valve closure at the onset of this phase coincides with S1.',
+  'Rapid ejection': 'The aortic valve is open, and LV volume decreases rapidly. LVOT flow is displayed below the baseline and reaches its peak velocity early in ejection.',
+  'Reduced ejection': 'LVOT flow velocity decreases. LV pressure falls below aortic pressure, and aortic valve closure at the dicrotic notch coincides with S2.',
+  'Isovolumic relaxation': 'The aortic and mitral valves are again closed. LV pressure falls at constant volume. On Doppler recordings, this phase corresponds to the IVRT, which extends from the end of LVOT flow to the onset of the E wave.',
+  'Rapid filling': 'LV pressure falls below LA pressure, and the mitral valve opens. The pressure difference between the LA and the LV drives early mitral inflow, recorded as the E wave.',
+  Diastasis: 'LA and LV pressures are almost equal, and mitral inflow nearly ceases.',
+  'Atrial contraction': 'After the P wave, the LA contracts and produces the A wave of mitral inflow, the final part of LV filling before the next beat.',
 };
 
 export default {
@@ -217,9 +217,9 @@ export default {
         { k: 'Aorta', v: fmt(c.ao), u: 'mmHg' },
         { k: 'LA pressure', v: fmt(c.la), u: 'mmHg' },
         { k: 'LV volume', v: fmt(c.vol), u: 'mL' },
-        { k: 'Valves', v: `MV ${c.mvOpen ? 'open' : 'shut'} · AV ${c.avOpen ? 'open' : 'shut'}`, text: true },
+        { k: 'Valves', v: `MV ${c.mvOpen ? 'open' : 'closed'} · AV ${c.avOpen ? 'open' : 'closed'}`, text: true },
       ],
-      live: `<b>${c.name}</b>, ${Math.round(c.t)} ms after the R wave. ${NOTE[c.name]}${s.crun ? ' <span class="note">Beat slowed three times.</span>' : ''}`,
+      live: `<b>${c.name}.</b> The cursor is at ${Math.round(c.t)} ms after the R wave. ${NOTE[c.name]}${s.crun ? ' <span class="note">The animation is slowed threefold.</span>' : ''}`,
     };
   },
 };

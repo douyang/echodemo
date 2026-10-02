@@ -71,6 +71,8 @@ export function gradeOf(s, m = null) {
   return t.ef <= 60 || t.lvesd >= 4.0 ? 'severe, LV dysfunction' : 'severe';
 }
 const LEV = { ...LEVEL, 'severe, LV dysfunction': 4 };
+// the bold lead of the caption for each grade
+const LEAD = { 'severe, LV dysfunction': 'Severe mitral regurgitation with LV dysfunction' };
 let BANDS = [];
 
 // ---------------------------------------------------------------- figure
@@ -304,8 +306,9 @@ export default {
     const m = model(s[KEY]);
     const g = m.grade;
     const sev = g.startsWith('severe');
-    const stage = !sev ? '' : g === 'severe' ? ` LVEF ${fmt(m.ef)}% and LV end-systolic diameter ${fmt(m.lvesd, 1)} cm: ACC/AHA stage C1 when there are no symptoms${cite('otto2020')}.` : ` <span class="k-red">LVEF ${fmt(m.ef)}% or LV end-systolic diameter ${fmt(m.lvesd, 1)} cm crosses the ACC/AHA stage C2 limits (LVEF ≤60%, diameter ≥4.0 cm)</span>${cite('otto2020')}.`;
-    const pv = m.pvS < -0.02 ? 'systolic flow in the pulmonary veins reverses' : m.pvS < 0.05 ? 'systolic flow in the pulmonary veins stops' : m.sd < 1 ? 'pulmonary vein systolic flow is blunted' : 'pulmonary vein flow stays systolic-dominant';
+    const stage = !sev ? '' : g === 'severe' ? ` The LVEF is ${fmt(m.ef)}% and the LV end-systolic diameter is ${fmt(m.lvesd, 1)} cm, which corresponds to ACC/AHA stage C1 in the absence of symptoms${cite('otto2020')}.` : ` <span class="k-red">An LVEF of ${fmt(m.ef)}% and an LV end-systolic diameter of ${fmt(m.lvesd, 1)} cm meet at least one ACC/AHA stage C2 criterion (LVEF ≤60% or LV end-systolic diameter ≥4.0 cm)</span>${cite('otto2020')}.`;
+    const pvS = q2(m.pvS);   // as the pulmonary vein panel rounds it, so the two agree
+    const pv = pvS < -0.02 ? 'systolic flow in the pulmonary veins reverses' : pvS < 0.05 ? 'systolic flow in the pulmonary veins stops' : m.sd < 1 ? 'pulmonary vein systolic flow is blunted' : 'pulmonary vein flow remains systolic-dominant';
     return {
       readouts: [
         { k: 'EROA', v: fmt(m.eroa, 2), u: 'cm²', flag: m.eroa >= 0.4 },
@@ -316,8 +319,8 @@ export default {
         { k: 'Grade', v: g, text: true, flag: sev },
       ],
       live: m.eroa <= 0.001
-        ? `No regurgitation. Press play to follow a leak from mild to severe.`
-        : `<b>${g[0].toUpperCase()}${g.slice(1)} mitral regurgitation.</b> EROA ${fmt(m.eroa, 2)} cm², regurgitant volume ${fmt(m.rvol)} mL, regurgitant fraction ${fmt(m.rf)}%${cite('zoghbi2017')}. LA volume index ${fmt(m.lavi)} mL/m², mitral E ${fmt(m.E, 2)} m/s; ${pv}.${stage}${m.onset > 0.05 ? ` The leaflets prolapse, so the leak starts in mid-systole: the volume is smaller than the EROA suggests${cite('zoghbi2017')}.` : ''}`,
+        ? `<b>No mitral regurgitation.</b> The play control animates the progression of mitral regurgitation from mild to severe.`
+        : `<b>${LEAD[g] || `${g[0].toUpperCase()}${g.slice(1)} mitral regurgitation`}.</b> The EROA is ${fmt(m.eroa, 2)} cm², the regurgitant volume ${fmt(m.rvol)} mL and the regurgitant fraction ${fmt(m.rf)}%${cite('zoghbi2017')}. The LA volume index is ${fmt(m.lavi)} mL/m² and the mitral E velocity ${fmt(m.E, 2)} m/s; ${pv}.${stage}${m.onset > 0.05 ? ` Because the leaflets prolapse, regurgitation begins in mid-systole, and the regurgitant volume is smaller than the EROA would predict${cite('zoghbi2017')}.` : ''}`,
       extra: (art) => gradeTable(art.querySelector('#mr-table'), tableRows(m), 'ASE 2017 grading (Table 8, condensed)'),
     };
   },
