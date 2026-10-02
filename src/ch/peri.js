@@ -192,13 +192,13 @@ function resp(ctx, bx) {
 function meterItems(m) {
   return [
     { k: 'Effusion (diastole)', v: m.eff, u: 'mm', lo: 0, hi: 30, cuts: [[10, '10'], [20, '20']], bad: m.eff >= 10 },
-    { k: 'Pressure in the sac', v: m.ipp, u: 'mmHg', lo: 0, hi: 20, cuts: [[m.rap, 'RA']], bad: m.grade === 'tamponade' },
-    { k: 'RA folded in', v: m.raCol * 100, u: '% of cycle', lo: 0, hi: 60, cuts: [[33.3, '⅓']], bad: m.raCol >= 1 / 3 },
+    { k: 'Pericardial pressure', v: m.ipp, u: 'mmHg', lo: 0, hi: 20, cuts: [[m.rap, 'RA']], bad: m.grade === 'tamponade' },
+    { k: 'RA inversion', v: m.raCol * 100, u: '% of cycle', lo: 0, hi: 60, cuts: [[33.3, '⅓']], bad: m.raCol >= 1 / 3 },
     { k: 'RV wall, early diastole', v: m.rvIn, u: 'mm in', lo: 0, hi: 10, cuts: [], bad: m.rvCol > 0.2 },
     { k: 'IVC diameter', v: m.ivc, u: 'cm', d: 1, lo: 1, hi: 3, norm: [1.0, 2.1], cuts: [[2.1, '2.1']], bad: m.ivc > 2.1 },
-    { k: 'IVC collapse, sniff', v: m.coll * 100, u: '%', lo: 0, hi: 80, cuts: [[50, '50']], bad: m.coll < 0.5 },
-    { k: 'Mitral E, breathing', v: m.mvVar, u: '%', lo: 0, hi: 50, cuts: [[25, '25'], [30, '30']], bad: m.mvVar > 25 },
-    { k: 'Tricuspid E, breathing', v: m.tvVar, u: '%', lo: 0, hi: 90, cuts: [[40, '40'], [60, '60']], bad: m.tvVar > 40 },
+    { k: 'IVC collapse on sniff', v: m.coll * 100, u: '%', lo: 0, hi: 80, cuts: [[50, '50']], bad: m.coll < 0.5 },
+    { k: 'Mitral E variation', v: m.mvVar, u: '%', lo: 0, hi: 50, cuts: [[25, '25'], [30, '30']], bad: m.mvVar > 25 },
+    { k: 'Tricuspid E variation', v: m.tvVar, u: '%', lo: 0, hi: 90, cuts: [[40, '40'], [60, '60']], bad: m.tvVar > 40 },
     { k: 'Heart rate', v: m.hr, u: '/min', lo: 40, hi: 140, norm: [60, 100], cuts: [[100, '100']], bad: m.hr > 100 },
     { k: 'Pulsus paradoxus', v: m.pp, u: 'mmHg', lo: 0, hi: 30, cuts: [[10, '10']], bad: m.pp > 10 },
   ];
@@ -239,8 +239,8 @@ function sizeRows(m) {
 function tampRows(m) {
   const on = (x) => (x ? 1 : 0);
   return [
-    ['Right atrium', ['Brief or no inversion', 'Folds in for more than a third of the cycle'], on(m.raCol >= 1 / 3)],
-    ['Right ventricle', ['Free wall moves out in diastole', 'Free wall collapses in early diastole'], on(m.rvCol > 0.2)],
+    ['Right atrium', ['Brief or no inversion', 'Inversion for more than one third of the cycle'], on(m.raCol >= 1 / 3)],
+    ['Right ventricle', ['Free wall moves outward in diastole', 'Free wall collapses in early diastole'], on(m.rvCol > 0.2)],
     ['IVC', ['≤2.1 cm, collapses more than 50%', '>2.1 cm, collapses less than 50%'], on(m.ivc > 2.1 && m.coll < 0.5)],
     ['Mitral E with inspiration', ['Falls less than 25%', 'Falls more than 25–30%'], on(m.mvVar > 25)],
     ['Tricuspid E with inspiration', ['Rises less than 40%', 'Rises more than 40–60%'], on(m.tvVar > 40)],
@@ -285,16 +285,16 @@ export default {
     const pd = Math.abs(m.rap - m.ipp) < 1 ? 1 : 0;      // a decimal when the two pressures are close
     const size = m.eff < 1 ? 'no effusion' : m.eff < 10 ? 'a mild (small) effusion' : m.eff < 20 ? 'a moderate effusion' : 'a severe (large) effusion';
     let live;
-    if (g === 'none') live = 'No effusion: the two layers of the pericardium lie together. The normal sac holds 10–50 mL of fluid; a separation seen only in systole is trivial. Press play to follow an effusion to tamponade.';
+    if (g === 'none') live = '<b>No pericardial effusion.</b> The visceral and parietal layers of the pericardium lie in contact. The normal pericardial sac contains 10–50 mL of fluid; a separation of the layers seen only in systole is a trivial effusion. The play control animates the progression from no effusion to tamponade.';
     else if (g !== 'tamponade') {
-      live = `<b>${g[0].toUpperCase()}${g.slice(1)} effusion.</b> Echo-free space ${fmt(m.eff)} mm in diastole: ${size}. The pressure in the sac, ${fmt(m.ipp, pd)} mmHg, stays below the RA pressure (${fmt(m.rap, pd)} mmHg), so the chambers fill normally: IVC ${fmt(m.ivc, 1)} cm, ${m.collapses ? 'collapsing more than 50%' : 'collapsing less than 50%'} with a sniff; mitral E varies ${fmt(m.mvVar)}% with breathing.${m.raCol > 0.05 ? ` The RA wall folds in briefly (${fmt(m.raCol * 100)}% of the cycle): short inversion alone is not tamponade.` : ''}${m.swing > 0.2 ? ' The heart swings in the fluid.' : ''}`;
+      live = `<b>${g[0].toUpperCase()}${g.slice(1)} pericardial effusion.</b> The echo-free space measures ${fmt(m.eff)} mm in diastole, consistent with ${size}. The pressure in the pericardial sac (${fmt(m.ipp, pd)} mmHg) remains below the RA pressure (${fmt(m.rap, pd)} mmHg), so the cardiac chambers fill normally; the IVC measures ${fmt(m.ivc, 1)} cm and ${m.collapses ? 'collapses by more than 50%' : 'collapses by less than 50%'} with a sniff, and the mitral E velocity varies by ${fmt(m.mvVar)}% with respiration.${m.raCol > 0.05 ? ` The RA wall inverts briefly, for ${fmt(m.raCol * 100)}% of the cardiac cycle; a brief inversion alone does not indicate tamponade.` : ''}${m.swing > 0.2 ? ' The heart swings within the effusion.' : ''}`;
     } else {
-      live = `<b>Tamponade.</b> The pressure in the sac (${fmt(m.ipp, pd)} mmHg) has reached the RA pressure (${fmt(m.rap, pd)} mmHg). The RA folds in for ${fmt(m.raCol * 100)}% of the cycle${m.raCol >= 1 / 3 ? ', more than a third' : ''}; the RV free wall collapses in early diastole; the septum moves toward the LV with each inspiration; the IVC is ${fmt(m.ivc, 1)} cm and collapses only ${fmt(m.coll * 100)}%; mitral E falls ${fmt(m.mvVar)}% and tricuspid E rises ${fmt(m.tvVar)}% with inspiration. Heart rate ${fmt(m.hr)}, stroke volume ${fmt(m.sv)} mL; pulsus paradoxus ${fmt(m.pp)} mmHg. Tamponade is a clinical diagnosis: the echo signs support it.`;
+      live = `<b>Tamponade.</b> The pressure in the pericardial sac (${fmt(m.ipp, pd)} mmHg) has reached the RA pressure (${fmt(m.rap, pd)} mmHg). The RA wall remains inverted for ${fmt(m.raCol * 100)}% of the cardiac cycle${m.raCol >= 1 / 3 ? ' (more than one third)' : ''}; ${m.rvCol > 0.2 ? 'the RV free wall collapses in early diastole' : 'the RV free wall does not yet collapse'}; the interventricular septum shifts toward the LV with each inspiration; the IVC measures ${fmt(m.ivc, 1)} cm and collapses by only ${fmt(m.coll * 100)}%; and with inspiration the mitral E velocity falls by ${fmt(m.mvVar)}% and the tricuspid E velocity rises by ${fmt(m.tvVar)}%. The heart rate is ${fmt(m.hr)}/min and the stroke volume ${fmt(m.sv)} mL; the inspiratory fall in systolic blood pressure is ${fmt(m.pp)} mmHg${m.pp > 10 ? ' (pulsus paradoxus)' : ''}. Tamponade is a clinical diagnosis, and these echocardiographic signs support it.`;
     }
     return {
       readouts: [
         { k: 'Effusion', v: fmt(m.eff), u: 'mm', flag: m.eff >= 10 },
-        { k: 'Sac pressure', v: fmt(m.ipp, pd), u: 'mmHg', flag: g === 'tamponade' },
+        { k: 'Pericardial pressure', v: fmt(m.ipp, pd), u: 'mmHg', flag: g === 'tamponade' },
         { k: 'RA pressure', v: fmt(m.rap, pd), u: 'mmHg', flag: m.rap > 8 },
         { k: 'Heart rate', v: fmt(m.hr), u: '/min', flag: m.hr > 100 },
         { k: 'Stroke volume', v: fmt(m.sv), u: 'mL', flag: m.sv < 60 },
@@ -303,7 +303,7 @@ export default {
       live,
       extra: (art) => {
         gradeTable(art.querySelector('#peri-table'), sizeRows(m), 'Effusion size', ['Mild (small)', 'Moderate', 'Severe (large)']);
-        gradeTable(art.querySelector('#peri-table2'), tampRows(m), 'Echo signs of tamponade', ['Without tamponade', 'Tamponade']);
+        gradeTable(art.querySelector('#peri-table2'), tampRows(m), 'Echocardiographic signs of tamponade', ['Without tamponade', 'Tamponade']);
       },
     };
   },

@@ -37,13 +37,13 @@ export function lapAlgorithm(v) {
   const n = eRed + eeUp + trUp;
   const step1 = { eRed, eeUp, trUp, n };
   const graded = (why) => ({ step1, lap: 'raised', grade: v.ea >= 2 ? 3 : 2, why, node: v.ea >= 2 ? 'g3' : 'g2' });
-  if (n === 0) return { step1, lap: 'normal', grade: 0, why: 'all three first-step values normal', node: 'normal' };
-  if (n === 3) return { ...graded('all three first-step values abnormal'), via: 'step1' };
-  if (n === 1 && eRed && v.ea <= 0.8) return { step1, lap: 'normal', grade: 1, why: 'reduced e′ is the only abnormal value and E/A ≤ 0.8', node: 'g1' };
+  if (n === 0) return { step1, lap: 'normal', grade: 0, why: 'all three first-step variables (e′, E/e′ and peak TR velocity) are normal', node: 'normal' };
+  if (n === 3) return { ...graded('all three first-step variables (e′, E/e′ and peak TR velocity) are abnormal'), via: 'step1' };
+  if (n === 1 && eRed && v.ea <= 0.8) return { step1, lap: 'normal', grade: 1, why: 'reduced e′ is the only abnormal first-step variable, with E/A ≤ 0.8', node: 'g1' };
   const step2 = { sd: v.sd <= 0.67, lars: v.lars <= 18, lavi: v.lavi > 34 };
   const any = step2.sd || step2.lars || step2.lavi;
-  if (any) return { ...graded('one or two first-step values abnormal, and a second-step value abnormal'), step2, via: 'step2' };
-  return { step1, step2, lap: 'normal', grade: null, why: 'one or two first-step values abnormal, second-step values normal', node: 'normal2' };
+  if (any) return { ...graded('one or two first-step variables are abnormal, and at least one second-step variable is abnormal'), step2, via: 'step2' };
+  return { step1, step2, lap: 'normal', grade: null, why: 'one or two first-step variables are abnormal, and all second-step variables are normal; the algorithm assigns no grade on this path', node: 'normal2' };
 }
 
 const GRADE = { 0: 'normal diastolic function', 1: 'grade 1 diastolic dysfunction', 2: 'grade 2 diastolic dysfunction', 3: 'grade 3 diastolic dysfunction' };
@@ -114,7 +114,7 @@ function flowchart(sh, t, X, Y, Wd, Hd, r) {
   box(sh, t, colsX[1] + bw / 2 - w2 / 2, y3, w2, bh + 8, g1 ? 'e′ only, E/A ≤ 0.8' : 'Step 2', r.via === 'step2' || r.node === 'normal2' || g1, g1 ? 'no second step' : 'S/D ≤0.67 · LARS ≤18% · LAVi >34');
   arrow(sh, t, colsX[1] + bw / 2, y2 + bh, colsX[1] + bw / 2, y3, s1.n === 1 || s1.n === 2);
   const y4 = y3 + bh + 8 + gap;
-  box(sh, t, colsX[0], y4, bw, bh + 6, 'normal LA pressure', r.lap === 'normal', r.grade === 1 ? 'grade 1' : r.grade === 0 ? 'normal function' : r.node === 'normal2' ? 'no grade drawn' : '');
+  box(sh, t, colsX[0], y4, bw, bh + 6, 'normal LA pressure', r.lap === 'normal', r.grade === 1 ? 'grade 1' : r.grade === 0 ? 'normal function' : r.node === 'normal2' ? 'not graded' : '');
   box(sh, t, colsX[2], y4, bw, bh + 6, 'raised LA pressure', r.lap === 'raised', r.grade ? `grade ${r.grade}: E/A ${r.grade === 3 ? '≥' : '<'} 2` : '');
   arrow(sh, t, colsX[0] + bw / 2, y2 + bh, colsX[0] + bw / 2, y4, s1.n === 0);
   arrow(sh, t, colsX[2] + bw / 2, y2 + bh, colsX[2] + bw / 2, y4, s1.n === 3);
@@ -262,7 +262,7 @@ function fillTable(art, v, r) {
     ['Average e′', `${fmt(v.avg)} cm/s`, '≤6.5', v.avg <= 6.5],
     ['Average E/e′', fmt(v.eeAvg), '≥14', v.eeAvg >= 14],
     ['Peak TR velocity', `${fmt(v.tr, 2)} m/s`, '≥2.8', v.tr >= 2.8],
-    ['E/A (sets the grade)', fmt(v.ea, 2), '≤0.8 grade 1 · ≥2 grade 3', null],
+    ['E/A (determines the grade)', fmt(v.ea, 2), '≤0.8 grade 1 · ≥2 grade 3', null],
     ['Pulmonary vein S/D', fmt(v.sd, 2), '≤0.67', v.sd <= 0.67],
     ['LA reservoir strain', `${fmt(v.lars, 0)}%`, '≤18%', v.lars <= 18],
     ['LA volume index', `${fmt(v.lavi, 0)} mL/m²`, '>34', v.lavi > 34],
@@ -303,7 +303,7 @@ export default {
   text(s, { cite }) {
     const v = fillValues(s.fstate);
     const r = lapAlgorithm(v);
-    const verdict = r.grade === null ? 'normal LA pressure (Figure 3 draws no grade on this path)' : `${r.lap} LA pressure: ${GRADE[r.grade]}`;
+    const verdict = r.grade === null ? 'normal LA pressure, no grade assigned' : `${r.lap} LA pressure, ${GRADE[r.grade]}`;
     return {
       readouts: [
         { k: 'E/A', v: fmt(v.ea, 2) },
@@ -313,7 +313,7 @@ export default {
         { k: 'LA volume index', v: fmt(v.lavi, 0), u: 'mL/m²', flag: v.lavi > 34 },
         { k: 'Result', v: r.grade === null ? 'normal LAP' : r.grade === 0 ? 'normal' : `grade ${r.grade}`, text: true, flag: r.lap === 'raised' },
       ],
-      live: `<b>${verdict[0].toUpperCase()}${verdict.slice(1)}.</b> ${r.why[0].toUpperCase()}${r.why.slice(1)}${cite('nagueh2025')}. Values are illustrative, not from a patient.`,
+      live: `<b>${verdict[0].toUpperCase()}${verdict.slice(1)}.</b> ${r.why[0].toUpperCase()}${r.why.slice(1)}${cite('nagueh2025')}. The values are illustrative and do not come from a patient.`,
       extra: (art) => fillTable(art, v, r),
     };
   },

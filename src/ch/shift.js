@@ -238,11 +238,11 @@ export default {
       readouts.push({ k: 'Nyquist limit', v: fmt(D.nyq, 2), u: 'm/s', flag: D.alias });
     } else readouts.push({ k: 'Nyquist limit', v: 'none', text: true });
     readouts.push({ k: 'Signal', v: D.alias ? 'aliased' : 'clean', text: true, flag: D.alias });
-    let live = `The blood moves at ${fmt(s.vtrue, 2)} m/s. At ${s.angle}° the scanner reports ${fmt(D.vm, 2)} m/s, ${fmt(D.under * 100, 0)}% low: it assumes the beam runs parallel to the flow${cite('quinones2002')}. `;
-    if (s.dmode === 'cw') live += 'Continuous wave listens at every depth along the line: no aliasing, and no way to know which depth the fastest signal came from.';
-    else if (s.dmode === 'color') live += `Color shows the mean velocity in each small sample of the box: red toward the probe, blue away${cite('mitchell2019')}. ${D.alias ? `<span class="k-red">The center of the vessel passes ${fmt(D.nyq, 2)} m/s and wraps to the other color.</span>` : `Nothing passes the ${fmt(D.nyq, 2)} m/s limit, so nothing wraps.`}`;
-    else if (D.alias) live += `<span class="k-red">The velocity passes the Nyquist limit of ${fmt(D.nyq, 2)} m/s and aliases.</span> Move the sample closer, lower the Doppler frequency, or change to continuous wave.`;
-    else live += `The sample at ${fmt(s.sdepth, 1)} cm allows ${fmt(D.prf / 1000, 1)} thousand pulses a second: velocities to ${fmt(D.nyq, 2)} m/s measure without aliasing.`;
+    let live = `The true peak blood velocity is ${fmt(s.vtrue, 2)} m/s. At a beam angle of ${s.angle}° to the flow, ${s.angle === 0 ? `the ultrasound system reports the true velocity, ${fmt(D.vm, 2)} m/s, because the beam is parallel to the flow` : `the ultrasound system reports ${fmt(D.vm, 2)} m/s, an underestimate of ${D.under < 0.005 ? 'less than 1' : fmt(D.under * 100, 0)}%, because it assumes that the beam is parallel to the flow`}${cite('quinones2002')}. `;
+    if (s.dmode === 'cw') live += 'Continuous-wave Doppler records the signal from every depth along the beam, so it does not alias, but the depth at which the highest velocity originates cannot be determined.';
+    else if (s.dmode === 'color') live += `Color Doppler displays the mean velocity in each small sample volume within the color box, with flow toward the transducer in red and flow away from it in blue${cite('mitchell2019')}. ${D.alias ? `<span class="k-red">The velocity in the center of the vessel exceeds the Nyquist limit of ${fmt(D.nyq, 2)} m/s and aliases to the opposite color.</span>` : `No velocity exceeds the Nyquist limit of ${fmt(D.nyq, 2)} m/s, so no aliasing occurs.`}`;
+    else if (D.alias) live += `<span class="k-red">The velocity exceeds the Nyquist limit of ${fmt(D.nyq, 2)} m/s, and the signal aliases.</span> To avoid aliasing, the sample volume should be moved closer to the transducer, the Doppler frequency lowered, or continuous-wave Doppler used.`;
+    else live += `A sample volume at ${fmt(s.sdepth, 1)} cm permits a pulse repetition frequency of ${fmt(D.prf / 1000, 1)} kHz, so velocities up to ${fmt(D.nyq, 2)} m/s are measured without aliasing.`;
     return { readouts, live };
   },
 };

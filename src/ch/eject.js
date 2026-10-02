@@ -344,7 +344,7 @@ export default {
           { k: 'S′ grade', v: gS, text: true },
           { k: 'FAC grade', v: gF, text: true },
         ],
-        live: `TAPSE ${fmt(s.tapse, 1)} mm is ${gT}; S′ ${fmt(s.sPrime, 1)} cm/s is ${gS}; FAC ${fmt(s.fac)}% is ${gF}${cite('mukherjee2025')}. TAPSE and S′ follow one point of the annulus along one line; FAC uses the whole RV area in one plane.`,
+        live: `TAPSE is ${fmt(s.tapse, 1)} mm (${gT}), S′ is ${fmt(s.sPrime, 1)} cm/s (${gS}) and FAC is ${fmt(s.fac)}% (${gF})${cite('mukherjee2025')}. TAPSE and S′ measure the motion of a single point of the tricuspid annulus along one line; FAC is derived from the whole RV area in one plane.`,
       };
     }
     const L = lvState(s);
@@ -358,7 +358,7 @@ export default {
         { k: 'LVEF', v: fmt(L.ef * 100), u: '%', flag: L.ef * 100 < 52 },
         { k: 'EDV index', v: fmt(edvi), u: 'mL/m²', flag: edvi > 74 },
       ],
-      live: `Biplane disks give an EF of ${fmt(L.ef * 100)}%: ${band === bandF ? band : `${band} for a man, ${bandF} for a woman`}${cite('lang2015')}. In a patient with heart failure, this EF falls in the ${hfCategory(L.ef * 100)}${cite('heidenreich2022')}. ${L.f > 0.02 ? `<span class="k-red">The views are ${s.fore}% foreshortened: EDV reads ${fmt(L.EDm)} mL, not ${fmt(L.edv)} mL.</span> EF barely moves, because both volumes shrink together.` : `EDV index ${fmt(edvi)} mL/m² for a body surface area of ${BSA.toFixed(2)} m².`}`,
+      live: `By the biplane method of disks, the LVEF is ${fmt(L.ef * 100)}%, which is ${band === bandF ? band : `${band} in men and ${bandF} in women`}${cite('lang2015')}. In a patient with heart failure, this LVEF lies in the ${hfCategory(L.ef * 100)}${cite('heidenreich2022')}. ${L.f > 0.02 ? `<span class="k-red">With ${s.fore}% foreshortening of the apical views, the measured EDV is ${fmt(L.EDm)} mL, whereas the true EDV is ${fmt(L.edv)} mL.</span> The LVEF changes little, because the EDV and ESV decrease by the same fraction.` : `The EDV index is ${fmt(edvi)} mL/m² for a body surface area of ${BSA.toFixed(2)} m².`}`,
     };
   },
 };

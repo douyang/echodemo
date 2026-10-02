@@ -680,14 +680,14 @@ export default {
     const listBy = [2, 3, 4].map((w) => ({ w, ks: bad.filter((k) => S.sc[k] === w) })).filter((x) => x.ks.length)
       .map((x) => `${WM[x.w]} (${x.w}): ${x.ks.join(', ')}`).join('; ');
     const territory = s.culprit === 'none' ? 'none' : TERRITORY[s.culprit] ? ANAME[s.culprit] : by.length ? by.map((x) => `${x.c === 'lcx' ? 'Cx' : x.c.toUpperCase()} ${x.n} of ${x.of}`).join(' · ') : 'none';
-    const tail = `The index is the mean of the 16 scores: ${fmt(S.wmsi, 2)}${cite('lang2015')}.`;
+    const tail = `The wall motion score index, the mean of the 16 scores, is ${fmt(S.wmsi, 2)}${cite('lang2015')}.`;
     let live;
-    if (!bad.length) live = `Normal: all 16 segments score 1, and the wall motion score index is 1.00${cite('lang2015')}. Press LAD, RCA or LCX on the figure to occlude that artery, or tap a segment to score it.`;
+    if (!bad.length) live = `All 16 segments are scored 1 (normal), and the wall motion score index is 1.00${cite('lang2015')}. The LAD, RCA and LCX buttons on the figure occlude the corresponding artery, and a tap on a segment advances it to the next score.`;
     else if (TERRITORY[s.culprit]) {
       const segs = TERRITORY[s.culprit];
-      live = `<b>${COURSE[s.culprit].name} occlusion.</b> Its territory is ${WM[s.wm]}: segments ${segs.filter((k) => k < 17).join(', ')} score ${s.wm}${segs.includes(17) ? ', and so does the apical cap, which the index leaves out' : ''}. Where to look: ${where(S.sc)}${cite('lang2015')}. ${tail} The map is the standard one; in one CT study, 72% of patients had at least one segment supplied by a different artery${cite('javadi2010')}.`;
+      live = `<b>${COURSE[s.culprit].name} occlusion.</b> The territory of the occluded artery is ${WM[s.wm]}; segments ${segs.filter((k) => k < 17).join(', ')} are scored ${s.wm}${segs.includes(17) ? ', as is the apical cap, which is excluded from the wall motion score index' : ''}. The apical views show the abnormal segments as follows: ${where(S.sc)}${cite('lang2015')}. ${tail} The territories are those of the standard map; in one CT study, 72% of patients had at least one segment supplied by a different artery${cite('javadi2010')}.`;
     } else {
-      live = `Scored by hand: ${listBy}. Where to look: ${where(S.sc)}. By the standard map, the abnormal segments lie in the territory of ${by.map((x) => `the ${ANAME[x.c]} (${x.n} of ${x.of})`).join(', ')}${cite('javadi2010')}. ${tail}${bad.includes(17) ? ' The apical cap counts only in the 17-segment model.' : ''}`;
+      live = `The segments scored by hand are as follows: ${listBy}. The apical views show the abnormal segments as follows: ${where(S.sc)}. By the standard map, the abnormal segments lie in the territory of ${by.map((x) => `the ${ANAME[x.c]} artery (${x.n} of ${x.of})`).join(', ')}${cite('javadi2010')}. ${tail}${bad.includes(17) ? ' The apical cap is counted only in the 17-segment model.' : ''}`;
     }
     return {
       readouts: [

@@ -8,39 +8,39 @@ import { Labels } from '../gl/stage3d.js';
 // What each view shows and what is measured there (ASE 2019, Tables 2.1-2.27 and Section IV).
 const INFO = {
   plax: { shows: 'LA, mitral valve, LV, LVOT, aortic valve, septum, RV', acquire: 'Septum, LV diameter and inferolateral wall at end-diastole; LV diameter at end-systole; proximal RVOT; LA diameter' },
-  plax_deep: { shows: 'Pericardial and pleural spaces behind the heart', acquire: 'Screen for pericardial and pleural effusion' },
+  plax_deep: { shows: 'Pericardial and pleural spaces behind the heart', acquire: 'Screening for pericardial and pleural effusion' },
   plax_avmv: { shows: 'Two aortic cusps and both mitral leaflets', acquire: 'Leaflet motion of both valves' },
-  plax_av: { shows: 'Aortic valve, LVOT, proximal ascending aorta', acquire: 'Annulus and LVOT diameters in mid-systole; color on the aortic valve' },
-  plax_mv: { shows: 'Mitral leaflets, chordae and annulus; LA; LV inflow', acquire: 'Leaflet anatomy and motion; color on the mitral valve' },
-  plax_asc: { shows: 'Sinuses, sinotubular junction, tubular ascending aorta', acquire: 'Aortic diameters at end-diastole; color' },
-  rv_in: { shows: 'RA, tricuspid valve, RV; IVC and coronary sinus in some', acquire: 'TR color; TR peak velocity by CW' },
-  rv_out: { shows: 'RVOT, pulmonic valve, main PA', acquire: 'RVOT PW; pulmonic valve CW; color' },
-  psax_av: { shows: 'Aortic valve, LA, RA, tricuspid valve, RVOT, pulmonic valve, atrial septum', acquire: 'Proximal and distal RVOT; TR color and CW' },
-  psax_pa: { shows: 'Aorta above the valve, RA, RVOT, pulmonic valve, main PA and branches', acquire: 'Main PA diameter; RVOT PW; pulmonic CW; PR end-diastolic velocity' },
-  psax_tv: { shows: 'RA, tricuspid valve, RV inflow, high septum', acquire: 'Tricuspid color; TR CW' },
-  psax_avz: { shows: 'Aortic cusps: non-, right and left coronary', acquire: 'Cusp number and motion; color' },
-  psax_cor: { shows: 'Aortic root; origins of the left main and right coronary arteries', acquire: 'Where each coronary artery arises (anomalous origin)' },
-  psax_mv: { shows: 'RV, septum, both mitral leaflets, LV', acquire: 'Leaflet excursion; basal wall motion; mitral color' },
+  plax_av: { shows: 'Aortic valve, LVOT, proximal ascending aorta', acquire: 'Annulus and LVOT diameters in mid-systole; color Doppler of the aortic valve' },
+  plax_mv: { shows: 'Mitral leaflets, chordae and annulus; LA; LV inflow', acquire: 'Leaflet anatomy and motion; color Doppler of the mitral valve' },
+  plax_asc: { shows: 'Sinuses, sinotubular junction, tubular ascending aorta', acquire: 'Aortic diameters at end-diastole; color Doppler' },
+  rv_in: { shows: 'RA, tricuspid valve, RV; IVC and coronary sinus in some patients', acquire: 'TR by color Doppler; TR peak velocity by CW Doppler' },
+  rv_out: { shows: 'RVOT, pulmonic valve, main PA', acquire: 'RVOT PW Doppler; pulmonic valve CW Doppler; color Doppler' },
+  psax_av: { shows: 'Aortic valve, LA, RA, tricuspid valve, RVOT, pulmonic valve, atrial septum', acquire: 'Proximal and distal RVOT; TR by color and CW Doppler' },
+  psax_pa: { shows: 'Aorta above the valve, RA, RVOT, pulmonic valve, main PA and branches', acquire: 'Main PA diameter; RVOT PW Doppler; pulmonic valve CW Doppler; PR end-diastolic velocity' },
+  psax_tv: { shows: 'RA, tricuspid valve, RV inflow, high septum', acquire: 'Tricuspid valve color Doppler; TR CW Doppler' },
+  psax_avz: { shows: 'Noncoronary, right coronary and left coronary aortic cusps', acquire: 'Cusp number and motion; color Doppler' },
+  psax_cor: { shows: 'Aortic root; origins of the left main and right coronary arteries', acquire: 'Origin of each coronary artery (anomalous origin)' },
+  psax_mv: { shows: 'RV, septum, both mitral leaflets, LV', acquire: 'Leaflet excursion; basal wall motion; mitral color Doppler' },
   psax_pm: { shows: 'RV, septum, papillary muscles, LV', acquire: 'Global and regional LV function' },
   psax_ap: { shows: 'LV apex', acquire: 'Apical wall motion' },
-  a4c: { shows: 'LA, mitral valve, LV, septum, RV, tricuspid valve, RA, atrial septum', acquire: 'LV and LA volumes (with A2C); mitral inflow; tissue Doppler; TR CW; pulmonary vein flow' },
+  a4c: { shows: 'LA, mitral valve, LV, septum, RV, tricuspid valve, RA, atrial septum', acquire: 'LV and LA volumes (with A2C); mitral inflow; tissue Doppler; TR CW Doppler; pulmonary vein flow' },
   a4c_lv: { shows: 'LV, mitral apparatus, part of the LA', acquire: 'Biplane LV volumes (with A2C); wall motion; strain' },
-  a4c_rv: { shows: 'RA, tricuspid valve, RV, LA, LV', acquire: 'RV diameters and areas; TAPSE; tricuspid annular S′; TR CW' },
+  a4c_rv: { shows: 'RA, tricuspid valve, RV, LA, LV', acquire: 'RV diameters and areas; TAPSE; tricuspid annular S′; TR CW Doppler' },
   a4c_la: { shows: 'Pulmonary veins, LA, mitral valve, LV, RA, tricuspid valve, RV', acquire: 'LA volume at end-systole; RA volume; pulmonary vein flow' },
-  a4c_mv: { shows: 'Mitral valve', acquire: 'Leaflet anatomy; mitral color; MR CW' },
-  a4c_tv: { shows: 'Tricuspid leaflets and annulus', acquire: 'Leaflet anatomy and coaptation; TR color' },
+  a4c_mv: { shows: 'Mitral valve', acquire: 'Leaflet anatomy; mitral color Doppler; MR CW Doppler' },
+  a4c_tv: { shows: 'Tricuspid leaflets and annulus', acquire: 'Leaflet anatomy and coaptation; TR color Doppler' },
   a4c_apex: { shows: 'LV apex', acquire: 'Apical wall motion; apical thrombus' },
-  a5c: { shows: 'LA, mitral valve, LV, septum, LVOT, aortic valve, proximal aorta, RA, RV', acquire: 'LVOT PW about 5 mm below the valve; aortic valve CW; AR CW' },
-  a2c: { shows: 'LV, mitral valve, LA; coronary sinus and LA appendage in some', acquire: 'LA volume; biplane LV volumes; mitral color' },
+  a5c: { shows: 'LA, mitral valve, LV, septum, LVOT, aortic valve, proximal aorta, RA, RV', acquire: 'LVOT PW Doppler about 5 mm below the valve; aortic valve CW Doppler; AR CW Doppler' },
+  a2c: { shows: 'LV, mitral valve, LA; coronary sinus and LA appendage in some patients', acquire: 'LA volume; biplane LV volumes; mitral color Doppler' },
   a2c_lv: { shows: 'LV', acquire: 'Biplane LV volumes (with A4C)' },
-  a3c: { shows: 'LA, mitral valve, LV, LVOT, aortic valve, aorta', acquire: 'Color on the mitral valve, LVOT and aortic valve; LVOT PW and aortic CW; AR and MR CW' },
+  a3c: { shows: 'LA, mitral valve, LV, LVOT, aortic valve, aorta', acquire: 'Color Doppler of the mitral valve, LVOT and aortic valve; LVOT PW and aortic valve CW Doppler; AR and MR CW Doppler' },
   a3c_lv: { shows: 'LV', acquire: 'Wall motion; strain' },
-  a3c_av: { shows: 'Aortic valve, LVOT, proximal aorta', acquire: 'Aortic valve and LVOT color' },
-  sc4c: { shows: 'Liver, LV, mitral valve, RV, tricuspid valve, both septa, RA, LA', acquire: 'RV free wall thickness; septal defects; color on the atrial septum' },
-  sc4c_ias: { shows: 'Atrial septum, square to the beam', acquire: 'Septal defects and color across the septum' },
-  sc_ivc: { shows: 'IVC in long axis through the liver, hepatic veins, IVC–RA junction', acquire: 'IVC diameter 1 to 2 cm from the RA and its collapse; hepatic vein PW' },
-  sc_aorta: { shows: 'Upper abdominal aorta behind the liver, celiac trunk, SMA', acquire: 'Color and PW of aortic flow (appendix view)' },
-  ssn: { shows: 'Ascending aorta, arch, descending aorta, head vessels, right PA', acquire: 'Arch color; ascending and descending aorta PW; descending aorta CW' },
+  a3c_av: { shows: 'Aortic valve, LVOT, proximal aorta', acquire: 'Aortic valve and LVOT color Doppler' },
+  sc4c: { shows: 'Liver, LV, mitral valve, RV, tricuspid valve, atrial and ventricular septa, RA, LA', acquire: 'RV free wall thickness; septal defects; color Doppler of the atrial septum' },
+  sc4c_ias: { shows: 'Atrial septum, perpendicular to the beam', acquire: 'Septal defects; color Doppler across the septum' },
+  sc_ivc: { shows: 'IVC in long axis through the liver, hepatic veins, IVC–RA junction', acquire: 'IVC diameter 1 to 2 cm from the RA and its collapse; hepatic vein PW Doppler' },
+  sc_aorta: { shows: 'Upper abdominal aorta behind the liver, celiac trunk, SMA', acquire: 'Color and PW Doppler of aortic flow (appendix view)' },
+  ssn: { shows: 'Ascending aorta, arch, descending aorta, head vessels, right PA', acquire: 'Color Doppler of the arch; PW Doppler of the ascending and descending aorta; CW Doppler of the descending aorta' },
   ssn_sax: { shows: 'Arch in cross-section, right PA along its length, LA', acquire: 'Right PA size; LA and the pulmonary veins' },
 };
 const WIN_KEYS = WINDOWS.map((w) => w.key);
@@ -73,7 +73,7 @@ async function ensure() {
       echo.retheme();
       labels = new Labels(fig.querySelector('#windows-overlay'));
       return true;
-    })().catch((err) => { failed = true; note('This device could not start the 3D view.'); throw err; });
+    })().catch((err) => { failed = true; note('The 3D view could not be started on this device.'); throw err; });
   }
   return ready;
 }
@@ -200,15 +200,15 @@ export default {
     const v = VIEWS[s.view], info = INFO[s.view];
     const m = echo && echo.measure && echo.measure.lvid ? echo.measure : null;
     const readouts = [
-      { k: 'How to get there', v: MOVE[s.view], text: true },
+      { k: 'Probe movement', v: MOVE[s.view], text: true },
       { k: 'Shows', v: info.shows, text: true },
-      { k: 'Acquire here', v: info.acquire, text: true },
+      { k: 'Recorded in this view', v: info.acquire, text: true },
     ];
     let live = `<b>${v.name}.</b> `;
-    if (!v.plane) live += 'The heart model ends at the diaphragm, so this view has no slice here. ';
-    else if (s.view === 'plax' && m && !s.wcine) live += `Calipers at end-diastole, square to the long axis: septum ${(m.ivs / 10).toFixed(1)} cm, cavity ${(m.lvid / 10).toFixed(1)} cm, inferolateral wall ${(m.pw / 10).toFixed(1)} cm. `;
-    else if (v.zoom) live += `A ${v.zoom.w} cm box, magnified. `;
-    live += `<span class="note">Views and measurements: ASE${cite('mitchell2019')}. Lab class: ${v.lab || 'none in the list'}</span>`;
+    if (!v.plane) live += 'The heart model ends at the diaphragm, so the model contains no section for this view. ';
+    else if (s.view === 'plax' && m && !s.wcine) live += `At end-diastole, with calipers perpendicular to the LV long axis, the septum measures ${(m.ivs / 10).toFixed(1)} cm, the LV internal diameter ${(m.lvid / 10).toFixed(1)} cm and the inferolateral wall ${(m.pw / 10).toFixed(1)} cm. `;
+    else if (v.zoom) live += `The image is magnified to a region ${v.zoom.w} cm wide. `;
+    live += `<span class="note">Views and measurements are as defined in the ASE guideline${cite('mitchell2019')}. Annotation class: ${v.lab || 'none'}.</span>`;
     return { readouts, live };
   },
 };

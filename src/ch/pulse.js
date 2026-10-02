@@ -250,7 +250,7 @@ export function drawPulse(sh, t, st) {
   // posterior-wall echo marker
   const pwLv = dB(refl(Z.blood, Z.muscle)) - P.loss(PW_DEPTH) + gain(PW_DEPTH);
   const lost = pwLv < NOISE + gain(PW_DEPTH) + 2;
-  if (!narrow) sh.label(lost ? 'posterior wall: lost in noise' : 'posterior wall echo', ax1 - 20, Y(PW_DEPTH), aX + aW + bW + 40, Y(PW_DEPTH) + 44, { size: 15 * s, color: lost ? t.flag : t.ink });
+  if (!narrow) sh.label(lost ? 'posterior wall: below noise' : 'posterior wall echo', ax1 - 20, Y(PW_DEPTH), aX + aW + bW + 40, Y(PW_DEPTH) + 44, { size: 15 * s, color: lost ? t.flag : t.ink });
 
   // ---------------- zoom: the pulse to scale
   if (narrow) drawZoomStrip(sh, t, st, P, { x: 16 + ox, y: bottom + 34, w: W - 32 - 2 * ox, h: H - bottom - 44 });
@@ -293,7 +293,7 @@ function drawZoomStrip(sh, t, st, P, B) {
   sh.text(`λ ${P.lambda.toFixed(2)} mm`, B.x, B.y + B.h - 6, { size: 14 });
   const rt = sh.fit(['reflectors 0.5 mm apart', '0.5 mm apart'], B.x + B.w + 8 - (B.x + half + 16), { size: 15 });
   sh.text(rt.str, B.x + half + 16, B.y - 10, { size: rt.size, color: t.ink2 });
-  sh.text(ok ? 'resolved' : 'one blur', B.x + half + 16, B.y + B.h - 6, { size: 14, color: ok ? t.ink : t.flag });
+  sh.text(ok ? 'resolved' : 'one echo', B.x + half + 16, B.y + B.h - 6, { size: 14, color: ok ? t.ink : t.flag });
 }
 
 function drawZoom(sh, t, st, P, B, s) {
@@ -363,7 +363,7 @@ function drawZoom(sh, t, st, P, B, s) {
   pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
   ctx.stroke();
   ctx.restore();
-  put(ok ? ['two separate echoes', 'two echoes'] : ['the echoes overlap: one blur', 'overlap: one blur'], X(x0), y2 + amp + 20, { size: 17 * s, color: ok ? t.ink : t.flag }, B.x + room - X(x0));
+  put(ok ? ['two separate echoes', 'two echoes'] : ['the echoes overlap: one echo', 'overlap: one echo'], X(x0), y2 + amp + 20, { size: 17 * s, color: ok ? t.ink : t.flag }, B.x + room - X(x0));
   const ax = P.axial.toFixed(2);
   put([`axial resolution = pulse length ÷ 2 = ${ax} mm`, `axial resolution = ${ax} mm`], B.x, y2 + amp + 44, { family: SANS, weight: 400, size: 12, color: t.ink2 });
 }
@@ -410,7 +410,7 @@ export default {
         { k: 'Round-trip loss', v: fmt(P.loss(PW_DEPTH), 0), u: 'dB', flag: lost },
         { k: 'Usable depth', v: fmt(P.usable, 1), u: 'cm', flag: P.usable < 12 },
       ],
-      live: `At ${fmt(P.f, 1)} MHz the wavelength is ${fmt(P.lambda, 2)} mm. A ${st.cycles}-cycle pulse is ${fmt(P.spl, 2)} mm long and separates reflectors <b>${fmt(P.axial, 2)} mm</b> apart. The echo from the posterior wall at 10.3 cm returns after ${fmt(P.us(PW_DEPTH), 0)} µs and loses ${fmt(P.loss(PW_DEPTH), 0)} dB on the round trip${lost ? ': <span class="k-red">it sinks below the noise</span>' : ''}.${st.tgc ? ' Time gain compensation brightens deep echoes, and it brightens the noise with them.' : ''}`,
+      live: `At ${fmt(P.f, 1)} MHz the wavelength is ${fmt(P.lambda, 2)} mm. A ${st.cycles}-cycle pulse has a spatial pulse length of ${fmt(P.spl, 2)} mm, which gives an axial resolution of <b>${fmt(P.axial, 2)} mm</b>. The echo from the posterior wall at 10.3 cm returns after ${fmt(P.us(PW_DEPTH), 0)} µs and is attenuated by ${fmt(P.loss(PW_DEPTH), 0)} dB over the round trip${lost ? '; <span class="k-red">its level is below the noise floor</span>' : ''}.${st.tgc ? ' Time gain compensation amplifies the deep echoes and also amplifies the noise at the same depths.' : ''}`,
     };
   },
 };

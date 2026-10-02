@@ -207,9 +207,9 @@ export const NORM_TABLES = [
 export function lvefBand(ef, sex = 'M') {
   const lo = sex === 'F' ? 54 : 52;
   if (ef >= lo) return ef > 74 ? 'hyperdynamic' : 'normal';
-  if (ef >= 41) return 'mildly reduced';
-  if (ef >= 30) return 'moderately reduced';
-  return 'severely reduced';
+  if (ef >= 41) return 'mildly abnormal';
+  if (ef >= 30) return 'moderately abnormal';
+  return 'severely abnormal';
 }
 // HF category by LVEF (Heidenreich 2022).
 export function hfCategory(ef) {

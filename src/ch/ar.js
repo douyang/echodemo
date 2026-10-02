@@ -54,6 +54,8 @@ export function gradeOf(s, m = null) {
   return t.ef <= 55 || t.lvesd > 5.0 || (t.lvesd * 10) / BSA > 25 ? 'severe, LV dysfunction' : 'severe';
 }
 const LEV = { ...LEVEL, 'severe, LV dysfunction': 4 };
+// the bold lead of the caption for each grade
+const LEAD = { 'severe, LV dysfunction': 'Severe aortic regurgitation with LV dysfunction' };
 let BANDS = [];
 
 let sheet = null, st = null;
@@ -270,8 +272,8 @@ export default {
     const g = m.grade;
     const sev = g.startsWith('severe');
     const stage = !sev ? '' : g === 'severe'
-      ? ` LVEF ${fmt(m.ef)}% and LV end-systolic diameter ${fmt(m.lvesd, 1)} cm: ACC/AHA stage C1 when there are no symptoms${cite('otto2020')}.`
-      : ` <span class="k-red">LVEF ${fmt(m.ef)}%, LV end-systolic diameter ${fmt(m.lvesd, 1)} cm (${fmt(m.lvesdi)} mm/m²): past an ACC/AHA stage C2 limit (LVEF ≤55%, diameter >5.0 cm or >25 mm/m²)</span>${cite('otto2020')}.`;
+      ? ` With an LVEF of ${fmt(m.ef)}% and an LV end-systolic diameter of ${fmt(m.lvesd, 1)} cm, severe aortic regurgitation is ACC/AHA stage C1 in the absence of symptoms${cite('otto2020')}.`
+      : ` <span class="k-red">An LVEF of ${fmt(m.ef)}% and an LV end-systolic diameter of ${fmt(m.lvesd, 1)} cm (${fmt(m.lvesdi)} mm/m²) meet at least one ACC/AHA stage C2 criterion (LVEF ≤55%, end-systolic diameter >5.0 cm or >25 mm/m²)</span>${cite('otto2020')}.`;
     return {
       readouts: [
         { k: 'EROA', v: fmt(m.eroa, 2), u: 'cm²', flag: m.eroa >= 0.3 },
@@ -282,8 +284,8 @@ export default {
         { k: 'Grade', v: g, text: true, flag: sev },
       ],
       live: m.eroa <= 0.001
-        ? 'No regurgitation. Press play to follow a leak from mild to severe.'
-        : `<b>${g[0].toUpperCase()}${g.slice(1)} aortic regurgitation.</b> EROA ${fmt(m.eroa, 2)} cm², regurgitant volume ${fmt(m.rvol)} mL, jet ${fmt(m.ratio)}% of the LVOT; pressure half-time ${fmt(m.pht)} ms${cite('zoghbi2017')}. The LV takes forward plus regurgitant volume: LVOT VTI ${fmt(m.lvotVti)} cm, LV end-diastolic diameter ${fmt(m.lvedd, 1)} cm; blood pressure ${fmt(m.sbp)}/${fmt(m.dbp)} mmHg.${stage}`,
+        ? '<b>No aortic regurgitation.</b> The play control animates the progression of aortic regurgitation from mild to severe.'
+        : `<b>${LEAD[g] || `${g[0].toUpperCase()}${g.slice(1)} aortic regurgitation`}.</b> The EROA is ${fmt(m.eroa, 2)} cm², the regurgitant volume is ${fmt(m.rvol)} mL and the jet width is ${fmt(m.ratio)}% of the LVOT diameter; the pressure half-time is ${fmt(m.pht)} ms${cite('zoghbi2017')}. The LV receives and ejects the forward and the regurgitant volume (LVOT VTI ${fmt(m.lvotVti)} cm, LV end-diastolic diameter ${fmt(m.lvedd, 1)} cm); the blood pressure is ${fmt(m.sbp)}/${fmt(m.dbp)} mmHg.${stage}`,
       extra: (art) => gradeTable(art.querySelector('#ar-table'), tableRows(m), 'ASE 2017 grading (Table 11, condensed)'),
     };
   },

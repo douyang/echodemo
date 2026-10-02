@@ -241,7 +241,7 @@ function beyondRows(m) {
   return [
     ['Vena contracta (mm)', ['7–13', '14–20', '≥21'], c],
     ['EROA by PISA (mm²)', ['40–59', '60–79', '≥80'], c],
-    ['Regurgitant volume (mL)', ['40–59', '60–74', '≥75'], c],
+    ['Regurgitant volume (mL)', ['45–59', '60–74', '≥75'], c],
   ];
 }
 
@@ -274,8 +274,8 @@ export default {
     const m = model(s[KEY]);
     const g = m.grade;
     const sev = m.s >= 0.4;
-    const hv = m.hvS > 0.02 ? 'hepatic vein systolic flow reverses' : Math.abs(m.hvS) < Math.abs(m.hvD) ? 'hepatic vein systolic flow is blunted' : 'hepatic vein flow stays systolic-dominant';
-    const beyond = m.s >= 0.6 ? ` Beyond severe, EACVI grades ${g} TR by the vena contracta and EROA${cite('lancellotti2022')}. The RV and RA pressures come close: the peak velocity falls to ${fmt(m.v, 1)} m/s, so the TR velocity no longer reflects the pulmonary pressure${cite('zoghbi2017')}.` : '';
+    const hv = m.hvS > 0.02 ? 'hepatic vein systolic flow reverses' : Math.abs(m.hvS) < Math.abs(m.hvD) ? 'hepatic vein systolic flow is blunted' : 'hepatic vein flow remains systolic-dominant';
+    const beyond = m.s >= 0.6 ? ` The EACVI defines ${g} TR, a grade beyond severe, by the vena contracta and the EROA${cite('lancellotti2022')}. As the RV and RA pressures approach each other, the peak TR velocity falls to ${fmt(m.v, 1)} m/s and no longer reflects the PA systolic pressure${cite('zoghbi2017')}.` : '';
     return {
       readouts: [
         { k: 'EROA', v: fmt(m.eroa, 2), u: 'cm²', flag: sev },
@@ -286,8 +286,8 @@ export default {
         { k: 'Grade', v: g, text: true, flag: sev },
       ],
       live: m.eroa <= 0.001
-        ? 'No regurgitation. Press play to follow a leak from mild to torrential.'
-        : `<b>${g[0].toUpperCase()}${g.slice(1)} tricuspid regurgitation.</b> EROA ${fmt(m.eroa, 2)} cm², vena contracta ${fmt(m.vc, 2)} cm, regurgitant volume ${fmt(m.rvol)} mL${cite('zoghbi2017')}. RV basal diameter ${fmt(m.rvb, 1)} cm, annulus ${fmt(m.ta, 1)} cm; IVC ${fmt(m.ivc, 1)} cm, ${m.collapses ? 'collapses' : 'collapses less than 50%'} with a sniff: RA pressure ${m.rap} mmHg; ${hv}.${beyond}`,
+        ? '<b>No tricuspid regurgitation.</b> The play control animates the progression of tricuspid regurgitation from mild to torrential.'
+        : `<b>${g[0].toUpperCase()}${g.slice(1)} tricuspid regurgitation.</b> The EROA is ${fmt(m.eroa, 2)} cm², the vena contracta ${fmt(m.vc, 2)} cm and the regurgitant volume ${fmt(m.rvol)} mL${cite('zoghbi2017')}. The RV basal diameter is ${fmt(m.rvb, 1)} cm and the tricuspid annulus ${fmt(m.ta, 1)} cm; the IVC measures ${fmt(m.ivc, 1)} cm and ${m.collapses ? 'collapses' : 'collapses by less than 50%'} with a sniff, which corresponds to an estimated RA pressure of ${m.rap} mmHg; ${hv}.${beyond}`,
       extra: (art) => {
         gradeTable(art.querySelector('#tr-table'), tableRows(m), 'ASE 2017 grading (Table 14, condensed)');
         gradeTable(art.querySelector('#tr-table2'), beyondRows(m), 'Beyond severe: EACVI 2022 (Table 16)', ['Severe', 'Massive', 'Torrential']);
