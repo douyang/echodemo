@@ -31,7 +31,7 @@ const TWO = { hold0: 0.75, move: 1, hold1: 1.25 };
 export const REEL = {
   key: 'intro',
   // the title card: the site's name and the start of its description (index.html, meta description)
-  title: { eye: '18 chapters', name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive study of echocardiography for trainees.' },
+  title: { eye: '18 chapters', name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive guide to echocardiography.' },
   intro: 2,
   outro: 3,
   clips: [

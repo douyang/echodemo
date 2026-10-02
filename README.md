@@ -1,6 +1,6 @@
 # The Heart by Ultrasound
 
-An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and cardiac amyloidosis. Eighteen chapters in seven parts. Chapters 11 to 18 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. A menu in the header changes the heart that every chapter shows: normal, cardiac amyloidosis, ischemic cardiomyopathy, a Barlow mitral valve with severe regurgitation, or a bicuspid aortic valve with severe stenosis. Every guideline value carries its source.
+An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valvular disease, pericardial disease and cardiac amyloidosis. Eighteen chapters in seven parts. Chapters 11 to 18 each follow one disease from normal to its end stage: one slider that plays when the page opens, and several views that change together. A menu in the header changes the heart that every chapter shows: normal, cardiac amyloidosis, ischemic cardiomyopathy, a Barlow mitral valve with severe regurgitation, or a bicuspid aortic valve with severe stenosis. Every guideline value carries its source.
 
 ![Chapter 08, Planes: the standard views as planes through one heart, with the mitral valve selected](docs/screenshots/planes.webp)
 

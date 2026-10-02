@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart by Ultrasound</title>
-<meta name="description" content="An illustrated, interactive study of echocardiography for trainees: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valve disease, the pericardium and cardiac amyloidosis.">
+<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valvular disease, pericardial disease and cardiac amyloidosis.">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -17,9 +17,9 @@
 <div class="app" id="app">
 
   <header class="masthead">
-    <p class="eyebrow"><span class="eyebrow-long">An illustrated study · </span>Echocardiography</p>
+    <p class="eyebrow"><span class="eyebrow-long">An illustrated, interactive guide · </span>Echocardiography</p>
     <h1 class="title">The Heart by <em>Ultrasound.</em></h1>
-    <p class="subtitle">From a sound pulse to a diagnosis</p>
+    <p class="subtitle">Ultrasound physics, cardiac physiology, the standard views, ventricular function and cardiac disease</p>
   </header>
 
   <div class="tools">
@@ -58,15 +58,15 @@
   <main class="stage" id="stage">
     <figure class="fig is-active" id="fig-pulse">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">A transducer sends a short pulse into the chest. The pulse crosses the chest wall, the right ventricle, the septum, the left ventricle and the posterior wall. Echoes return from each boundary. An amplitude trace and one brightness line show the echoes by depth.</figcaption>
+      <figcaption class="sr-only">A transducer sends a short pulse into the chest. The pulse crosses the chest wall, the right ventricle, the septum, the left ventricle and the posterior wall. Echoes return from each boundary. An amplitude (A-mode) trace and a single brightness (B-mode) line display the echoes by depth.</figcaption>
     </figure>
     <figure class="fig" id="fig-image">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">A sector image of the heart builds one scan line at a time. A chosen artifact is drawn into the image.</figcaption>
+      <figcaption class="sr-only">A sector image of the heart is acquired one scan line at a time. A selected artifact is added to the image.</figcaption>
     </figure>
     <figure class="fig" id="fig-shift">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">An ultrasound beam meets flowing blood at an angle. Below, the Doppler display shows the measured velocity, the Nyquist limit and aliasing.</figcaption>
+      <figcaption class="sr-only">An ultrasound beam intersects flowing blood at an angle. The Doppler display below shows the measured velocity, the Nyquist limit and aliasing.</figcaption>
     </figure>
     <figure class="fig" id="fig-pressure">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -108,11 +108,11 @@
           <button type="button" data-val="none">Normal</button><button type="button" data-val="lad">LAD</button><button type="button" data-val="rca">RCA</button><button type="button" data-val="lcx">LCX</button>
         </div>
       </div>
-      <figcaption class="sr-only">Buttons for a normal heart and for an occluded LAD, RCA or circumflex artery. Seventeen-segment bullseye colored by the wall motion score of each segment, with the occluded artery drawn on it, and the apical four-, two- and three-chamber echo views, in which each segment moves by its score. The numbered segment buttons under the controls change the scores.</figcaption>
+      <figcaption class="sr-only">Buttons for a normal heart and for an occluded LAD, RCA or circumflex artery. Seventeen-segment bullseye colored by the wall motion score of each segment, with the occluded artery drawn on it, and the apical four-, two- and three-chamber echo views, in which each segment moves according to its score. The numbered segment buttons under the controls change the scores.</figcaption>
     </figure>
     <figure class="fig" id="fig-fill">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Diastolic function from normal to restrictive filling: an apical four-chamber view with the left atrium to scale, mitral inflow, septal and lateral tissue Doppler, pulmonary vein flow, left atrial strain and the tricuspid jet, with the 2025 diastolic algorithm and the path the current values take.</figcaption>
+      <figcaption class="sr-only">Diastolic function from normal to restrictive filling: an apical four-chamber view with the left atrium to scale, mitral inflow, septal and lateral tissue Doppler, pulmonary vein flow, left atrial strain and the tricuspid jet, with the 2025 diastolic algorithm and the path that the current values follow through it.</figcaption>
     </figure>
     <figure class="fig" id="fig-as">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -136,7 +136,7 @@
     </figure>
     <figure class="fig" id="fig-peri">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Pericardial effusion from none to tamponade: an apical four-chamber view with the fluid round the heart and, in tamponade, the right atrium and right ventricle folding in; mitral inflow, tricuspid inflow and hepatic vein flow over a breath; a parasternal long-axis view with the fluid in front of the descending aorta; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
+      <figcaption class="sr-only">Pericardial effusion from none to tamponade: an apical four-chamber view with the fluid around the heart and, in tamponade, collapse of the right atrium and right ventricle; mitral inflow, tricuspid inflow and hepatic vein flow through one respiratory cycle; a parasternal long-axis view with the fluid in front of the descending aorta; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-amyloid">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
