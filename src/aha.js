@@ -1,5 +1,5 @@
 // The 17 AHA segments of the LV (Lang 2015) and the coronary territories (Javadi 2010), shared by
-// chapter 10 and the disease hearts (gl/phenomesh.js).
+// chapter 09 and the disease hearts (gl/phenomesh.js).
 export const TERRITORY = { lad: [1, 2, 7, 8, 13, 14, 17], rca: [3, 4, 9, 10, 15], lcx: [5, 6, 11, 12, 16] };
 
 /** The segment at level h (0 apex .. 1 mitral annulus) and angle th (deg; 90 anterior, 180 septal). */

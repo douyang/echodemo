@@ -2,7 +2,7 @@
 // beat, the length, the tour, the holds, moves and cards (video/timeline.js layout, or
 // video/chapters.js chapterLayout), the events and the windows (a chapter's steps).
 //   node tools/score/events.mjs A > /tmp/A.json        a cut of the views video
-//   node tools/score/events.mjs as > /tmp/as.json      the video of chapter 12 (its key)
+//   node tools/score/events.mjs as > /tmp/as.json      the video of chapter 11 (its key)
 //   node tools/score/events.mjs intro > /tmp/i.json    the intro (video/reel.js)
 import { CUTS } from '../../video/cuts.js';
 import { VIDEOS, chapterEvents } from '../../video/chapters.js';

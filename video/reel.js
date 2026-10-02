@@ -1,20 +1,21 @@
-// The intro: one clip from each of nine chapters, between a title card and the end card. The
+// The intro: one clip from each of eight chapters, between a title card and the end card. The
 // cuts fall on the bar lines of one score. No DOM. The pages, the render tool and the score read it.
 //  - video/chapter.html?reel=k draws a chapter clip. video/index.html?reel=k draws the clip of 07.
 //  - tools/render-video.mjs --reel renders the clips and joins them in order.
 //  - tools/score/pulse.py intro writes the score. The clips are its windows.
 //
-// The clips come from a review of the 17 chapter videos and the views video. Each is the most
+// The clips come from a review of the chapter videos and the views video. Each is the most
 // striking and most useful moment of its part of the site. No two clips teach the same lesson or
-// show the same layout. Left out, with the reason:
+// show the same layout. Chapters 07 and 08 became one chapter after the review: its clip has the
+// two clips' time and the chapter's three panes (video/cuts.js, cut P). Left out, with the reason:
 //  - 01, 03, 04: diagrams. The valve clips show Doppler in use.
 //  - 06: the cycle clip and the valve clips show its loads.
-//  - 09, 11: dense panels. LV function shows in the segments and amyloid clips.
-//  - 13, 14, 16: the layout of 12 and 15.
+//  - 08, 10: dense panels. LV function shows in the segments and amyloid clips.
+//  - 12, 13, 15: the layout of 11 and 14.
 //
 // A clip has ch (the chapter's key) and bars (its length in bars of the score). A chapter clip has
 // a video in the shape of video/chapters.js. The clip of 07 has a cut of the views video
-// (video/cuts.js). Holds and moves are in bars. Captions are the chapter's own text: its live text
+// (video/cuts.js) in the chapter's three panes. Holds and moves are in bars. Captions are the chapter's own text: its live text
 // at the step's state, or a sentence from its page.
 import { BEAT, FPS } from './timeline.js';
 import { CHAPTERS } from '../src/chapters.js';
@@ -24,14 +25,13 @@ export const BPM = 105;
 /** Heartbeats (60/70 s) in a bar. */
 export const BAR = 240 / BPM / BEAT;
 
-const NINE = 'plax,psax_av,psax_mv,psax_pm,a4c,a2c,a3c,sc4c,ssn';
 /** Two states of a page: a hold, a move, then a longer hold for the main caption. */
 const TWO = { hold0: 0.75, move: 1, hold1: 1.25 };
 
 export const REEL = {
   key: 'intro',
   // the title card: the site's name and the start of its description (index.html, meta description)
-  title: { eye: '18 chapters', name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive guide to echocardiography.' },
+  title: { eye: '17 chapters', name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive guide to echocardiography.' },
   intro: 2,
   outro: 3,
   clips: [
@@ -44,14 +44,10 @@ export const REEL = {
       { set: { tcycle: 0, crun: false }, drift: { tcycle: 856 }, name: 'The cardiac cycle',
         line: 'Mitral and aortic valve opening and closure divide the cycle into isovolumic contraction, ejection, isovolumic relaxation and filling.', hold: 3 },
     ] } },
-    // 07: the probe turns 90° at the left sternal border, from the long axis to the short axis
-    { ch: 'windows', bars: 3, cut: { views: ['plax', 'psax_av'], winHold: 1, winMove: 1, lastHold: 1 } },
-    // 08: the nine planes in the heart, then the camera to the apex. The first line is from the chapter's dek.
-    { ch: 'planes', bars: 3, video: { pane: '', side: false, steps: [
-      { set: { pviews: NINE, pfocus: 'plax', pcam: 'front', pstruct: 'none', pheart: true, pcut: false, plines: true, pfree: false },
-        name: 'Nine standard imaging planes', line: 'Each standard view is a plane through the same heart.', hold: 0.625 },
-      { set: { pviews: 'a4c,a5c,a2c,a3c', pfocus: 'a2c', pcam: 'apex' }, name: 'Apical planes, viewed from the apex', line: 'The apical four-, two- and three-chamber planes intersect along the LV long axis.', move: 1.25, hold: 1.125 },
-    ] } },
+    // 07: the probe turns 90° at the left sternal border, from the long axis to the short axis, tilts
+    // to the mitral valve level, then crosses the chest to the apex; one plane moves in all three panes
+    { ch: 'windows', bars: 6, cut: { views: ['plax', 'psax_av', 'psax_mv', 'a4c'], left: 'planes', probe: 'move',
+      winHold: 1, winMove: 1, hold: 0.75, move: 0.5, lastHold: 0.75 } },
     // 10: an LAD occlusion lights its territory on the bullseye and in the three apical views
     { ch: 'segments', bars: 3, video: { pane: '17-segment model', steps: [
       { set: { culprit: 'none', wm: 3 }, name: 'Normal wall motion', line: 'All 16 segments are scored 1 (normal), and the wall motion score index is 1.00.', hold: TWO.hold0 },
@@ -118,8 +114,8 @@ export function clipCut(k, cards) {
   const c = reelLayout().clips[k];
   if (!c.cut) throw new Error(`clip ${k} (${c.ch}) is not a views clip`);
   const b = (x) => x * BAR;
-  const { views, winHold, winMove, lastHold, hold = winHold, move = winMove } = c.cut;
-  return { id: 'R', name: 'Intro', aspect: '16:9', theme: 'dark', caption: 'compact', cards, views,
+  const { views, winHold, winMove, lastHold, hold = winHold, move = winMove, left, probe } = c.cut;
+  return { id: 'R', name: 'Intro', aspect: '16:9', theme: 'dark', caption: 'compact', cards, views, left, probe,
     intro: 0, hold: b(hold), move: b(move), winHold: b(winHold), winMove: b(winMove), lastHold: b(lastHold), outro: 0 };
 }
 

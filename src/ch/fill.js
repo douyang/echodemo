@@ -1,4 +1,4 @@
-// 11 Fill: diastolic function and left atrial pressure. One slider walks the filling pattern
+// 10 Fill: diastolic function and left atrial pressure. One slider walks the filling pattern
 // from normal to restrictive and Play animates it; the 2025 ASE algorithm (sinus rhythm) runs
 // on the values. The LA, the pulmonary veins and LA strain change with the grade.
 import { Sheet, clamp, mix, MONO, SANS } from '../sketch.js';

@@ -1,4 +1,4 @@
-// 10 Segments: regional wall motion. The 17-segment model as a bull's-eye and as the three
+// 09 Segments: regional wall motion. The 17-segment model as a bull's-eye and as the three
 // apical views that show it. The buttons on the figure occlude the LAD, RCA or circumflex and
 // set the motion of its territory; each segment can also be scored by hand: tap it on the
 // bull's-eye or on an apical view.

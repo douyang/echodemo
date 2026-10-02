@@ -1,4 +1,4 @@
-// 09 Eject: systolic function. Left: LV volumes by the biplane method of disks in the apical
+// 08 Eject: systolic function. Left: LV volumes by the biplane method of disks in the apical
 // four- and two-chamber views: each echo view with its traced border and disks, above the disk
 // model of the same LV, and what foreshortening does to them. Right: three measures of RV
 // systolic function (TAPSE, tissue Doppler S′, fractional area change).

@@ -1,5 +1,5 @@
-// One WebGL stage for the chapters that show the 3D heart (07 Windows, 08 Planes): the heart
-// mesh can live in one scene only, and one GL context is lighter on a phone.
+// One WebGL stage for the chapter that shows the 3D heart (07 Views): the heart mesh can live in
+// one scene only. Its second pane (gl/stage3d.js, Pane3D) draws the same scene.
 let pending = null;
 
 export function sharedStage() {

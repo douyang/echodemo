@@ -1,4 +1,4 @@
-// 16 Tricuspid regurgitation: one slider from no leak to torrential TR. The orifice area rises
+// 15 Tricuspid regurgitation: one slider from no leak to torrential TR. The orifice area rises
 // in step with the slider; the orifice turns elliptical as the annulus dilates, so the vena
 // contracta grows faster than a round orifice would give. The right heart and the veins follow.
 // Grades: ASE 2017 to severe; EACVI 2022 Table 16 for massive and torrential.
