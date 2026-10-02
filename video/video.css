@@ -101,3 +101,28 @@ html, body { margin: 0; padding: 0; background: var(--ground); overflow: hidden;
 .v .card-title { font-size: 150px; }
 .v .card-sub { font-size: 44px; }
 .v .card-end { font-size: 104px; line-height: 1.02; }
+
+/* ---------------------------------------------------------------- chapter videos (video/chapter.js) */
+/* the caption's line under the step's name */
+.cap-text { margin-top: 16px; font: 400 25px/1.32 var(--sans); color: var(--ink-2); text-wrap: pretty; }
+/* the chapter's number and part over the title */
+.card-eye { position: absolute; margin: 0; font: 500 20px/1 var(--sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3); }
+.card-eye span { color: var(--accent); }
+/* the measurements: the chapter's readouts, label over value */
+.ro-list { position: absolute; left: 30px; right: 26px; top: 6px; margin: 0; display: grid; gap: 22px; }
+.ro { display: grid; gap: 7px; }
+.ro dt { font: 500 13px/1.2 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); }
+.ro dd { margin: 0; font: 500 38px/1.05 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.ro dd small { margin-left: 10px; font: 400 18px/1 var(--sans); color: var(--ink-3); }
+.ro.text dd { font: 500 25px/1.25 var(--sans); }
+.ro.flag dd { color: var(--flag-2); }
+.ro.flag dt::after { content: ""; display: inline-block; width: 7px; height: 7px; margin: 0 0 2px 10px; border-radius: 50%; background: var(--flag-2); vertical-align: middle; }
+/* a 3D chapter's figure (chapter 08): the site's split of the 3D view and the echo (src/styles.css) */
+#pane-fig .split { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
+#pane-fig .split.wide { grid-template-columns: 1.45fr 1fr; }
+#pane-fig .split > div { position: relative; min-width: 0; }
+#pane-fig .gl-host { position: absolute; inset: 0; }
+#pane-fig .gl-host canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#pane-fig .ink { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#pane-fig .pane-2d canvas.fig-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#pane-fig .pane-label { position: absolute; top: -31px; left: 22px; margin: 0; font: 500 13px/1 var(--sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3); }

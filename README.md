@@ -168,7 +168,7 @@ src/gl/rvdetail.js  the left pulmonary veins, the papillary muscles and the RV's
 src/norms.js        normal values and cut-offs
 src/refs.js         references
 assets/             heart mesh (JSON), anatomy landmarks, poster image, favicon (SVG; PNGs for Safari and the iPhone home screen)
-video/              the views video: page, cuts, timing, fonts
+video/              the views video and the chapter videos: pages, cuts, chapter steps, timing, fonts
 tools/              video tools: render, storyboard
 tools/score/        the video soundtracks: Bright pulse (pulse.py) on the InVision sound engine (synth.py); the first brand scores (score.py), kept (Python)
 ```
@@ -214,6 +214,42 @@ node tools/storyboard.mjs --cut=A --moves          # one frame of each view on o
 ```
 
 The videos go to `video/out/`, which git ignores. Each frame depends on its time alone, so parallel jobs join without a seam. Each job logs its progress every 30 frames. The cuts, their timing and the captions are in `video/cuts.js` and `video/timeline.js`.
+
+## The chapter videos
+
+`video/chapter.html?ch=as` plays one chapter as a video, in the frame of the views video's dark cuts. Every chapter has one except 07, whose video is the views video above. The chapter's figure is the site's own (`src/ch/*.js`), on paper and drawn 1.3 times larger than its layout. It steps through the chapter's states on the heartbeat (`video/chapters.js`): the steps follow the chapter's tour (the Play button), slowed, with a hold on each step. Numbers ease from one step to the next; the severity pages move their slider from the middle of one grade band to the middle of the next.
+
+- The caption names each step. By default its name and line are the chapter's live sentence at that step, with its numbers; a step can name its own sentences or quote a readout. The progress line names the steps. Where the figure has no measurement strip of its own, a pane beside it lists the chapter's readouts as they change.
+- The page runs on a clock of its own (`video/chapter.html`): `performance.now()` reads the time of the frame being drawn, and the chapter's motion (its `anim()`) runs in steps of 1/30 s from the start. A frame therefore depends on the frames before it: a chapter video renders in order in one job, and `--jobs` renders that many chapters at once. Chapter 08 draws its 3D heart on the frames the page draws.
+- The soundtrack is *Bright pulse* (`tools/score/pulse.py`), as on the views video: the chapter's steps are its windows, so the bass joins at the second step and the pluck and the pad brighten step by step. Seed 93 and the chapter's number. The last hold takes up to six more beats (two at most in these videos), so that the end card falls on a bar line after whole four-bar phrases near 109 BPM.
+- Title card: the chapter's number, part and title, and the first sentence of its summary. End card as on the views video.
+
+| Chapter | Steps | Length |
+|---|---|---|
+| 01 Pulse | 2, 3.5, 5 and 7 MHz; time gain compensation | 0:48 |
+| 02 Image | 16 and 24 cm deep; reverberation, acoustic shadow, mirror image, side lobe | 0:49 |
+| 03 Shift | 0° and 60° to the flow; past the Nyquist limit; continuous wave; color, then color aliasing | 0:49 |
+| 04 Pressure | Stroke volume; a 2 mm caliper error; RV systolic pressure at TR 2.4, 3.0 and 3.5 m/s | 0:48 |
+| 05 Cycle | The seven phases of one beat, the cursor running through each | 0:50 |
+| 06 Loop | Normal, HFrEF, HFpEF, pressure load, volume load | 0:48 |
+| 08 Planes | Nine views; the apical planes from the apex; the short-axis stack from the side; the aortic valve in several views | 0:49 |
+| 09 Eject | Normal LV; dilated LV, EF 30%; foreshortened views; normal RV; RV dysfunction | 0:48 |
+| 10 Segments | Normal; LAD, RCA and circumflex occlusion | 0:48 |
+| 11 Fill | Normal; grades 1, 2 and 3 | 0:48 |
+| 12 Aortic stenosis | The eight grade bands, none to severe with low flow | 0:57 |
+| 13 Aortic regurgitation | None to severe with LV dysfunction | 0:48 |
+| 14 Mitral stenosis | None to severe; severe at 110 beats a minute | 0:48 |
+| 15 Mitral regurgitation | None to severe with LV dysfunction | 0:48 |
+| 16 Tricuspid regurgitation | None to torrential | 0:48 |
+| 17 Pericardium | No effusion to tamponade | 0:48 |
+| 18 Cardiac amyloidosis | A normal wall to apical sparing | 0:48 |
+
+```
+python3 tools/score/pulse.py as video/out/chapter-as.wav
+node tools/render-video.mjs --ch=as --audio=video/out/chapter-as.wav
+node tools/render-video.mjs --ch=all --jobs=3 --audio=auto     # every chapter video, three at a time
+node tools/storyboard.mjs --ch=as                              # one frame of each step on one sheet
+```
 
 ## Checks run before this commit
 

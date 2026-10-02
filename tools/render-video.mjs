@@ -1,4 +1,5 @@
-// Render a cut of the "Echo views" video (video/index.html) to MP4, or to still frames.
+// Render a cut of the "Echo views" video (video/index.html), or a chapter video
+// (video/chapter.html), to MP4, or to still frames.
 //   node tools/render-video.mjs --cut=A [--base=http://127.0.0.1:8790] [--out=video/out]
 //        [--jobs=2]                      render in parallel segments, then join them
 //        [--from=0] [--to=12.5]          render part of the cut (seconds)
@@ -6,6 +7,11 @@
 //        [--audio=video/out/echo-views-A.wav]   mux this soundtrack (tools/score/pulse.py); a
 //                                        part of the cut takes the same part of the soundtrack
 //        [--theme=light|dark]            the other palette, for a trial
+//   node tools/render-video.mjs --ch=as [--audio=video/out/chapter-as.wav] [--stills=...]
+//   node tools/render-video.mjs --ch=all --jobs=3 --audio=auto    every chapter video, 3 at a time
+//        A chapter video renders in order in one job (its frames depend on the frames before:
+//        video/chapter.js); --jobs runs that many chapters at once. --audio=auto takes
+//        video/out/chapter-<key>.wav (tools/score/pulse.py <key>).
 // Serve the repository root first: python3 -m http.server 8790
 //
 // Chromium steps window.__video.frame(i) and captures the frame over CDP; ffmpeg encodes the
@@ -18,8 +24,9 @@ import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
 import { CUTS } from '../video/cuts.js';
+import { VIDEOS, KEYS } from '../video/chapters.js';
 import { FPS, layout } from '../video/timeline.js';
-import { openCut } from './video-page.mjs';
+import { openCut, openChapter } from './video-page.mjs';
 
 const arg = (k, d) => {
   const a = process.argv.find((x) => x.startsWith(`--${k}=`));
@@ -33,7 +40,7 @@ const audio = arg('audio', '');
 const theme = arg('theme', '');
 const jobs = Math.max(1, Number(arg('jobs', '1')));
 const worker = arg('segment', '');   // internal: frames a:b into this file
-if (!CUTS[cut]) throw new Error(`no cut ${cut}`);
+const ch = arg('ch', '');
 fs.mkdirSync(out, { recursive: true });
 
 // the JPEGs are full-range BT.601; the video is limited-range BT.709
@@ -47,8 +54,8 @@ const run = (cmd, args) => new Promise((res, rej) => {
 });
 
 /** Frames [a, b) into an MP4 with no audio. */
-async function segment(a, b, file, label = '') {
-  const { capture, frame, errors, close } = await openCut({ cut, base, theme });
+async function segment(a, b, file, label = '', open = () => openCut({ cut, base, theme })) {
+  const { capture, frame, errors, close } = await open();
   for (let i = Math.max(0, a - 2); i < a; i++) await frame(i);
   const ff = spawn('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'image2pipe', '-framerate', String(FPS),
     '-c:v', 'mjpeg', '-i', '-', ...ENCODE, file], { stdio: ['pipe', 'inherit', 'inherit'] });
@@ -71,6 +78,12 @@ async function segment(a, b, file, label = '') {
   if (errors.length) console.log(errors.join('\n'));
   return errors;
 }
+
+if (ch) {
+  await chapters(ch);
+  process.exit(0);
+}
+if (!CUTS[cut]) throw new Error(`no cut ${cut}`);
 
 if (worker) {
   const [a, b] = arg('frames', '0:0').split(':').map(Number);
@@ -130,3 +143,56 @@ if (audio) {
 }
 const min = (Date.now() - t0) / 60000;
 console.log('wrote', mp4, `in ${min.toFixed(1)} min (${((min * 60) / Math.max(1, b0 - a0)).toFixed(2)} s/frame of wall time with ${n} job(s))`);
+
+// ---------------------------------------------------------------- chapter videos
+/** One chapter video, or several (one process each, `jobs` at a time). */
+async function chapters(list) {
+  const keys = list === 'all' ? KEYS : list.split(',').map((k) => k.trim().toLowerCase());
+  for (const k of keys) if (!VIDEOS[k]) throw new Error(`no chapter video ${k} (video/chapters.js)`);
+  if (keys.length > 1) {
+    const self = fileURLToPath(import.meta.url), t0 = Date.now(), failed = [];
+    let next = 0;
+    const lane = async () => {
+      while (next < keys.length) {
+        const k = keys[next++];
+        const a = audio === 'auto' ? [`--audio=${path.join(out, `chapter-${k}.wav`)}`] : [];
+        await run('node', [self, `--ch=${k}`, `--base=${base}`, `--out=${out}`, ...a]).catch((e) => failed.push(`${k}: ${e.message}`));
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(jobs, keys.length) }, lane));
+    console.log(`${keys.length - failed.length} of ${keys.length} chapter videos in ${((Date.now() - t0) / 60000).toFixed(1)} min${failed.length ? `; failed: ${failed.join('; ')}` : ''}`);
+    if (failed.length) process.exit(2);
+    return;
+  }
+  const k = keys[0], stem = `chapter-${k}`;
+  const open = () => openChapter({ ch: k, base });
+  const wav = audio === 'auto' ? path.join(out, `${stem}.wav`) : audio;
+  if (stills) {
+    const { info, capture, frame, errors, close } = await open();
+    for (const s of stills.split(',').map(Number).sort((x, y) => x - y)) {
+      await frame(Math.min(info.frames - 1, Math.round(s * info.fps)));
+      const file = path.join(out, `still-${stem}-${s.toFixed(2).padStart(7, '0')}.png`);
+      fs.writeFileSync(file, await capture('png'));
+      console.log('still', file);
+    }
+    await close();
+    console.log(errors.length ? errors.join('\n') : 'no console errors or warnings');
+    if (errors.length) process.exit(2);
+    return;
+  }
+  const L = (await import('../video/chapters.js')).chapterLayout(VIDEOS[k]);
+  const t0 = Date.now();
+  const silent = path.join(out, `.${stem}-video.mp4`), mp4 = path.join(out, `${stem}${wav ? '' : '-silent'}.mp4`);
+  console.log(`chapter ${k}: ${L.duration.toFixed(2)} s, ${L.frames} frames, in order in one job`);
+  const errs = await segment(0, L.frames, silent, `[${k}] `, open);
+  if (wav) {
+    await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', silent, '-i', wav, '-map', '0:v', '-map', '1:a', '-c:v', 'copy',
+      '-c:a', 'aac', '-aac_coder', 'fast', '-b:a', '256k', '-shortest', '-movflags', '+faststart', mp4]);
+    fs.unlinkSync(silent);
+  } else {
+    await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', silent, '-c', 'copy', '-movflags', '+faststart', mp4]);
+    fs.unlinkSync(silent);
+  }
+  console.log('wrote', mp4, `in ${((Date.now() - t0) / 60000).toFixed(1)} min`);
+  if (errs.length) process.exit(2);
+}

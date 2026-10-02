@@ -1,5 +1,6 @@
 // A storyboard of a cut: the title card, one frame of each view and the end card, on one sheet.
 //   node tools/storyboard.mjs --cut=A [--base=http://127.0.0.1:8790] [--out=video/out]
+//   node tools/storyboard.mjs --ch=as       a chapter video: one frame of each step
 //        [--video=video/out/echo-views-A.mp4]   take the frames from a rendered cut instead
 //        [--moves]                              add the middle of each move between windows
 //        [--theme=light|dark]
@@ -11,9 +12,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { CUTS } from '../video/cuts.js';
+import { VIDEOS, chapterLayout } from '../video/chapters.js';
 import { layout, FPS, BEAT } from '../video/timeline.js';
 import { CODE } from '../src/views.js';
-import { launch, openCut } from './video-page.mjs';
+import { launch, openCut, openChapter } from './video-page.mjs';
 
 const arg = (k, d) => {
   const a = process.argv.find((x) => x.startsWith(`--${k}=`));
@@ -25,16 +27,19 @@ const out = arg('out', 'video/out');
 const video = arg('video', '');
 const theme = arg('theme', '');
 const moves = process.argv.includes('--moves');
-const C = CUTS[cut];
+const ch = arg('ch', '').toLowerCase();
+const V = ch ? VIDEOS[ch] : null;
+if (ch && !V) throw new Error(`no chapter video ${ch}`);
+const C = ch ? { aspect: '16:9', theme: 'dark', name: ch } : CUTS[cut];
 if (!C) throw new Error(`no cut ${cut}`);
-const L = layout(C);
+const L = ch ? chapterLayout(V) : layout(C);
 const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 // the moments: the title, late in each hold, the middle of each move between windows, the end
 const shots = [];
 for (const s of L.segs) {
   if (s.kind === 'title') shots.push({ t: s.t0 + 0.75 * (s.t1 - s.t0), label: 'Title card' });
-  if (s.kind === 'hold') shots.push({ t: s.t0 + Math.max(0.8, 0.72 * (s.t1 - s.t0)), label: `${String(s.i + 1).padStart(2, '0')}  ${CODE[s.view]}` });
+  if (s.kind === 'hold') shots.push({ t: s.t0 + Math.max(0.8, 0.72 * (s.t1 - s.t0)), label: `${String(s.i + 1).padStart(2, '0')}  ${ch ? '' : CODE[s.view]}`, step: ch ? s.i : null });
   if (s.kind === 'move' && s.cross && moves) shots.push({ t: (s.t0 + s.t1) / 2, label: `${CODE[s.from]} → ${CODE[s.to]}`, move: true });
   if (s.kind === 'end') shots.push({ t: s.t1 - 0.4, label: 'End card' });
 }
@@ -52,8 +57,13 @@ if (video) {
   }
   fs.rmSync(tmp, { recursive: true, force: true });
 } else {
-  const { info, frame, capture, errors, close } = await openCut({ cut, base, theme, browser });
+  const { info, frame, capture, errors, close } = ch ? await openChapter({ ch, base, browser }) : await openCut({ cut, base, theme, browser });
   if (info.capScale < 1) console.log(`captions scaled to ${(info.capScale * 100).toFixed(0)}% so the longest one fits its box`);
+  if (ch) {
+    // a step without a name of its own on the progress line goes by its caption
+    C.title = `${info.num} · ${info.name}`;
+    for (const s of shots) if (s.step != null) s.label = `${String(s.step + 1).padStart(2, '0')}  ${V.steps[s.step].track || info.caps[s.step].name}`;
+  }
   for (const s of shots) {
     if (s.i > 0) await frame(s.i - 1);
     await frame(s.i);
@@ -71,8 +81,9 @@ const gap = 14, pad = 36;
 const sheetW = pad * 2 + cols * tw + (cols - 1) * gap;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const wins = C.winMove != null ? `, ${C.winHold ?? C.hold} + ${C.winMove} across windows` : '';
-const head = `Cut ${cut} · ${C.name}`;
-const sub = `${C.aspect} · ${theme || C.theme} · ${C.views.length} views · ${mmss(L.duration)} (${L.duration.toFixed(1)} s, ${L.beats} beats at 70/min) · hold + move ${C.hold} + ${C.move} beats${wins} · captions ${C.caption}`;
+const head = ch ? `Chapter ${C.title}` : `Cut ${cut} · ${C.name}`;
+const sub = ch ? `16:9 · dark · ${V.steps.length} steps · ${mmss(L.duration)} (${L.duration.toFixed(1)} s, ${L.beats} beats at 70/min)`
+  : `${C.aspect} · ${theme || C.theme} · ${C.views.length} views · ${mmss(L.duration)} (${L.duration.toFixed(1)} s, ${L.beats} beats at 70/min) · hold + move ${C.hold} + ${C.move} beats${wins} · captions ${C.caption}`;
 const html = `<!doctype html><html><head><meta charset="utf-8"><style>
 @font-face { font-family: "Plex"; src: url("${base}/video/fonts/IBMPlexSans-400.woff2"); font-weight: 400; }
 @font-face { font-family: "Plex"; src: url("${base}/video/fonts/IBMPlexSans-600.woff2"); font-weight: 600; }
@@ -92,7 +103,7 @@ const page = await browser.newPage({ viewport: { width: sheetW, height: 600 }, d
 await page.setContent(html, { waitUntil: 'load' });
 await page.evaluate(() => document.fonts.ready);
 fs.mkdirSync(out, { recursive: true });
-const file = path.join(out, `storyboard-${cut}${theme ? `-${theme}` : ''}.jpg`);
+const file = path.join(out, ch ? `storyboard-chapter-${ch}.jpg` : `storyboard-${cut}${theme ? `-${theme}` : ''}.jpg`);
 await page.screenshot({ path: file, type: 'jpeg', quality: 88, fullPage: true });
 await browser.close();
 console.log(`wrote ${file}: ${shots.length} frames`);

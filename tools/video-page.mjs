@@ -29,14 +29,25 @@ export async function launch() {
  * window.__video.ready (frames, fps, duration, width, height, segs).
  */
 export async function openCut({ cut, base, theme = '', browser = null }) {
+  return openPage(`${base}/video/index.html?cut=${cut}${theme ? `&theme=${theme}` : ''}`, SIZE[CUTS[cut].aspect], browser);
+}
+
+/**
+ * Open a chapter video (video/chapter.html?ch=key), 16:9: the same handles. Its frames come in
+ * order (video/chapter.js): frame(i) runs the chapter's motion up to frame i first.
+ */
+export async function openChapter({ ch, base, browser = null }) {
+  return openPage(`${base}/video/chapter.html?ch=${ch}`, SIZE['16:9'], browser);
+}
+
+async function openPage(url, [W, H], browser) {
   const own = !browser;
   browser = browser || await launch();
-  const [W, H] = SIZE[CUTS[cut].aspect];
   const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
   const errors = [];
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`${m.type()}: ${m.text()}`); });
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-  await page.goto(`${base}/video/index.html?cut=${cut}${theme ? `&theme=${theme}` : ''}`, { waitUntil: 'load' });
+  await page.goto(url, { waitUntil: 'load' });
   const info = await page.evaluate(() => window.__video.ready);
   const cdp = await page.context().newCDPSession(page);
   const capture = async (format = 'jpeg') => Buffer.from((await cdp.send('Page.captureScreenshot',
