@@ -274,7 +274,8 @@ export default {
     const m = model(s[KEY]);
     const g = m.grade;
     const sev = m.s >= 0.4;
-    const hv = m.hvS > 0.02 ? 'hepatic vein systolic flow reverses' : Math.abs(m.hvS) < Math.abs(m.hvD) ? 'hepatic vein systolic flow is blunted' : 'hepatic vein flow remains systolic-dominant';
+    const hvS = q2(m.hvS), hvD = q2(m.hvD);   // as the hepatic vein panel rounds them, so the two agree
+    const hv = hvS > 0.02 ? 'hepatic vein systolic flow reverses' : Math.abs(hvS) < Math.abs(hvD) ? 'hepatic vein systolic flow is blunted' : 'hepatic vein flow remains systolic-dominant';
     const beyond = m.s >= 0.6 ? ` The EACVI defines ${g} TR, a grade beyond severe, by the vena contracta and the EROA${cite('lancellotti2022')}. As the RV and RA pressures approach each other, the peak TR velocity falls to ${fmt(m.v, 1)} m/s and no longer reflects the PA systolic pressure${cite('zoghbi2017')}.` : '';
     return {
       readouts: [

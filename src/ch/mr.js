@@ -307,7 +307,8 @@ export default {
     const g = m.grade;
     const sev = g.startsWith('severe');
     const stage = !sev ? '' : g === 'severe' ? ` The LVEF is ${fmt(m.ef)}% and the LV end-systolic diameter is ${fmt(m.lvesd, 1)} cm, which corresponds to ACC/AHA stage C1 in the absence of symptoms${cite('otto2020')}.` : ` <span class="k-red">An LVEF of ${fmt(m.ef)}% and an LV end-systolic diameter of ${fmt(m.lvesd, 1)} cm meet at least one ACC/AHA stage C2 criterion (LVEF ≤60% or LV end-systolic diameter ≥4.0 cm)</span>${cite('otto2020')}.`;
-    const pv = m.pvS < -0.02 ? 'systolic flow in the pulmonary veins reverses' : m.pvS < 0.05 ? 'systolic flow in the pulmonary veins stops' : m.sd < 1 ? 'pulmonary vein systolic flow is blunted' : 'pulmonary vein flow remains systolic-dominant';
+    const pvS = q2(m.pvS);   // as the pulmonary vein panel rounds it, so the two agree
+    const pv = pvS < -0.02 ? 'systolic flow in the pulmonary veins reverses' : pvS < 0.05 ? 'systolic flow in the pulmonary veins stops' : m.sd < 1 ? 'pulmonary vein systolic flow is blunted' : 'pulmonary vein flow remains systolic-dominant';
     return {
       readouts: [
         { k: 'EROA', v: fmt(m.eroa, 2), u: 'cm²', flag: m.eroa >= 0.4 },
