@@ -838,15 +838,24 @@ function a4cShape(g, c, ph, dyn = {}) {
   };
   const rvFree = rvFreeAt(rvIn);
   const rvC = centroid([...rvSep.slice(iTv, iRvApex + 1), ...rvFree]);
-  const rvFreeT = trabeculate(rvFree, (u) => 0.17 * (1 - smooth(u / 0.45)), rvC, 1.3);
+  // coarse trabeculae on the free wall's apical half, the deepest at the apex
+  const rvFreeT = trabeculate(rvFree, (u) => 0.24 * (1 - smooth((u - 0.1) / 0.5)), rvC, 1.3);
   const rvOut = offsetAway(rvFree, rvWall, rvC);
   const rvRib = ribbon(rvFreeT, rvOut);
   const rvSepEndo = rvSep.slice(iTv, iRvApex + 1);
+  // and on the septal face of the apical third
+  const rvSepEndoT = trabeculate(rvSepEndo, (u) => 0.12 * smooth((u - 0.62) / 0.3), rvC, 2.4);
   // moderator band: septum to free wall where the apical third of the RV begins
   const mbS = rvSep[Math.round(N * 0.56)];
   let jb = 0, db = Infinity;
   for (let j = 0; j < rvFree.length * 0.6; j++) { const d = Math.abs(dot(sub(rvFree[j], mbS), ax)); if (d < db) { db = d; jb = j; } }
   const mb = spline([add(mbS, mul(out, 0.05)), add(lerp2(mbS, rvFree[jb], 0.5), mul(ax, 0.22)), rvFree[jb]], 6);
+  // thin trabeculae across the apex, beyond the band: [septum (fraction of N), free wall (fraction
+  // from the apex), bow along the axis]
+  const rvStrands = [[0.66, 0.1, 0.06], [0.62, 0.2, -0.05], [0.7, 0.05, 0.03]].map(([fs, ff, bend]) => {
+    const a = rvSep[Math.round(N * fs)], b = along(rvFree, ff);
+    return spline([a, add(lerp2(a, b, 0.5), mul(ax, bend)), b], 5);
+  });
   // left atrium below the mitral annulus; the septal side follows the atrial septum
   const ldown = unit(add(mul(ax, -1), mul(nl, 0.12)));
   const laPts = [
@@ -932,7 +941,7 @@ function a4cShape(g, c, ph, dyn = {}) {
   const medi = [[raC[0] - raW * 0.95, yDeep - 1.1], [laC[0] + laW * 0.95, yDeep - 1.1], [laC[0] + laW + 3.5, 30], [raC[0] - raW - 3.5, 30]];
   const daC = add(laPts[4], add(mul(ldown, 1.45), mul(nl, 0.55)));
   const shape = {
-    A, B, S0, L0, TS, TL, Ra, ax, nl, out, lvC, rvC, laC, raC, lvCav, lvCavT, laCav, raCav, rvFree, rvFreeT, rvSep, rvSepEndo,
+    A, B, S0, L0, TS, TL, Ra, ax, nl, out, lvC, rvC, laC, raC, lvCav, lvCavT, laCav, raCav, rvFree, rvFreeT, rvSep, rvSepEndo, rvSepEndoT, rvStrands,
     lvOut, rvOut, laOut, raOut, ivsRib, lvRib, rvRib, laRibs, raRib, pvWalls, crux, annuli, pm, mb, mv, tv, chords, mvShut: ph.mvShut,
     daRing: ring(daC, 0.95, 1.17, 28), daLumen: ellipse(daC, 0.95, 0.95, 28), lvW, lvL, rvW, laW, laL, raW, raL, ma, ta, fat,
   };
@@ -978,9 +987,10 @@ function a4cItems(S, Sr, g) {
     { polys: S.annuli, refs: Sr.annuli, e: DB.fibrous + 1 },
     { polys: [S.pm], refs: [Sr.pm], e: DB.myo },
     { lines: [S.mb], refs: [Sr.mb], e: DB.myo, w: 0.3 },
+    { lines: S.rvStrands, refs: Sr.rvStrands, e: DB.myo - 2, w: 0.12 },
     { lines: S.pvWalls, refs: Sr.pvWalls, e: -7, w: 0.1 },
     { borders: [S.lvCavT], refs: [Sr.lvCavT], e: DB.myo, spec: 8 },
-    { borders: [S.rvSepEndo, S.rvFreeT], refs: [Sr.rvSepEndo, Sr.rvFreeT], e: DB.myo, spec: 7 },
+    { borders: [S.rvSepEndoT, S.rvFreeT], refs: [Sr.rvSepEndoT, Sr.rvFreeT], e: DB.myo, spec: 7 },
     { borders: [S.laCav, S.raCav], refs: [Sr.laCav, Sr.raCav], e: DB.myo - 2, spec: 6 },
     { borders: [S.lvOut, S.rvOut], refs: [Sr.lvOut, Sr.rvOut], e: DB.myo, spec: 6 },
     { borders: [S.peri], refs: [Sr.peri], e: 7, spec: 10, w: 0.14, all: true },
@@ -1585,16 +1595,18 @@ export function drawPSAXpm(ctx, box, g, o = {}) {
     const far = [C[0] - rx * (0.2 + 2 / ei - 1) - wall - rvW, C[1]];
     const rv = spline([top, [far[0] + rvW * 0.35, C[1] - lvid * 0.62], far, [far[0] + rvW * 0.35, C[1] + lvid * 0.62], bot], 8);
     const rvOut = offsetAway(rv, 0.35, [C[0] - rx, C[1]]);
+    // coarse trabeculae on the free wall, the most at the middle of the crescent
+    const rvT = trabeculate(rv, (u) => 0.15 * Math.sin(Math.PI * u), [C[0] - rx - wall - rvW * 0.5, C[1]], 0.9);
     // papillary muscles: anterolateral at 4 o'clock, posteromedial at 8 o'clock
     const pms = [0.62, 2.3].map((a) => ellipse([C[0] + (rx - 0.45) * Math.cos(a), C[1] + (ry * ei - 0.45) * Math.sin(a)], 0.5, 0.4, 18));
-    return { C, rx, ry, ei, lv: lvC, lvOut, rv, rvOut, pms, wall, rvW, lvRib: ribbon(lvC, lvOut), rvRib: ribbon(rv, rvOut) };
+    return { C, rx, ry, ei, lv: lvC, lvOut, rv, rvOut, pms, wall, rvW, lvRib: ribbon(lvC, lvOut), rvRib: ribbon(rvT, rvOut), rvT };
   };
   const S = shape(ph.c), Sr = shape(0);
   const items = [
     { polys: [S.lvRib], refs: [Sr.lvRib], e: DB.myo },
     { polys: [S.rvRib], refs: [Sr.rvRib], e: DB.myo - 1 },
     { polys: S.pms, refs: Sr.pms, e: DB.myo },
-    { borders: [S.lv, S.lvOut, S.rv], refs: [Sr.lv, Sr.lvOut, Sr.rv], e: DB.myo, spec: 7 },
+    { borders: [S.lv, S.lvOut, S.rvT], refs: [Sr.lv, Sr.lvOut, Sr.rvT], e: DB.myo, spec: 7 },
   ];
   scan(ctx, F, items, { t: o.t });
   const { C, rx, ry, ei, wall, rvW } = S;
