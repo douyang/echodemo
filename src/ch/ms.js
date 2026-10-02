@@ -12,13 +12,20 @@ import { JETS } from '../jets.js';
 
 const KEY = 'msS';
 const mean = (fn, n = 400) => { let a = 0; for (let i = 0; i < n; i++) a += fn((i + 0.5) / n); return a / n; };
+// With exercise in MS the stroke volume changes little, so the output rises with the rate
+// (Johnston 1986; Kim 2026), and the filling period keeps its share of the cycle: 424 ms at
+// 60/min and 272 ms at 100/min (Moro 1989).
+const SV = 70;                                                // mL at every heart rate
+const FILL = 0.44;                                            // filling period / RR
 
-/** Mitral inflow for a stenotic valve: PHT = 220 / MVA; the gradient rises with heart rate. */
+/**
+ * Mitral inflow for a stenotic valve: PHT = 220 / MVA at any heart rate. The mean flow rises with
+ * the rate and the mean gradient about as its square; with exercise from 74 to 110/min the mean
+ * gradient doubled, 9 to 18 mmHg (Sagar 1987).
+ */
 export function mitral({ mva, sv, hr }) {
   const RRms = 60000 / hr;
-  const qs2 = 541 - 2.2 * hr;                                // ms, Boudoulas 1981 (men)
-  const ivrt = 96 * Math.sqrt(RRms / 857);
-  const dfp = Math.max(80, RRms - qs2 - ivrt);                 // ms of filling
+  const dfp = FILL * RRms;                                    // ms of filling
   const pht = 220 / mva;                                      // ms (MVA = 220 / PHT)
   const dt = pht / (1 - Math.SQRT1_2);                        // linear fall: time to zero flow
   const env = (t) => Math.max(0, 1 - t / dt) + 0.25 * (t > dfp - 120 ? Math.sin(Math.PI * (t - dfp + 120) / 120) : 0);
@@ -44,7 +51,7 @@ export function model(s, hr = 70) {
   const m = TRK(s);
   m.s = s;
   m.mva = mvaOf(s);
-  Object.assign(m, mitral({ mva: m.mva, sv: 70, hr }));
+  Object.assign(m, mitral({ mva: m.mva, sv: SV, hr }));
   m.hr = hr;
   m.rap = m.pasp >= 50 ? 8 : 3;
   m.trv = Math.sqrt(Math.max(0, m.pasp - m.rap) / 4);
@@ -86,7 +93,7 @@ function a4c(ctx, box, m, t) {
   const since = t >= t0 ? t - t0 : t + RR - t0;
   const a = since < fill && m.s > 0.08 ? Math.min(1, since / 40) * clamp(m.env((since / fill) * m.dfp), 0.3, 1) : 0;
   const jl = 2.5 + 2.5 * m.s;
-  const jet = m.s > 0.08 ? { q: (70 / (m.dfp / 1000)) * 1.1, vc: m.tip * 0.6, jl, jw: 0.9 + m.tip * 0.4, a } : null;
+  const jet = m.s > 0.08 ? { q: (SV / (m.dfp / 1000)) * 1.1, vc: m.tip * 0.6, jl, jw: 0.9 + m.tip * 0.4, a } : null;
   drawA4C(ctx, box, g, {
     t, depth: 16 + m.s, title: fit(box.w, 'APICAL FOUR-CHAMBER · COLOR 40 cm/s', 'A4C · COLOR 40'),
     ...(JETS === 'plume'
