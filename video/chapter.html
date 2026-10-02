@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<meta name="viewport" content="width=device-width">
+<title>The Heart by Ultrasound: chapter video</title>
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="video/video.css">
+<script>
+// The video's clock (video/chapter.js). performance.now() reads the time of the frame being
+// drawn, set by the page. While the page loads, requestAnimationFrame waits a tick; after
+// start() it runs nothing on its own, so the site's code draws only when a frame is drawn.
+window.__clock = (() => {
+  let now = 10000, manual = false;
+  const queue = [];
+  Object.defineProperty(performance, 'now', { value: () => now, configurable: true });
+  window.requestAnimationFrame = (fn) => { if (manual) queue.push(fn); else setTimeout(() => fn(now), 4); return 0; };
+  window.cancelAnimationFrame = () => {};
+  return {
+    set(ms) { now = ms; },
+    start() { manual = true; },
+    /** The callbacks booked for this frame (a 3D stage books its next frame as it draws). */
+    flush() { for (const fn of queue.splice(0)) fn(now); },
+  };
+})();
+</script>
+</head>
+<body>
+<div id="frame"></div>
+<div id="src" hidden></div>
+<script type="module" src="video/chapter.js"></script>
+</body>
+</html>

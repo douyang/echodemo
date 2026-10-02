@@ -1,4 +1,4 @@
-"""Soundtrack of a cut of the "Echo views" video: Bright pulse, the style chosen from the review of
+"""Soundtrack of a cut of the "Echo views" video, or of a chapter video: Bright pulse, the style chosen from the review of
 fourteen. A soft synth pluck plays a sixteenth-note arpeggio with a dotted-eighth echo over a pad
 (C Am F G, one chord to a bar); a sub bass joins from the second window; the pluck and the pad
 brighten window by window. No drums, no heartbeat, no beat locked to the heart, no chimes during
@@ -10,6 +10,7 @@ plays, relative to the pluck. The brand engine's room and echo (synth.py), witho
 side/mid 0.10; -15 LUFS with linear gain, true peak under -2.5 dBTP (AAC adds up to 1 dB). A
 fixed seed per cut, so a mix rebuilds exactly; cut C's seed is the one reviewed.
   python3 tools/score/pulse.py A video/out/echo-views-A.wav [--lufs=-15] [--tp=-2.5]
+  python3 tools/score/pulse.py as video/out/chapter-as.wav       a chapter video: its steps are the windows
 """
 import os
 import subprocess
@@ -29,6 +30,10 @@ import score as SC                                # noqa: E402  (timeline, measu
 SR = 48000
 BPM = 109.3
 SEEDS = {'A': 9201, 'B': 9202, 'C': 9102, 'D': 9204}
+# the chapter videos (video/chapters.js), by key: 93 and the chapter's number
+SEEDS.update({'PULSE': 9301, 'IMAGE': 9302, 'SHIFT': 9303, 'PRESSURE': 9304, 'CYCLE': 9305, 'LOOP': 9306,
+              'PLANES': 9308, 'EJECT': 9309, 'SEGMENTS': 9310, 'FILL': 9311, 'AS': 9312, 'AR': 9313,
+              'MS': 9314, 'MR': 9315, 'TR': 9316, 'PERI': 9317, 'AMYLOID': 9318})
 PROG = ['C', 'Am', 'F', 'G']
 CHORD = {'C': (0, [0, 4, 7]), 'Am': (9, [9, 0, 4]), 'F': (5, [5, 9, 0]), 'G': (7, [7, 11, 2])}
 ARP = [0, 2, 1, 3, 2, 4, 3, 1]                    # the brand's arpeggio pattern

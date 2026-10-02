@@ -168,7 +168,7 @@ src/gl/rvdetail.js  the left pulmonary veins, the papillary muscles and the RV's
 src/norms.js        normal values and cut-offs
 src/refs.js         references
 assets/             heart mesh (JSON), anatomy landmarks, poster image, favicon (SVG; PNGs for Safari and the iPhone home screen)
-video/              the views video: page, cuts, timing, fonts
+video/              the views video and the chapter videos: pages, cuts, chapter steps, timing, fonts
 tools/              video tools: render, storyboard
 tools/score/        the video soundtracks: Bright pulse (pulse.py) on the InVision sound engine (synth.py); the first brand scores (score.py), kept (Python)
 ```
@@ -215,8 +215,47 @@ node tools/storyboard.mjs --cut=A --moves          # one frame of each view on o
 
 The videos go to `video/out/`, which git ignores. Each frame depends on its time alone, so parallel jobs join without a seam. Each job logs its progress every 30 frames. The cuts, their timing and the captions are in `video/cuts.js` and `video/timeline.js`.
 
+## The chapter videos
+
+`video/chapter.html?ch=as` plays one chapter as a video, in the frame of the views video's dark cuts. Every chapter has one except 07, whose video is the views video above. The chapter's figure is the site's own (`src/ch/*.js`), on paper and drawn 1.3 times larger than its layout. It steps through the chapter's states on the heartbeat (`video/chapters.js`): the steps follow the chapter's tour (the Play button), slowed, with a hold on each step. Numbers ease from one step to the next; the severity pages move their slider from the middle of one grade band to the middle of the next.
+
+- The caption names each step. By default its name and line are the chapter's live sentence at that step, with its numbers; a step can name its own sentences or quote a readout. The progress line names the steps. Where the figure has no measurement strip of its own, a pane beside it lists the chapter's readouts as they change.
+- The page runs on a clock of its own (`video/chapter.html`): `performance.now()` reads the time of the frame being drawn, and the chapter's motion (its `anim()`) runs in steps of 1/30 s from the start. A frame therefore depends on the frames before it: a chapter video renders in order in one job, and `--jobs` renders that many chapters at once. Chapter 08 draws its 3D heart on the frames the page draws.
+- The soundtrack is *Bright pulse* (`tools/score/pulse.py`), as on the views video: the chapter's steps are its windows, so the bass joins at the second step and the pluck and the pad brighten step by step. Seed 93 and the chapter's number. The last hold takes up to six more beats (two at most in these videos), so that the end card falls on a bar line after whole four-bar phrases near 109 BPM.
+- Title card: the chapter's number, part and title, and the first sentence of its summary. End card as on the views video.
+
+| Chapter | Steps | Length |
+|---|---|---|
+| 01 Pulse | 2, 3.5, 5 and 7 MHz; time gain compensation | 0:48 |
+| 02 Image | 16 and 24 cm deep; reverberation, acoustic shadow, mirror image, side lobe | 0:49 |
+| 03 Shift | 0° and 60° to the flow; past the Nyquist limit; continuous wave; color, then color aliasing | 0:49 |
+| 04 Pressure | Stroke volume; a 2 mm caliper error; RV systolic pressure at TR 2.4, 3.0 and 3.5 m/s | 0:48 |
+| 05 Cycle | The seven phases of one beat, the cursor running through each | 0:50 |
+| 06 Loop | Normal, HFrEF, HFpEF, pressure load, volume load | 0:48 |
+| 08 Planes | Nine views; the apical planes from the apex; the short-axis stack from the side; the aortic valve in several views | 0:49 |
+| 09 Eject | Normal LV; dilated LV, EF 30%; foreshortened views; normal RV; RV dysfunction | 0:48 |
+| 10 Segments | Normal; LAD, RCA and circumflex occlusion | 0:48 |
+| 11 Fill | Normal; grades 1, 2 and 3 | 0:48 |
+| 12 Aortic stenosis | The eight grade bands, none to severe with low flow | 0:57 |
+| 13 Aortic regurgitation | None to severe with LV dysfunction | 0:48 |
+| 14 Mitral stenosis | None to severe; severe at 110 beats a minute | 0:48 |
+| 15 Mitral regurgitation | None to severe with LV dysfunction | 0:48 |
+| 16 Tricuspid regurgitation | None to torrential | 0:48 |
+| 17 Pericardium | No effusion to tamponade | 0:48 |
+| 18 Cardiac amyloidosis | A normal wall to apical sparing | 0:48 |
+
+```
+python3 tools/score/pulse.py as video/out/chapter-as.wav
+node tools/render-video.mjs --ch=as --audio=video/out/chapter-as.wav
+node tools/render-video.mjs --ch=all --jobs=3 --audio=auto     # every chapter video, three at a time
+node tools/storyboard.mjs --ch=as                              # one frame of each step on one sheet
+```
+
 ## Checks run before this commit
 
+- Chapter videos: all 17 rendered with their soundtracks, ten on this machine and seven in a second cloud session from the same commit (`7523ae9`). Each holds every frame of its layout (1440 to 1697), except that 02, 03 and 08 lost the last four frames of the still end card to ffmpeg's `-shortest`; the mux now pads the soundtrack to the last frame instead. No frame undoes the one before it (A, B, A). Still stretches longer than a second come only from the figures themselves: the pause between pulses in 01, the sniff cycle of the IVC in 04, and the RV steps of 09, which the site draws still. In 03 the blood and the Doppler cursor move through every hold, too small to show at a check's low resolution: 465 to 967 pixels change in each half second. Audio in the MP4s −14.8 to −14.9 LUFS, true peak −2.8 to −4.1 dBFS; the soundtracks alone −15.0 LUFS at 105.7 to 110.2 BPM. 4.4 to 21.9 MiB each.
+- Before the renders, storyboards of all 17 (the title card, each step, the end card): no console errors or warnings; each caption read against the chapter's live text at the step's state. Chapter 12 checked frame by frame across the title dissolve, a move and the end card; chapter 08 across its camera moves; the seven from the second session against frames of this machine's renders (faces, layout, drawing).
+- Render time: 0.12 to 0.15 s a frame alone, 0.23 to 0.29 s each with three at once on four cores (load average 10 to 12); chapter 08, with the 3D heart, 1.05 s a frame (25.6 min).
 - Favicon: the scanner screen, an image sector over an ECG trace, chosen from six options. The SVG serves browsers that take SVG icons; a 32 px PNG serves the rest, and a 180 px PNG the iPhone home screen. The site and the video page link all three; each loads (HTTP 200) with no console errors.
 - Four-chamber views against main (`b75c8e5`), at end-diastole and end-systole in all five hearts: the A4C, A4C RV, A4C LA and subcostal four-chamber sections no longer show a left pulmonary vein outside the heart, and no papillary muscle crosses the RV free wall. In the amyloid heart's zoomed LA view the pressed mouth leaves a small step in the lateral wall. The other views show no change besides the RV trabeculations.
 - Left veins in all 19 mesh views: the triangles of each vein more than 4 mm past its mouth that the view's plane cuts inside its sector, at end-diastole, mid-systole and end-systole. On main the lower vein lies in the four-chamber planes (139 to 148 triangles in A4C, up to 2.7 cm out). The first version turned it down, left and back: it left those planes (cuts within 1.2 cm of the mouth, pressed into the wall line), but in systole it swung through the long-axis plane behind the mitral annulus (115 to 119 triangles, up to 2.7 cm out; none on main). Of 71 directions tried, back, left and a little down (0.42, −0.38, −0.82) keeps the four-chamber cuts within 1.3 cm of the mouth and clears the long-axis plane (3 triangles at end-systole, within 5 mm of the mouth). The short axis at the mitral valve now cuts the vein at end-systole only (on main, from mid-systole). No single direction also kept clear of the descending aorta: the lower vein's far part runs against the aorta's front wall (54 of its 796 points within 2 mm). A second turn past the first centimetre did not clear the long-axis plane, which the vein meets 1.3 cm out.
