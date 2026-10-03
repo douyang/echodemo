@@ -1196,6 +1196,342 @@ export function lvTrace(geo, n = 20) {
   return { M, A, L, disks, d, border: poly };
 }
 
+// ---------------------------------------------------------------- apical five-chamber
+/**
+ * Every A5C structure (cm) at contraction c: the four-chamber plane tilted toward the front, so
+ * that the LV outflow tract, the aortic valve and the aortic root lie between the septum and the
+ * mitral valve, with the RA on their left and the LA on their right. The aortic annulus lies on
+ * the LV base next to the septum; the anterior mitral leaflet hinges on the root beside it; the
+ * aorta runs down the scan line through the valve, the line of the CW Doppler. g as for drawA5C.
+ */
+function a5cShape(g, c, ph) {
+  const lvL = at(g.lvL, c), lvW = at(g.lvW, c), wall = at(g.lvWall, c), ivs = at(g.ivs, c);
+  const rvW = at(g.rvW, c), rvWall = at(g.rvWall ?? 0.4, c);
+  const laW = at(g.laW, c), laL = at(g.laL, c), raW = at(g.raW, c), raL = at(g.raL, c), ta = at(g.ta ?? 3.0, c);
+  const lvot = g.lvot ?? 2.0, root = Math.max(g.root ?? 3.1, lvot + 0.5), asc = g.asc ?? (HEART === 'bav' ? 3.9 : 3.0);
+  // the LV base in this plane: the aortic annulus (as wide as the LVOT), 2 mm of aortic-mitral
+  // curtain and the mitral annulus as the plane cuts it; together about as wide as the LV
+  const ma = clamp(at(g.lvW, 0) * 1.02 - lvot - 0.2, 1.8, 2.8);
+  const bw = lvot + 0.2 + ma;
+  const apexY = 1.9 + 0.65 * wall;
+  const A = [0.2, apexY];
+  // the base sits so that the valve lies under the probe, 0.45 cm left of the midline
+  const bx = -0.45 + 0.44 * bw - lvot / 2;
+  const B = [bx, apexY + Math.sqrt(Math.max(lvL * lvL - (bx - A[0]) ** 2, 0.25 * lvL * lvL))];
+  const ax = unit(sub(A, B));                          // base -> apex
+  let nl = perp(ax); if (nl[0] < 0) nl = mul(nl, -1);  // toward the lateral wall
+  const out = mul(nl, -1);                             // toward the RV free wall
+  const N = 36;
+  const Pax = (u) => lerp2(B, A, u);
+  const U = (i) => { const x = i / N; return x <= 0.8 ? x : 0.8 + 0.2 * (1 - (1 - (x - 0.8) / 0.2) ** 2); };
+  const sep = [], lat = [];
+  for (let i = 0; i <= N; i++) {
+    const u = U(i), w = lvWidth(u, lvW, bw);
+    sep.push(add(Pax(u), mul(nl, -w * 0.44 * (1 - 0.06 * Math.sin(Math.PI * u)))));
+    lat.push(add(Pax(u), mul(nl, w * 0.56 * (1 + 0.05 * Math.sin(Math.PI * u)))));
+  }
+  const lvCav = [...sep, ...lat.slice(0, -1).reverse()];   // aortic annulus (septal hinge) -> apex -> lateral mitral hinge
+  const Al = sep[0], L0 = lat[0];
+  const lvC = centroid(lvCav);
+  const trab = (u) => 0.13 * smooth((u - 0.58) / 0.3);
+  const sepT = trabeculate(sep, trab, lvC, 0.7), latT = trabeculate(lat, trab, lvC, 2.1);
+  const lvCavT = [...sepT, ...latT.slice(0, -1).reverse()];
+  const nsep = (i) => {
+    const a = sep[Math.max(0, i - 1)], b = sep[Math.min(N, i + 1)];
+    let nn = unit(perp(sub(b, a)));
+    if ((sep[i][0] - lvC[0]) * nn[0] + (sep[i][1] - lvC[1]) * nn[1] < 0) nn = mul(nn, -1);
+    return nn;
+  };
+  // the septum thins over its last centimetre, the membranous part under the aortic valve
+  const rvSep = sep.map((p, i) => add(p, mul(nsep(i), ivs * (1 - 0.25 * (i / N) ** 3) * mix(0.35, 1, smooth(U(i) / 0.12)))));
+  const iRvApex = Math.round(N * 0.74);
+  const ivsRib = ribbon(sepT.slice(0, iRvApex + 2), rvSep.slice(0, iRvApex + 2));
+  const lvFree = lvCav.slice(iRvApex - 1), lvFreeT = lvCavT.slice(iRvApex - 1);
+  const lvOut = offsetAway(lvFree, (u) => wall * (0.68 + 0.32 * smooth((u - 0.35) / 0.4)) * (1 - 0.4 * smooth((u - 0.9) / 0.1)), lvC);
+  const lvRib = ribbon(lvFreeT, lvOut);
+  // RV, as in the four-chamber view
+  const iTv = Math.round(N * 0.055);
+  const TS = rvSep[iTv], Ra = rvSep[iRvApex];
+  const TL = add(add(TS, mul(out, ta)), mul(ax, 0.15));
+  const rvFree = spline([Ra, add(rvSep[Math.round(N * 0.66)], mul(out, rvW * 0.5)), add(rvSep[Math.round(N * 0.48)], mul(out, rvW * 0.82)),
+    add(add(rvSep[Math.round(N * 0.2)], mul(out, rvW)), mul(ax, -0.1)), TL], 10);
+  const rvC = centroid([...rvSep.slice(iTv, iRvApex + 1), ...rvFree]);
+  const rvFreeT = trabeculate(rvFree, (u) => 0.24 * (1 - smooth((u - 0.1) / 0.5)), rvC, 1.3);
+  const rvOut = offsetAway(rvFree, rvWall, rvC);
+  const rvRib = ribbon(rvFreeT, rvOut);
+  const rvSepEndo = rvSep.slice(iTv, iRvApex + 1);
+  const rvSepEndoT = trabeculate(rvSepEndo, (u) => 0.12 * smooth((u - 0.62) / 0.3), rvC, 2.4);
+  const mbS = rvSep[Math.round(N * 0.56)];
+  let jb = 0, db = Infinity;
+  for (let j = 0; j < rvFree.length * 0.6; j++) { const d = Math.abs(dot(sub(rvFree[j], mbS), ax)); if (d < db) { db = d; jb = j; } }
+  const mb = spline([add(mbS, mul(out, 0.05)), add(lerp2(mbS, rvFree[jb], 0.5), mul(ax, 0.22)), rvFree[jb]], 6);
+  const rvStrands = [[0.66, 0.1, 0.06], [0.62, 0.2, -0.05], [0.7, 0.05, 0.03]].map(([fs, ff, bend]) => {
+    const a = rvSep[Math.round(N * fs)], b = along(rvFree, ff);
+    return spline([a, add(lerp2(a, b, 0.5), mul(ax, bend)), b], 5);
+  });
+  // the aortic root: from the annulus down the scan line through the valve. Sinuses to the root
+  // diameter 1.1 cm past the annulus, a waist at the sinotubular junction, then the ascending
+  // aorta. Points as depth d past the annulus and offset y across the aorta (right +)
+  const Ar = add(Al, mul(nl, lvot)), Av = lerp2(Al, Ar, 0.5);
+  const dn = unit(Av);
+  let nlo = perp(dn); if (nlo[0] < 0) nlo = mul(nlo, -1);
+  const axo = (d, y) => add(add(Av, mul(dn, d)), mul(nlo, y));
+  const stj = Math.min(root, asc) * 0.9;
+  const radius = (d) => (d < 1.1 ? mix(lvot / 2, root / 2, smooth(d / 1.1)) : d < 2.6 ? mix(root / 2, stj / 2, smooth((d - 1.1) / 1.5)) : mix(stj / 2, asc / 2, smooth((d - 2.6) / 1.4)));
+  const AW = 0.24;                                       // the aortic wall
+  const tube = (sg, extra) => Array.from({ length: 41 }, (_, i) => {
+    if (i === 0) return add(sg < 0 ? Al : Ar, mul(nl, sg * extra));
+    const d = 11 * (i / 40) ** 1.35;
+    return axo(d, sg * (radius(d) + extra));
+  });
+  const aoL = tube(-1, 0), aoR = tube(1, 0);
+  const aoLumen = [...aoL, ...aoR.slice().reverse()];
+  const aoWalls = [ribbon(aoL, tube(-1, AW)), ribbon(aoR, tube(1, AW))];
+  // the atria lie against the root: their walls touch its outer surface
+  const rOut = (d, wl) => radius(d) + AW + wl;
+  // valves. Mitral: the anterior leaflet hinges on the root, beside the aortic annulus (2.4 cm);
+  // the posterior leaflet hinges on the lateral annulus (1.5 cm). Tricuspid as in the A4C.
+  const Ma = add(Ar, mul(nl, 0.2));
+  const [mvV, mvK] = mitralOf(g.mv, 1);
+  const mv = apValve(Ma, L0, ax, 2.4 * mvK, 1.5 * mvK, mvV, ph.mvShut);
+  const tv = apValve(TS, TL, unit(sub(Ra, lerp2(TS, TL, 0.5))), 1.5, 2.1, g.tv, ph.tvShut);
+  // the aortic cusps, built across the aorta (x down it, y across it) as in the long axis: shut,
+  // they meet past the annulus and sag toward the LV; open, they lie along the sinus walls, or a
+  // stiff valve opens only to open (cm) and its cusps dome into the aorta. A bicuspid valve shuts
+  // off-centre (the larger, fused cusp reaches past the middle), always domes in systole and
+  // opens off-centre.
+  const toL = (P) => { const d = sub(P, Av); return [dot(d, dn), dot(d, nlo)]; };
+  const fromL = (p) => axo(p[0], p[1]);
+  const half = lvot / 2, avGap = g.av?.gap ?? 0;
+  const openW = clamp(g.av?.open ?? lvot - 0.1, 0.12, lvot - 0.1);
+  const bav = g.av?.bicuspid ?? HEART === 'bav';
+  const C0 = [0.85, (g.av?.ecc ?? (bav ? 0.35 : 0)) * half];
+  const yc = bav ? 0.3 * half : 0;
+  const stiff = bav ? 1 : smooth((lvot - 0.1 - openW) / 0.6);
+  const cuspOf = (h, sgn) => {
+    const lc = Math.hypot(0.8, Math.abs(h[1] - C0[1]) - 0.05) * 1.04 + 0.12;
+    const shut = flap(h, add(C0, [0, (sgn * avGap) / 2]), lc, [-1, 0], avGap > 0.02 ? null : [1, 0], 0.12);
+    const end = lerp2(add(h, mul(unit([0.97, sgn * 0.12]), lc * 0.96)), [0.35 + lc * 0.55, yc + (sgn * openW) / 2], stiff);
+    const open = flap(h, end, lc, unit(lerp2([0, sgn], [0.5, sgn * 0.85], stiff)));
+    return swing(h, shut, open, ph.avOpen).map(fromL);
+  };
+  const cuspL = cuspOf(add(toL(Al), [0.05, 0.05]), -1), cuspR = cuspOf(add(toL(Ar), [0.05, -0.05]), 1);
+  const avTh = g.av?.thick ?? 0.1;
+  const cuspLo = leafOutline(cuspL, avTh * 0.8, avTh * 1.3), cuspRo = leafOutline(cuspR, avTh * 0.8, avTh * 1.3);
+  const avTip = lerp2(cuspL[NL], cuspR[NL], 0.5);
+  // left atrium beside the root, below the mitral valve; pulmonary veins through its roof
+  const ldown = unit(add(mul(ax, -1), mul(nl, 0.12)));
+  const laPts = [
+    Ma,
+    axo(0.9, rOut(0.9, 0.18)),
+    axo(laL * 0.78, rOut(laL * 0.78, 0.18)),
+    add(add(Ma, mul(ldown, laL)), mul(nl, laW * 0.5)),
+    add(add(Ma, mul(ldown, laL * 0.74)), mul(nl, laW * 0.97)),
+    add(add(L0, mul(ldown, laL * 0.3)), mul(nl, Math.max(0.1, laW - ma) * 0.75)),
+    L0,
+  ];
+  const laCav = spline(laPts, 10);
+  const laC = centroid(laCav);
+  const laOut = offsetAway(laCav, 0.18, laC);
+  const nLa = laCav.length - 1, gaps = [Math.round(nLa * 0.45), Math.round(nLa * 0.65)], gw = 2;
+  const laRibs = [], pvWalls = [];
+  let from = 0;
+  for (const gi of gaps) {
+    laRibs.push(ribbon(laCav.slice(from, gi - gw + 1), laOut.slice(from, gi - gw + 1)));
+    from = gi + gw;
+    const d = unit(add(unit(sub(laCav[gi], laC)), mul(ldown, 0.7)));
+    for (const e of [gi - gw, gi + gw]) pvWalls.push([laOut[e], add(add(laOut[e], mul(d, 0.95)), mul(sub(laOut[e], laOut[gi]), 0.35))]);
+  }
+  laRibs.push(ribbon(laCav.slice(from), laOut.slice(from)));
+  // right atrium beside the root, below the tricuspid valve
+  const rdown = unit(add(mul(ax, -1), mul(out, 0.18)));
+  const raPts = [
+    TL,
+    add(add(TL, mul(rdown, raL * 0.35)), mul(out, Math.max(0.1, raW - ta) * 0.7)),
+    add(axo(raL * 0.72, -rOut(raL * 0.72, 0.17)), mul(nlo, -raW * 0.9)),
+    axo(raL * 0.98, -rOut(raL * 0.98, 0.17) - raW * 0.4),
+    axo(raL * 0.6, -rOut(raL * 0.6, 0.17)),
+    axo(0.8, -rOut(0.8, 0.17)),
+    TS,
+  ];
+  const raCav = spline(raPts, 10);
+  const raC = centroid(raCav);
+  const raOut = offsetAway(raCav, 0.17, raC);
+  const raRib = ribbon(raCav, raOut);
+  // fibrous tissue: the membranous septum between the RA and the LVOT, and round the root
+  const memb = [Al, ...rvSep.slice(0, iTv + 1), axo(0.8, -rOut(0.8, 0.02)), axo(0.4, -(radius(0.4) + AW))];
+  const annuli = [ellipse(Ma, 0.2, 0.2, 12), ellipse(L0, 0.22, 0.2, 12), ellipse(TL, 0.18, 0.18, 12)];
+  // papillary muscle and chordae, as in the A4C
+  const pmBase = lat[Math.round(N * 0.56)];
+  const pmDir = unit(add(mul(nl, -0.85), mul(ax, -0.5)));
+  const pm = muscle(pmBase, pmDir, 0.9, 0.8 + 0.25 * c, nl);
+  const pmTip = add(pmBase, mul(pmDir, 0.82));
+  const pmSide = perp(pmDir);
+  const chords = [[pmTip, along(mv.l2, 0.97)], [pmTip, along(mv.l2, 0.6)], [add(pmTip, mul(pmSide, 0.12)), along(mv.l1, 0.97)], [add(pmTip, mul(pmSide, 0.12)), along(mv.l1, 0.72)], [add(pmTip, mul(pmSide, -0.1)), along(mv.l1, 0.5)]];
+  // pericardium and fat round the free walls; mediastinum behind the atria; tissue round the
+  // root between the atria (the chambers and the aorta are cut out of it)
+  const heartC = centroid([lvC, rvC, laC, raC]);
+  const wallsOut = [add(rvOut[rvOut.length - 1], mul(out, 0.1)), ...rvOut.slice().reverse(), ...lvOut, add(L0, mul(nl, wall + 0.25))];
+  const hull = envelope(wallsOut);
+  const fat = ribbon(hull, wallsOut);
+  const peri = offsetAway(hull, 0.13, heartC);
+  const yDeep = Math.max(...laCav.map((p) => p[1]), ...raCav.map((p) => p[1]));
+  const medi = [[raC[0] - raW * 0.95, yDeep - 1.1], [laC[0] + laW * 0.95, yDeep - 1.1], [laC[0] + laW + 3.5, 30], [raC[0] - raW - 3.5, 30]];
+  const hilum = [TS, Al, Ma, axo(1.2, rOut(1.2, 0.6)), axo(12, asc / 2 + 1.5), axo(12, -asc / 2 - 1.5), axo(1.2, -rOut(1.2, 0.6))];
+  const daC = add(laPts[4], add(mul(ldown, 1.45), mul(nl, 0.55)));
+  return {
+    A, B, Al, Ar, Av, Ma, L0, TS, TL, Ra, ax, nl, out, dn, nlo, lvC, rvC, laC, raC, lvCav, lvCavT, laCav, raCav, rvFree, rvFreeT, rvSep, rvSepEndo, rvSepEndoT, rvStrands,
+    lvOut, rvOut, laOut, raOut, ivsRib, lvRib, rvRib, laRibs, raRib, pvWalls, memb, annuli, pm, mb, mv, tv, chords, mvShut: ph.mvShut,
+    aoL, aoR, aoLumen, aoWalls, cuspL, cuspR, cuspLo, cuspRo, avTip, axo, radius, lvot, root, asc, fat, peri, medi, hilum,
+    daRing: ring(daC, 0.95, 1.17, 28), daLumen: ellipse(daC, 0.95, 0.95, 28),
+  };
+}
+
+/** The A5C flows in the scanner format (as a4cFlows): ejection down the LVOT into the aorta, mitral inflow, the stenotic jet. */
+function a5cFlows(S, t, C) {
+  const fl = [];
+  if (!cfDebug.jetOnly) {
+    // systole: from the middle of the LV down the LVOT and through the valve, away from the probe
+    const vo = lvotV(t, C.lvot ?? 1.0) * 100;
+    if (vo > 2) {
+      const pts = [lerp2(S.B, S.A, 0.45), S.axo(-1.6, 0), S.axo(-0.3, 0), S.axo(0.6, 0)];
+      const sp = [0.3 * vo, 0.8 * vo, vo, 1.1 * vo], hw = [1.4, S.lvot * 0.42, S.lvot * 0.42, S.lvot * 0.38];
+      if (!C.as) { pts.push(S.axo(3, 0), S.axo(7, 0)); sp.push(vo, 0.9 * vo); hw.push(S.root * 0.4, S.asc * 0.38); }
+      fl.push(stream(pts, sp, hw));
+    }
+    // diastole: mitral inflow toward the apex
+    const vm = mitralV(t, C.E ?? 0.8, C.A ?? 0.55) * 100;
+    if (vm > 2) fl.push(inflow(lerp2(S.Ma, S.L0, 0.5), S.mv.tip, S.ax, len(sub(S.mv.l1[NL], S.mv.l2[NL])), vm, 3.4, 25));
+  }
+  if (C.as?.a > 0.02) fl.push(...lesion(S.avTip, S.dn, C.as));
+  return fl;
+}
+/** The A5C color box: the LVOT and the aorta in every shape given (the box keeps still through the beat). */
+function a5cBox(shapes, half) {
+  const pts = [];
+  for (const T of shapes) for (const [d, y] of [[-2.2, -1.5], [-2.2, 1.5], [6.5, -T.asc / 2 - 0.3], [6.5, T.asc / 2 + 0.3]]) pts.push(T.axo(d, y));
+  return boxAround(pts, half);
+}
+
+function a5cItems(S, Sr, g) {
+  const items = [
+    { polys: [S.medi], e: -21 },
+    { polys: [S.hilum], refs: [Sr.hilum], e: -9 },
+    { polys: [S.fat], refs: [Sr.fat], e: DB.fat - 2 },
+    { polys: [S.laCav, S.raCav, S.aoLumen, S.daLumen], e: DB.blood, blood: true },
+    { polys: [S.daRing], refs: [Sr.daRing], e: DB.fibrous - 2 },
+    { polys: [S.lvRib], refs: [Sr.lvRib], e: DB.myo },
+    { polys: [S.ivsRib], refs: [Sr.ivsRib], e: DB.myo },
+    { polys: [S.rvRib], refs: [Sr.rvRib], e: DB.myo - 1 },
+    { polys: S.laRibs, refs: Sr.laRibs, e: DB.myo - 5 },
+    { polys: [S.raRib], refs: [Sr.raRib], e: DB.myo - 5 },
+    { polys: S.aoWalls, refs: Sr.aoWalls, e: DB.fibrous - 1 },
+    { polys: [S.memb], refs: [Sr.memb], e: DB.fibrous },
+    { polys: S.annuli, refs: Sr.annuli, e: DB.fibrous + 1 },
+    { polys: [S.pm], refs: [Sr.pm], e: DB.myo },
+    { lines: [S.mb], refs: [Sr.mb], e: DB.myo, w: 0.3 },
+    { lines: S.rvStrands, refs: Sr.rvStrands, e: DB.myo - 2, w: 0.12 },
+    { lines: S.pvWalls, refs: Sr.pvWalls, e: -7, w: 0.1 },
+    { borders: [S.lvCavT], refs: [Sr.lvCavT], e: DB.myo, spec: 8 },
+    { borders: [S.rvSepEndoT, S.rvFreeT], refs: [Sr.rvSepEndoT, Sr.rvFreeT], e: DB.myo, spec: 7 },
+    { borders: [S.laCav, S.raCav], refs: [Sr.laCav, Sr.raCav], e: DB.myo - 2, spec: 6 },
+    { borders: [S.lvOut, S.rvOut], refs: [Sr.lvOut, Sr.rvOut], e: DB.myo, spec: 6 },
+    { borders: [S.aoL, S.aoR], refs: [Sr.aoL, Sr.aoR], e: DB.myo + 2, spec: 6 },
+    { borders: [S.peri], refs: [Sr.peri], e: 7, spec: 10, w: 0.14, all: true },
+    { lines: S.chords, e: DB.chord - 3 - 14 * (1 - S.mvShut), w: 0.04 },
+    ...leaves([S.mv.o1, S.mv.o2], [Sr.mv.o1, Sr.mv.o2], valveDb(g.mv)),
+    ...leaves([S.tv.o1, S.tv.o2], [Sr.tv.o1, Sr.tv.o2], valveDb(g.tv) - 1),
+    ...leaves([S.cuspLo, S.cuspRo], [Sr.cuspLo, Sr.cuspRo], valveDb(g.av)),
+  ];
+  // calcium at the hinges and on the cusps, with its shadow
+  const calc = g.av?.calc ?? 0;
+  if (calc > 0.05) {
+    const spots = [[S.cuspL[1], 0.22], [S.cuspR[1], 0.2], [along(S.cuspL, 0.55), 0.16], [along(S.cuspR, 0.6), 0.14]];
+    items.push({ lines: spots.map(([p, r]) => [p, add(p, mul(S.nlo, r))]), e: DB.calcium - 6 * (1 - calc), w: 0.12 + 0.18 * calc, shadow: 10 * calc });
+  }
+  return items;
+}
+
+/**
+ * The CW Doppler line from the probe down the scan line through the LVOT and the aortic valve;
+ * pw (cm): a PW sample volume that far up the LVOT from the valve.
+ */
+function dopplerLine(ctx, F, S, pw) {
+  const { sect, k } = F;
+  const end = mul(S.dn, F.depth), P = (p) => [sect.cx + p[0] * k, sect.top + p[1] * k];
+  const a = P([0, 0]), b = P(end);
+  ctx.save();
+  ctx.clip(F.clipBox);
+  ctx.clip(F.fan);
+  ctx.strokeStyle = SC.cal;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 4]);
+  ctx.beginPath();
+  ctx.moveTo(a[0], a[1]);
+  ctx.lineTo(b[0], b[1]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if (pw) {
+    // the sample volume: two bars across the line, 3 mm apart
+    const c = P(sub(S.Av, mul(S.dn, pw))), g = mul(S.dn, 0.15 * k), w = mul(perp(S.dn), 6);
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(c[0] + s * g[0] - w[0], c[1] + s * g[1] - w[1]);
+      ctx.lineTo(c[0] + s * g[0] + w[0], c[1] + s * g[1] + w[1]);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * Apical five-chamber view. g (cm; [ED, ES] pairs beat with the heart): lvL, lvW, lvWall, ivs,
+ *   rvW, rvWall, laW, laL ([min, max]), raW, raL, ta, lvot (LVOT and aortic annulus diameter),
+ *   root (sinuses), asc (ascending aorta; by default 3.9 under the bicuspid heart, else 3.0),
+ *   av: {thick, open (orifice width in systole, cm), calc, gap}, mv: {thick}, tv: {thick}
+ * o: t (ms), ph, title, depth, color (the scanner format: lo, hi, variance, lvot (m/s), E, A, as:
+ *    see a5cFlows) or jets: {as} (the plume format: see jet()), cw (the CW Doppler line through the
+ *    valve), pw (cm: a PW sample volume this far up the LVOT from the valve), labels, gain,
+ *    after(ctx, F, geo)
+ * Returns the geometry (cm) for labels and measurements.
+ */
+export function drawA5C(ctx, box, g, o = {}) {
+  const ph = o.ph ?? phase(o.t ?? 150);
+  const c = ph.c;
+  const S = a5cShape(g, c, ph), Sr = a5cShape(g, 0, { ...ph, mvShut: 1, tvShut: 1, avOpen: 0 });
+  const F = frame(ctx, box, o.depth ?? 17, o.title ?? 'APICAL FIVE-CHAMBER', { deg: 80, near: 1.2 });
+  scan(ctx, F, a5cItems(S, Sr, g), { t: o.t, gain: o.gain });
+  const C = o.color;
+  if (C) {
+    // the color box keeps still through the beat: it covers the LVOT and the aorta at both ends of it
+    const key = `a5c|${HEART}|${F.view.half}|${JSON.stringify(g)}`;
+    colorFlow(ctx, F, {
+      box: cachedBox(key, () => a5cBox([Sr, a5cShape(g, 1, { ...ph, mvShut: 1, tvShut: 1, avOpen: 0 })], F.view.half)), lo: C.lo, hi: C.hi, variance: C.variance,
+      blood: [S.lvCav, S.laCav, S.raCav, S.aoLumen, [...S.rvSepEndo, ...S.rvFree]],
+      tissue: [S.mv.o1, S.mv.o2, S.tv.o1, S.tv.o2, S.cuspLo, S.cuspRo, S.pm, ...S.annuli],
+      flows: a5cFlows(S, o.t ?? ph.t ?? 150, C), stats: cfDebug.stats,
+    });
+    barFor(ctx, F, C.lo, C.hi);
+  }
+  // the stenotic jet leaves the cusp tips down the aorta, away from the probe
+  const J = o.jets;
+  if (J?.as) {
+    jet(ctx, F, { ...J.as, O: S.avTip, dir: S.dn, clip: S.aoLumen, pisa: false });
+    barFor(ctx, F, -J.as.va, J.as.va);
+  }
+  if (o.cw) dopplerLine(ctx, F, S, o.pw);
+  const geo = { ...S, F, c, ph };
+  if (o.after) o.after(ctx, F, geo);
+  const want = (k) => (Array.isArray(o.labels) ? o.labels.includes(k) : o.labels !== false);
+  if (want('LV')) tag(ctx, F, 'LV', add(S.lvC, mul(S.ax, 0.8)));
+  if (want('RV')) tag(ctx, F, 'RV', add(centroid(S.rvFree), mul(S.out, -0.2)));
+  if (want('LA')) tag(ctx, F, 'LA', add(S.laC, mul(S.nl, 0.3)));
+  if (want('RA')) tag(ctx, F, 'RA', add(S.raC, mul(S.out, 0.3)));
+  if (want('Ao')) tag(ctx, F, 'Ao', S.axo(3.4, 0));
+  finish(ctx, F);
+  return geo;
+}
+
 // ---------------------------------------------------------------- parasternal long axis
 /** Every PLAX structure in the heart's own frame (x toward the aorta, y depth), cm. */
 function plaxShape(g, c, ph) {
@@ -1512,7 +1848,8 @@ export function drawPSAXav(ctx, box, g, o = {}) {
     ctx.restore();
   }
   finish(ctx, F);
-  return { F, C };
+  // the orifice (cm) as drawn, for checks
+  return { F, C, orifice, bicuspid: bic };
 }
 
 /** Parasternal short axis at the mitral valve: the orifice drawn to its area (cm²). */
