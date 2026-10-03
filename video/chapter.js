@@ -6,7 +6,7 @@
 // its script, the progress line and title card of the intro, and its frames of the whole.
 //
 // The clock (video/chapter.html): performance.now() reads the time of the frame being drawn. The
-// chapter's own motion (its anim(): the beat of a severity page, the cursor of chapter 05) runs in
+// chapter's own motion (its anim(): the beat of a severity page, the cursor of Cycle) runs in
 // steps of 1/FPS from the start, so a frame depends on its time once the steps before it have
 // run: frame(i) runs the steps it needs first, without drawing them. Frames come in order.
 import { FPS, BEAT, DISSOLVE, SIZE, segAt, cycleMs } from './timeline.js';

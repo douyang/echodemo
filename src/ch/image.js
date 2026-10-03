@@ -1,4 +1,4 @@
-// 02 Image: a sector frame is built one scan line at a time. Depth and line count set the
+// Image: a sector frame is built one scan line at a time. Depth and line count set the
 // frame rate; the focus sets where lateral detail is sharpest; strong reflectors make artifacts.
 import { Sheet, clamp, MONO, SANS } from '../sketch.js';
 import { reducedMotion } from '../state.js';

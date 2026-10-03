@@ -1,4 +1,4 @@
-// 08 Planes: the standard views as planes through one heart. Pick views to see where their
+// Planes (archived): the standard views as planes through one heart. Pick views to see where their
 // planes lie and where they cross; pick a structure to find the views that show it.
 import { VIEWS, WINDOWS, STRUCTS, HAS, PLANE_VIEWS, CODE, MOVE } from '../views.js';
 import { loadModel } from '../model3d.js';

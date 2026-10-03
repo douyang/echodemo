@@ -41,7 +41,7 @@ export async function openChapter({ ch, base, browser = null }) {
 }
 
 /**
- * Open clip k of the intro (video/reel.js) with ?reel=k. The clip of 07 opens on the views video
+ * Open clip k of the intro (video/reel.js) with ?reel=k. The clip of Views opens on the views video
  * page. The other clips open on the chapter video page. info.frames is the frame count of the clip.
  */
 export async function openReel({ k, base, browser = null }) {

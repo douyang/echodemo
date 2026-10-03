@@ -1,4 +1,4 @@
-// 08 Eject: systolic function. Left: LV volumes by the biplane method of disks in the apical
+// Systolic function. Left: LV volumes by the biplane method of disks in the apical
 // four- and two-chamber views: each echo view with its traced border and disks, above the disk
 // model of the same LV, and what foreshortening does to them. Right: three measures of RV
 // systolic function (TAPSE, tissue Doppler S′, fractional area change).
@@ -302,7 +302,8 @@ const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 export default {
   key: 'eject',
   part: 'function',
-  title: 'Eject',
+  title: 'Systolic function',
+  nav: 'Systolic',
   dwell: 16,
   defaults: { side: 'lv', edv: 120, ef: 60, wall: 9, fore: 0, tapse: 22, sPrime: 12, fac: 45, frame8: 'cine' },
   format: {

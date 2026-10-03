@@ -229,7 +229,7 @@ export function rapFromIvc(d, collapses) {
   return collapses ? 8 : 15;
 }
 /**
- * The RA pressure estimate of chapter 18 (Mukherjee 2025: Table 4, Figure 3 and p160).
+ * The RA pressure estimate of the IVC chapter (Mukherjee 2025: Table 4, Figure 3 and p160).
  *   d: IVC diameter at end-expiration (cm); col: collapse (%), with a sniff, or with quiet
  *   breathing when the patient cannot sniff; mode: 'sniff' | 'quiet' | 'ppv' (positive-pressure
  *   ventilation); sec: secondary signs of a raised RA pressure, 'none' | 'present' | 'unclear';

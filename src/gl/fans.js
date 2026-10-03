@@ -1,4 +1,4 @@
-// Imaging-plane fans for the Probe and body view (chapter 07, ch/windows.js) and the views video
+// Imaging-plane fans for the Probe and body view (Views, ch/windows.js) and the views video
 // (video/app.js): a sector in a color, its outline and a small probe at its apex, drawn over the
 // pencil heart. Where a fan runs behind the heart's front surface it is drawn fainter, so a plane
 // reads as going into the heart: the fan reads the heart's depth from the pencil renderer that

@@ -1,5 +1,5 @@
 // Echo views as live cross-sections of the heart mesh. The same code draws the
-// on-screen view beside the 3D heart (chapter 07) and offscreen frames for other chapters.
+// on-screen view beside the 3D heart (Views) and offscreen frames for other chapters.
 import * as THREE from '../vendor/three.bundle.min.js';
 import { tokens, MONO, SANS } from './sketch.js';
 import { VIEWS, VESSELS } from './views.js';
@@ -469,7 +469,7 @@ export class EchoView {
     this.measure = {};
     this.geo = model.sizes;
     this.pv = -1;         // the version of the heart it last took (model3d.js); the first frame takes it
-    this.noSys = false;   // true: the heart's own systolic change is off (chapter 09 sets the motion)
+    this.noSys = false;   // true: the heart's own systolic change is off (Regional wall motion sets the motion)
     this.own = null;      // a heart of this view's own (setBurden), in place of the page's
     this.ownAnat = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
@@ -514,7 +514,7 @@ export class EchoView {
 
   /**
    * Show the model's own amyloid heart at burden a (0 normal .. 1 the amyloid corner), whatever
-   * heart the page shows; null: the page's heart again. Chapter 17 sets it.
+   * heart the page shows; null: the page's heart again. Cardiac amyloidosis sets it.
    */
   setBurden(a) {
     if (a === null || a === undefined) {
@@ -602,7 +602,7 @@ export class EchoView {
   /**
    * Probe and body: the whole heart from the front, head up, with the plane and the probe, and
    * the body key in a corner (gl/bodykey.js). Off: the cut, seen square to it. No page calls it
-   * now: chapter 07 draws this view in its left pane (ch/windows.js), beside the cross-section,
+   * now: Views draws this view in its left pane (ch/windows.js), beside the cross-section,
    * and the views video in a pane of its own (video/app.js).
    */
   async setBody(on) {
@@ -637,7 +637,7 @@ export class EchoView {
     this.bodyKey.setView(VIEWS[this.view].win, g.O.clone().addScaledVector(g.d, spec.depth * 0.45), g.r, spec);
   }
 
-  /** The view's settings; a chapter may set its own depth and sector width (chapter 02). */
+  /** The view's settings; a chapter may set its own depth and sector width (Image). */
   specOf(key) {
     const base = key === 'free' ? this.freeSpec || {} : VIEWS[key] || {};
     const spec = { ...base, depth: this.depth ?? base.depth, angle: this.angle ?? base.angle };
@@ -1040,7 +1040,7 @@ export class EchoView {
     };
     const cor = (extra.cor || []).filter(closed).map((L) => L.pts).filter((C) => !inBlood(C));
     // the pericardium mesh dips into the myocardium in places (up to about 3 mm), and more where
-    // a wall moves on its own (chapter 09): a point of its line inside a wall moves out to the
+    // a wall moves on its own (Regional wall motion): a point of its line inside a wall moves out to the
     // wall's outer surface and 0.6 mm beyond, so the line never runs through muscle
     // even-odd over all the wall loops at once, with the edges sorted into 2.5 mm bands of depth
     // so that a point tests only the edges at its own depth
@@ -1172,7 +1172,7 @@ export class EchoView {
       this.boxPath.rect(8, m.boxTop, W - 16, m.boxH);
     }
     if (off) {
-      // no header, scale or labels: a page draws its own; calipers when it asks (chapter 17)
+      // no header, scale or labels: a page draws its own; calipers when it asks (Cardiac amyloidosis)
       if (this.calipers && this.view === 'plax' && !this.tr) this.drawCalipers(tissue, X, Y);
       else this.measure = {};
       return;

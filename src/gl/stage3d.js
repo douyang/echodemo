@@ -1,4 +1,4 @@
-// Shared WebGL stage: the heart with the imaging plane (chapter 07 Views). A second pane
+// Shared WebGL stage: the heart with the imaging plane (Views). A second pane
 // (Pane3D) draws the same scene from a camera of its own, in a canvas of its own.
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { Pencil } from './pencil.js';
@@ -369,7 +369,7 @@ export class Stage3D {
 
 
 /**
- * A second pane on the stage's scene (chapter 07: the planes beside the cross-section). It has
+ * A second pane on the stage's scene (Views: the planes beside the cross-section). It has
  * its own canvas, pencil renderer, camera and trackball. The stage draws it after its own pane
  * in each frame (tick): prepare() sets the scene for this pane (its cut, overlays and layer),
  * the pencil draws the scene with the stage's camera posed as this pane's camera (the lights ride

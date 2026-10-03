@@ -1,4 +1,4 @@
-// 06 Loop: the left ventricle as a pressure-volume loop. The end-systolic pressure-volume
+// Loop: the left ventricle as a pressure-volume loop. The end-systolic pressure-volume
 // relation (slope Ees) and the arterial elastance line (slope Ea) meet at end-systole; the
 // end-diastolic relation sets how much the ventricle fills at a given pressure.
 import { Sheet, clamp, mix, MONO, SANS } from '../sketch.js';

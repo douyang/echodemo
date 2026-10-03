@@ -550,7 +550,7 @@ const at = (pair, c) => (Array.isArray(pair) ? mix(pair[0], pair[1], c) : pair);
 /** For checks: jetOnly leaves out the normal flow, noReturn a jet's return flow; stats ({ poly }, cm) takes the color area in poly. */
 export const cfDebug = { jetOnly: false, noReturn: false, stats: null };
 const bump = (t, a, b, pk) => (t > a && t < b ? Math.sin(Math.PI * Math.pow((t - a) / (b - a), Math.log(0.5) / Math.log((pk - a) / (b - a)))) : 0);
-/** Pulmonary vein velocity (m/s, into the atrium): S, D and the atrial reversal, as chapter 14 draws them. */
+/** Pulmonary vein velocity (m/s, into the atrium): S, D and the atrial reversal, as Mitral regurgitation draws them. */
 function pvAt(t, S, D, Ar = -0.25) {
   const tt = t < 60 ? t + RR : t;
   return S * bump(t, 90, 400, 250) + D * bump(t, EV.mvo + 15, 720, 540) + Ar * bump(tt, 790, 900, 835);
@@ -744,7 +744,7 @@ function plaxBox(shapes, C, R, half) {
 /**
  * LV cavity width (cm) at level u (0 mitral annulus .. 1 apex) in an apical view: it widens from
  * the annulus (ma) to its widest (lvW) over the basal 22% of the length, then narrows to a round
- * apex. Chapter 08's disk model uses the same profile.
+ * apex. The disk model of Systolic function uses the same profile.
  */
 export function lvWidth(u, lvW, ma) {
   return u < 0.22 ? mix(ma, lvW, smooth(u / 0.22)) : lvW * Math.sqrt(Math.max(0, 1 - ((u - 0.22) / 0.78) ** 2.3));

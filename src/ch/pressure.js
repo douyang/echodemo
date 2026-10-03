@@ -1,10 +1,11 @@
-// 04 Pressure: two Doppler calculations that run every study. Flow: stroke volume from the
+// Doppler hemodynamics: two Doppler calculations that run every study. Flow: stroke volume from the
 // LVOT area and the LVOT velocity-time integral. Pressure: RV systolic pressure from the peak
 // tricuspid regurgitation velocity (simplified Bernoulli) plus the RA pressure, one of the three
-// values that the IVC gives (3, 8 or 15 mmHg; chapter 18 shows how).
+// values that the IVC gives (3, 8 or 15 mmHg; the IVC chapter shows how).
 import { Sheet, clamp, MONO, SANS } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { trvGrade } from '../norms.js';
+import { numOf } from '../order.js';
 
 const ET = 0.292;            // s, LV ejection time (Alhakak 2025 mean); held constant here
 const RRs = 0.857;
@@ -161,7 +162,7 @@ function draw(sh, t) {
   ctx.fillText(`${st.trV.toFixed(2)} m/s → 4V² = ${F.grad.toFixed(0)} mmHg`, rx + rw - 10, ry + 17);
   ctx.restore();
 
-  // the RA pressure (chapter 18 gives it from the IVC) under the RV-RA gradient: one bar that
+  // the RA pressure (the IVC chapter gives it) under the RV-RA gradient: one bar that
   // reads the RV systolic pressure on a mmHg scale. A phone keeps the bar, its scale and the sum.
   const iy = ry + tph + (narrow ? 14 : 34);
   const ih = H - iy - 30;   // the desktop layout: the height under the CW panel
@@ -200,7 +201,7 @@ function draw(sh, t) {
   sh.text(lr, X(0), by - 5, { family: MONO, weight: 500, size: fs, color: t.ink2 });
   const gx = Math.max(X(0) + wr + 10 + wg / 2, (X(F.rap) + X(F.rvsp)) / 2);
   sh.text(lg, Math.min(gx, bx1 - wg / 2), by - 5, { family: MONO, weight: 500, size: fs, color: t.flag, align: 'center' });
-  if (!narrow) sh.text('RA pressure from the IVC: chapter 18', bx0, by + bh + 46, { size: 15 * s, color: t.ink3 });
+  if (!narrow) sh.text(`RA pressure from the IVC: chapter ${numOf('ivc')}`, bx0, by + bh + 46, { size: 15 * s, color: t.ink3 });
   const sum = sh.fit([
     `RA pressure ${F.rap} mmHg  ·  RVSP ${F.grad.toFixed(0)} + ${F.rap} = ${F.rvsp.toFixed(0)} mmHg`,
     `RAP ${F.rap} · RVSP ${F.grad.toFixed(0)} + ${F.rap} = ${F.rvsp.toFixed(0)} mmHg`,
@@ -213,8 +214,9 @@ const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 
 export default {
   key: 'pressure',
-  part: 'physics',
-  title: 'Pressure',
+  part: 'hemodynamics',
+  title: 'Doppler hemodynamics',
+  nav: 'Pressure',
   dwell: 14,
   defaults: { sv: 70, lvotD: 2.0, calErr: 0, hr: 70, trV: 2.4, rap: 3 },
   format: {
@@ -247,7 +249,7 @@ export default {
         { k: 'RA pressure', v: fmt(F.rap), u: 'mmHg', flag: F.rap > 3 },
         { k: 'RV systolic pressure', v: fmt(F.rvsp), u: 'mmHg', flag: s.trV >= 2.8 },
       ],
-      live: `The measured LVOT diameter is ${fmt(F.dm, 2)} cm${s.calErr ? ` (true diameter ${fmt(F.d, 2)} cm)` : ''}, so the calculated stroke volume is ${fmt(F.svM)} mL${s.calErr ? `; <span class="k-red">the ${fmt(Math.abs(s.calErr), 1)} mm caliper error produces a stroke volume error of ${F.err > 0 ? '+' : ''}${fmt(F.err * 100)}%</span>, because the diameter is squared` : ''}${cite('zoghbi2017,baumgartner2017')}. A peak TR velocity of ${fmt(s.trV, 2)} m/s is ${g}${cite('mukherjee2025')}; the RV–RA pressure gradient is 4 × ${fmt(s.trV, 2)}² = ${fmt(F.grad)} mmHg, and with an RA pressure of ${F.rap} mmHg, estimated from the IVC (<a href="#ivc" data-go="ivc">chapter 18</a>), the RV systolic pressure is ${fmt(F.rvsp)} mmHg${cite('quinones2002')}.`,
+      live: `The measured LVOT diameter is ${fmt(F.dm, 2)} cm${s.calErr ? ` (true diameter ${fmt(F.d, 2)} cm)` : ''}, so the calculated stroke volume is ${fmt(F.svM)} mL${s.calErr ? `; <span class="k-red">the ${fmt(Math.abs(s.calErr), 1)} mm caliper error produces a stroke volume error of ${F.err > 0 ? '+' : ''}${fmt(F.err * 100)}%</span>, because the diameter is squared` : ''}${cite('zoghbi2017,baumgartner2017')}. A peak TR velocity of ${fmt(s.trV, 2)} m/s is ${g}${cite('mukherjee2025')}; the RV–RA pressure gradient is 4 × ${fmt(s.trV, 2)}² = ${fmt(F.grad)} mmHg, and with an RA pressure of ${F.rap} mmHg, estimated from the IVC (<a href="#ivc" data-go="ivc">chapter ${numOf('ivc')}</a>), the RV systolic pressure is ${fmt(F.rvsp)} mmHg${cite('quinones2002')}.`,
     };
   },
 };

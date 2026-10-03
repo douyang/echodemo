@@ -1,4 +1,4 @@
-// 01 Pulse: one scan line. A short pulse crosses the chest wall and the heart; echoes come
+// Pulse: one scan line. A short pulse crosses the chest wall and the heart; echoes come
 // back from each boundary; the scanner turns their arrival time into depth.
 import { Sheet, rng, clamp, mix, MONO, SANS, HAND } from '../sketch.js';
 import { reducedMotion } from '../state.js';

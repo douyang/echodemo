@@ -108,7 +108,7 @@ const CASES = {
   },
 };
 
-const NAME = { eject: 'Eject', fill: 'Fill', pressure: 'Pressure', as: 'Aortic stenosis', mr: 'Mitral regurgitation', ivc: 'Inferior vena cava' };
+const NAME = { eject: 'Systolic function', fill: 'Diastolic function', pressure: 'Doppler hemodynamics', as: 'Aortic stenosis', mr: 'Mitral regurgitation', ivc: 'Inferior vena cava' };
 // Links from the report to the chapters behind its values are off: the text names a chapter only
 // in its header. The code stays. A chapter's number is read from the page, so it stays right
 // when chapters move.

@@ -12,7 +12,7 @@
 // (src/echo.js).
 //
 // planes: true adds the planes of the nine standard views to the Probe and body pane, with the
-// current plane in ink and the lines where it crosses them, as chapter 07 drew them in its
+// current plane in ink and the lines where it crosses them, as Views drew them in its
 // Probe and body view in PR #20 (video/app.js). Cut B has them.
 //
 // Cut P is archived: the three-pane chapter of PR #19 (left: 'planes', All planes, with the
@@ -24,7 +24,7 @@ const ALL = ['plax', 'plax_asc', 'rv_in', 'rv_out', 'psax_av', 'psax_pa', 'psax_
 const CORE = ['plax', 'rv_in', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a5c', 'a2c', 'a3c', 'sc4c', 'sc_ivc', 'ssn'];
 const QUICK = ['plax', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a2c', 'a3c', 'sc4c', 'sc_ivc', 'ssn'];
 
-// title and end cards; the title's second line is the first sentence of chapter 07's dek (index.html)
+// title and end cards; the title's second line is the first sentence of the dek of Views (index.html)
 const CARDS = { title: 'Echo views', sub: 'Each standard view is one plane through the heart.', end: 'The Heart by Ultrasound' };
 
 export const CUTS = {
@@ -73,7 +73,7 @@ const SHOWS = {
 /**
  * The probe line of a window: WINDOWS[].probe. The parasternal short-axis window's own line
  * ("Same spot, rotated 90° clockwise") names the spot of the long-axis window; the caption
- * says which spot, as chapter 07 does ("Rotate 90° clockwise from the long axis").
+ * says which spot, as Views does ("Rotate 90° clockwise from the long axis").
  */
 const PROBE = Object.fromEntries(WINDOWS.map((w) => [w.key, w.probe]));
 PROBE.psax = 'Left sternal border, rotated 90° clockwise from the long axis';

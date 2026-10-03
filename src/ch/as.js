@@ -1,4 +1,4 @@
-// 11 Aortic stenosis: one slider from a normal valve to severe stenosis, then to the late stage
+// Aortic stenosis: one slider from a normal valve to severe stenosis, then to the late stage
 // in which the LV fails, the stroke volume falls and the gradient falls with it. The valve area
 // sets the jet by the continuity equation; the LV thickens, then fails. Illustrative values.
 // The figure: an apical five-chamber view with the CW Doppler line through the valve, the CW
@@ -17,6 +17,7 @@ import { drawA5C, drawPSAXav, measures, cal, heartShown } from '../echo2d.js';
 import { reducedMotion } from '../state.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
+import { numOf } from '../order.js';
 import { JETS } from '../jets.js';
 
 const KEY = 'asS';
@@ -394,7 +395,7 @@ function buildDiagram(host) {
       ${CRIT[k] ? chips(k) : ''}
     </div>`;
   const step = ([s, name, law, keys]) => `<div class="ase-step is-on asx-step" data-s="${s}">
-      <p class="ase-sh"><span class="ase-sn">${name}</span><span class="ase-sx">${law}<span class="cite" data-ref="baumgartner2017"></span></span><a class="asx-go" href="#pressure" data-go="pressure" aria-label="${law}: chapter 04, Pressure">04 Pressure →</a></p>
+      <p class="ase-sh"><span class="ase-sn">${name}</span><span class="ase-sx">${law}<span class="cite" data-ref="baumgartner2017"></span></span><a class="asx-go" href="#pressure" data-go="pressure" aria-label="${law}: chapter ${numOf('pressure')}, Doppler hemodynamics">${numOf('pressure')} Pressure →</a></p>
       ${keys.map(eq).join('')}${s === 'grad' ? `<p class="ase-note asx-note">${MG_NOTE}</p>` : ''}
     </div>`;
   host.innerHTML = `

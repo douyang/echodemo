@@ -1,4 +1,4 @@
-// Severity pages (chapters 10–17): one slider walks a disease from normal to its end stage, and
+// Severity pages (Diastolic function, the five valve pages, Pericardial effusion, Cardiac amyloidosis): one slider walks a disease from normal to its end stage, and
 // Play runs the page's own sequence (main.js). Shared here: keyframe tracks, the grade bands
 // under the slider, the grade bell of Play, the beat clock, and the measurement strip to scale.
 import { clamp, mix, SANS, MONO } from './sketch.js';

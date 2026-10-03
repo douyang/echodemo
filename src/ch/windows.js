@@ -1,4 +1,4 @@
-// 07 Views: the canonical 2D views. Each view is a plane through one heart, in three panes:
+// Views: the canonical 2D views. Each view is a plane through one heart, in three panes:
 //  - left, the planes of the nine standard views in one heart, each in the color of its window,
 //    the current view's lit, with the lines where the current plane crosses the others (a click
 //    on a plane takes the probe there); with Probe and body, the whole heart with the probe and
@@ -8,6 +8,7 @@
 // The left pane is the stage's second pane (gl/stage3d.js, Pane3D): prepare() sets the scene as
 // that pane shows it, and restore() puts it back for the cross-section, in each frame.
 import * as THREE from '../../vendor/three.bundle.min.js';
+import { numOf } from '../order.js';
 import { VIEWS, WINDOWS, ORDER, SHORT, MOVE, CODE } from '../views.js';
 import { loadModel } from '../model3d.js';
 import { sharedStage } from '../gl/shared.js';
@@ -60,7 +61,7 @@ let stage = null, pane = null, echo = null, model = null, ready = null, failed =
 let st = null, setState = null, lastMeas = '', on = false, bodyKey = null;
 
 // ---------------------------------------------------------------- the planes of the left pane
-// The nine standard planes of 08 Planes (archived): each in the color of its window, the current
+// The nine standard planes of Planes (archived): each in the color of its window, the current
 // view's lit, with the lines where the current plane crosses the others. The current plane is
 // also the echo's own fan, in ink. A click on a plane or on its tag takes the probe to that view.
 const NINE = ['plax', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a2c', 'a3c', 'sc4c', 'ssn'];
@@ -490,7 +491,7 @@ export default {
     if (planes) planes.group.visible = false;
     if (echo) echo.showOverlay(false);
     if (stage) {
-      stage.opts.labeled = false;   // the stage is shared with 08 Planes (archived) and others
+      stage.opts.labeled = false;   // the stage is shared with Planes (archived) and others
       stage.inset = null;
       stage.heart.group.visible = true;
       stage.heart.setCut(null);
@@ -562,8 +563,8 @@ export default {
     else if (s.view === 'plax' && m && !s.wcine) live += `At end-diastole, with calipers perpendicular to the LV long axis, the septum measures ${(m.ivs / 10).toFixed(1)} cm, the LV internal diameter ${(m.lvid / 10).toFixed(1)} cm and the inferolateral wall ${(m.pw / 10).toFixed(1)} cm. `;
     else if (v.zoom) live += `The image is magnified to a region ${v.zoom.w} cm wide. `;
     // the IVC and the aorta have a chapter of their own
-    if (s.view === 'sc_ivc') live += 'The IVC diameter and its collapse with a sniff give the RA pressure (<a href="#ivc" data-go="ivc">chapter 18</a>). ';
-    else if (s.view === 'sc_aorta') live += '<a href="#ivc" data-go="ivc">Chapter 18</a> distinguishes the aorta from the IVC. ';
+    if (s.view === 'sc_ivc') live += `The IVC diameter and its collapse with a sniff give the RA pressure (<a href="#ivc" data-go="ivc">chapter ${numOf('ivc')}</a>). `;
+    else if (s.view === 'sc_aorta') live += `<a href="#ivc" data-go="ivc">Chapter ${numOf('ivc')}</a> distinguishes the aorta from the IVC. `;
     live += `<span class="note">Views and measurements are as defined in the ASE guideline${cite('mitchell2019')}. Annotation class: ${v.lab || 'none'}.</span>`;
     return { readouts, live };
   },

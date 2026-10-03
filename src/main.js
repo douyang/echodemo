@@ -1,7 +1,7 @@
 // The page engine: chapters, controls, readouts, live sentences, citations, dialogs, tour.
 import { state, set, subscribe, declare, reducedMotion } from './state.js';
 import { REFS } from './refs.js';
-import { CHAPTERS, PARTS } from './chapters.js';
+import { CHAPTERS, PARTS, numOf } from './chapters.js';
 import { NORM_TABLES } from './norms.js';
 import { QUIZ } from './quiz.js';
 import { PHENOS, PHENO_STORE, presetsFor, PRESET_KEYS } from './pheno.js';
@@ -14,14 +14,26 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const KEYS = CHAPTERS.map((c) => c.key);
-// old addresses: 08 Planes is archived (chapters.js), and #views names 07 Views (key windows)
+// old addresses: Planes is archived (order.js), and #views names Views (key windows)
 const ALIAS = { planes: 'windows', views: 'windows' };
 /** The chapter index of an address's #key, or -1. */
 const chapterOf = (hash) => { const h = (hash || '').slice(1); return KEYS.indexOf(ALIAS[h] || h); };
 const CH = Object.fromEntries(KEYS.map((k, i) => [k, i]));
 
-// a chapter article left out of CHAPTERS (the report, chapters.js) stays hidden, its citations unnumbered
+// a chapter article left out of CHAPTERS (the report and Planes, order.js) stays hidden, its citations unnumbered
 for (const a of $$('article.chapter')) a.hidden = !KEYS.includes(a.id.replace(/^ch-/, ''));
+// every chapter number in the text comes from the order of CHAPTERS: the number in each chapter's
+// header, and each link to a chapter that reads "chapter NN" or "NN Title"
+for (const a of $$('article.chapter')) {
+  const n = numOf(a.id.replace(/^ch-/, '')), el = $('.ch-num', a);
+  if (n && el) el.textContent = n;
+}
+for (const a of $$('a[data-go]')) {
+  const n = numOf(a.dataset.go);
+  if (!n) continue;
+  if (/^[Cc]hapter \d\d$/.test(a.textContent)) a.textContent = a.textContent.replace(/\d\d$/, n);
+  else if (/^\d\d \S/.test(a.textContent)) a.textContent = `${n} ${CHAPTERS[CH[a.dataset.go]].title}`;
+}
 for (const c of CHAPTERS) if (c.defaults) declare(c.defaults);
 declare({ pheno: 'normal' });   // the heart every chapter shows (pheno.js)
 
@@ -556,7 +568,7 @@ function frame(now) {
   if (state.playing) tourTick(tdt);
   else if (state.anim) ownTick(tdt);
   const c = CHAPTERS[state.chapter];
-  // the chapter's own animation (the cursor of 05) does not take the chapter out of step
+  // the chapter's own animation (the cursor of Cycle) does not take the chapter out of step
   if (c.anim) { autoWrites++; try { c.anim(state.playing || state.anim ? tdt : dt, state, set); } finally { autoWrites--; } }
   follow(c.pulse ? c.pulse(state) : null, now);
   const sh = sheets[c.key];
