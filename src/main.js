@@ -462,6 +462,52 @@ function buildTransport() {
   fitTransport();
   document.fonts?.ready.then(fitTransport);
   new ResizeObserver(fitTransport).observe($('.transport'));
+  // phones: back, the chapter, next. A tap on the chapter opens the list of all chapters, by part
+  const list = $('#chlist');
+  list.innerHTML = PARTS.map((p) => {
+    const items = CHAPTERS.map((c, i) => [c, i]).filter(([c]) => c.part === p.key);
+    if (!items.length) return '';
+    return `<li class="chgroup"><h3 class="dlg-sub">${esc(p.name)}</h3><ol>${items.map(([c, i]) => `<li><button type="button" data-go="${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${esc(c.title)}</span></button></li>`).join('')}</ol></li>`;
+  }).join('');
+  $('#pg-prev').addEventListener('click', () => goChapter(state.chapter - 1));
+  $('#pg-next').addEventListener('click', () => goChapter(state.chapter + 1));
+  $('#pg-cur').addEventListener('click', () => {
+    openDialog('dlg-chapters');
+    const cur = list.querySelector('button[aria-current]');
+    if (cur) { cur.scrollIntoView({ block: 'center' }); cur.focus({ preventScroll: true }); }
+  });
+  list.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-go]');
+    if (!b) return;
+    $('#dlg-chapters').close();
+    goChapter(Number(b.dataset.go));
+  });
+  syncPager();
+  subscribe((s, ch) => { if ('chapter' in ch) syncPager(); });
+  new ResizeObserver(fitPager).observe($('#pg-cur'));
+  document.fonts?.ready.then(fitPager);
+}
+
+/** The phone bar's title in two lines at most; if it needs more, the short name of the desktop bar. */
+function fitPager() {
+  const c = CHAPTERS[state.chapter], t = $('#pg-cur .t');
+  t.textContent = c.title;
+  if (c.nav && t.clientHeight && (t.scrollHeight > t.clientHeight + 1 || t.scrollWidth > t.clientWidth + 1)) t.textContent = c.nav;
+}
+
+/** The phone bar: the current chapter's number and title, the ends, the list's current row. */
+function syncPager() {
+  const i = state.chapter, c = CHAPTERS[i], n = String(i + 1).padStart(2, '0');
+  const cur = $('#pg-cur');
+  cur.querySelector('.n').textContent = n;
+  cur.setAttribute('aria-label', `${n} ${c.title}: list of chapters`);
+  fitPager();
+  $('#pg-prev').disabled = i === 0;
+  $('#pg-next').disabled = i === CHAPTERS.length - 1;
+  for (const b of $$('#chlist button[data-go]')) {
+    if (Number(b.dataset.go) === i) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  }
 }
 
 /** The width of an element's own text as drawn (0 when it is hidden). */

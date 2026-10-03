@@ -42,6 +42,8 @@ On a phone the figure sits above the text and stays in view while the text scrol
 
 ![Phone, chapter 07](docs/screenshots/phone-planes.webp) ![Phone, chapter 14](docs/screenshots/phone-mr.webp)
 
+On a phone the bar at the bottom holds the Play button for the tour, back and next buttons, and the current chapter's number and title. A tap on the title opens the list of all chapters, by part. Each of these targets is at least 44 px. A title that needs more than two lines takes its short name, as on the desktop bar (TR at 320 px). Wider screens keep the row of chapter numbers.
+
 ## The heart shown
 
 The **Heart** menu in the header sets the heart for the whole page, and the page keeps the choice between visits. A note under the title says what the heart shows.

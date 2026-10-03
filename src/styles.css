@@ -718,6 +718,16 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .track .line { stroke: var(--rule); stroke-width: 1.2; fill: none; }
 .track .done { stroke: var(--ink); stroke-width: 1.4; fill: none; }
 .track .dot { fill: var(--paper-2); stroke: var(--accent); stroke-width: 2; }
+/* phones: back, the chapter (a tap lists all of them), next, in place of the numbers */
+.pager { display: none; }
+.pg-step, .pg-cur { touch-action: manipulation; cursor: pointer; }
+.pg-step { flex: none; width: 44px; height: 44px; padding: 0; border: 1px solid var(--rule); border-radius: 50%; background: transparent; color: var(--ink); display: grid; place-items: center; }
+.pg-step svg { width: 16px; height: 16px; }
+.pg-step:disabled { color: var(--ink-3); opacity: 0.4; cursor: default; }
+.pg-cur { flex: 1; min-width: 0; min-height: 44px; display: flex; align-items: center; gap: 9px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 22px; background: var(--paper); color: var(--ink); }
+.pg-cur .n { flex: none; font: 600 0.8125rem/1 var(--sans); letter-spacing: 0.08em; color: var(--accent); font-variant-numeric: tabular-nums; }
+.pg-cur .t { flex: 1; min-width: 0; max-height: 2.24em; overflow: hidden; text-align: left; font: 400 0.9375rem/1.12 var(--serif); }
+.pg-cur svg { flex: none; width: 14px; height: 14px; color: var(--ink-2); }
 
 /* ------------------------------------------------------------------ dialog */
 dialog {
@@ -739,6 +749,14 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 .reflist li { margin: 0 0 0.55em; padding-left: 0.2em; }
 .reflist .ids { font: 400 0.75rem var(--mono); color: var(--ink-2); }
 .about p { margin: 0 0 0.8em; font: 400 0.95rem/1.5 var(--serif); max-width: 66ch; }
+/* the list of chapters (the phone bar opens it) */
+#dlg-chapters { width: min(460px, calc(100% - 2 * var(--gutter))); }
+.chlist, .chlist ol { list-style: none; margin: 0; padding: 0; }
+.chlist button { width: 100%; min-height: 44px; display: flex; align-items: baseline; gap: 12px; padding: 11px 4px; border: 0; border-bottom: 1px solid var(--rule); background: transparent; color: var(--ink); text-align: left; cursor: pointer; touch-action: manipulation; }
+.chlist .n { flex: none; width: 2.2em; font: 600 0.8125rem/1 var(--sans); letter-spacing: 0.08em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.chlist .t { min-width: 0; font: 400 1.0625rem/1.3 var(--serif); }
+.chlist button[aria-current] .n, .chlist button[aria-current] .t { color: var(--accent); }
+.chlist button[aria-current] .t { font-weight: 500; }
 
 /* ------------------------------------------------------------------ responsive */
 @media (max-width: 1400px) and (min-width: 821px) {
@@ -787,6 +805,9 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   }
   .groups { display: none; }
   .chapters { grid-row: 1 / span 2; align-self: center; }
+  /* the numbers are 19 px wide here: back, the chapter and next take their place */
+  .chapters { display: none; }
+  .pager { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 8px; min-width: 0; }
   .play { width: 38px; height: 38px; }
   .chapters .t { display: none; }
   .chapters .n { font-size: 0.75rem; text-align: center; }
