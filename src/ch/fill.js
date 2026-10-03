@@ -312,7 +312,7 @@ function a4c(ctx, box, v, tt) {
   const dims = (vol, r) => { const L = Math.cbrt(vol / (0.524 * r * r)); return [r * L, L]; };
   const [wMax, lMax] = dims(laMax, 0.8), [wMin, lMin] = dims(laMin, 0.8);
   const g = {
-    lvL: [8.2, 7.0], lvW: [4.6, 2.95], lvWall: [v.wall, v.wall * 1.4], ivs: [v.wall, v.wall * 1.35],
+    lvL: [8.2, 7.0], lvW: [4.6, 2.95], lvWall: [v.wall, v.wall * 1.5], ivs: [v.wall, v.wall * 1.5],
     rvW: [3.3, 2.7], laW: [wMin, wMax], laL: [lMin, lMax], raW: [3.2, 3.8], raL: [3.9, 4.5], ma: 3.1, ta: 3.0,
   };
   drawA4C(ctx, box, g, {

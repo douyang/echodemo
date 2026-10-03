@@ -102,8 +102,9 @@ function a4c(ctx, box, m, t, mode) {
   const laMax = m.lavi * BSA, laMin = laMax * 0.55;
   const [wMax, lMax] = laDims(laMax, 0.8 + 0.1 * m.s), [wMin, lMin] = laDims(laMin, 0.8 + 0.1 * m.s);
   const wall = 0.9 - 0.08 * m.s;
+  const sysF = 1 + 1.25 * (m.ef / 100 - 0.2);   // 50% thicker in systole at an LVEF of 60%
   const g = {
-    lvL: [m.lvL, m.lvL - 1.15], lvW: [m.lvedd, m.lvesd], lvWall: [wall, wall * (1 + 0.9 * (m.ef / 100 - 0.2))], ivs: [wall, wall * 1.35],
+    lvL: [m.lvL, m.lvL - 1.15], lvW: [m.lvedd, m.lvesd], lvWall: [wall, wall * sysF], ivs: [wall, wall * sysF],
     rvW: [3.4 + 0.3 * m.s, 2.8 + 0.3 * m.s], laW: [wMin, wMax], laL: [lMin, lMax], raW: [3.2, 3.8], raL: [3.9, 4.5],
     ma: m.ma, ta: 3.0, mv: { gap: m.gap, thick: 0.13 },
   };

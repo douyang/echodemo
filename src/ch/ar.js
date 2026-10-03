@@ -84,7 +84,7 @@ const diaFrac = (t) => {
 
 function plax(ctx, box, m, t) {
   const g = {
-    ivs: [m.wall, m.wall * 1.4], pw: [m.wall, m.wall * 1.4], lvid: [m.lvedd, m.lvesd], rvd: 2.6,
+    ivs: [m.wall, m.wall * 1.5], pw: [m.wall, m.wall * 1.5], lvid: [m.lvedd, m.lvesd], rvd: 2.6,
     la: [m.la * 0.88, m.la], root: 3.3, lvot: LVOT, av: { thick: 0.12, open: 2.0, gap: m.eroa > 0.005 ? Math.min(0.3, m.vc * 0.45) : 0 },
   };
   const u = diaFrac(t);

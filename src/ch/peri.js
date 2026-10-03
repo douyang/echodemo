@@ -100,7 +100,7 @@ function dynamics(m) {
 function a4c(ctx, box, m) {
   const k = m.tamp, sq = 1 - 0.12 * k;                 // tamponade: small, underfilled chambers
   const g = {
-    lvL: [8.4, 7.3], lvW: [4.6 * sq, 3.0 * sq], lvWall: [0.9, 1.3], ivs: [0.9, 1.25],
+    lvL: [8.4, 7.3], lvW: [4.6 * sq, 3.0 * sq], lvWall: [0.9, 1.35], ivs: [0.9, 1.35],
     rvW: [3.3 * (1 - 0.18 * k), 2.7 * (1 - 0.18 * k)], rvWall: 0.4, laW: [3.3, 3.9], laL: [4.1, 4.8],
     raW: [3.1 * (1 - 0.1 * k), 3.6 * (1 - 0.1 * k)], raL: [3.8, 4.4], ma: 3.1, ta: 3.0,
     effusion: (m.eff / 10) * 0.85,
@@ -114,7 +114,7 @@ function a4c(ctx, box, m) {
 
 function plax(ctx, box, m) {
   const e = m.eff / 10;
-  const g = { ivs: [0.9, 1.3], lvid: [4.7 * (1 - 0.1 * m.tamp), 3.0], pw: [0.9, 1.3], la: [3.1, 3.5], root: 3.1, lvot: 2.1,
+  const g = { ivs: [0.9, 1.35], lvid: [4.7 * (1 - 0.1 * m.tamp), 3.0], pw: [0.9, 1.35], la: [3.1, 3.5], root: 3.1, lvot: 2.1,
     effusion: e, effusionAnt: Math.max(0, e - 0.6) * 0.75 };
   drawPLAX(ctx, box, g, { t: clock.beats % 1 * RR0, depth: 16, title: fit(box.w, 'PARASTERNAL LONG AXIS', 'PLAX') });
 }

@@ -86,7 +86,7 @@ function a4c(ctx, box, m, t) {
   const laMax = m.lavi * BSA, laMin = laMax * (0.6 + 0.25 * m.s);
   const [wMax, lMax] = laDims(laMax, 0.8 + 0.1 * m.s), [wMin, lMin] = laDims(laMin, 0.8 + 0.1 * m.s);
   const g = {
-    lvL: [8.2, 7.05], lvW: [m.lvid, m.lvid * 0.64], lvWall: [0.9, 1.25], ivs: [0.9, 1.2],
+    lvL: [8.2, 7.05], lvW: [m.lvid, m.lvid * 0.64], lvWall: [0.9, 1.35], ivs: [0.9, 1.35],
     rvW: [m.rvb, m.rvb - 0.6], laW: [wMin, wMax], laL: [lMin, lMax],
     raW: [3.2 + 0.7 * m.s, 3.8 + 0.8 * m.s], raL: [3.9 + 0.5 * m.s, 4.5 + 0.6 * m.s], ma: 3.1, ta: 3.0 + 0.4 * m.s,
     mv: { thick: m.thick, dome: m.dome, tip: Math.min(2.4, m.tip) },
