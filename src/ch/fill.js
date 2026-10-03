@@ -756,16 +756,15 @@ const fillPage = {
   leave() { fresh = true; fcPrev = null; freeLive(); },
   pulse: () => beat.pulse(),
   anim(dt, s, set) {
-    // Play walks the pattern from normal to restrictive (the slider runs 0 to 3)
-    if (s.anim) {
-      const scaled = { anim: true, f01: s.fstate / 3 };
-      playSeverity(dt, scaled, (p) => set({ fstate: Math.round(p.f01 * 3 * 100) / 100, fx: null }), 'f01', BANDS, { dur: 16 });
-    }
+    // the grade bell while the page plays its own sequence (main.js); the bands run 0 to 1, the slider 0 to 3
+    playSeverity(dt, { anim: s.anim, f01: s.fstate / 3 }, set, 'f01', BANDS);
     // the beat, or a box of the path that is still flashing
     if ((beat.tick(dt, s.fCine) || performance.now() - lastFlash < FLASH + 100) && sheet) sheet.dirty = true;
   },
   tourEnter(set) { set({ fstate: 0, fx: null }); },
   tourTick(tt, set) { set({ fstate: Math.round(clamp((tt - 1.5) / 12, 0, 1) * 3 * 20) / 20, fx: null }); },
+  // the time of the tour at which tourTick shows this state (its inverse): the tour continues from it
+  tourAt(s) { return 1.5 + (s.fstate / 3) * 12; },
   text(s, { cite }) {
     const v = shown(s);
     const r = lapAlgorithm(v);

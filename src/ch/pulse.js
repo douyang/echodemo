@@ -397,6 +397,8 @@ export default {
     set({ freq: Math.round(mix(2, 7, clamp((tt - 1.5) / 7, 0, 1)) * 10) / 10 });
     if (tt > 9.5) set({ tgc: true });
   },
+  // the time of the tour at which tourTick shows this frequency (2 to 7 MHz from 1.5 to 8.5 s)
+  tourAt(s) { return 1.5 + ((clamp(s.freq, 2, 7) - 2) / 5) * 7; },
   text(st) {
     const P = physics(st);
     const pw = dB(refl(Z.blood, Z.muscle)) - P.loss(PW_DEPTH);

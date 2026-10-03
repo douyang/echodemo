@@ -221,6 +221,12 @@ export default {
     if (tt < 12) set({ msS: Math.round(clamp((tt - 1) / 10, 0, 1) * 0.85 * 200) / 200 });
     else set({ hr: Math.round(70 + clamp((tt - 12.5) / 4, 0, 1) * 40) });
   },
+  // the time of the tour at which tourTick shows this state: the valve area up to 0.85 before 12 s,
+  // then the heart rate from 70 to 110 /min
+  tourAt(s) {
+    if (s.hr > 70) return 12.5 + Math.min(1, (s.hr - 70) / 40) * 4;
+    return s.msS > 0.85 ? 12 : 1 + (s.msS / 0.85) * 10;
+  },
   text(s, { cite }) {
     const m = model(s[KEY], s.hr);
     const g = m.grade;

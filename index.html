@@ -152,6 +152,7 @@
 
   <!-- ============================================================ chapters -->
   <section class="panel" id="panel" aria-live="off">
+    <!-- the heart note, off: it stays hidden (SHOW_HEART_NOTE in src/main.js) -->
     <p class="pheno-note" id="pheno-note" hidden></p>
 
     <!-- ======================================================== Physics -->
@@ -366,6 +367,13 @@
         <p>The LV outflow tract is assumed to be circular, with diameter d<span class="cite" data-ref="zoghbi2017"></span>. The LVOT diameter is measured in a zoomed parasternal long-axis view from inner edge to inner edge in mid-systole<span class="cite" data-ref="baumgartner2017"></span>. The LVOT velocity is recorded with pulsed-wave Doppler from the apical five-chamber or apical long-axis view, with the sample volume just below the aortic valve<span class="cite" data-ref="mitchell2019"></span>. Both measurements should be made at the same level<span class="cite" data-ref="baumgartner2017"></span>.</p>
         <p>Because the diameter is squared, a small error in its measurement produces a large error in the calculated stroke volume. Repeated LVOT diameter measurements vary by 5 to 8%, which is the largest source of error in the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. A 2 mm error in the diameter of a 2.0 cm outflow tract changes the calculated stroke volume by approximately 20%.</p>
         <p>Normal resting values from catheterization studies are a stroke volume of 60 to 100 mL, a cardiac output of 4 to 8 L/min and a cardiac index of 2.5 to 4.0 L/min/m²<span class="cite" data-ref="humbert2022"></span>.</p>
+        <h3>Flow through an orifice</h3>
+        <p class="eq">flow rate = area × velocity &nbsp;·&nbsp; volume per beat = area × VTI</p>
+        <p>The flow rate through an orifice equals the area of the orifice multiplied by the velocity of the blood in it. The volume that passes in one beat equals the area multiplied by the VTI. The stroke volume above is this product for the LV outflow tract<span class="cite" data-ref="zoghbi2017"></span>. Two methods apply the same principle to the valves.</p>
+        <ul>
+        <li><b>Continuity equation.</b> The volume that passes through the LV outflow tract also passes through the aortic valve. The aortic valve area therefore equals the LVOT area multiplied by the LVOT VTI and divided by the aortic VTI<span class="cite" data-ref="baumgartner2017"></span>. <a href="#as" data-go="as">Chapter 11</a> calculates the valve area in this way.</li>
+        <li><b>Flow convergence (PISA).</b> Blood accelerates toward a regurgitant orifice in roughly hemispheric shells, with a higher velocity and a smaller area in each shell nearer the orifice<span class="cite" data-ref="zoghbi2017"></span>. Color Doppler shows the shell at the aliasing velocity (Va), where the color changes (<a href="#shift" data-go="shift">chapter 03</a>). The surface area of a hemisphere of radius r is 2πr², so the regurgitant flow rate is 2πr² × Va<span class="cite" data-ref="zoghbi2017"></span>. At the time of the peak jet velocity, the flow rate divided by the peak velocity from CW Doppler gives the effective regurgitant orifice area (EROA)<span class="cite" data-ref="zoghbi2017"></span>. The EROA multiplied by the VTI of the jet gives the regurgitant volume<span class="cite" data-ref="zoghbi2017"></span>. <a href="#mr" data-go="mr">Chapter 14</a> and <a href="#tr" data-go="tr">chapter 15</a> use this method.</li>
+        </ul>
         <h3>Pressure gradients and RV systolic pressure</h3>
         <p class="eq">ΔP = 4 v² &nbsp;·&nbsp; RVSP = 4 × (peak TR velocity)² + RA pressure</p>
         <p>The simplified Bernoulli equation calculates the pressure difference in mmHg from a velocity in m/s<span class="cite" data-ref="baumgartner2017"></span>. It is valid when the velocity proximal to the narrowing is 1.5 m/s or less<span class="cite" data-ref="quinones2002"></span>. The peak TR velocity gives the pressure difference between the RV and the RA, and the RA pressure estimated from the IVC is added to obtain the RV systolic pressure<span class="cite" data-ref="mukherjee2025"></span>.</p>
@@ -380,6 +388,7 @@
         <li>Stroke volume equals the LVOT area × the LVOT VTI, and an error in the LVOT diameter is squared in the calculation.</li>
         <li>The simplified Bernoulli equation gives the pressure difference as ΔP = 4v².</li>
         <li>RV systolic pressure equals 4 × (peak TR velocity)² plus the RA pressure estimated from the IVC.</li>
+        <li>The flow rate through an orifice equals its area × the velocity. The continuity equation and the PISA method both use this principle.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -987,7 +996,15 @@
         </ol>
         <h3>PISA method</h3>
         <p class="eq">flow = 2π r² × Va &nbsp;·&nbsp; EROA = flow ÷ peak velocity &nbsp;·&nbsp; RVol = EROA × VTI</p>
-        <p>Blood accelerates as it converges on the regurgitant orifice; at the aliasing velocity (Va), the color changes, and the isovelocity surface at Va is a hemisphere of radius r<span class="cite" data-ref="zoghbi2017"></span>. The color baseline should be shifted toward the jet to lower Va to about 30 to 40 cm/s, and the radius should be measured at the time of the peak jet velocity<span class="cite" data-ref="zoghbi2017"></span>. At this setting, a radius of 1.0 cm or more is specific for severe MR<span class="cite" data-ref="zoghbi2017"></span>.</p>
+        <p>Blood accelerates as it converges on the regurgitant orifice; at the aliasing velocity (Va), the color changes, and the isovelocity surface at Va is a hemisphere of radius r<span class="cite" data-ref="zoghbi2017"></span>. The color baseline should be shifted toward the jet to lower Va to about 30 to 40 cm/s, and the radius should be measured at the time of the peak jet velocity<span class="cite" data-ref="zoghbi2017"></span>. At this setting, a radius of 1.0 cm or more is specific for severe MR<span class="cite" data-ref="zoghbi2017"></span>. The method applies the principle of <a href="#pressure" data-go="pressure">chapter 04</a>: the flow rate through a surface equals its area × the velocity.</p>
+        <p>The PISA view of the figure applies the method in four steps:</p>
+        <ol class="steps">
+        <li>The view is zoomed on the mitral valve, and the color baseline is shifted toward the jet, so that the flow aliases at 30 cm/s.</li>
+        <li>The radius r runs from the orifice to the first aliasing boundary. The flow rate is 2πr² × 30 cm/s.</li>
+        <li>The flow rate divided by the peak MR velocity of 5.0 m/s gives the EROA.</li>
+        <li>The EROA multiplied by the VTI of the jet gives the regurgitant volume. A jet through all of systole has a VTI of 150 cm.</li>
+        </ol>
+        <p>For example, an EROA of 0.40 cm² at a peak velocity of 5.0 m/s corresponds to a flow rate of 200 mL/s. At 30 cm/s, this flow rate gives a radius of 1.03 cm, and the regurgitant volume is 60 mL. All three values reach the thresholds for severe MR<span class="cite" data-ref="zoghbi2017"></span>.</p>
         <ul>
         <li>The radius is squared in the flow equation; errors of 10 to 25% are common, even among experts<span class="cite" data-ref="zoghbi2017"></span>.</li>
         <li>An elliptical orifice, which is common in secondary MR, causes PISA to underestimate the flow<span class="cite" data-ref="zoghbi2017"></span>. In secondary MR, an EROA ≥0.30 cm² by 2D PISA may still indicate severe regurgitation<span class="cite" data-ref="zoghbi2017"></span>; the EACVI accepts an EROA ≥0.30 cm² or a regurgitant volume ≥45 mL as severe<span class="cite" data-ref="lancellotti2022"></span>.</li>
@@ -1248,8 +1265,19 @@
     <ol class="chapters" id="chapters">
       <li class="track" aria-hidden="true"><svg id="track" preserveAspectRatio="none"></svg></li>
     </ol>
+    <!-- phones: back, the chapter (a tap lists all of them), next; styles.css hides the numbers there -->
+    <div class="pager" id="pager">
+      <button class="pg-step" id="pg-prev" type="button" aria-label="Previous chapter"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="pg-cur" id="pg-cur" type="button" aria-haspopup="dialog" aria-controls="dlg-chapters"><span class="n">01</span><span class="t">Pulse</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="pg-step" id="pg-next" type="button" aria-label="Next chapter"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
   </nav>
 </div>
+
+<dialog id="dlg-chapters" aria-labelledby="chapters-title">
+  <div class="dlg-head"><h2 id="chapters-title">Chapters</h2><button class="tool" type="button" data-close>Close</button></div>
+  <div class="dlg-body"><ol class="chlist" id="chlist"></ol></div>
+</dialog>
 
 <dialog id="dlg-refs" aria-labelledby="refs-title">
   <div class="dlg-head"><h2 id="refs-title">Sources</h2><button class="tool" type="button" data-close>Close</button></div>
