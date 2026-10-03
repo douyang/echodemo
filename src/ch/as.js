@@ -245,14 +245,23 @@ function avCW(ctx, P, v) {
     .map(([ms, vel, text]) => ({ x: X(ms), y: yb + vel * k, text: narrow ? text : `${text} m/s` }));
   const cals = peaks.map(({ x, y }) => ({ x0: x - 12, y0: y - 5, x1: x + 12, y1: y + 5 }));
   peaks.forEach(({ x, y }) => caliper(ctx, x - 10, y, x + 10, y, { solid: true }));
+  // on a narrow panel the velocity ratio is a note at the top left (below)
+  const vr = v.vr.toFixed(2);
+  const keep = [...cals];
+  if (narrow) {
+    ctx.save();
+    ctx.font = `500 11px ${MONO}`;
+    keep.push({ x0: bx.x + 6, y0: bx.y + 2, x1: bx.x + 10 + ctx.measureText(`ratio ${vr}`).width, y1: bx.y + 18 });
+    ctx.restore();
+  }
   peaks.forEach(({ x, y, text }, i) => {
-    // beside the caliper, else below it (the AV tag) or above it (the LVOT tag), else the other
-    const h = boxAt(x + 14, y, text).h, tries = i ? [y, y - h - 4, y + h + 4] : [y, y + h + 4, y - h - 4];
-    const ty = tries.find((t) => { const b = boxAt(x + 14, t, text); return ![...cals, ...labels].some((o) => meets(b, o)); }) ?? y;
+    // beside the caliper, else below it (the AV tag) or above it (the LVOT tag), else the other,
+    // else a second row below
+    const h = boxAt(x + 14, y, text).h, tries = i ? [y, y - h - 4, y + h + 4, y + 2 * h + 8] : [y, y + h + 4, y - h - 4, y + 2 * h + 8];
+    const ty = tries.find((t) => { const b = boxAt(x + 14, t, text); return ![...keep, ...labels].some((o) => meets(b, o)); }) ?? y;
     const r = tagBox(ctx, x + 14, ty, [text], { size: 10.5, bounds: bx });
     labels.push({ x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h });
   });
-  const vr = v.vr.toFixed(2);
   if (narrow) note(ctx, bx, `ratio ${vr}`, 'top');
   else {
     // a bottom corner clear of the two labels: the left one, or the right one when a fast jet's
