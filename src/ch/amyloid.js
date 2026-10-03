@@ -8,7 +8,8 @@ import { Sheet, clamp, MONO } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { panel, spectral, vscale, SC, tagBox } from '../scope.js';
 import { cycleAt, RR, EV } from '../cyclemodel.js';
-import { tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
+import { tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, shown } from '../sev.js';
+import { glsBand } from '../norms.js';
 import { loadModel } from '../model3d.js';
 import { lapAlgorithm } from './fill.js';
 import { BSA } from './pressure.js';
@@ -40,22 +41,25 @@ const sgn = (v, d = 0) => `${v < 0 ? '−' : ''}${Math.abs(v).toFixed(d)}`;
 export function model(a) {
   const m = TRK(a);
   m.a = a;
-  m.ivs = ivsOf(a); m.pw = pwOf(a); m.lvid = lvidOf(a); m.wall = Math.max(m.ivs, m.pw);
-  m.edv = EDV(a); m.esv = ESV(a); m.ef = (100 * (m.edv - m.esv)) / m.edv;
-  m.lavi = LAMAX(a) / BSA;
-  m.tapse = TAPSE(a); m.rvWall = RVW(a); m.ias = IAS(a); m.valve = VALVE(a); m.eff = EFF(a);
-  m.rwt = (m.ivs + m.pw) / m.lvid;
-  m.avg = (m.sep + m.lat) / 2;
-  m.ea = m.E / m.A;
-  m.eeSep = (m.E * 100) / m.sep; m.eeLat = (m.E * 100) / m.lat; m.eeAvg = (m.E * 100) / m.avg;
+  // values as printed, each derived value from the printed ones: the grade, the criteria and the
+  // score read these numbers, so a value on screen never contradicts its mark
+  for (const [k, d] of [['E', 2], ['A', 2], ['DT', 0], ['sep', 1], ['lat', 1], ['sSep', 1], ['aSep', 1], ['tr', 1], ['sd', 2], ['lars', 0]]) m[k] = shown(m[k], d);
+  m.ivs = shown(ivsOf(a), 1); m.pw = shown(pwOf(a), 1); m.lvid = shown(lvidOf(a), 1); m.wall = Math.max(m.ivs, m.pw);
+  m.edv = EDV(a); m.esv = ESV(a); m.ef = shown((100 * (m.edv - m.esv)) / m.edv);
+  m.lavi = shown(LAMAX(a) / BSA);
+  m.tapse = shown(TAPSE(a)); m.rvWall = RVW(a); m.ias = IAS(a); m.valve = VALVE(a); m.eff = EFF(a);
+  m.rwt = shown((m.ivs + m.pw) / m.lvid, 2);
+  m.avg = shown((m.sep + m.lat) / 2, 1);
+  m.ea = shown(m.E / m.A, 2);
+  m.eeSep = shown((m.E * 100) / m.sep, 1); m.eeLat = shown((m.E * 100) / m.lat, 1); m.eeAvg = shown((m.E * 200) / (m.sep + m.lat), 1);
   m.dd = lapAlgorithm(m);
   m.segs = [...Array(6).fill(m.base), ...Array(6).fill(m.mid), ...Array(4).fill(m.apex), m.cap].map((v, i) => v + JIT[i] * (0.5 + 0.5 * a));
   m.lsBase = mean(m.segs.slice(0, 6)); m.lsMid = mean(m.segs.slice(6, 12)); m.lsApex = mean(m.segs.slice(12, 16));
-  m.gls = mean(m.segs);
-  m.relaps = Math.abs(m.lsApex) / (Math.abs(m.lsBase) + Math.abs(m.lsMid));
+  m.gls = shown(mean(m.segs), 1);
+  m.relaps = shown(Math.abs(m.lsApex) / (Math.abs(m.lsBase) + Math.abs(m.lsMid)), 2);
   // apical to basal septal strain: the apical septal segment over the two basal septal segments
-  m.sab = Math.abs(m.segs[13]) / Math.abs((m.segs[1] + m.segs[2]) / 2);
-  m.efGls = m.ef / Math.abs(m.gls);
+  m.sab = shown(Math.abs(m.segs[13]) / Math.abs((m.segs[1] + m.segs[2]) / 2), 1);
+  m.efGls = shown(m.ef / Math.abs(m.gls), 1);
   // ESC 2021: an unexplained wall of 12 mm or more, and two of three findings or 8 points
   m.thick = m.wall >= 12;
   m.find = { dd: (m.dd.grade ?? 0) >= 2, tdi: m.sSep < 5 && m.sep < 5 && m.aSep < 5, gls: Math.abs(m.gls) < 15 };
@@ -236,7 +240,7 @@ function inflowPanel(ctx, P, m) {
   const f = inflow(m);
   spectral(ctx, bx, { fn: (u) => f(u * 2 * RR), scale: 1.2, base: 0.9, mode: 'pw', broad: 0.1, key: `amyin|${m.E.toFixed(3)}|${m.A.toFixed(3)}|${Math.round(m.DT)}`, seed: 3 });
   vscale(ctx, bx, 1.2, 0.9, 0.5);
-  note(ctx, bx, [`E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)} m/s · E/A ${m.ea.toFixed(1)} · DT ${Math.round(m.DT)} ms`, `E/A ${m.ea.toFixed(1)} · DT ${Math.round(m.DT)}`, `E/A ${m.ea.toFixed(1)}`], 'top');
+  note(ctx, bx, [`E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)} m/s · E/A ${m.ea.toFixed(2)} · DT ${Math.round(m.DT)} ms`, `E/A ${m.ea.toFixed(2)} · DT ${Math.round(m.DT)}`, `E/A ${m.ea.toFixed(2)}`], 'top');
   return bx;
 }
 
@@ -464,13 +468,13 @@ export default {
     if (m.met) head = `<b>ESC echocardiographic criteria met.</b> An LV wall thickness of ${fmt(m.wall, 1)} mm is accompanied by ${list}${m.score >= 8 ? `, and the score is ${m.score}` : ''}${cite('esc2021')}.`;
     else if (m.thick) head = `<b>LV wall thickness ${fmt(m.wall, 1)} mm, criteria not met.</b> ${list[0].toUpperCase()}${list.slice(1)} is present, and the score is ${m.score}; the criteria require two of the three findings or a score of 8 or more${cite('esc2021')}.`;
     else head = `<b>LV wall thickness ${fmt(m.wall, 1)} mm.</b> The ESC echocardiographic criteria require an unexplained LV wall thickness of 12 mm or more${cite('esc2021')}.`;
-    const live = `${head} The Doppler findings indicate ${dd}, with an E/A ratio of ${fmt(m.ea, 1)}, a deceleration time of ${fmt(m.DT)} ms and an average E/e′ of ${fmt(m.eeAvg, 1)}${cite('nagueh2025')}. GLS is ${sgn(m.gls, 1)}% and the relative apical LS is ${fmt(m.relaps, 2)}${m.relaps >= 1 ? ', which indicates relative apical sparing' : ''}${cite('phelan2012')}.`;
+    const live = `${head} The Doppler findings indicate ${dd}, with an E/A ratio of ${fmt(m.ea, 2)}, a deceleration time of ${fmt(m.DT)} ms and an average E/e′ of ${fmt(m.eeAvg, 1)}${cite('nagueh2025')}. GLS is ${sgn(m.gls, 1)}% and the relative apical LS is ${fmt(m.relaps, 2)}${m.relaps >= 1 ? ', which indicates relative apical sparing' : ''}${cite('phelan2012')}.`;
     return {
       readouts: [
         { k: 'IVSd', v: fmt(m.ivs, 1), u: 'mm', flag: m.ivs >= 12 },
         { k: 'LVEF', v: fmt(m.ef), u: '%', flag: m.ef < 50 },
-        { k: 'E/e′ average', v: fmt(m.eeAvg, 1), flag: m.eeAvg > 14 },
-        { k: 'GLS', v: sgn(m.gls, 1), u: '%', flag: Math.abs(m.gls) < 15 },
+        { k: 'E/e′ average', v: fmt(m.eeAvg, 1), flag: m.eeAvg >= 14 },
+        { k: 'GLS', v: sgn(m.gls, 1), u: '%', flag: glsBand(m.gls) === 'abnormal' },
         { k: 'Relative apical LS', v: fmt(m.relaps, 2), flag: m.relaps >= 1 },
         { k: 'Score', v: `${m.score}`, u: 'of 10', flag: m.score >= 8 },
         { k: 'ESC criteria', v: m.met ? 'met' : 'not met', text: true, flag: m.met },

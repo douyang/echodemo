@@ -6,6 +6,12 @@ import { reducedMotion } from './state.js';
 import { SC } from './scope.js';
 import { cue } from './music.js';
 
+/**
+ * A value as the page prints it: rounded to d decimals. A page grades, flags and words from these
+ * values, so that no grade or sentence contradicts a number on screen (as.js measure(), fill.js).
+ */
+export const shown = (x, d = 0) => Math.round(x * 10 ** d + 1e-7) / 10 ** d;
+
 /** Monotone cubic through [[x, y], ...] (no overshoot between keyframes). */
 export function mono(keys) {
   const n = keys.length;

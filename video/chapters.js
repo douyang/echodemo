@@ -75,7 +75,7 @@ export const VIDEOS = {
       { set: { sv: 70, lvotD: 2, calErr: 0, hr: 70, trV: 2.4, rap: 3 }, name: 'Stroke volume from the LVOT', track: 'Stroke volume', pick: [0], hold: 6 },
       { set: { calErr: 2 }, name: 'LVOT diameter error of 2 mm', track: '+2 mm', pick: [0], move: 4, hold: 6 },
       { set: { calErr: 0 }, name: 'RV systolic pressure', track: 'RVSP', pick: [1], move: 4, hold: 6 },
-      { set: { trV: 3, rap: 8 }, name: 'Higher TR velocity, RA pressure 8 mmHg', track: 'TR 3.0 m/s', pick: [1], move: 4, hold: 6 },
+      { set: { trV: 3, rap: 8 }, name: 'Higher peak TR velocity, RA pressure 8 mmHg', track: 'TR 3.0 m/s', pick: [1], move: 4, hold: 6 },
       { set: { trV: 3.5, rap: 15 }, name: 'RA pressure 15 mmHg', track: 'TR 3.5 m/s', pick: [1], move: 4, hold: 7 },
     ],
   },

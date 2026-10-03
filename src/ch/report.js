@@ -1,4 +1,4 @@
-// 18 Report: one study, written up. Four simulated teaching cases; the report follows the ASE
+// Report (hidden): one study, written up. Four simulated teaching cases; the report follows the ASE
 // 2025 reporting guideline: summary statement at the top, then each structure, structure
 // before function, then the measurements. Sex sets the normal ranges.
 import { langGrade, lvGeometry, LANG, lvefBand, glsBand, tapseGrade, sPrimeGrade, trvGrade, rapFromIvc } from '../norms.js';

@@ -12,7 +12,7 @@
 import { FPS, BEAT, DISSOLVE, SIZE, segAt, cycleMs } from './timeline.js';
 import { VIDEOS, chapterLayout, stepStates } from './chapters.js';
 import { REEL, reelLayout, clipVideo, reelTrack, reelDip } from './reel.js';
-import { CHAPTERS } from '../src/chapters.js';
+import { CHAPTERS, PARTS } from '../src/chapters.js';
 import { state, set, subscribe, declare } from '../src/state.js';
 import { RR } from '../src/cyclemodel.js';
 import { ecg } from '../src/scope.js';
@@ -336,7 +336,7 @@ function updateSide(out) {
 }
 
 // ---------------------------------------------------------------- caption
-const PART_NAME = { physics: 'Physics', physiology: 'Physiology', views: 'Views', function: 'Function', valves: 'Valves', pericardium: 'Pericardium', cardiomyopathy: 'Cardiomyopathy' }[C.part] || C.part;
+const PART_NAME = PARTS.find((p) => p.key === C.part)?.name || C.part;
 let SUB = '';
 let CAPS = [];
 /** Sentences of a line: a stop, a space, then a capital, a digit or a bracket. */

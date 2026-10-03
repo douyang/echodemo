@@ -112,7 +112,7 @@ const GRADE = { 0: 'normal diastolic function', 1: 'grade 1 diastolic dysfunctio
 const outOf = (r) => (r.grade === null ? 'ng' : r.grade === 0 ? 'normal' : `g${r.grade}`);
 /** The outcome's name on the slider's bands and in the readouts. */
 const STAGE = { normal: 'normal', g1: 'grade 1', ng: 'not graded', g2: 'grade 2', g3: 'grade 3' };
-/** The outcome as a filling pattern, for the slider's label while values are edited. */
+/** The outcome as a filling pattern, for the slider's label. */
 const PATTERN = { normal: 'normal', g1: 'slow relaxation', ng: 'normal LA pressure', g2: 'raised LA pressure', g3: 'restrictive' };
 const gradeLabel = (f) => STAGE[outOf(lapAlgorithm(measure(fillValues(f))))];
 let BANDS = [];
@@ -443,7 +443,7 @@ const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 // ---------------------------------------------------------------- the algorithm in the text
 const NAME = {
   sep: 'Septal e′', lat: 'Lateral e′', avg: 'Average e′', eeSep: 'Septal E/e′', eeLat: 'Lateral E/e′', eeAvg: 'Average E/e′',
-  tr: 'TR velocity', sd: 'PV S/D', lars: 'LARS', lavi: 'LAVi', ivrt: 'IVRT', E: 'E', A: 'A', ea: 'E/A',
+  tr: 'Peak TR velocity', sd: 'PV S/D', lars: 'LARS', lavi: 'LAVi', ivrt: 'IVRT', E: 'E', A: 'A', ea: 'E/A',
 };
 /** Names in the change line: the cause, and an effect. */
 const CAUSE = { sep: 'Septal e′', lat: 'Lateral e′', tr: 'TR', sd: 'S/D', lars: 'LARS', lavi: 'LAVi', ivrt: 'IVRT', E: 'E', A: 'A' };
@@ -503,7 +503,7 @@ function buildDiagram(host) {
       <p class="ase-sh"><span class="ase-sn">Step 1</span><span class="ase-sx">Three variables</span><span class="ase-count"></span></p>
       ${crit('eRed', 'Reduced e′', ['sep', 'lat', 'avg'])}
       ${crit('eeUp', 'Raised E/e′', ['eeSep', 'eeLat', 'eeAvg'], '<span class="ase-cx">E <b></b> m/s ÷ e′</span>')}
-      ${crit('trUp', 'Raised TR velocity', ['tr'])}
+      ${crit('trUp', 'Raised peak TR velocity', ['tr'])}
     </div>
     <div class="ase-step" data-s="2">
       <p class="ase-sh"><span class="ase-sn">Step 2</span><span class="ase-sx">Abnormal variables</span></p>
@@ -731,8 +731,8 @@ const fillPage = {
   dwell: 16,
   defaults: { fstate: 0, fCine: true, fx: null },
   format: {
-    fstate: (v, s) => (s?.fx ? PATTERN[outOf(lapAlgorithm(shown(s)))]
-      : v < 0.5 ? 'normal' : v < 1.5 ? 'slow relaxation' : v < 2.5 ? 'raised LA pressure' : 'restrictive'),
+    // the algorithm's result, so the label never contradicts the result beside it
+    fstate: (v, s) => PATTERN[outOf(lapAlgorithm(shown(s?.fx ? s : { fstate: v })))],
   },
   watch: ['fstate', 'fCine', 'fx'],
   figure(fig) {
@@ -776,7 +776,7 @@ const fillPage = {
         { k: 'E/A', v: fmt(v.ea, 2) },
         { k: 'Average e′', v: fmt(v.avg), u: 'cm/s', flag: ABN.avg(v) },
         { k: 'Average E/e′', v: fmt(v.eeAvg), flag: ABN.eeAvg(v) },
-        { k: 'TR velocity', v: fmt(v.tr, 1), u: 'm/s', flag: ABN.tr(v) },
+        { k: 'Peak TR velocity', v: fmt(v.tr, 1), u: 'm/s', flag: ABN.tr(v) },
         { k: 'LA volume index', v: fmt(v.lavi, 0), u: 'mL/m²', flag: ABN.lavi(v) },
         { k: 'Result', v: STAGE[out], text: true, flag: r.lap === 'raised' },
       ],

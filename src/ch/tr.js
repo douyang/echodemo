@@ -5,9 +5,9 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { RR, EV } from '../cyclemodel.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, waveLetter } from '../sev.js';
+import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, waveLetter, shown } from '../sev.js';
 import { drawA4C, drawIVC, drawPSAXpm, cal, measures } from '../echo2d.js';
-import { rapFromIvc } from '../norms.js';
+import { rapEstimate } from '../norms.js';
 import { BSA } from './pressure.js';
 import { JETS } from '../jets.js';
 
@@ -37,24 +37,33 @@ const TRK = tracks([0, 0.2, 0.4, 0.6, 0.8, 1], {
 export function model(s) {
   const m = TRK(s);
   m.s = s;
-  m.eroa = s;                                        // cm², one to one with the slider
+  // the values as the page prints them, each calculation from the rounded values before it, so
+  // that the grade, the flags and the sentences agree with the numbers on screen
+  m.eroa = shown(s, 2);                              // cm², one to one with the slider
   const k = aspectOf(s);
-  m.vc = 2 * Math.sqrt((k * m.eroa) / Math.PI);
-  m.rvol = m.eroa * vtiOf(s);
+  m.vc = shown(2 * Math.sqrt((k * m.eroa) / Math.PI), 2);
+  m.rvol = shown(m.eroa * vtiOf(s));
+  m.v = shown(m.v, 1);
   m.q = m.eroa * m.v * 100;                          // mL/s peak flow
-  m.r = m.q > 0 ? Math.sqrt(m.q / (2 * Math.PI * VA)) : 0;
-  m.collapses = m.coll > 0.5;
-  m.rap = rapFromIvc(m.ivc, m.collapses);
-  m.rvsp = 4 * m.v * m.v + m.rap;
-  m.grade = gradeOf(s);
+  m.r = shown(m.q > 0 ? Math.sqrt(m.q / (2 * Math.PI * VA)) : 0, 2);
+  for (const [key, d] of [['ivc', 1], ['rvb', 1], ['ta', 1], ['ravi', 0], ['tapse', 0], ['jetA', 0], ['E', 2]]) m[key] = shown(m[key], d);
+  // the RA pressure as chapter 18 estimates it (Mukherjee 2025): a sniff, collapse ≥50%
+  m.collPct = shown(m.coll * 100);
+  m.coll = m.collPct / 100;
+  m.collapses = m.collPct >= 50;
+  m.rap = rapEstimate({ d: m.ivc, col: m.collPct, mode: 'sniff', sec: 'unclear' }).rap;
+  m.rvsp = shown(4 * m.v * m.v + m.rap);
+  m.grade = gradeOf(s, m);
   return m;
 }
-export function gradeOf(s) {
-  if (s <= 0.001) return 'none';
-  if (s < 0.2) return 'mild';
-  if (s < 0.4) return 'moderate';
-  if (s < 0.6) return 'severe';
-  if (s < 0.8) return 'massive';
+// graded by the EROA as printed (model() rounds it): ASE 2017, then EACVI 2022 beyond severe
+export function gradeOf(s, m = model(s)) {
+  const e = m.eroa;
+  if (e <= 0) return 'none';
+  if (e < 0.2) return 'mild';
+  if (e < 0.4) return 'moderate';
+  if (e < 0.6) return 'severe';
+  if (e < 0.8) return 'massive';
   return 'torrential';
 }
 let BANDS = [];
@@ -185,11 +194,11 @@ function meterItems(m) {
     { k: 'Vena contracta', v: m.vc, u: 'cm', d: 2, lo: 0, hi: 2.8, cuts: [[0.7, '0.7'], [1.4, '1.4'], [2.1, '2.1']], bad: m.vc >= 0.7 },
     { k: 'Regurgitant volume', v: m.rvol, u: 'mL', lo: 0, hi: 100, cuts: [[30, '30'], [45, '45'], [60, '60'], [75, '75']], bad: m.rvol >= 45 },
     { k: 'Color jet area', v: m.jetA, u: 'cm²', lo: 0, hi: 30, cuts: [[10, '10']], bad: m.jetA > 10 },
-    { k: 'RV basal diameter', v: m.rvb, u: 'cm', d: 1, lo: 2, hi: 6, norm: [2.5, 4.1], cuts: [[4.1, '4.1']], bad: m.rvb > 4.1 },
+    { k: 'RV basal diameter', v: m.rvb, u: 'cm', d: 1, lo: 2, hi: 6, norm: [2.5, 4.1], cuts: [[4.1, '4.1']], bad: m.rvb >= 4.1 },
     { k: 'Tricuspid annulus', v: m.ta, u: 'cm', d: 1, lo: 2, hi: 5.5, cuts: [[4.0, '4.0']], bad: m.ta > 4.0 },
-    { k: 'RA volume index', v: m.ravi, u: 'mL/m²', lo: 10, hi: 75, norm: [10, 33], cuts: [[33, '33']], bad: m.ravi > 33 },
+    { k: 'RA volume index', v: m.ravi, u: 'mL/m²', lo: 10, hi: 75, norm: [10, 30], cuts: [[30, '30']], bad: m.ravi >= 30 },
     { k: 'IVC diameter', v: m.ivc, u: 'cm', d: 1, lo: 1, hi: 3.5, norm: [1.0, 2.1], cuts: [[2.1, '2.1'], [2.5, '2.5']], bad: m.ivc > 2.5 },
-    { k: 'TR peak velocity', v: m.v, u: 'm/s', d: 1, lo: 1, hi: 3.5, cuts: [[2.0, '2.0'], [2.8, '2.8']], bad: m.v < 2.0 && m.s > 0.4 },
+    { k: 'Peak TR velocity', v: m.v, u: 'm/s', d: 1, lo: 1, hi: 3.5, cuts: [[2.0, '2.0'], [2.8, '2.8']], bad: m.v < 2.0 && m.eroa > 0.4 },
     { k: 'TAPSE', v: m.tapse, u: 'mm', lo: 8, hi: 30, norm: [17, 30], cuts: [[17, '17']], bad: m.tapse <= 17 },
   ];
 }
@@ -223,8 +232,9 @@ const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 function tableRows(m) {
   const q = (v, a, b) => (v < a ? 0 : v < b ? 1 : 2);
   return [
-    ['RV and RA size', ['Usually normal', 'Normal or mildly dilated', 'Usually dilated'], m.rvb <= 4.1 && m.ravi <= 33 ? 0 : m.rvb <= 4.5 ? 1 : 2],
-    ['IVC diameter (cm)', ['Normal, <2', '2.1–2.5', '>2.5'], m.ivc < 2.1 ? 0 : m.ivc <= 2.5 ? 1 : 2],
+    ['RV and RA size', ['Usually normal', 'Normal or mildly dilated', 'Usually dilated'], m.rvb < 4.1 && m.ravi < 30 ? 0 : m.rvb <= 4.5 ? 1 : 2],
+    // Table 14 gives <2 and 2.1–2.5 cm; at one decimal, 2.0 counts as normal
+    ['IVC diameter (cm)', ['Normal, ≤2.0', '2.1–2.5', '>2.5'], m.ivc <= 2.0 ? 0 : m.ivc <= 2.5 ? 1 : 2],
     ['Color jet', ['Small, narrow, central', 'Moderate, central', 'Large central, or eccentric wall-impinging'], m.jetA < 5 ? 0 : m.jetA <= 10 ? 1 : 2],
     ['Flow convergence', ['Not visible, transient or small', 'Intermediate', 'Large throughout systole'], m.r <= 0.5 ? 0 : m.r <= 0.9 ? 1 : 2],
     ['CW jet', ['Faint, partial or parabolic', 'Dense, parabolic or triangular', 'Dense, often triangular'], q(m.rvol, 30, 45)],
@@ -237,10 +247,10 @@ function tableRows(m) {
   ];
 }
 function beyondRows(m) {
-  const c = m.s < 0.4 ? -1 : m.s < 0.6 ? 0 : m.s < 0.8 ? 1 : 2;
+  const c = m.eroa < 0.4 ? -1 : m.eroa < 0.6 ? 0 : m.eroa < 0.8 ? 1 : 2;
   return [
-    ['Vena contracta (mm)', ['7–13', '14–20', '≥21'], c],
-    ['EROA by PISA (mm²)', ['40–59', '60–79', '≥80'], c],
+    ['Vena contracta (cm)', ['0.7–1.3', '1.4–2.0', '≥2.1'], c],
+    ['EROA by PISA (cm²)', ['0.40–0.59', '0.60–0.79', '≥0.80'], c],
     ['Regurgitant volume (mL)', ['45–59', '60–74', '≥75'], c],
   ];
 }
@@ -275,16 +285,16 @@ export default {
   text(s, { cite }) {
     const m = model(s[KEY]);
     const g = m.grade;
-    const sev = m.s >= 0.4;
+    const sev = m.eroa >= 0.4;
     const hvS = q2(m.hvS), hvD = q2(m.hvD);   // as the hepatic vein panel rounds them, so the two agree
     const hv = hvS > 0.02 ? 'hepatic vein systolic flow reverses' : Math.abs(hvS) < Math.abs(hvD) ? 'hepatic vein systolic flow is blunted' : 'hepatic vein flow remains systolic-dominant';
-    const beyond = m.s >= 0.6 ? ` The EACVI defines ${g} TR, a grade beyond severe, by the vena contracta and the EROA${cite('lancellotti2022')}. As the RV and RA pressures approach each other, the peak TR velocity falls to ${fmt(m.v, 1)} m/s and no longer reflects the PA systolic pressure${cite('zoghbi2017')}.` : '';
+    const beyond = m.eroa >= 0.6 ? ` The EACVI defines ${g} TR, a grade beyond severe, by the vena contracta and the EROA${cite('lancellotti2022')}. As the RV and RA pressures approach each other, the peak TR velocity falls to ${fmt(m.v, 1)} m/s and no longer reflects the PA systolic pressure${cite('zoghbi2017')}.` : '';
     return {
       readouts: [
         { k: 'EROA', v: fmt(m.eroa, 2), u: 'cm²', flag: sev },
         { k: 'Vena contracta', v: fmt(m.vc, 2), u: 'cm', flag: m.vc >= 0.7 },
         { k: 'Regurgitant volume', v: fmt(m.rvol), u: 'mL', flag: m.rvol >= 45 },
-        { k: 'RV basal diameter', v: fmt(m.rvb, 1), u: 'cm', flag: m.rvb > 4.1 },
+        { k: 'RV basal diameter', v: fmt(m.rvb, 1), u: 'cm', flag: m.rvb >= 4.1 },
         { k: 'RA pressure', v: fmt(m.rap), u: 'mmHg', flag: m.rap >= 8 },
         { k: 'Grade', v: g, text: true, flag: sev },
       ],

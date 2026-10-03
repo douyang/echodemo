@@ -19,7 +19,7 @@ export const PV_PRESETS = {
   hfpef: { edp: 20, ees: 3.0, ea: 2.4, stiff: 0.55, rf: 0 },
   as: { edp: 16, ees: 3.5, ea: 3.5, stiff: 0.45, rf: 0 },
   // chronic severe primary MR, the Barlow heart: EDV 183 mL and EF 67% as on its mesh, RF 53% as
-  // on the MR page (15). The dilated LV is compliant: a much larger EDV at an EDP only a little
+  // on the MR page. The dilated LV is compliant: a much larger EDV at an EDP only a little
   // higher. With V0 = 0 the larger end-systolic volume at a normal pressure gives a lower Ees.
   mr: { edp: 11.5, ees: 1.7, ea: 1.05, stiff: 0.15, rf: 0.53 },
 };
