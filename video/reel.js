@@ -6,8 +6,9 @@
 //
 // The clips come from a review of the chapter videos and the views video. Each is the most
 // striking and most useful moment of its part of the site. No two clips teach the same lesson or
-// show the same layout. Chapters 07 and 08 became one chapter after the review: its clip has the
-// two clips' time and the chapter's three panes (video/cuts.js, cut P). Left out, with the reason:
+// show the same layout. Chapter 08 Planes is archived since the review: the clip of 07 has the
+// time of both clips, and the nine planes of 08 in its Probe and body pane (video/cuts.js,
+// planes). Left out, with the reason:
 //  - 01, 03, 04: diagrams. The valve clips show Doppler in use.
 //  - 06: the cycle clip and the valve clips show its loads.
 //  - 08, 10: dense panels. LV function shows in the segments and amyloid clips.
@@ -15,8 +16,8 @@
 //
 // A clip has ch (the chapter's key) and bars (its length in bars of the score). A chapter clip has
 // a video in the shape of video/chapters.js. The clip of 07 has a cut of the views video
-// (video/cuts.js) in the chapter's three panes. Holds and moves are in bars. Captions are the chapter's own text: its live text
-// at the step's state, or a sentence from its page.
+// (video/cuts.js). Holds and moves are in bars. Captions are the chapter's own text: its live
+// text at the step's state, or a sentence from its page.
 import { BEAT, FPS } from './timeline.js';
 import { CHAPTERS } from '../src/chapters.js';
 
@@ -45,8 +46,8 @@ export const REEL = {
         line: 'Mitral and aortic valve opening and closure divide the cycle into isovolumic contraction, ejection, isovolumic relaxation and filling.', hold: 3 },
     ] } },
     // 07: the probe turns 90° at the left sternal border, from the long axis to the short axis, tilts
-    // to the mitral valve level, then crosses the chest to the apex; one plane moves in all three panes
-    { ch: 'windows', bars: 6, cut: { views: ['plax', 'psax_av', 'psax_mv', 'a4c'], left: 'planes', probe: 'move',
+    // to the mitral valve level, then crosses the chest to the apex; the nine planes in Probe and body
+    { ch: 'windows', bars: 6, cut: { views: ['plax', 'psax_av', 'psax_mv', 'a4c'], planes: true,
       winHold: 1, winMove: 1, hold: 0.75, move: 0.5, lastHold: 0.75 } },
     // 10: an LAD occlusion lights its territory on the bullseye and in the three apical views
     { ch: 'segments', bars: 3, video: { pane: '17-segment model', steps: [
@@ -114,8 +115,8 @@ export function clipCut(k, cards) {
   const c = reelLayout().clips[k];
   if (!c.cut) throw new Error(`clip ${k} (${c.ch}) is not a views clip`);
   const b = (x) => x * BAR;
-  const { views, winHold, winMove, lastHold, hold = winHold, move = winMove, left, probe } = c.cut;
-  return { id: 'R', name: 'Intro', aspect: '16:9', theme: 'dark', caption: 'compact', cards, views, left, probe,
+  const { views, winHold, winMove, lastHold, hold = winHold, move = winMove, left, probe, planes } = c.cut;
+  return { id: 'R', name: 'Intro', aspect: '16:9', theme: 'dark', caption: 'compact', cards, views, left, probe, planes,
     intro: 0, hold: b(hold), move: b(move), winHold: b(winHold), winMove: b(winMove), lastHold: b(lastHold), outro: 0 };
 }
 

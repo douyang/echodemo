@@ -2,6 +2,7 @@
 import pulse from './ch/pulse.js';
 import image from './ch/image.js';
 import windows from './ch/windows.js';
+import planes from './ch/planes.js';
 import cycle from './ch/cycle.js';
 import loop from './ch/loop.js';
 import shift from './ch/shift.js';
@@ -22,6 +23,10 @@ import report from './ch/report.js';
 // back as chapter 18 when this is true (main.js shows the article of every chapter listed here).
 // The Normal values table opens from it.
 const SHOW_REPORT = false;
+// 08 Planes is archived: its module and markup stay (index.html, #ch-planes, #fig-planes) and come
+// back as chapter 08 after 07 when this is true. Chapter 07 shows the nine standard planes in its
+// Probe and body view (ch/windows.js).
+const SHOW_PLANES = false;
 
 export const PARTS = [
   { key: 'physics', num: 'I', name: 'Physics' },
@@ -34,4 +39,4 @@ export const PARTS = [
   ...(SHOW_REPORT ? [{ key: 'report', num: 'VIII', name: 'Report' }] : []),
 ];
 
-export const CHAPTERS = [pulse, image, shift, pressure, cycle, loop, windows, eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, ...(SHOW_REPORT ? [report] : [])];
+export const CHAPTERS = [pulse, image, shift, pressure, cycle, loop, windows, ...(SHOW_PLANES ? [planes] : []), eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, ...(SHOW_REPORT ? [report] : [])];

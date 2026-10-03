@@ -14,7 +14,7 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const KEYS = CHAPTERS.map((c) => c.key);
-// old addresses: 07 Windows and 08 Planes are one chapter (key windows), 07 Views
+// old addresses: 08 Planes is archived (chapters.js), and #views names 07 Views (key windows)
 const ALIAS = { planes: 'windows', views: 'windows' };
 /** The chapter index of an address's #key, or -1. */
 const chapterOf = (hash) => { const h = (hash || '').slice(1); return KEYS.indexOf(ALIAS[h] || h); };
@@ -61,7 +61,7 @@ musicBtn.addEventListener('click', async () => {
 });
 // cues for changes on screen: a new chapter; a new view, set of views or heart, or any switch or
 // tick box (bindControls adds their keys; the grades of a playing severity page ring from sev.js)
-const BELL_KEYS = new Set(['view', 'pviews', 'pheno']);
+const BELL_KEYS = new Set(['view', 'pfocus', 'pviews', 'pheno']);
 subscribe((s, ch) => {
   if ('chapter' in ch) cue('chapter');
   else if (Object.keys(ch).some((k) => BELL_KEYS.has(k))) cue('bell');

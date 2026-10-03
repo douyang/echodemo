@@ -6,12 +6,12 @@
 // (video/reel.js): its cut, the progress line of the intro, its eyebrow and its frames of the whole.
 //
 // Three panes, drawn from the one heart mesh by the site's own code:
-//  - Probe and body: the whole heart from the front with the imaging plane (the overlay of
-//    src/echo.js) and the probe (drawn in pencil with the heart: the stage's tools), and the
-//    body key (src/gl/bodykey.js, a pencil inset) above it. In cut P (chapter 07's video) this
-//    pane is All planes, as the chapter draws it (src/ch/windows.js): the heart from the front, the
-//    planes of the nine standard views in their window colors (src/gl/fans.js), the current plane
-//    in ink with its probe and the lines where it crosses the others, and the body key in a corner;
+//  - Probe and body: the whole heart from the front with the probe (drawn in pencil with the
+//    heart: the stage's tools) and the body key (src/gl/bodykey.js, a pencil inset) above it. In
+//    cut B and the intro's clip of 07 (CUT.planes) the pane also has the planes of the nine
+//    standard views in their window colors (src/gl/fans.js), the current plane in ink and the
+//    lines where it crosses the others, as chapter 07 draws them in its Probe and body view
+//    (src/ch/windows.js). The archived cut P draws All planes here instead (PR #19);
 //  - Cross-section: the heart cut on the plane and seen square to it, with the site's tags;
 //  - Ultrasound image: the echo the same plane cuts from the mesh (src/echo.js, src/bmode.js).
 // The two 3D panes are two pencil renderers (src/gl/pencil.js) that draw the one scene with
@@ -108,7 +108,7 @@ const LAYOUTS = {
     ecg: { y: 1180, h: 170, x0: 84, x1: 996 },
   },
 };
-// cut P (chapter 07): All planes, with the body key in its top corner, in the left pane
+// cut P (archived): All planes, with the body key in its top corner, in the left pane
 LAYOUTS.planes = {
   v: false, head: 50,
   track: { x: 64, y: 30, w: 1792, h: 46 },
@@ -119,8 +119,10 @@ LAYOUTS.planes = {
   title: { x: 128, y: 330 },
   ecg: { y: 760, h: 170, x0: 128, x1: 1792 },
 };
-/** Cut P: the left pane draws All planes (src/ch/windows.js), not the probe and body. */
+/** Cut P (archived): the left pane draws All planes, the three-pane chapter of PR #19, not the probe and body. */
 const PLANES = CUT.left === 'planes';
+/** Cut B and the intro's clip of 07 (CUT.planes): the nine planes in the Probe and body pane, as chapter 07 draws them there. */
+const BODY_PLANES = !PLANES && !!CUT.planes;
 const LAY = PLANES ? LAYOUTS.planes : LAYOUTS[CUT.aspect];
 const PANE_NAME = { body: PLANES ? 'All planes' : 'Probe and body', section: 'Cross-section', echo: 'Ultrasound image' };
 // the progress line names the windows in full, or by their short names on a phone
@@ -214,7 +216,7 @@ function build() {
   card.id = 'card';
   const title = h('div');
   const T = LAY.title;
-  // a chapter's own video (cut P) has the chapter's eyebrow: its number and its part
+  // a chapter's own video (cut P, archived) has the chapter's eyebrow: its number and its part
   const eye = CUT.cards.eye ? h('p', 'card-eye', CUT.cards.eye.split(' · ').map(esc).join(' <span>·</span> ')) : null;
   if (eye) Object.assign(eye.style, { left: `${T.x + 6}px`, top: `${T.y - 54}px` });
   const t1 = h('p', 'card-title', esc(CUT.cards.title));
@@ -308,7 +310,8 @@ let stage = null, model = null, echo = null, key = null, bodyPencil = null, labe
 const PL = {};        // each view's plane: geometry, rotation, centre, settings
 const TAGS = {};      // each view's tags on the cross-section, laid out once
 let SITES = null;     // each window's place on the skin of the body key (cm from the midline, the notch)
-// All planes (cut P): the nine views' fans, the current plane in ink, its crossings, the tags
+// The nine planes (cut B and the intro's clip of 07 in Probe and body; All planes in the archived
+// cut P): the nine views' fans, the current plane in ink, its crossings, the tags
 const NINE = ['plax', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a2c', 'a3c', 'sc4c', 'ssn'];
 const NINE_FANS = new Map();
 let planesGroup = null, curFan = null, crossLines = null, planeTags = null, FIT_ALL = null;
@@ -322,7 +325,7 @@ async function initScene() {
   model = await loadModel();        // the model the stage took: one heart mesh
   stage.heart.group.visible = true;
   stage.heart.setPericardium(true);
-  bodyPencil = new Pencil();        // the probe-and-body pane, or All planes (cut P)
+  bodyPencil = new Pencil();        // the probe-and-body pane, or All planes (cut P, archived)
   const DT = diagTokens();
   for (const p of [bodyPencil, stage.pencil]) p.setTheme(DT);
   // on the heart and the body key the probe is in the page's accent, so its place stands apart
@@ -398,17 +401,18 @@ async function initScene() {
     TAGS[v] = { items: echo.sectionLabels(0), box: echo.sectorBox() };
     FIT[v] = fitPoints(drawnPoints());
   }
-  if (PLANES) initPlanes();
+  if (PLANES || BODY_PLANES) initPlanes();
 }
 
 /** A color of the drawing panes: the light palette on paper panes, else the cut's own. */
 const paneColor = (name) => (DIAGRAMS === 'paper' ? LIGHT[name] : cssVar(name));
 
 /**
- * All planes (cut P), as chapter 07 draws it (src/ch/windows.js): the fans of the nine standard
- * views in their window colors and the current plane in ink, in the overlay of the stage, drawn
- * by the left pane's pencil (it reads that pencil's depth). One framing for the whole cut: the
- * heart fills the pane, and the camera holds still while the plane moves.
+ * The nine planes, as chapter 07 draws them in its Probe and body view (src/ch/windows.js): the
+ * fans of the nine standard views in their window colors and the current plane in ink, in the
+ * overlay of the stage, drawn by the left pane's pencil (it reads that pencil's depth). In the
+ * Probe and body pane the camera frames each view as before. All planes (cut P, archived) has one
+ * framing for the whole cut: the heart fills the pane, and the camera holds still.
  */
 function initPlanes() {
   const B = panes.body;
@@ -440,15 +444,18 @@ function initPlanes() {
 }
 
 /**
- * All planes before its pass: the fans on, the current fan on plane P, the crossings. The views
- * at either end of a move light as the plane leaves the one and reaches the other. The pencil
- * probe, 13 cm long, stands in front of the heart in the parasternal views: the current plane's
- * own probe marks the plane here, and the body key shows the probe on the chest (the chapter's way).
+ * The planes before the left pane's pass: the fans on, the current fan on plane P, the crossings.
+ * The views at either end of a move light as the plane leaves the one and reaches the other. In
+ * Probe and body the pencil probe marks the current plane and the body key shows it on the chest,
+ * so the fans have no probes. In All planes (archived) the 13 cm pencil probe stood in front of
+ * the heart in the parasternal views: there the fans' own probes mark the planes.
  */
 function planesOn(P) {
   planesGroup.visible = true;
-  echo.probeRoot.visible = false;
-  stage.heart.setPericardium(false);   // as the chapter draws All planes
+  if (PLANES) {
+    echo.probeRoot.visible = false;
+    stage.heart.setPericardium(false);   // as the archived All planes pane drew the heart
+  }
   const rest = P.from === P.to;
   curFan.shape(P.g, P.spec);
   const W = bodyPencil.w * bodyPencil.dpr, H = bodyPencil.h * bodyPencil.dpr;
@@ -460,13 +467,13 @@ function planesOn(P) {
     fan.mat.uniforms.uAlpha.value = 0.07 + 0.23 * k;
     fan.lmat.opacity = 0.42 + 0.58 * k;
     // a probe seen end-on hides the middle of the heart; on the current plane the ink one shows
-    fan.probe.visible = k < 0.5 && Math.abs(g.d.dot(view)) < 0.8;
+    fan.probe.visible = PLANES && k < 0.5 && Math.abs(g.d.dot(view)) < 0.8;
     fan.setRes(W, H);
   }
   curFan.setRes(W, H);
   // at rest on one of the nine, that view's fan carries the color: the ink keeps its outline
   curFan.mat.uniforms.uAlpha.value = rest && NINE_FANS.has(P.view) ? 0.04 : 0.16;
-  curFan.probe.visible = Math.abs(P.g.d.dot(view)) < 0.8;
+  curFan.probe.visible = PLANES && Math.abs(P.g.d.dot(view)) < 0.8;
   const pts = [];
   for (const [v, { g }] of NINE_FANS) {
     if (rest && v === P.view) continue;
@@ -477,18 +484,21 @@ function planesOn(P) {
   crossLines.geometry = new THREE.BufferGeometry();
   crossLines.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
 }
-/** All planes after its pass: the scene back as the cross-section draws it, and the tags. */
+/** The planes after the left pane's pass: the scene back as the cross-section draws it, and the tags. */
 function planesOff(P) {
   planesGroup.visible = false;
-  echo.probeRoot.visible = true;
-  stage.heart.setPericardium(true);
+  if (PLANES) {
+    echo.probeRoot.visible = true;
+    stage.heart.setPericardium(true);
+  }
   drawPlaneTags(P);
 }
 
 /**
- * The tags of All planes, as the chapter places them: each view's code on the center line of its
- * fan, as far out as the pane allows, in its window color, the current view's in bold; at rest
- * on a view that is not one of the nine, its code in ink. No tag covers another or the body key.
+ * The plane tags, as chapter 07 places them in Probe and body: each view's code on the center
+ * line of its fan, as far out as the pane allows, in its window color, the current view's in
+ * bold; at rest on a view that is not one of the nine, its code in ink. No tag covers another or
+ * the body key.
  */
 function drawPlaneTags(P) {
   const B = panes.body, ctx = planeTags.getContext('2d');
@@ -810,10 +820,10 @@ function renderPanes(t) {
   echo.liver3d.setCut(null);
   echo.liver3d.set(liverAt(P, true));
   keySite(P);
-  if (PLANES) planesOn(P);
+  if (PLANES || BODY_PLANES) planesOn(P);
   bodyPencil.render(stage.scene, stage.camera, stage.heart, { boil, amyloid: a, tools: stage.tools, layer: echo.liver3d, inset: key.frame(stage.camera, B.w, B.h),
-    overlayScene: PLANES ? stage.overlayScene : null });
-  if (PLANES) planesOff(P);
+    overlayScene: PLANES || BODY_PLANES ? stage.overlayScene : null });
+  if (PLANES || BODY_PLANES) planesOff(P);
   // 2. cross-section: the heart cut on the plane, seen square to it
   const S = panes.section;
   pose(sectionPose(P), S);
@@ -1037,7 +1047,7 @@ function frame(i) {
 }
 
 /**
- * The cards of a chapter's own video (cut P: chapter 07), as the chapter videos make them
+ * The cards of a chapter's own video (cut P, archived), as the chapter videos make them
  * (video/chapter.js): the chapter's number and part, its title, the first sentence of its dek.
  */
 async function chapterCards(key) {

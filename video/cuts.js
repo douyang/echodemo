@@ -11,9 +11,12 @@
 // structures are the view's labels (VIEWS[].labels) with the names the cross-section tags use
 // (src/echo.js).
 //
-// Cut P is the video of chapter 07: its left pane is All planes (left: 'planes'), the planes of the
-// nine standard views with the current plane in ink and the body figure in a corner, as the
-// chapter draws them; its cards are the chapter's (chapter: the chapter's key; video/app.js).
+// planes: true adds the planes of the nine standard views to the Probe and body pane, with the
+// current plane in ink and the lines where it crosses them, as chapter 07 draws them in its
+// Probe and body view (video/app.js). Cut B has them.
+//
+// Cut P is archived: the three-pane chapter of PR #19 (left: 'planes', All planes, with the
+// chapter's cards). It stays here so that it can be rendered again.
 import { VIEWS, WINDOWS, MOVE } from '../src/views.js';
 
 const ALL = ['plax', 'plax_asc', 'rv_in', 'rv_out', 'psax_av', 'psax_pa', 'psax_tv', 'psax_mv', 'psax_pm', 'psax_ap',
@@ -28,8 +31,8 @@ export const CUTS = {
   // (A) full tour: every major view, window by window; 8 beats a view
   A: { id: 'A', name: 'Full tour', aspect: '16:9', theme: 'dark', views: ALL, caption: 'full', cards: CARDS,
     intro: 4, hold: 6, move: 2, winHold: 5, winMove: 3, lastHold: 6, outro: 6 },
-  // (B) core views on the light palette; 6 beats a view
-  B: { id: 'B', name: 'Core views', aspect: '16:9', theme: 'light', views: CORE, caption: 'full', cards: CARDS,
+  // (B) core views on the light palette, with the nine planes in Probe and body; 6 beats a view
+  B: { id: 'B', name: 'Core views', aspect: '16:9', theme: 'light', views: CORE, caption: 'full', planes: true, cards: CARDS,
     intro: 4, hold: 4, move: 2, winHold: 3, winMove: 3, lastHold: 5, outro: 5 },
   // (C) quick cut: a bar (4 beats) a view, moves of one beat inside a window
   C: { id: 'C', name: 'Quick cut', aspect: '16:9', theme: 'dark', views: QUICK, caption: 'compact', cards: CARDS,
@@ -37,7 +40,7 @@ export const CUTS = {
   // (D) vertical, stacked for phones; the core views, 6 beats a view
   D: { id: 'D', name: 'Vertical', aspect: '9:16', theme: 'dark', views: CORE, caption: 'full', cards: CARDS,
     intro: 3, hold: 4, move: 2, winHold: 3, winMove: 3, lastHold: 4, outro: 4 },
-  // (P) chapter 07: All planes, the cross-section and the echo, one plane moving through all
+  // (P, archived) All planes, the cross-section and the echo, one plane moving through all
   // three; the core views, 7 beats a view; the probe line is the move to each view
   P: { id: 'P', name: 'Views and planes', aspect: '16:9', theme: 'dark', views: CORE, caption: 'full', probe: 'move', left: 'planes', chapter: 'windows',
     cards: CARDS, intro: 4, hold: 5, move: 2, winHold: 4, winMove: 3, lastHold: 6, outro: 6 },
