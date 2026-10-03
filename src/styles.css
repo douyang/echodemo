@@ -1027,3 +1027,34 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .ase-head { position: static; }
   .ase-b { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 12px); }
 }
+
+/* ------------------------------------------------- chapter 18: the RA pressure from the IVC
+   Mukherjee 2025, Table 4 and Figure 3, in the classes of chapter 10's diagram (.ase-*): the
+   diameter and the collapse with ▲▼ buttons, the secondary signs, the result. src/ch/ivc.js */
+#ivc-ase .ase-row.is-off .ase-nm, #ivc-ase .ase-row.is-off .ase-v, #ivc-ase .ase-row.is-off .ase-cut { color: var(--ink-3); }
+#ivc-ase .ase-row.is-off .ase-mk { border-style: dashed; }
+.ase-step .ivc-ppv, .ase-step .ivc-rnote { margin-top: 3px !important; }
+.ivc-signs { margin: 2px 0 6px; padding: 0 0 0 15px; list-style: none; font: 400 0.75rem/1.35 var(--sans); color: var(--ink-2); }
+.ivc-signs li { position: relative; padding-left: 12px; }
+.ivc-signs li::before { content: ""; position: absolute; left: 1px; top: 0.55em; width: 5px; height: 1px; background: var(--ink-3); }
+.ase-step:not(.is-on) .ivc-signs { color: var(--ink-3); }
+.ivc-sec { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding-left: 15px; }
+.ivc-sec-l { font: 500 0.75rem/1.2 var(--sans); color: var(--ink-2); }
+.ivc-sec .seg button { padding: 8px 12px; }
+@media (pointer: coarse) { .ivc-sec .seg button { padding: 11px 14px; } }
+.ivc-og { margin-top: 2px !important; }
+#ivc-ase .ase-o.is-maybe { border-style: dashed; border-color: var(--flag); color: var(--ink); }
+@container ase (max-width: 340px) {
+  .ivc-signs, .ivc-sec { padding-left: 0; }
+}
+/* on phones and tablets the figure takes four views: a taller stage, as for chapter 07, and the
+   sticky result under it */
+@media (max-width: 820px) {
+  html[data-ch="ivc"] .stage { height: min(60vh, 520px); }
+  html[data-ch="ivc"] .ase-head { top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px)); }
+  html[data-ch="ivc"] .ase-b { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 110px); }
+}
+@media (max-width: 820px) and (max-height: 640px) {
+  html[data-ch="ivc"] .ase-head { position: static; }
+  html[data-ch="ivc"] .ase-b { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 12px); }
+}

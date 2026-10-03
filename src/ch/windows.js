@@ -49,7 +49,7 @@ const INFO = {
   a3c_av: { shows: 'Aortic valve, LVOT, proximal aorta', acquire: 'Aortic valve and LVOT color Doppler' },
   sc4c: { shows: 'Liver, LV, mitral valve, RV, tricuspid valve, atrial and ventricular septa, RA, LA', acquire: 'RV free wall thickness; septal defects; color Doppler of the atrial septum' },
   sc4c_ias: { shows: 'Atrial septum, perpendicular to the beam', acquire: 'Septal defects; color Doppler across the septum' },
-  sc_ivc: { shows: 'IVC in long axis through the liver, hepatic veins, IVC–RA junction', acquire: 'IVC diameter 1 to 2 cm from the RA and its collapse; hepatic vein PW Doppler' },
+  sc_ivc: { shows: 'IVC in long axis through the liver, hepatic veins, IVC–RA junction', acquire: 'IVC diameter and its collapse with a sniff; hepatic vein PW Doppler' },
   sc_aorta: { shows: 'Upper abdominal aorta behind the liver, celiac trunk, SMA', acquire: 'Color and PW Doppler of aortic flow (appendix view)' },
   ssn: { shows: 'Ascending aorta, arch, descending aorta, head vessels, right PA', acquire: 'Color Doppler of the arch; PW Doppler of the ascending and descending aorta; CW Doppler of the descending aorta' },
   ssn_sax: { shows: 'Arch in cross-section, right PA along its length, LA', acquire: 'Right PA size; LA and the pulmonary veins' },
@@ -556,6 +556,9 @@ export default {
     if (!v.plane) live += 'The heart model ends at the diaphragm, so the model contains no section for this view. ';
     else if (s.view === 'plax' && m && !s.wcine) live += `At end-diastole, with calipers perpendicular to the LV long axis, the septum measures ${(m.ivs / 10).toFixed(1)} cm, the LV internal diameter ${(m.lvid / 10).toFixed(1)} cm and the inferolateral wall ${(m.pw / 10).toFixed(1)} cm. `;
     else if (v.zoom) live += `The image is magnified to a region ${v.zoom.w} cm wide. `;
+    // the IVC and the aorta have a chapter of their own
+    if (s.view === 'sc_ivc') live += 'The IVC diameter and its collapse with a sniff give the RA pressure (<a href="#ivc" data-go="ivc">chapter 18</a>). ';
+    else if (s.view === 'sc_aorta') live += '<a href="#ivc" data-go="ivc">Chapter 18</a> distinguishes the aorta from the IVC. ';
     live += `<span class="note">Views and measurements are as defined in the ASE guideline${cite('mitchell2019')}. Annotation class: ${v.lab || 'none'}.</span>`;
     return { readouts, live };
   },

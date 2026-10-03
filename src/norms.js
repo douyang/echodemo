@@ -228,6 +228,37 @@ export function rapFromIvc(d, collapses) {
   if (d <= 2.1) return collapses ? 3 : 8;
   return collapses ? 8 : 15;
 }
+/**
+ * The RA pressure estimate of chapter 18 (Mukherjee 2025: Table 4, Figure 3 and p160).
+ *   d: IVC diameter at end-expiration (cm); col: collapse (%), with a sniff, or with quiet
+ *   breathing when the patient cannot sniff; mode: 'sniff' | 'quiet' | 'ppv' (positive-pressure
+ *   ventilation); sec: secondary signs of a raised RA pressure, 'none' | 'present' | 'unclear';
+ *   reflux: dilated hepatic veins and reflux of flow into the IVC (here, severe TR).
+ * Sniff: ≤2.1 cm and ≥50% gives 3 mmHg; >2.1 cm and <50% gives 15; the two mixed patterns are
+ * indeterminate, and the secondary signs take them to 3 (none), 15 (present) or 8 (unclear).
+ * Quiet breathing (cut-off 20%): ≤2.1 cm gives 3 or 8, >2.1 cm gives 8 or 15. Ventilation: the
+ * collapse is not used; the secondary signs show a normal or a raised RA pressure, and 8 mmHg is
+ * used if uncertainty remains. >2.5 cm without collapse, with dilated hepatic veins and reflux:
+ * 20 mmHg can be considered.
+ */
+export function rapEstimate({ d, col, mode = 'sniff', sec = 'unclear', reflux = false }) {
+  const dilated = d > 2.1;
+  if (mode === 'ppv') {
+    const level = sec === 'none' ? 'normal' : sec === 'present' ? 'raised' : null;
+    return { mode, dilated, cut: null, collapses: null, indeterminate: false, secUsed: true, rap: level ? null : 8, level, consider20: false };
+  }
+  const cut = mode === 'quiet' ? 20 : 50;
+  const collapses = col >= cut;
+  let rap, indeterminate = false;
+  if (mode === 'quiet') rap = dilated ? (collapses ? 8 : 15) : (collapses ? 3 : 8);
+  else if (!dilated && collapses) rap = 3;
+  else if (dilated && !collapses) rap = 15;
+  else { indeterminate = true; rap = sec === 'none' ? 3 : sec === 'present' ? 15 : 8; }
+  const consider20 = d > 2.5 && !collapses && !!reflux;
+  return { mode, dilated, cut, collapses, indeterminate, secUsed: indeterminate, rap, level: rap === 3 ? 'normal' : rap === 8 ? 'intermediate' : 'raised', consider20 };
+}
+/** The range of an RA pressure value (Mukherjee 2025 Table 4). */
+export const RAP_RANGE = { 3: '0–5', 8: '5–10', 15: '10–20' };
 // Right-heart grades (Mukherjee 2025 Table 1).
 export function tapseGrade(mm) {
   const cm = mm / 10;

@@ -1,5 +1,6 @@
 // The chapter videos (video/chapter.html?ch=key): one for each chapter but 07, whose video is cut
-// P of the views video (video/cuts.js). No DOM: the page, the render tool and the score read it.
+// P of the views video (video/cuts.js), and 18, which has none yet. No DOM: the page, the render
+// tool and the score read it.
 //
 // A video: the title card (intro, in beats; one beat = 60/70 s), then the chapter's figure
 // through its steps, then the end card (outro). The steps follow the chapter's own tour (its
@@ -64,16 +65,16 @@ export const VIDEOS = {
       { set: { vtrue: 2 }, name: 'Aliasing on color Doppler', track: 'Color, 2 m/s', pick: [0, 3], move: 4 },
     ],
   },
-  // 04: a caliper error on the LVOT, then the TR jet and the IVC
+  // 04: a caliper error on the LVOT, then the TR jet and the RA pressure (from the IVC, chapter 18)
   pressure: {
     pane: 'Flow and gradients',
-    quant: { calErr: 0.5, trV: 0.05, ivcD: 0.1 },
+    quant: { calErr: 0.5, trV: 0.05 },
     steps: [
-      { set: { sv: 70, lvotD: 2, calErr: 0, hr: 70, trV: 2.4, ivcD: 1.8, ivcCollapse: 'gt' }, name: 'Stroke volume from the LVOT', track: 'Stroke volume', pick: [0], hold: 6 },
+      { set: { sv: 70, lvotD: 2, calErr: 0, hr: 70, trV: 2.4, rap: 3 }, name: 'Stroke volume from the LVOT', track: 'Stroke volume', pick: [0], hold: 6 },
       { set: { calErr: 2 }, name: 'LVOT diameter error of 2 mm', track: '+2 mm', pick: [0], move: 4, hold: 6 },
       { set: { calErr: 0 }, name: 'RV systolic pressure', track: 'RVSP', pick: [1], move: 4, hold: 6 },
-      { set: { trV: 3, ivcD: 2.4 }, name: 'Higher TR velocity, dilated IVC', track: 'TR 3.0 m/s', pick: [1], move: 4, hold: 6 },
-      { set: { trV: 3.5, ivcCollapse: 'lt' }, name: 'Reduced IVC collapse on sniff', track: 'TR 3.5 m/s', pick: [1], move: 4, hold: 7 },
+      { set: { trV: 3, rap: 8 }, name: 'Higher TR velocity, RA pressure 8 mmHg', track: 'TR 3.0 m/s', pick: [1], move: 4, hold: 6 },
+      { set: { trV: 3.5, rap: 15 }, name: 'RA pressure 15 mmHg', track: 'TR 3.5 m/s', pick: [1], move: 4, hold: 7 },
     ],
   },
   // 05: the cursor runs through one beat, phase by phase
