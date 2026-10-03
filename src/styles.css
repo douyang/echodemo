@@ -865,3 +865,165 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .tag { font-size: 0.9rem; }
   .tag small { font-size: 0.72rem; }
 }
+
+/* ------------------------------------------------- chapter 10: the 2025 ASE algorithm in the text
+   Nagueh 2025, Figure 3, top to bottom: the path lit, ▲▼ buttons on the nine measurements, a
+   short flash on each part that changes (src/ch/fill.js). The result and the change line stay
+   in view while the steps scroll. */
+.ase { container: ase / inline-size; margin: 0 0 18px; font: 400 0.8125rem/1.3 var(--sans); color: var(--ink); }
+.ase p { margin: 0; }
+.ase-tbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 6px; }
+.ase-title { margin: 0; font: 600 0.75rem/1.2 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-2); }
+.ase-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 0 9px;
+  padding: 5px 10px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--paper-2) 97%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 16px -14px color-mix(in srgb, var(--ink) 70%, transparent);
+}
+.ase-result { position: relative; font: 400 1.0625rem/1.3 var(--serif); }
+.ase-result:focus:not(:focus-visible) { outline: none; }
+.ase-result b { font-weight: 600; }
+.ase-result.is-raised b { color: var(--flag); }
+.ase-reset { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px 0 10px; border: 1px solid var(--rule); border-radius: 15px; background: var(--paper-2); color: var(--ink); font: 500 0.75rem/1 var(--sans); cursor: pointer; }
+.ase-reset::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.ase-reset:hover { border-color: var(--ink-2); }
+.ase-reset.is-off { visibility: hidden; }
+.ase-change { margin-top: 3px; min-height: 3.9em; font: 400 0.75rem/1.3 var(--sans); color: var(--ink-2); }
+
+/* a step: a solid box with an accent edge on the path, a dashed one off it */
+.ase-step { position: relative; margin: 0 0 9px; padding: 6px 10px 8px; border: 1px dashed var(--rule); border-radius: 8px; }
+.ase-step.is-on { border-style: solid; background: color-mix(in srgb, var(--paper-2) 70%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+.ase-step + .ase-step::before { content: ""; position: absolute; left: 50%; top: -10px; height: 9px; border-left: 1px solid var(--rule); }
+.ase-step.is-on + .ase-step.is-on::before { border-left: 2px solid var(--accent); }
+.ase-sh { display: flex; align-items: baseline; gap: 8px; margin: 0 0 3px !important; }
+.ase-sn { flex: none; font: 600 0.6875rem/1.2 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); }
+.ase-step.is-on .ase-sn { color: var(--accent); }
+.ase-sx { flex: 1; min-width: 0; font: 400 0.75rem/1.25 var(--sans); color: var(--ink-3); }
+.ase-count { position: relative; flex: none; padding: 0 2px; font: 500 0.75rem/1.2 var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+
+/* step 1: a criterion, then its measurements */
+.ase-crit { padding: 2px 0 0; }
+.ase-crit + .ase-crit { margin-top: 3px; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); }
+.ase-ch { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; min-height: 26px; font: 600 0.8125rem/1.2 var(--sans); }
+.ase-cn { flex: none; }
+.ase-cx { font: 400 0.6875rem/1.2 var(--mono); color: var(--ink-3); white-space: nowrap; }
+.ase-cs { min-width: 4.6em; margin-left: auto; font: 500 0.75rem/1.2 var(--sans); color: var(--ink-3); text-align: right; }
+.ase-ch.is-bad .ase-cs { color: var(--flag); }
+.ase-mk { flex: none; width: 9px; height: 9px; border: 1.5px solid var(--ink-3); border-radius: 50%; }
+.ase-row.is-bad .ase-mk, .ase-ch.is-bad .ase-mk { border-color: var(--flag); background: var(--flag); }
+
+/* a measurement: name, ▼ value ▲, cut-off, mark. Fixed columns, so nothing moves as values change */
+.ase-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto 3.4em 9px; align-items: center; gap: 0 6px; min-height: 36px; padding-left: 15px; }
+.ase-row.is-calc { min-height: 26px; }
+.ase-nm { min-width: 0; color: var(--ink-2); overflow-wrap: break-word; }
+.ase-ctl { display: grid; grid-template-columns: 32px 4.6rem 32px; align-items: center; gap: 3px; }
+.ase-v { position: relative; display: flex; align-items: baseline; justify-content: center; gap: 3px; font: 500 0.875rem/1.2 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ase-v b { font-weight: 500; }
+.ase-v small { font: 400 0.625rem/1 var(--mono); color: var(--ink-3); }
+.ase-row.is-calc .ase-v b { color: var(--ink-2); }
+.ase-row.is-bad .ase-v b { color: var(--flag); }
+.ase-cut { font: 400 0.75rem/1 var(--mono); color: var(--ink-3); text-align: right; white-space: nowrap; }
+.ase-row.is-ed .ase-nm { color: var(--accent); }
+.ase-row.is-ed .ase-v::after { content: ""; position: absolute; top: -4px; right: 0; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+/* scroll margins: a button scrolled into view (by focus) stops clear of the sticky result */
+.ase-b {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--paper-2);
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  scroll-margin-top: 110px;
+  scroll-margin-bottom: 12px;
+}
+.ase-b svg { width: 10px; height: 10px; }
+.ase-b:hover:not(:disabled) { border-color: var(--ink-2); }
+.ase-b:active:not(:disabled) { background: var(--paper-3); }
+.ase-b:disabled { opacity: 0.35; cursor: default; }
+@media (pointer: coarse) {
+  .ase-b { width: 40px; height: 40px; }
+  .ase-ctl { grid-template-columns: 40px 4.4rem 40px; }
+  .ase-row { min-height: 44px; }
+  .ase-row.is-calc { min-height: 28px; }
+}
+/* a narrow text (a phone under 380 px, the side panel of a window under 1000 px): no indent,
+   smaller columns and result, 36 px buttons on touch screens */
+@container ase (max-width: 340px) {
+  .ase-result { font-size: 0.9375rem; }
+  .ase-step { padding-inline: 8px; }
+  .ase-row { grid-template-columns: minmax(0, 1fr) auto 2.9em 9px; gap: 0 4px; padding-left: 0; }
+  .ase-ctl { grid-template-columns: 32px 3.9rem 32px; gap: 2px; }
+  .ase-v { font-size: 0.8125rem; }
+  .ase-note, .ase-ea { padding-left: 0; }
+}
+@media (pointer: coarse) {
+  @container ase (max-width: 340px) {
+    .ase-b { width: 36px; height: 36px; }
+    .ase-ctl { grid-template-columns: 36px 3.9rem 36px; }
+    .ase-row { min-height: 40px; }
+  }
+}
+
+/* step 2: the five branches; one column in a narrow text, a row of five in a wide one */
+.ase-br { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ase-br li { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; padding: 5px 8px; border: 1px solid var(--rule); border-radius: 6px; color: var(--ink-2); }
+.ase-bt { font-size: 0.75rem; color: var(--ink-3); white-space: nowrap; }
+.ase-br li.is-on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--ink); }
+.ase-br li.is-on .ase-bt { color: var(--accent); }
+@container ase (min-width: 560px) {
+  .ase-br { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .ase-br li { flex-direction: column; flex-wrap: nowrap; justify-content: space-between; }
+}
+
+/* step 3: IVRT, the alternative; the step's result */
+.ase-alt { margin-top: 4px; padding-top: 3px; border-top: 1px dashed var(--rule); }
+.ase-note { padding: 0 0 2px 15px; font: 400 0.75rem/1.3 var(--sans); color: var(--ink-3); }
+.ase-s3 { position: relative; margin-top: 6px !important; padding: 4px 8px; border-radius: 5px; background: color-mix(in srgb, var(--paper-3) 55%, transparent); font: 500 0.75rem/1.3 var(--sans); color: var(--ink-2); }
+/* two lines kept where the longest result of step 3 wraps */
+@container ase (max-width: 380px) { .ase-s3 { min-height: calc(2.6em + 8px); } }
+
+/* step 4 and the result: chips, the current one lit */
+.ase-ea { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px !important; padding-left: 15px; }
+.ase-ea span, .ase-o { position: relative; padding: 3px 9px; border: 1px solid var(--rule); border-radius: 999px; font: 500 0.75rem/1.25 var(--sans); color: var(--ink-3); white-space: nowrap; }
+.ase-ea span.is-on, .ase-o.is-on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--ink); }
+.ase-step:not(.is-on) .ase-ea span.is-on { border-style: dashed; background: none; color: var(--ink-2); }
+.ase-og { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 6px; margin-top: 4px !important; }
+.ase-ol { flex: 0 0 100%; font: 500 0.75rem/1.2 var(--sans); color: var(--ink-3); }
+.ase-og.is-on .ase-ol { color: var(--ink); }
+.ase-o[data-o="g2"].is-on, .ase-o[data-o="g3"].is-on { border-color: var(--flag); background: color-mix(in srgb, var(--flag) 13%, transparent); }
+@container ase (min-width: 400px) { .ase-ol { flex: 0 0 9.6em; } }
+
+/* a change: a flash behind the part (1.2 s), a pulse on a number that an edit changed */
+.ase .is-flash { isolation: isolate; }
+.ase .is-flash::after { content: ""; position: absolute; inset: -2px; z-index: -1; border-radius: 6px; background: var(--accent); opacity: 0; pointer-events: none; animation: ase-flash 1.2s ease-out; }
+@keyframes ase-flash { 0% { opacity: 0.38; } 100% { opacity: 0; } }
+.ase .is-tick b { animation: ase-tick 0.9s ease-out; }
+@keyframes ase-tick { 0% { color: var(--accent); } }
+@media (prefers-reduced-motion: reduce) {
+  .ase .is-flash::after, .ase .is-tick b { animation: none; }
+}
+/* at the top of the text panel, over its 6 px top padding; under the sticky figure on phones and
+   tablets; in place where the screen is short */
+@media (min-width: 821px) {
+  .ase-head { top: -6px; }
+}
+@media (max-width: 820px) {
+  .ase-head { top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px)); }
+  /* clear of the sticky figure and result above, and of the chapter bar below */
+  .ase-b { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 110px); scroll-margin-bottom: 80px; }
+}
+@media (max-width: 820px) and (max-height: 640px) {
+  .ase-head { position: static; }
+  .ase-b { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 12px); }
+}

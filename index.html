@@ -774,12 +774,8 @@
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <div class="table-wrap">
-        <table class="vt" id="fill-calc">
-          <thead><tr><th>Measurement</th><th class="num">Value</th><th>Abnormal if</th><th class="num">Result</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <!-- the 2025 ASE algorithm (Nagueh 2025, Figure 3) with buttons on its measurements: src/ch/fill.js -->
+      <section class="ase" id="fill-ase" aria-label="2025 ASE algorithm: LA pressure and the grade of diastolic dysfunction"></section>
       <div class="prose" data-part="prose">
         <h3>Grades of diastolic dysfunction</h3>
         <ol class="steps">
@@ -797,13 +793,12 @@
         </ul>
         <h3>The 2025 ASE algorithm in sinus rhythm</h3>
         <ol class="steps">
-        <li>The first step assesses three variables: reduced e′ (septal ≤6, lateral ≤7 or average ≤6.5 cm/s); raised E/e′ (septal ≥15, lateral ≥13 or average ≥14); and a peak TR velocity ≥2.8 m/s, or a PA systolic pressure ≥35 mmHg when the RA pressure is known<span class="cite" data-ref="nagueh2025"></span>.</li>
-        <li>If all three first-step variables are normal, the LA pressure is normal and diastolic function is normal.</li>
-        <li>If reduced e′ is the only abnormal variable and E/A is ≤0.8, the LA pressure is normal, and diastolic dysfunction is classified as grade 1.</li>
-        <li>In the other cases with one or two abnormal first-step variables, the second step assesses whether the pulmonary vein S/D ratio is ≤0.67, the LA reservoir strain is ≤18% or the LA volume index is >34 mL/m². One or more abnormal second-step variables indicate a raised LA pressure; if none is abnormal, the LA pressure is normal<span class="cite" data-ref="nagueh2025"></span>.</li>
-        <li>If all three first-step variables are abnormal, the LA pressure is raised.</li>
-        <li>When the LA pressure is raised, E/A &lt;2 indicates grade 2 and E/A ≥2 indicates grade 3 diastolic dysfunction<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>Step 1</b> assesses three variables: reduced e′ (septal ≤6, lateral ≤7 or average ≤6.5 cm/s); raised E/e′ (septal ≥15, lateral ≥13 or average ≥14); and a peak TR velocity ≥2.8 m/s, or a PA systolic pressure ≥35 mmHg when the RA pressure is known<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>Step 2</b> depends on which step 1 variables are abnormal. If all three are normal, the LA pressure and diastolic function are normal. If reduced e′ alone is abnormal and E/A is ≤0.8, the LA pressure is normal, with grade 1 diastolic dysfunction. In a symptomatic patient with a normal LA pressure at rest, diastolic exercise echocardiography is recommended. If all three are abnormal, the LA pressure is raised. Reduced e′ alone with E/A &gt;0.8, raised E/e′ alone, a raised TR velocity alone and any two abnormal variables require step 3<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li><b>Step 3</b> assesses the pulmonary vein S/D ratio (≤0.67), LA reservoir strain (≤18%) and the LA volume index (&gt;34 mL/m²). Figure 3 lists IVRT ≤70 ms as an alternative variable. One or more abnormal variables indicate a raised LA pressure. If none is abnormal, the LA pressure is normal, and the algorithm assigns no grade<span class="cite" data-ref="nagueh2025"></span>.</li>
+        <li>In <b>step 4</b>, E/A grades a raised LA pressure: E/A &lt;2 indicates grade 2 and E/A ≥2 indicates grade 3 diastolic dysfunction<span class="cite" data-ref="nagueh2025"></span>.</li>
         </ol>
+        <p>In the diagram above, a change in one measurement moves the slider to a band of the new result. A move of the slider returns every value to the model.</p>
         <p>In a validation study of 951 patients with catheter-measured pressures, 2 patients remained unclassified by the algorithm (38 by the 2016 approach), and the accuracy of the algorithm was 86%<span class="cite" data-ref="lababidi2025"></span>.</p>
         <h3>Exclusions and limitations</h3>
         <p>The algorithm should not be applied in atrial fibrillation, mitral stenosis, severe primary mitral regurgitation or moderate or severe mitral annular calcification, after mitral valve repair or replacement or heart transplantation, or in patients with an LV assist device, pericardial constriction or pulmonary hypertension of non-cardiac cause<span class="cite" data-ref="nagueh2025"></span>. The guideline does not apply to children, to normal pregnancy or to patients during surgery<span class="cite" data-ref="nagueh2025"></span>.</p>
@@ -811,9 +806,9 @@
         <p>In advanced cardiac amyloidosis, the mitral annular s′, e′ and a′ velocities can all be below 5 cm/s, a finding termed the “5-5-5” sign<span class="cite" data-ref="nagueh2025"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>The first step of the algorithm assesses e′, E/e′ and the peak TR velocity.</li>
-        <li>When the first step is inconclusive, the second step assesses the pulmonary vein S/D ratio, LA reservoir strain and the LA volume index.</li>
-        <li>Once the LA pressure is classified as raised, E/A determines the grade of diastolic dysfunction.</li>
+        <li>Step 1 of the algorithm assesses e′, E/e′ and the peak TR velocity.</li>
+        <li>If step 1 is not conclusive, step 3 assesses the pulmonary vein S/D ratio, LA reservoir strain and the LA volume index.</li>
+        <li>When the LA pressure is raised, E/A determines the grade of diastolic dysfunction.</li>
         </ol>
       </div>
       <div class="quiz"></div>
