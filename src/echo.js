@@ -448,6 +448,8 @@ const FULL = {
   SVC: 'Superior vena cava', 'desc Ao': 'Descending aorta', 'ascending Ao': 'Ascending aorta', 'descending Ao': 'Descending aorta', arch: 'Aortic arch',
   LMCA: 'Left main coronary artery', RCA: 'Right coronary artery', 'Ao root': 'Aortic root', RCC: 'Right coronary cusp', LCC: 'Left coronary cusp', NCC: 'Non-coronary cusp', 'R+L': 'Fused right and left cusps', SMA: 'Superior mesenteric artery', 'abdominal Ao': 'Abdominal aorta',
 };
+// short names for a narrow cross-section pane, where the full ones meet (A3C at 320 px)
+const SHORT = { anteroseptal: 'Ant-sept', inferolateral: 'Inf-lat' };
 const ROOMY = new Set(['la', 'ra', 'lv', 'rv', 'rvant', 'rvot', 'mpa', 'ao', 'asc', 'arch', 'desc', 'ivc', 'ivcl', 'rpa', 'lpa', 'svc', 'abdao']);
 
 export class EchoView {
@@ -743,7 +745,7 @@ export class EchoView {
       if (Math.abs(Math.atan2(q[0], q[1])) > half || Math.hypot(q[0], q[1]) > spec.depth) continue;
       const p = this.stage.project(g.O.clone().addScaledVector(g.r, q[0]).addScaledVector(g.d, q[1]));
       if (p.z > 1) continue;
-      out.push({ id, x: p.x, y: p.y, text: (!short && FULL[txt]) || txt.charAt(0).toUpperCase() + txt.slice(1) });
+      out.push({ id, x: p.x, y: p.y, text: (short ? SHORT[txt] : FULL[txt]) || txt.charAt(0).toUpperCase() + txt.slice(1) });
     }
     return out;
   }
@@ -1193,7 +1195,11 @@ export class EchoView {
       }
     }
     ctx.textAlign = 'left';
-    const head = m.zoomed ? `${spec.short}  ·  zoom ${spec.zoom.w} cm  ·  HR 70` : `${spec.short}  ·  ${spec.depth.toFixed(0)} cm  ·  HR 70`;
+    // the longest form of the scanner line that fits the pane: a narrow phone pane drops the heart rate
+    const forms = m.zoomed
+      ? [`${spec.short}  ·  zoom ${spec.zoom.w} cm  ·  HR 70`, `${spec.short}  ·  zoom ${spec.zoom.w} cm`, `${spec.short} · zoom ${spec.zoom.w} cm`, `${spec.short} · ${spec.zoom.w} cm`]
+      : [`${spec.short}  ·  ${spec.depth.toFixed(0)} cm  ·  HR 70`, `${spec.short}  ·  ${spec.depth.toFixed(0)} cm`, `${spec.short} · ${spec.depth.toFixed(0)} cm`];
+    const head = forms.find((f) => ctx.measureText(f).width <= W - 24) ?? forms[forms.length - 1];
     ctx.fillText(head, 12, (m.zoomed ? m.boxTop : top) - 8);
     ctx.restore();
 
