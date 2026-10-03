@@ -81,7 +81,7 @@ async function take(m) {
 let fields = null;
 async function buildShape(m, mesh) {
   const [PM, E, { apicalTurn }, { VESSELS }] = await Promise.all([import('./gl/phenomesh.js'), import('./echo.js'), import('./aha.js'), import('./views.js')]);
-  // let the page draw its busy note before the long computation below
+  // let the page draw the busy Heart menu before the long computation below
   await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
   if (!fields) {
     const A = m.anat.normal();

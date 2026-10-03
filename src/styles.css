@@ -230,6 +230,12 @@ a:hover { text-decoration-color: var(--accent); }
 }
 .heart-pick.is-disease { border-color: var(--accent); }
 .heart-pick.is-disease svg path { fill: color-mix(in srgb, var(--accent) 30%, transparent); }
+/* a disease heart is built the first time it is shown (a few seconds): the menu is busy, and
+   its heart pulses */
+.heart-pick[aria-busy="true"], .heart-pick[aria-busy="true"] select { cursor: progress; }
+.heart-pick[aria-busy="true"] svg { color: var(--accent); animation: heart-busy 0.8s ease-in-out infinite alternate; }
+@keyframes heart-busy { to { opacity: 0.25; } }
+/* the heart note, off (SHOW_HEART_NOTE in src/main.js) */
 .pheno-note {
   margin: 12px 0 0;
   padding: 7px 10px;
@@ -437,7 +443,10 @@ a:hover { text-decoration-color: var(--accent); }
 /* severity pages: slider head with a Play button, grade bands under the slider */
 .sev-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .sev-head label { flex: 1; margin-bottom: 0; }
-.sev-play { flex: none; width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; cursor: pointer; }
+.sev-play { position: relative; flex: none; width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; cursor: pointer; touch-action: manipulation; }
+/* a square of 44 px to tap round the circle of 30 px: 8 px above and 6 px below, so that it ends
+   at the top of the slider */
+.sev-play::before { content: ""; position: absolute; inset: -8px -7px -6px; }
 .sev-play svg { width: 12px; height: 12px; }
 .sev-play .i-pause { display: none; }
 .sev-play[aria-pressed="true"] .i-play { display: none; }
@@ -858,6 +867,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 @media (prefers-reduced-motion: reduce) {
   .chapter.is-active { animation: none; }
   .fig .poster { transition: none; }
+  .heart-pick[aria-busy="true"] svg { animation: none; opacity: 0.4; }
 }
 
 /* chapter 10: the occlusion buttons sit on the figure, over the views they change */
