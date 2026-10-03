@@ -12,8 +12,8 @@
 // (src/echo.js).
 //
 // planes: true adds the planes of the nine standard views to the Probe and body pane, with the
-// current plane in ink and the lines where it crosses them, as chapter 07 draws them in its
-// Probe and body view (video/app.js). Cut B has them.
+// current plane in ink and the lines where it crosses them, as chapter 07 drew them in its
+// Probe and body view in PR #20 (video/app.js). Cut B has them.
 //
 // Cut P is archived: the three-pane chapter of PR #19 (left: 'planes', All planes, with the
 // chapter's cards). It stays here so that it can be rendered again.

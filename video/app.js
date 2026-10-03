@@ -10,8 +10,9 @@
 //    heart: the stage's tools) and the body key (src/gl/bodykey.js, a pencil inset) above it. In
 //    cut B and the intro's clip of 07 (CUT.planes) the pane also has the planes of the nine
 //    standard views in their window colors (src/gl/fans.js), the current plane in ink and the
-//    lines where it crosses the others, as chapter 07 draws them in its Probe and body view
-//    (src/ch/windows.js). The archived cut P draws All planes here instead (PR #19);
+//    lines where it crosses the others, as chapter 07 drew them in its Probe and body view in
+//    PR #20 (the site now draws them in a pane of their own, src/ch/windows.js; the videos were
+//    not rendered again). The archived cut P draws All planes here instead (PR #19);
 //  - Cross-section: the heart cut on the plane and seen square to it, with the site's tags;
 //  - Ultrasound image: the echo the same plane cuts from the mesh (src/echo.js, src/bmode.js).
 // The two 3D panes are two pencil renderers (src/gl/pencil.js) that draw the one scene with
@@ -121,7 +122,7 @@ LAYOUTS.planes = {
 };
 /** Cut P (archived): the left pane draws All planes, the three-pane chapter of PR #19, not the probe and body. */
 const PLANES = CUT.left === 'planes';
-/** Cut B and the intro's clip of 07 (CUT.planes): the nine planes in the Probe and body pane, as chapter 07 draws them there. */
+/** Cut B and the intro's clip of 07 (CUT.planes): the nine planes in the Probe and body pane, as chapter 07 drew them there in PR #20. */
 const BODY_PLANES = !PLANES && !!CUT.planes;
 const LAY = PLANES ? LAYOUTS.planes : LAYOUTS[CUT.aspect];
 const PANE_NAME = { body: PLANES ? 'All planes' : 'Probe and body', section: 'Cross-section', echo: 'Ultrasound image' };
@@ -408,7 +409,7 @@ async function initScene() {
 const paneColor = (name) => (DIAGRAMS === 'paper' ? LIGHT[name] : cssVar(name));
 
 /**
- * The nine planes, as chapter 07 draws them in its Probe and body view (src/ch/windows.js): the
+ * The nine planes, as chapter 07 drew them in its Probe and body view in PR #20 (src/ch/windows.js): the
  * fans of the nine standard views in their window colors and the current plane in ink, in the
  * overlay of the stage, drawn by the left pane's pencil (it reads that pencil's depth). In the
  * Probe and body pane the camera frames each view as before. All planes (cut P, archived) has one

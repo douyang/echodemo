@@ -598,8 +598,10 @@ export class EchoView {
   }
 
   /**
-   * Probe and body (chapter 07): the whole heart from the front, head up, with the plane and
-   * the probe, and the body key in a corner (gl/bodykey.js). Off: the cut, seen square to it.
+   * Probe and body: the whole heart from the front, head up, with the plane and the probe, and
+   * the body key in a corner (gl/bodykey.js). Off: the cut, seen square to it. No page calls it
+   * now: chapter 07 draws this view in its left pane (ch/windows.js), beside the cross-section,
+   * and the views video in a pane of its own (video/app.js).
    */
   async setBody(on) {
     this.bodyOn = !!on;
@@ -717,9 +719,10 @@ export class EchoView {
 
   /**
    * Label points for the cross-section: the view's structures that lie on the plane and in
-   * the sector, as screen points of the 3D stage. Returns [{ id, x, y, text }].
+   * the sector, as screen points of the 3D stage. Returns [{ id, x, y, text }]: the full names,
+   * or with short the view's own (RVOT, IVS), for a narrow pane.
    */
-  sectionLabels(s) {
+  sectionLabels(s, short = false) {
     const g = this.g;
     if (!g || !this.stage) return [];
     const spec = this.specOf(this.view);
@@ -740,7 +743,7 @@ export class EchoView {
       if (Math.abs(Math.atan2(q[0], q[1])) > half || Math.hypot(q[0], q[1]) > spec.depth) continue;
       const p = this.stage.project(g.O.clone().addScaledVector(g.r, q[0]).addScaledVector(g.d, q[1]));
       if (p.z > 1) continue;
-      out.push({ id, x: p.x, y: p.y, text: FULL[txt] || txt.charAt(0).toUpperCase() + txt.slice(1) });
+      out.push({ id, x: p.x, y: p.y, text: (!short && FULL[txt]) || txt.charAt(0).toUpperCase() + txt.slice(1) });
     }
     return out;
   }
