@@ -5,7 +5,7 @@ import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV } from '../cyclemodel.js';
 import { msGrade } from '../norms.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit } from '../sev.js';
+import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, shown } from '../sev.js';
 import { drawA4C, drawPSAXmv, measures, shownMitralThick } from '../echo2d.js';
 import { BSA } from './pressure.js';
 import { JETS } from '../jets.js';
@@ -43,17 +43,24 @@ const TRK = tracks([0, 0.25, 0.5, 0.75, 1], {
 export function model(s, hr = 70) {
   const m = TRK(s);
   m.s = s;
-  m.mva = mvaOf(s);
-  Object.assign(m, mitral({ mva: m.mva, sv: 70, hr }));
+  m.mva = shown(mvaOf(s), 2);
+  // the cardiac output is held at 4.9 L/min, so the stroke volume falls as the heart rate rises:
+  // a fixed 70 mL through the shorter filling period gave about 5 times the gradient at 110/min
+  Object.assign(m, mitral({ mva: m.mva, sv: (70 * 70) / hr, hr }));
   m.hr = hr;
+  // the values as the page prints them, so that the flags and the sentences agree with them
+  m.pht = shown(m.pht);
+  m.mg = shown(m.mg, 1);
+  for (const [k, d] of [['lavi', 0], ['pasp', 0], ['rvb', 1], ['tapse', 0]]) m[k] = shown(m[k], d);
   m.rap = m.pasp >= 50 ? 8 : 3;
-  m.trv = Math.sqrt(Math.max(0, m.pasp - m.rap) / 4);
+  m.trv = shown(Math.sqrt(Math.max(0, m.pasp - m.rap) / 4), 1);
   m.tip = 2 * Math.sqrt(m.mva / Math.PI);
   m.grade = gradeOf(s);
   return m;
 }
+// graded by the valve area as printed (Pandian 2023 Table 1)
 export function gradeOf(s) {
-  const mva = mvaOf(s);
+  const mva = shown(mvaOf(s), 2);
   if (mva >= 4.0) return 'none';
   const g = msGrade(mva);
   return g === 'progressive, mild' ? 'mild' : g === 'progressive, moderate' ? 'moderate' : g;
@@ -152,7 +159,7 @@ function meterItems(m) {
     { k: `Mean gradient (HR ${Math.round(m.hr)})`, v: m.mg, u: 'mmHg', d: 1, lo: 0, hi: 25, cuts: [[5, '5'], [10, '10']], bad: m.mg >= 10 },
     { k: 'PA systolic pressure', v: m.pasp, u: 'mmHg', lo: 15, hi: 80, cuts: [[30, '30'], [50, '50']], bad: m.pasp >= 50 },
     { k: 'LA volume index', v: m.lavi, u: 'mL/m²', lo: 10, hi: 85, norm: [16, 34], cuts: [[34, '34'], [48, '48']], bad: m.lavi > 34 },
-    { k: 'RV basal diameter', v: m.rvb, u: 'cm', d: 1, lo: 2.5, hi: 5.5, norm: [2.5, 4.1], cuts: [[4.1, '4.1']], bad: m.rvb > 4.1 },
+    { k: 'RV basal diameter', v: m.rvb, u: 'cm', d: 1, lo: 2.5, hi: 5.5, norm: [2.5, 4.1], cuts: [[4.1, '4.1']], bad: m.rvb >= 4.1 },
     { k: 'TAPSE', v: m.tapse, u: 'mm', lo: 8, hi: 30, norm: [17, 30], cuts: [[17, '17']], bad: m.tapse <= 17 },
   ];
 }

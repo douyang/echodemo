@@ -281,7 +281,7 @@ const psaxOf = (v) => ({ ava: v.ava, thick: v.cusp, calc: v.calc, root: 3.1 });
 const lvmiOf = (v) => (0.8 * 1.04 * ((v.wall * 2 + v.lvidd) ** 3 - v.lvidd ** 3) + 0.6) / BSA;
 
 function meterItems(v) {
-  const lvmi = lvmiOf(v);
+  const lvmi = round(lvmiOf(v), 0), wall = round(v.wall * 10, 0), ee = round(v.ee, 0), lavi = round(v.lavi, 0);
   return [
     { k: 'Aortic valve area', v: v.ava, u: 'cm²', d: 2, lo: 0.4, hi: 3.6, cuts: [[1.0, '1.0'], [1.5, '1.5']], bad: v.ava < 1.0 },
     { k: 'Peak velocity', v: v.vmax, u: 'm/s', d: 1, lo: 1, hi: 6, cuts: [[2.6, '2.6'], [3, '3'], [4, '4'], [5, '5']], bad: v.vmax >= 4 },
@@ -289,10 +289,10 @@ function meterItems(v) {
     { k: 'Velocity ratio', v: v.vr, u: '', d: 2, lo: 0, hi: 1, cuts: [[0.25, '0.25'], [0.5, '0.50']], bad: v.vr < 0.25 },
     { k: 'Stroke volume index', v: v.svi, u: 'mL/m²', lo: 15, hi: 50, norm: [35, 50], cuts: [[35, '35']], bad: v.svi < 35 },
     { k: 'LVEF', v: v.ef, u: '%', lo: 20, hi: 75, norm: [52, 72], cuts: [[50, '50']], bad: v.ef < 50 },
-    { k: 'Septal thickness', v: v.wall, u: 'cm', d: 1, lo: 0.6, hi: 1.7, norm: [0.6, 1.0], cuts: [[1.0, '1.0']], bad: v.wall > 1.0 },
+    { k: 'Septal thickness', v: wall, u: 'mm', lo: 6, hi: 17, norm: [6, 10], cuts: [[10, '10']], bad: wall > 10 },
     { k: 'LV mass index', v: lvmi, u: 'g/m²', lo: 50, hi: 180, norm: [49, 115], cuts: [[115, '115']], bad: lvmi > 115 },
-    { k: 'Average E/e′', v: v.ee, u: '', lo: 4, hi: 22, cuts: [[14, '14']], bad: v.ee >= 14 },
-    { k: 'LA volume index', v: v.lavi, u: 'mL/m²', lo: 10, hi: 70, norm: [16, 34], cuts: [[34, '34']], bad: v.lavi > 34 },
+    { k: 'Average E/e′', v: ee, u: '', lo: 4, hi: 22, cuts: [[14, '14']], bad: ee >= 14 },
+    { k: 'LA volume index', v: lavi, u: 'mL/m²', lo: 10, hi: 70, norm: [16, 34], cuts: [[34, '34']], bad: lavi > 34 },
   ];
 }
 
@@ -616,7 +616,7 @@ function flashChanges(P, M, cause) {
 function liveOf(v, s, cite) {
   const g = v.grade, B = cite('baumgartner2017'), O = cite('otto2020');
   const nums = `The AVA by the continuity equation is ${fmt(v.ava, 2)} cm², the peak velocity is ${fmt(v.vmax, 1)} m/s and the mean gradient is ${fmt(v.mg)} mmHg${B}.`;
-  const lv = ` The LV wall thickens in response to the pressure load (septum ${fmt(v.wall, 1)} cm, LV mass index ${fmt(lvmiOf(v))} g/m²)${O}. The average E/e′ is ${fmt(v.ee)}.`;
+  const lv = ` The LV wall thickens in response to the pressure load (septum ${fmt(round(v.wall * 10, 0))} mm, LV mass index ${fmt(lvmiOf(v))} g/m²)${O}. The average E/e′ is ${fmt(v.ee)}.`;
   const why = {
     none: ` Table 3 grades a peak velocity of 2.5 m/s or less as aortic sclerosis, without stenosis${B}.`,
     mild: '',

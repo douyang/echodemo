@@ -4,7 +4,7 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV } from '../cyclemodel.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit } from '../sev.js';
+import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, shown } from '../sev.js';
 import { drawPLAX, plaxLV, cal, measures } from '../echo2d.js';
 import { BSA } from './pressure.js';
 import { JETS } from '../jets.js';
@@ -31,27 +31,34 @@ const TR = tracks([0, 0.3, 0.52, 0.8, 1], {
 export function model(s) {
   const m = TR(s);
   m.s = s;
-  m.eroa = eroaOf(s);
-  m.rvol = m.eroa * VTI;
-  m.rf = (m.rvol / (m.rvol + FWD)) * 100;
-  m.vc = 2 * Math.sqrt(m.eroa / Math.PI);
+  // the values as the page prints them, each calculation from the rounded values before it, so
+  // that the grade, the flags and the sentences agree with the numbers on screen
+  m.eroa = shown(eroaOf(s), 2);
+  m.rvol = shown(m.eroa * VTI);
+  m.rf = shown((m.rvol / (m.rvol + FWD)) * 100);
+  m.vc = shown(2 * Math.sqrt(m.eroa / Math.PI), 2);
   m.jw = m.vc * 2.2;
-  m.ratio = (m.jw / LVOT) * 100;
-  m.pht = phtOf(m.eroa);
-  m.edv = edvOf(m.eroa);
+  m.ratio = shown((m.jw / LVOT) * 100);
+  m.pht = shown(phtOf(m.eroa));
+  m.edv = shown(edvOf(m.eroa));
   m.sv = FWD + m.rvol;
-  m.lvotVti = m.sv / (Math.PI * (LVOT / 2) ** 2);
-  m.lvesdi = (m.lvesd * 10) / BSA;
+  m.lvotVti = shown(m.sv / (Math.PI * (LVOT / 2) ** 2));
+  // the diameters in whole millimetres, as the ACC/AHA criteria give them
+  m.lveddMm = shown(m.lvedd * 10);
+  m.lvesdMm = shown(m.lvesd * 10);
+  m.lvedd = m.lveddMm / 10;
+  m.lvesd = m.lvesdMm / 10;
+  m.lvesdi = shown(m.lvesdMm / BSA);
+  for (const k of ['ef', 'sbp', 'dbp']) m[k] = shown(m[k]);
   m.grade = gradeOf(s, m);
   return m;
 }
-export function gradeOf(s, m = null) {
-  const eroa = m ? m.eroa : eroaOf(s);
-  if (eroa <= 0.001) return 'none';
-  if (eroa < 0.1) return 'mild';
-  if (eroa < 0.3) return 'moderate';
-  const t = m || TR(s);
-  return t.ef <= 55 || t.lvesd > 5.0 || (t.lvesd * 10) / BSA > 25 ? 'severe, LV dysfunction' : 'severe';
+// graded from the values as printed (model() rounds them)
+export function gradeOf(s, m = model(s)) {
+  if (m.eroa <= 0) return 'none';
+  if (m.eroa < 0.1) return 'mild';
+  if (m.eroa < 0.3) return 'moderate';
+  return m.ef <= 55 || m.lvesdMm > 50 || m.lvesdi > 25 ? 'severe, LV dysfunction' : 'severe';
 }
 const LEV = { ...LEVEL, 'severe, LV dysfunction': 4 };
 // the bold lead of the caption for each grade
@@ -83,7 +90,7 @@ function plax(ctx, box, m, t) {
       const x = geo.xAnn - 0.7;
       cal(c, F, geo.R([x, geo.aoMid - m.jw / 2]), geo.R([x, geo.aoMid + m.jw / 2]), '', { solid: true });
     }
-    measures(c, F, [`LVIDd ${m.lvedd.toFixed(1)} cm`, `LVIDs ${m.lvesd.toFixed(1)} cm`, `jet/LVOT ${Math.round(m.ratio)}%`]);
+    measures(c, F, [`LVIDd ${m.lveddMm} mm`, `LVIDs ${m.lvesdMm} mm`, `jet/LVOT ${m.ratio}%`]);
   };
   const title = fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 60 cm/s', 'PLAX · COLOR 60');
   if (JETS === 'plume') {
@@ -138,7 +145,8 @@ function arCW(ctx, P, m) {
     ctx.restore();
     caliper(ctx, x0, y0 - V0 * k - 10, x1, y0 - V0 * k - 10, { solid: true });
   }
-  note(ctx, bx, m.eroa > 0.005 ? `PHT ${pht} ms · ${m.rvol >= 30 ? 'dense' : 'faint'}` : 'no regurgitation', 'top');
+  // the label prints the half-time as the readout does; the trace keeps its 10 ms steps (its cache key)
+  note(ctx, bx, m.eroa > 0.005 ? `PHT ${m.pht} ms · ${m.rvol >= 30 ? 'dense' : 'faint'}` : 'no regurgitation', 'top');
   return bx;
 }
 
@@ -198,8 +206,8 @@ function meterItems(m) {
     { k: 'Jet width / LVOT', v: m.ratio, u: '%', lo: 0, hi: 100, cuts: [[25, '25'], [65, '65']], bad: m.ratio >= 65 },
     { k: 'Pressure half-time', v: m.pht, u: 'ms', lo: 100, hi: 800, cuts: [[200, '200'], [500, '500']], bad: m.pht < 200 },
     { k: 'Desc. aorta end-diastolic', v: m.edv, u: 'cm/s', lo: 0, hi: 40, cuts: [[20, '20']], bad: m.edv >= 20 },
-    { k: 'LV end-diastolic diameter', v: m.lvedd, u: 'cm', d: 1, lo: 4, hi: 7.5, norm: [4.2, 5.8], cuts: [[6.5, '6.5']], bad: m.lvedd > 5.8 },
-    { k: 'LV end-systolic diameter', v: m.lvesd, u: 'cm', d: 1, lo: 2, hi: 6, cuts: [[5.0, '5.0']], bad: m.lvesd > 5.0 },
+    { k: 'LV end-diastolic diameter', v: m.lveddMm, u: 'mm', lo: 40, hi: 75, norm: [42, 58], cuts: [[65, '65']], bad: m.lveddMm > 58 },
+    { k: 'LV end-systolic diameter', v: m.lvesdMm, u: 'mm', lo: 20, hi: 60, cuts: [[50, '50']], bad: m.lvesdMm > 50 },
     { k: 'LVEF', v: m.ef, u: '%', lo: 30, hi: 75, norm: [52, 72], cuts: [[55, '55']], bad: m.ef <= 55 },
   ];
 }
@@ -227,7 +235,7 @@ function draw(sh, t) {
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 function tableRows(m) {
   const q = (v, a, b) => (v < a ? 0 : v < b ? 1 : 2);
-  const size = m.lvedd <= 5.8 ? 0 : m.lvedd <= 6.3 ? 1 : 2;
+  const size = m.lveddMm <= 58 ? 0 : m.lveddMm <= 63 ? 1 : 2;
   return [
     ['LV size', ['Normal', 'Normal or dilated', 'Usually dilated'], size],
     ['Jet width in LVOT', ['Small (central jets)', 'Intermediate', 'Large (central jets)'], q(m.ratio, 25, 65)],
@@ -274,20 +282,20 @@ export default {
     const g = m.grade;
     const sev = g.startsWith('severe');
     const stage = !sev ? '' : g === 'severe'
-      ? ` With an LVEF of ${fmt(m.ef)}% and an LV end-systolic diameter of ${fmt(m.lvesd, 1)} cm, severe aortic regurgitation is ACC/AHA stage C1 in the absence of symptoms${cite('otto2020')}.`
-      : ` <span class="k-red">An LVEF of ${fmt(m.ef)}% and an LV end-systolic diameter of ${fmt(m.lvesd, 1)} cm (${fmt(m.lvesdi)} mm/m²) meet at least one ACC/AHA stage C2 criterion (LVEF ≤55%, end-systolic diameter >5.0 cm or >25 mm/m²)</span>${cite('otto2020')}.`;
+      ? ` With an LVEF of ${fmt(m.ef)}% and an LV end-systolic diameter of ${fmt(m.lvesdMm)} mm, severe aortic regurgitation is ACC/AHA stage C1 in the absence of symptoms${cite('otto2020')}.`
+      : ` <span class="k-red">An LVEF of ${fmt(m.ef)}% and an LV end-systolic diameter of ${fmt(m.lvesdMm)} mm (${fmt(m.lvesdi)} mm/m²) meet at least one ACC/AHA stage C2 criterion (LVEF ≤55%, end-systolic diameter >50 mm or >25 mm/m²)</span>${cite('otto2020')}.`;
     return {
       readouts: [
         { k: 'EROA', v: fmt(m.eroa, 2), u: 'cm²', flag: m.eroa >= 0.3 },
         { k: 'Regurgitant volume', v: fmt(m.rvol), u: 'mL', flag: m.rvol >= 60 },
         { k: 'Pressure half-time', v: fmt(m.pht), u: 'ms', flag: m.pht < 200 },
-        { k: 'LVESD', v: fmt(m.lvesd, 1), u: 'cm', flag: m.lvesd > 5.0 },
+        { k: 'LVESD', v: fmt(m.lvesdMm), u: 'mm', flag: m.lvesdMm > 50 },
         { k: 'LVEF', v: fmt(m.ef), u: '%', flag: m.ef <= 55 },
         { k: 'Grade', v: g, text: true, flag: sev },
       ],
       live: m.eroa <= 0.001
         ? '<b>No aortic regurgitation.</b> The play control animates the progression of aortic regurgitation from mild to severe.'
-        : `<b>${LEAD[g] || `${g[0].toUpperCase()}${g.slice(1)} aortic regurgitation`}.</b> The EROA is ${fmt(m.eroa, 2)} cm², the regurgitant volume is ${fmt(m.rvol)} mL and the jet width is ${fmt(m.ratio)}% of the LVOT diameter; the pressure half-time is ${fmt(m.pht)} ms${cite('zoghbi2017')}. The LV receives and ejects the forward and the regurgitant volume (LVOT VTI ${fmt(m.lvotVti)} cm, LV end-diastolic diameter ${fmt(m.lvedd, 1)} cm); the blood pressure is ${fmt(m.sbp)}/${fmt(m.dbp)} mmHg.${stage}`,
+        : `<b>${LEAD[g] || `${g[0].toUpperCase()}${g.slice(1)} aortic regurgitation`}.</b> The EROA is ${fmt(m.eroa, 2)} cm², the regurgitant volume is ${fmt(m.rvol)} mL and the jet width is ${fmt(m.ratio)}% of the LVOT diameter; the pressure half-time is ${fmt(m.pht)} ms${cite('zoghbi2017')}. The LV receives and ejects the forward and the regurgitant volume (LVOT VTI ${fmt(m.lvotVti)} cm, LV end-diastolic diameter ${fmt(m.lveddMm)} mm); the blood pressure is ${fmt(m.sbp)}/${fmt(m.dbp)} mmHg.${stage}`,
       extra: (art) => gradeTable(art.querySelector('#ar-table'), tableRows(m), 'ASE 2017 grading (Table 11, condensed)'),
     };
   },

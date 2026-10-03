@@ -6,9 +6,9 @@
 // opposite directions with breathing (ASE 2013). The pressures and velocities are illustrative.
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
-import { tracks, bands, paintBands, playSeverity, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit } from '../sev.js';
+import { tracks, bands, paintBands, playSeverity, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, shown } from '../sev.js';
 import { drawA4C, drawPLAX, drawIVC } from '../echo2d.js';
-import { rapFromIvc } from '../norms.js';
+import { rapEstimate } from '../norms.js';
 import { reducedMotion } from '../state.js';
 
 const KEY = 'periS';
@@ -40,21 +40,30 @@ const TRK = tracks([0, 0.1, 0.32, 0.56, 0.7, 0.8, 1], {
 export function model(s) {
   const m = TRK(s);
   m.s = s;
+  // the values as the page prints them, so that the grade, the flags and the sentences agree
+  // with the numbers on screen
+  for (const k of ['eff', 'hr', 'sv', 'pp', 'mvVar', 'tvVar']) m[k] = shown(m[k]);
+  m.ivc = shown(m.ivc, 1);
+  m.collPct = shown(m.coll * 100);
+  m.coll = m.collPct / 100;
+  m.raColPct = shown(m.raCol * 100);
   m.rr = 60000 / m.hr;
-  m.collapses = m.coll > 0.5;
-  m.rapIvc = rapFromIvc(m.ivc, m.collapses);
+  // the RA pressure as chapter 18 estimates it from the IVC (Mukherjee 2025): a sniff, collapse ≥50%
+  m.collapses = m.collPct >= 50;
+  m.rapIvc = rapEstimate({ d: m.ivc, col: m.collPct, mode: 'sniff', sec: 'unclear' }).rap;
   m.tamp = clamp(m.tamp, 0, 1);
   m.co = (m.sv * m.hr) / 1000;
   m.rvIn = m.rvCol * 8;                                // mm the free wall moves in
-  m.grade = gradeOf(s);
+  m.grade = gradeOf(s, m);
   return m;
 }
-export function gradeOf(s) {
-  const m = TRK(s);
-  if (m.ipp >= m.rap - 1e-9) return 'tamponade';
+// size by the echo-free space as printed (ESC: <10, 10-20, >20 mm); tamponade once the sac
+// pressure, to the decimal the page can show, reaches the RA pressure
+export function gradeOf(s, m = model(s)) {
+  if (shown(m.ipp, 1) >= shown(m.rap, 1)) return 'tamponade';
   if (m.eff < 1) return 'none';
   if (m.eff < 10) return 'mild';
-  if (m.eff < 20) return 'moderate';
+  if (m.eff <= 20) return 'moderate';
   return 'severe';
 }
 const LEV = { ...LEVEL, tamponade: 5 };
@@ -193,10 +202,10 @@ function meterItems(m) {
   return [
     { k: 'Effusion (diastole)', v: m.eff, u: 'mm', lo: 0, hi: 30, cuts: [[10, '10'], [20, '20']], bad: m.eff >= 10 },
     { k: 'Pericardial pressure', v: m.ipp, u: 'mmHg', lo: 0, hi: 20, cuts: [[m.rap, 'RA']], bad: m.grade === 'tamponade' },
-    { k: 'RA inversion', v: m.raCol * 100, u: '% of cycle', lo: 0, hi: 60, cuts: [[33.3, '⅓']], bad: m.raCol >= 1 / 3 },
+    { k: 'RA inversion', v: m.raColPct, u: '% of cycle', lo: 0, hi: 60, cuts: [[33.3, '⅓']], bad: m.raColPct > 33 },
     { k: 'RV wall, early diastole', v: m.rvIn, u: 'mm in', lo: 0, hi: 10, cuts: [], bad: m.rvCol > 0.2 },
     { k: 'IVC diameter', v: m.ivc, u: 'cm', d: 1, lo: 1, hi: 3, norm: [1.0, 2.1], cuts: [[2.1, '2.1']], bad: m.ivc > 2.1 },
-    { k: 'IVC collapse on sniff', v: m.coll * 100, u: '%', lo: 0, hi: 80, cuts: [[50, '50']], bad: m.coll < 0.5 },
+    { k: 'IVC collapse on sniff', v: m.collPct, u: '%', lo: 0, hi: 80, cuts: [[50, '50']], bad: !m.collapses },
     { k: 'Mitral E variation', v: m.mvVar, u: '%', lo: 0, hi: 50, cuts: [[25, '25'], [30, '30']], bad: m.mvVar > 25 },
     { k: 'Tricuspid E variation', v: m.tvVar, u: '%', lo: 0, hi: 90, cuts: [[40, '40'], [60, '60']], bad: m.tvVar > 40 },
     { k: 'Heart rate', v: m.hr, u: '/min', lo: 40, hi: 140, norm: [60, 100], cuts: [[100, '100']], bad: m.hr > 100 },
@@ -224,7 +233,8 @@ function draw(sh, t) {
   const bxs = [inflowPW(ctx, p1, m, 'mv'), inflowPW(ctx, p2, m, 'tv'), hvPW(ctx, p3, m)];
   const [c1, c2] = cols(p4, [1.25, 1], 10);
   plax(ctx, c1, m);
-  drawIVC(ctx, c2, { d: m.ivc, collapse: m.coll }, { title: fit(c2.w, `IVC · M-MODE · RAP ${m.rapIvc} mmHg`, 'IVC') });
+  // the estimate from the IVC; the RA pressure readout is the pressure the model sets
+  drawIVC(ctx, c2, { d: m.ivc, collapse: m.coll }, { title: fit(c2.w, `IVC · M-MODE · RAP estimate ${m.rapIvc} mmHg`, `IVC · RAP est. ${m.rapIvc}`) });
   for (const bx of bxs) cursor(ctx, bx, u);
 }
 
@@ -239,9 +249,9 @@ function sizeRows(m) {
 function tampRows(m) {
   const on = (x) => (x ? 1 : 0);
   return [
-    ['Right atrium', ['Brief or no inversion', 'Inversion for more than one third of the cycle'], on(m.raCol >= 1 / 3)],
+    ['Right atrium', ['Brief or no inversion', 'Inversion for more than one third of the cycle'], on(m.raColPct > 33)],
     ['Right ventricle', ['Free wall moves outward in diastole', 'Free wall collapses in early diastole'], on(m.rvCol > 0.2)],
-    ['IVC', ['≤2.1 cm, collapses more than 50%', '>2.1 cm, collapses less than 50%'], on(m.ivc > 2.1 && m.coll < 0.5)],
+    ['IVC', ['≤2.1 cm, collapses 50% or more', '>2.1 cm, collapses less than 50%'], on(m.ivc > 2.1 && !m.collapses)],
     ['Mitral E with inspiration', ['Falls less than 25%', 'Falls more than 25–30%'], on(m.mvVar > 25)],
     ['Tricuspid E with inspiration', ['Rises less than 40%', 'Rises more than 40–60%'], on(m.tvVar > 40)],
     ['Hepatic veins', ['Forward flow in systole and diastole', 'Diastolic flow falls or reverses in expiration'], on(m.hvRev > 0.1)],
@@ -285,13 +295,13 @@ export default {
     const m = model(s[KEY]);
     const g = m.grade;
     const pd = Math.abs(m.rap - m.ipp) < 1 ? 1 : 0;      // a decimal when the two pressures are close
-    const size = m.eff < 1 ? 'no effusion' : m.eff < 10 ? 'a mild (small) effusion' : m.eff < 20 ? 'a moderate effusion' : 'a severe (large) effusion';
+    const size = m.eff < 1 ? 'no effusion' : m.eff < 10 ? 'a mild (small) effusion' : m.eff <= 20 ? 'a moderate effusion' : 'a severe (large) effusion';
     let live;
     if (g === 'none') live = '<b>No pericardial effusion.</b> The visceral and parietal layers of the pericardium lie in contact. The normal pericardial sac contains 10–50 mL of fluid; a separation of the layers seen only in systole is a trivial effusion. The play control animates the progression from no effusion to tamponade.';
     else if (g !== 'tamponade') {
-      live = `<b>${g[0].toUpperCase()}${g.slice(1)} pericardial effusion.</b> The echo-free space measures ${fmt(m.eff)} mm in diastole, consistent with ${size}. The pressure in the pericardial sac (${fmt(m.ipp, pd)} mmHg) remains below the RA pressure (${fmt(m.rap, pd)} mmHg), so the cardiac chambers fill normally; the IVC measures ${fmt(m.ivc, 1)} cm and ${m.collapses ? 'collapses by more than 50%' : 'collapses by less than 50%'} with a sniff, and the mitral E velocity varies by ${fmt(m.mvVar)}% with respiration.${m.raCol > 0.05 ? ` The RA wall inverts briefly, for ${fmt(m.raCol * 100)}% of the cardiac cycle; a brief inversion alone does not indicate tamponade.` : ''}${m.swing > 0.2 ? ' The heart swings within the effusion.' : ''}`;
+      live = `<b>${g[0].toUpperCase()}${g.slice(1)} pericardial effusion.</b> The echo-free space measures ${fmt(m.eff)} mm in diastole, consistent with ${size}. The pressure in the pericardial sac (${fmt(m.ipp, pd)} mmHg) remains below the RA pressure (${fmt(m.rap, pd)} mmHg), so the cardiac chambers fill normally; the IVC measures ${fmt(m.ivc, 1)} cm and collapses by ${fmt(m.collPct)}% with a sniff, and the mitral E velocity varies by ${fmt(m.mvVar)}% with respiration.${m.raCol > 0.05 ? ` The RA wall inverts briefly, for ${fmt(m.raColPct)}% of the cardiac cycle; a brief inversion alone does not indicate tamponade.` : ''}${m.swing > 0.2 ? ' The heart swings within the effusion.' : ''}`;
     } else {
-      live = `<b>Tamponade.</b> The pressure in the pericardial sac (${fmt(m.ipp, pd)} mmHg) has reached the RA pressure (${fmt(m.rap, pd)} mmHg). The RA wall remains inverted for ${fmt(m.raCol * 100)}% of the cardiac cycle${m.raCol >= 1 / 3 ? ' (more than one third)' : ''}; ${m.rvCol > 0.2 ? 'the RV free wall collapses in early diastole' : 'the RV free wall does not yet collapse'}; the interventricular septum shifts toward the LV with each inspiration; the IVC measures ${fmt(m.ivc, 1)} cm and collapses by only ${fmt(m.coll * 100)}%; and with inspiration the mitral E velocity falls by ${fmt(m.mvVar)}% and the tricuspid E velocity rises by ${fmt(m.tvVar)}%. The heart rate is ${fmt(m.hr)}/min and the stroke volume ${fmt(m.sv)} mL; the inspiratory fall in systolic blood pressure is ${fmt(m.pp)} mmHg${m.pp > 10 ? ' (pulsus paradoxus)' : ''}. Tamponade is a clinical diagnosis, and these echocardiographic signs support it.`;
+      live = `<b>Tamponade.</b> The pressure in the pericardial sac (${fmt(m.ipp, pd)} mmHg) has reached the RA pressure (${fmt(m.rap, pd)} mmHg). The RA wall remains inverted for ${fmt(m.raColPct)}% of the cardiac cycle${m.raColPct > 33 ? ' (more than one third)' : ''}; ${m.rvCol > 0.2 ? 'the RV free wall collapses in early diastole' : 'the RV free wall does not yet collapse'}; the interventricular septum shifts toward the LV with each inspiration; the IVC measures ${fmt(m.ivc, 1)} cm and collapses by only ${fmt(m.collPct)}%; and with inspiration the mitral E velocity falls by ${fmt(m.mvVar)}% and the tricuspid E velocity rises by ${fmt(m.tvVar)}%. The heart rate is ${fmt(m.hr)}/min and the stroke volume ${fmt(m.sv)} mL; the inspiratory fall in systolic blood pressure is ${fmt(m.pp)} mmHg${m.pp > 10 ? ' (pulsus paradoxus)' : ''}. Tamponade is a clinical diagnosis, and these echocardiographic signs support it.`;
     }
     return {
       readouts: [

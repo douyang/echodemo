@@ -4,7 +4,7 @@
 import { Sheet, clamp, MONO, SANS } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { mitralV, RR, EV } from '../cyclemodel.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, waveLetter } from '../sev.js';
+import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, waveLetter, shown } from '../sev.js';
 import { drawA4C, cal, measures, heartShown } from '../echo2d.js';
 import { BSA } from './pressure.js';
 import { JETS } from '../jets.js';
@@ -46,14 +46,19 @@ function onsetOf(eroa) {
 export function model(s) {
   const m = TR(s);
   m.s = s;
-  m.eroa = eroaOf(s);
+  // the values as the page prints them, each calculation from the rounded values before it, so
+  // that the grade, the flags and the sentences agree with the numbers on screen
+  m.eroa = shown(eroaOf(s), 2);
   // a leak through part of systole has a shorter jet VTI: less volume for the same EROA
   m.onset = onsetOf(m.eroa);
-  m.rvol = m.eroa * VTI * (1 - m.onset);
-  m.rf = (m.rvol / (m.rvol + FWD)) * 100;
-  m.vc = 2 * Math.sqrt(m.eroa / Math.PI);
+  m.rvol = shown(m.eroa * VTI * (1 - m.onset));
+  m.rf = shown((m.rvol / (m.rvol + FWD)) * 100);
+  m.vc = shown(2 * Math.sqrt(m.eroa / Math.PI), 2);
   m.q = m.eroa * VMAX * 100;                        // mL/s peak flow
-  m.r = m.q > 0 ? Math.sqrt(m.q / (2 * Math.PI * VA)) : 0;
+  m.r = shown(m.q > 0 ? Math.sqrt(m.q / (2 * Math.PI * VA)) : 0, 2);
+  m.lvesdMm = shown(m.lvesd * 10);                   // the ACC/AHA criteria are in mm
+  m.lvesd = m.lvesdMm / 10;
+  for (const [k, d] of [['ef', 0], ['lavi', 0], ['E', 2], ['A', 2], ['trv', 1]]) m[k] = shown(m[k], d);
   m.sv = FWD + m.rvol;
   m.edv = m.sv / (m.ef / 100);
   m.edvi = m.edv / BSA;
@@ -62,13 +67,12 @@ export function model(s) {
   return m;
 }
 
-export function gradeOf(s, m = null) {
-  const eroa = m ? m.eroa : eroaOf(s);
-  if (eroa <= 0.001) return 'none';
-  if (eroa < 0.2) return 'mild';
-  if (eroa < 0.4) return 'moderate';
-  const t = m || TR(s);
-  return t.ef <= 60 || t.lvesd >= 4.0 ? 'severe, LV dysfunction' : 'severe';
+// graded from the values as printed (model() rounds them)
+export function gradeOf(s, m = model(s)) {
+  if (m.eroa <= 0) return 'none';
+  if (m.eroa < 0.2) return 'mild';
+  if (m.eroa < 0.4) return 'moderate';
+  return m.ef <= 60 || m.lvesdMm >= 40 ? 'severe, LV dysfunction' : 'severe';
 }
 const LEV = { ...LEVEL, 'severe, LV dysfunction': 4 };
 // the bold lead of the caption for each grade
@@ -211,7 +215,7 @@ function inflowPW(ctx, P, m) {
   const E = q2(m.E), A = q2(m.A);
   spectral(ctx, bx, { fn: (u) => mitralV((u * 2 * RR) % RR, E, A, 190 - 30 * m.s), scale: 1.8, base: 0.92, mode: 'pw', broad: 0.1, key: `mrin|${E}|${A}|${q2(m.s)}`, seed: 22 });
   vscale(ctx, bx, 1.8, 0.92, 0.5);
-  note(ctx, bx, [`E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)} m/s${m.E >= 1.2 ? ' · E-wave dominant' : m.E < m.A ? ' · A-wave dominant' : ''}`, `E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)} m/s`, `E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)}`], 'top');
+  note(ctx, bx, [`E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)} m/s${m.E > 1.2 ? ' · E-wave dominant' : m.E < m.A ? ' · A-wave dominant' : ''}`, `E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)} m/s`, `E ${m.E.toFixed(2)} · A ${m.A.toFixed(2)}`], 'top');
   return bx;
 }
 
@@ -222,11 +226,11 @@ function meterItems(m) {
     { k: 'Regurgitant fraction', v: m.rf, u: '%', lo: 0, hi: 70, cuts: [[30, '30'], [50, '50']], bad: m.rf >= 50 },
     { k: 'Vena contracta', v: m.vc, u: 'cm', d: 2, lo: 0, hi: 1.0, cuts: [[0.3, '0.3'], [0.7, '0.7']], bad: m.vc >= 0.7 },
     { k: `PISA radius (${VA} cm/s)`, v: m.r, u: 'cm', d: 2, lo: 0, hi: 1.4, cuts: [[0.3, '0.3'], [1.0, '1.0']], bad: m.r >= 1.0 },
-    { k: 'LV end-systolic diameter', v: m.lvesd, u: 'cm', d: 1, lo: 2, hi: 5, norm: [2.5, 4.0], cuts: [[4.0, '4.0']], bad: m.lvesd >= 4.0 },
+    { k: 'LV end-systolic diameter', v: m.lvesdMm, u: 'mm', lo: 20, hi: 50, norm: [25, 40], cuts: [[40, '40']], bad: m.lvesdMm >= 40 },
     { k: 'LVEF', v: m.ef, u: '%', lo: 30, hi: 75, norm: [52, 72], cuts: [[60, '60']], bad: m.ef <= 60 && m.eroa >= 0.4 },
     { k: 'LA volume index', v: m.lavi, u: 'mL/m²', lo: 10, hi: 80, norm: [16, 34], cuts: [[34, '34']], bad: m.lavi > 34 },
-    { k: 'Mitral E', v: m.E, u: 'm/s', d: 2, lo: 0.3, hi: 1.8, cuts: [[1.2, '1.2']], bad: m.E >= 1.2 },
-    { k: 'TR velocity', v: m.trv, u: 'm/s', d: 1, lo: 1.5, hi: 4, norm: [1.5, 2.8], cuts: [[2.8, '2.8']], bad: m.trv > 2.8 },
+    { k: 'Mitral E', v: m.E, u: 'm/s', d: 2, lo: 0.3, hi: 1.8, cuts: [[1.2, '1.2']], bad: m.E > 1.2 },
+    { k: 'Peak TR velocity', v: m.trv, u: 'm/s', d: 1, lo: 1.5, hi: 4, norm: [1.5, 2.8], cuts: [[2.8, '2.8']], bad: m.trv >= 2.8 },
   ];
 }
 
@@ -262,7 +266,7 @@ function tableRows(m) {
   const cw = m.rvol < 30 ? 0 : m.rvol < 60 ? 1 : 2;
   const vc = m.vc < 0.3 ? 0 : m.vc < 0.7 ? 1 : 2;
   const pv = m.pvS < 0.05 ? 2 : m.sd < 1 ? 1 : 0;
-  const inflow = m.E >= 1.2 ? 2 : m.E < m.A ? 0 : 1;
+  const inflow = m.E > 1.2 ? 2 : m.E < m.A ? 0 : 1;
   const q = (v, a, b) => (v < a ? 0 : v < b ? 1 : 2);
   return [
     ['LV and LA size', ['Usually normal', 'Normal or mildly dilated', 'Dilated'], size],
@@ -308,7 +312,7 @@ export default {
     const m = model(s[KEY]);
     const g = m.grade;
     const sev = g.startsWith('severe');
-    const stage = !sev ? '' : g === 'severe' ? ` The LVEF is ${fmt(m.ef)}% and the LV end-systolic diameter is ${fmt(m.lvesd, 1)} cm, which corresponds to ACC/AHA stage C1 in the absence of symptoms${cite('otto2020')}.` : ` <span class="k-red">An LVEF of ${fmt(m.ef)}% and an LV end-systolic diameter of ${fmt(m.lvesd, 1)} cm meet at least one ACC/AHA stage C2 criterion (LVEF ≤60% or LV end-systolic diameter ≥4.0 cm)</span>${cite('otto2020')}.`;
+    const stage = !sev ? '' : g === 'severe' ? ` The LVEF is ${fmt(m.ef)}% and the LV end-systolic diameter is ${fmt(m.lvesdMm)} mm, which corresponds to ACC/AHA stage C1 in the absence of symptoms${cite('otto2020')}.` : ` <span class="k-red">An LVEF of ${fmt(m.ef)}% and an LV end-systolic diameter of ${fmt(m.lvesdMm)} mm meet at least one ACC/AHA stage C2 criterion (LVEF ≤60% or LV end-systolic diameter ≥40 mm)</span>${cite('otto2020')}.`;
     const pvS = q2(m.pvS);   // as the pulmonary vein panel rounds it, so the two agree
     const pv = pvS < -0.02 ? 'systolic flow in the pulmonary veins reverses' : pvS < 0.05 ? 'systolic flow in the pulmonary veins stops' : m.sd < 1 ? 'pulmonary vein systolic flow is blunted' : 'pulmonary vein flow remains systolic-dominant';
     return {
@@ -316,7 +320,7 @@ export default {
         { k: 'EROA', v: fmt(m.eroa, 2), u: 'cm²', flag: m.eroa >= 0.4 },
         { k: 'Regurgitant volume', v: fmt(m.rvol), u: 'mL', flag: m.rvol >= 60 },
         { k: 'Regurgitant fraction', v: fmt(m.rf), u: '%', flag: m.rf >= 50 },
-        { k: 'LVESD', v: fmt(m.lvesd, 1), u: 'cm', flag: m.lvesd >= 4.0 },
+        { k: 'LVESD', v: fmt(m.lvesdMm), u: 'mm', flag: m.lvesdMm >= 40 },
         { k: 'LVEF', v: fmt(m.ef), u: '%', flag: sev && m.ef <= 60 },
         { k: 'Grade', v: g, text: true, flag: sev },
       ],

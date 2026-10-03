@@ -24,7 +24,7 @@ const INFO = {
   plax_av: { shows: 'Aortic valve, LVOT, proximal ascending aorta', acquire: 'Annulus and LVOT diameters in mid-systole; color Doppler of the aortic valve' },
   plax_mv: { shows: 'Mitral leaflets, chordae and annulus; LA; LV inflow', acquire: 'Leaflet anatomy and motion; color Doppler of the mitral valve' },
   plax_asc: { shows: 'Sinuses, sinotubular junction, tubular ascending aorta', acquire: 'Aortic diameters at end-diastole; color Doppler' },
-  rv_in: { shows: 'RA, tricuspid valve, RV; IVC and coronary sinus in some patients', acquire: 'TR by color Doppler; TR peak velocity by CW Doppler' },
+  rv_in: { shows: 'RA, tricuspid valve, RV; IVC and coronary sinus in some patients', acquire: 'TR by color Doppler; peak TR velocity by CW Doppler' },
   rv_out: { shows: 'RVOT, pulmonic valve, main PA', acquire: 'RVOT PW Doppler; pulmonic valve CW Doppler; color Doppler' },
   psax_av: { shows: 'Aortic valve, LA, RA, tricuspid valve, RVOT, pulmonic valve, atrial septum', acquire: 'Proximal and distal RVOT; TR by color and CW Doppler' },
   psax_pa: { shows: 'Aorta above the valve, RA, RVOT, pulmonic valve, main PA and branches', acquire: 'Main PA diameter; RVOT PW Doppler; pulmonic valve CW Doppler; PR end-diastolic velocity' },
