@@ -285,13 +285,38 @@ export function trvGrade(v) {
   if (v < 3.6) return 'moderately raised';
   return 'severely raised';
 }
-// Aortic stenosis grade from any one criterion (Baumgartner 2017 Table 3; very severe Otto 2020).
-export function asGrade({ vmax, mean, ava }) {
-  if (vmax >= 5 || mean >= 60) return 'very severe';
-  if (vmax >= 4 || mean >= 40) return 'severe';
-  if (ava !== undefined && ava < 1.0) return 'severe (area only)';
-  if (vmax >= 3 || mean >= 20) return 'moderate';
-  if (vmax > 2.5) return 'mild';
+// Aortic stenosis, Baumgartner 2017 Table 3: the grade bands of each criterion as printed, each
+// with the test for its values. Very severe: Otto 2020 Table 13 (stage C1). Low flow: a stroke
+// volume index <35 mL/m² (Baumgartner 2017). Each list runs from the mildest band.
+export const AS_BANDS = {
+  vmax: [['sclerosis', '≤2.5', (x) => x <= 2.5], ['mild', '2.6–2.9', (x) => x < 3], ['moderate', '3.0–4.0', (x) => x < 4], ['severe', '≥4.0', (x) => x < 5], ['very severe', '≥5', () => true]],
+  mg: [['mild', '<20', (x) => x < 20], ['moderate', '20–40', (x) => x < 40], ['severe', '≥40', (x) => x < 60], ['very severe', '≥60', () => true]],
+  ava: [['mild', '>1.5', (x) => x > 1.5], ['moderate', '1.0–1.5', (x) => x >= 1.0], ['severe', '<1.0', () => true]],
+  avai: [['mild', '>0.85', (x) => x > 0.85], ['moderate', '0.60–0.85', (x) => x >= 0.6], ['severe', '<0.6', () => true]],
+  vr: [['mild', '>0.50', (x) => x > 0.5], ['moderate', '0.25–0.50', (x) => x >= 0.25], ['severe', '<0.25', () => true]],
+  svi: [['normal flow', '≥35', (x) => x >= 35], ['low flow', '<35', () => true]],
+};
+/**
+ * The questions that name an aortic stenosis pattern (Baumgartner 2017): a high gradient (peak
+ * velocity ≥4 m/s or mean gradient ≥40 mmHg), very severe (≥5 m/s or ≥60 mmHg, Otto 2020), an
+ * AVA <1.0 cm², an LVEF <50% and low flow (stroke volume index <35 mL/m²).
+ */
+export function asCriteria({ vmax, mean, ava, svi, ef }) {
+  return { high: vmax >= 4 || mean >= 40, vhigh: vmax >= 5 || mean >= 60, area: ava < 1.0, ef: ef < 50, flow: svi < 35 };
+}
+/**
+ * The aortic stenosis pattern on the echo. A high gradient grades severe stenosis whatever the
+ * area, with LV dysfunction at an LVEF <50% (Otto 2020). An AVA <1.0 cm² with a low gradient is
+ * classical low-flow, low-gradient (LVEF <50%), paradoxical low-flow, low-gradient (LVEF ≥50%,
+ * low flow) or normal-flow, low-gradient (LVEF ≥50%, normal flow). Else the gradient grades the
+ * valve. The ACC/AHA stages C and D also need the symptoms, which an echo cannot give.
+ */
+export function asGrade(v) {
+  const c = asCriteria(v);
+  if (c.high) return c.ef ? 'severe, LV dysfunction' : c.vhigh ? 'very severe' : 'severe';
+  if (c.area) return c.ef ? 'classical LF-LG' : c.flow ? 'paradoxical LF-LG' : 'NF-LG';
+  if (v.vmax >= 3 || v.mean >= 20) return 'moderate';
+  if (v.vmax > 2.5) return 'mild';
   return 'none';
 }
 // Mitral stenosis (Pandian 2023 Table 1).
