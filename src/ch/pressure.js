@@ -1,10 +1,10 @@
 // 04 Pressure: two Doppler calculations that run every study. Flow: stroke volume from the
 // LVOT area and the LVOT velocity-time integral. Pressure: RV systolic pressure from the peak
-// tricuspid regurgitation velocity (simplified Bernoulli) plus the RA pressure from the IVC.
+// tricuspid regurgitation velocity (simplified Bernoulli) plus the RA pressure, one of the three
+// values that the IVC gives (3, 8 or 15 mmHg; chapter 18 shows how).
 import { Sheet, clamp, MONO, SANS } from '../sketch.js';
-import { reducedMotion } from '../state.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
-import { rapFromIvc, trvGrade } from '../norms.js';
+import { trvGrade } from '../norms.js';
 
 const ET = 0.292;            // s, LV ejection time (Alhakak 2025 mean); held constant here
 const RRs = 0.857;
@@ -21,7 +21,7 @@ export function flow(s) {
   const vti = s.sv / csa;                                  // cm
   const vpk = vti / (ET * 100 * K_LVOT);                   // m/s
   const svM = csaM * vti;                                  // what the scanner reports
-  const rap = rapFromIvc(s.ivcD, s.ivcCollapse === 'gt');
+  const rap = s.rap;
   const grad = 4 * s.trV ** 2;
   return { d, dm, csa, csaM, vti, vpk, svM, err: svM / s.sv - 1, co: (svM * s.hr) / 1000, rap, grad, rvsp: grad + rap };
 }
@@ -36,7 +36,7 @@ const trShape = (t) => {
   return u > 0 && u < 1 ? Math.pow(Math.sin(Math.PI * u), 0.45) : 0;
 };
 
-let sheet = null, st = null, clock = 0;
+let sheet = null, st = null;
 
 function draw(sh, t) {
   const W = sh.w, H = sh.h, ctx = sh.ctx;
@@ -139,7 +139,12 @@ function draw(sh, t) {
   sh.text('Pressure', rx, ry, { size: 26 * s });
   sh.text('RVSP = 4 V² + RAP', rx + (narrow ? 104 : 130), ry - 2, { family: MONO, weight: 500, size: 12 });
   ry += narrow ? 10 : 22;
-  const tph = narrow ? H * 0.22 : H * 0.42;
+  // a phone lays the bar out from the bottom up (the sum on the last line, the scale and the bar
+  // above it), and the CW panel takes the height that is left
+  const yS = H - 6, bhN = 13, byN = yS - 15 - 13 - bhN;
+  // a wide figure keeps the CW panel at 46% of its height while the bar block (title, bar,
+  // scale, note: 180 px above the sum at H - 34) fits under it; a short one gives the panel less
+  const tph = narrow ? Math.max(40, byN - 15 - 14 - ry) : Math.max(60, Math.min(H * 0.46, H - 214 - ry));
   panel(ctx, rx, ry, rw, tph, 'CW · TR JET');
   const tbox = { x: rx + 4, y: ry + 22, w: rw - 34, h: tph - 26 };
   const tscale = 5;
@@ -156,28 +161,52 @@ function draw(sh, t) {
   ctx.fillText(`${st.trV.toFixed(2)} m/s → 4V² = ${F.grad.toFixed(0)} mmHg`, rx + rw - 10, ry + 17);
   ctx.restore();
 
-  // IVC with a sniff every four seconds
-  const iy = ry + tph + (narrow ? 18 : 34);
-  const ih = narrow ? H - iy - 10 : H - iy - 30;
-  const ivx = rx + 40, ivw = rw - 80;
-  const sniff = reducedMotion ? 0 : Math.max(0, Math.sin(((clock % 4) / 4) * Math.PI * 2 - 1.2));
-  const collapse = st.ivcCollapse === 'gt' ? 0.62 : 0.28;
-  const dNow = st.ivcD * (1 - collapse * sniff);
-  const ipx = Math.min(ih / 4.2, 42);
-  const icy = iy + ih * 0.45;
-  sh.text('IVC, subcostal', ivx - 30, iy + 12, { size: 17 * s, color: t.ink2 });
-  sh.line(ivx, icy - (dNow / 2) * ipx, ivx + ivw, icy - (dNow / 2) * ipx, { width: 1.5, rough: 0.5, seed: 30 });
-  sh.line(ivx, icy + (dNow / 2) * ipx, ivx + ivw, icy + (dNow / 2) * ipx, { width: 1.5, rough: 0.5, seed: 31 });
-  sh.text('RA', ivx + ivw + 8, icy + 5, { size: 16 * s, color: t.ink2 });
-  const ix = ivx + ivw - 1.5 * ipx;
-  caliper(ctx, ix, icy - (dNow / 2) * ipx, ix, icy + (dNow / 2) * ipx, { color: t.flag, solid: true });
-  if (narrow) sh.text(`${dNow.toFixed(2)} cm${sniff > 0.3 ? ' · sniff' : ''}`, ix - 8, icy - (dNow / 2) * ipx - 5, { family: MONO, weight: 500, size: 11, color: t.flag, align: 'right' });
-  else sh.text(`${dNow.toFixed(2)} cm${sniff > 0.3 ? ' · sniff' : ''}`, ix - 8, icy + (dNow / 2) * ipx + 18, { family: MONO, weight: 500, size: 12, color: t.flag, align: 'right' });
+  // the RA pressure (chapter 18 gives it from the IVC) under the RV-RA gradient: one bar that
+  // reads the RV systolic pressure on a mmHg scale. A phone keeps the bar, its scale and the sum.
+  const iy = ry + tph + (narrow ? 14 : 34);
+  const ih = H - iy - 30;   // the desktop layout: the height under the CW panel
+  const bx0 = rx + (narrow ? 8 : 14), bx1 = rx + rw - (narrow ? 34 : 24);
+  if (!narrow) sh.text('RV systolic pressure', bx0, iy + 12, { size: 17 * s, color: t.ink2 });
+  const top = Math.max(60, Math.ceil((F.rvsp + 6) / 20) * 20);
+  const X = (mm) => bx0 + (mm / top) * (bx1 - bx0);
+  const fs = narrow ? 10.5 : 12;
+  const bh = narrow ? bhN : 24, by = narrow ? byN : iy + 54;
+  const seg = (a, b, seed, color, fill) => {
+    const r = new Path2D();
+    r.rect(X(a), by, Math.max(1, X(b) - X(a)), bh);
+    if (fill) sh.hatch(r, 0.8, 3.6, fill, 0.8, seed, 0.6);
+    sh.rect(X(a), by, Math.max(1, X(b) - X(a)), bh, { width: 1.3, rough: 0.5, seed, stroke: color });
+  };
+  seg(0, F.rap, 33, t.ink2, t.ink2);
+  seg(F.rap, F.rvsp, 34, t.flag, null);
+  // the scale under the bar, its unit at the right end
+  ctx.save();
+  ctx.strokeStyle = t.ink3;
+  ctx.fillStyle = t.ink3;
+  ctx.font = `400 ${narrow ? 9 : 10}px ${MONO}`;
+  ctx.textAlign = 'center';
+  const yn = by + bh + (narrow ? 13 : 18);
+  for (let mm = 0; mm <= top; mm += 20) {
+    ctx.beginPath(); ctx.moveTo(X(mm), by + bh + 2); ctx.lineTo(X(mm), by + bh + (narrow ? 4 : 7)); ctx.stroke();
+    ctx.fillText(String(mm), X(mm), yn);
+  }
+  ctx.textAlign = 'left';
+  ctx.fillText('mmHg', bx1 + (narrow ? 12 : 6), narrow ? yn : by + bh / 2 + 4);
+  ctx.restore();
+  // the two parts named above the bar: RAP at its left end, the gradient at the middle of its part
+  const lr = `RAP ${F.rap}`, lg = `4V² ${F.grad.toFixed(0)}`;
+  const wr = sh.measure(lr, { family: MONO, weight: 500, size: fs });
+  const wg = sh.measure(lg, { family: MONO, weight: 500, size: fs });
+  sh.text(lr, X(0), by - 5, { family: MONO, weight: 500, size: fs, color: t.ink2 });
+  const gx = Math.max(X(0) + wr + 10 + wg / 2, (X(F.rap) + X(F.rvsp)) / 2);
+  sh.text(lg, Math.min(gx, bx1 - wg / 2), by - 5, { family: MONO, weight: 500, size: fs, color: t.flag, align: 'center' });
+  if (!narrow) sh.text('RA pressure from the IVC: chapter 18', bx0, by + bh + 46, { size: 15 * s, color: t.ink3 });
   const sum = sh.fit([
     `RA pressure ${F.rap} mmHg  ·  RVSP ${F.grad.toFixed(0)} + ${F.rap} = ${F.rvsp.toFixed(0)} mmHg`,
     `RAP ${F.rap} · RVSP ${F.grad.toFixed(0)} + ${F.rap} = ${F.rvsp.toFixed(0)} mmHg`,
-  ], W - 8 - (ivx - 30), { family: MONO, weight: 500, size: 12 }, 0.85);
-  sh.text(sum.str, ivx - 30, iy + ih - 4, { family: MONO, weight: 500, size: sum.size, color: t.ink });
+  ], W - 8 - bx0, { family: MONO, weight: 500, size: 12 }, 0.85);
+  const ys = narrow ? yS : iy + ih - 4;
+  sh.text(sum.str, bx0, ys, { family: MONO, weight: 500, size: sum.size, color: t.ink });
 }
 
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
@@ -187,30 +216,24 @@ export default {
   part: 'physics',
   title: 'Pressure',
   dwell: 14,
-  defaults: { sv: 70, lvotD: 2.0, calErr: 0, hr: 70, trV: 2.4, ivcD: 1.8, ivcCollapse: 'gt' },
+  defaults: { sv: 70, lvotD: 2.0, calErr: 0, hr: 70, trV: 2.4, rap: 3 },
   format: {
     sv: (v) => `${Math.round(v)} mL`,
     lvotD: (v) => `${v.toFixed(2)} cm`,
     calErr: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)} mm`,
     hr: (v) => `${Math.round(v)} /min`,
     trV: (v) => `${v.toFixed(2)} m/s`,
-    ivcD: (v) => `${v.toFixed(2)} cm`,
   },
-  watch: ['sv', 'lvotD', 'calErr', 'hr', 'trV', 'ivcD', 'ivcCollapse'],
+  watch: ['sv', 'lvotD', 'calErr', 'hr', 'trV', 'rap'],
   figure(fig) {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
     return sheet;
   },
   init({ state }) { st = state; },
-  anim(dt) {
-    if (reducedMotion) return;
-    clock += dt;
-    if (sheet) sheet.dirty = true;
-  },
-  tourEnter(set) { set({ sv: 70, lvotD: 2.0, calErr: 0, hr: 70, trV: 2.4, ivcD: 1.8, ivcCollapse: 'gt' }); },
+  tourEnter(set) { set({ sv: 70, lvotD: 2.0, calErr: 0, hr: 70, trV: 2.4, rap: 3 }); },
   tourTick(tt, set) {
     if (tt < 6) set({ calErr: Math.round(clamp((tt - 1) / 4, 0, 1) * 2 * 2) / 2 });
-    else if (tt < 12) set({ calErr: 0, trV: Math.round((2.4 + clamp((tt - 6.5) / 4, 0, 1) * 1.1) * 20) / 20, ivcD: 2.4, ivcCollapse: 'lt' });
+    else if (tt < 12) set({ calErr: 0, trV: Math.round((2.4 + clamp((tt - 6.5) / 4, 0, 1) * 1.1) * 20) / 20, rap: 15 });
   },
   text(s, { cite }) {
     const F = flow(s);
@@ -224,7 +247,7 @@ export default {
         { k: 'RA pressure', v: fmt(F.rap), u: 'mmHg', flag: F.rap > 3 },
         { k: 'RV systolic pressure', v: fmt(F.rvsp), u: 'mmHg', flag: s.trV >= 2.8 },
       ],
-      live: `The measured LVOT diameter is ${fmt(F.dm, 2)} cm${s.calErr ? ` (true diameter ${fmt(F.d, 2)} cm)` : ''}, so the calculated stroke volume is ${fmt(F.svM)} mL${s.calErr ? `; <span class="k-red">the ${fmt(Math.abs(s.calErr), 1)} mm caliper error produces a stroke volume error of ${F.err > 0 ? '+' : ''}${fmt(F.err * 100)}%</span>, because the diameter is squared` : ''}${cite('zoghbi2017,baumgartner2017')}. A peak TR velocity of ${fmt(s.trV, 2)} m/s is ${g}${cite('mukherjee2025')}; the RV–RA pressure gradient is 4 × ${fmt(s.trV, 2)}² = ${fmt(F.grad)} mmHg, and with an RA pressure of ${F.rap} mmHg estimated from the IVC, the RV systolic pressure is ${fmt(F.rvsp)} mmHg${cite('quinones2002')}.`,
+      live: `The measured LVOT diameter is ${fmt(F.dm, 2)} cm${s.calErr ? ` (true diameter ${fmt(F.d, 2)} cm)` : ''}, so the calculated stroke volume is ${fmt(F.svM)} mL${s.calErr ? `; <span class="k-red">the ${fmt(Math.abs(s.calErr), 1)} mm caliper error produces a stroke volume error of ${F.err > 0 ? '+' : ''}${fmt(F.err * 100)}%</span>, because the diameter is squared` : ''}${cite('zoghbi2017,baumgartner2017')}. A peak TR velocity of ${fmt(s.trV, 2)} m/s is ${g}${cite('mukherjee2025')}; the RV–RA pressure gradient is 4 × ${fmt(s.trV, 2)}² = ${fmt(F.grad)} mmHg, and with an RA pressure of ${F.rap} mmHg, estimated from the IVC (<a href="#ivc" data-go="ivc">chapter 18</a>), the RV systolic pressure is ${fmt(F.rvsp)} mmHg${cite('quinones2002')}.`,
     };
   },
 };

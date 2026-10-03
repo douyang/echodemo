@@ -108,7 +108,7 @@ const CASES = {
   },
 };
 
-const NAME = { eject: 'Eject', fill: 'Fill', pressure: 'Pressure', as: 'Aortic stenosis', mr: 'Mitral regurgitation' };
+const NAME = { eject: 'Eject', fill: 'Fill', pressure: 'Pressure', as: 'Aortic stenosis', mr: 'Mitral regurgitation', ivc: 'Inferior vena cava' };
 // Links from the report to the chapters behind its values are off: the text names a chapter only
 // in its header. The code stays. A chapter's number is read from the page, so it stays right
 // when chapters move.
@@ -202,7 +202,7 @@ export function buildReport(caseId, sex) {
       <div class="finding"><p><b>Tricuspid valve.</b> ${esc(c.trText)} Peak TR velocity ${f1(c.tr)} m/s; estimated RV systolic pressure ${rvsp} mmHg.</p>${GO('pressure')}</div>
       <div class="finding"><p><b>Pulmonic valve.</b> The pulmonic valve is normal in structure. Trace pulmonic regurgitation.</p><span></span></div>
       <div class="finding"><p><b>Aorta.</b> ${esc(c.aortaText || 'The aortic root and proximal ascending aorta are normal in size.')}</p><span></span></div>
-      <div class="finding"><p><b>Inferior vena cava.</b> Diameter ${f1(c.ivcD)} cm, with ${c.ivcCollapse ? 'more' : 'less'} than 50% collapse on sniff. Estimated RA pressure ${rap} mmHg.</p>${GO('pressure')}</div>
+      <div class="finding"><p><b>Inferior vena cava.</b> Diameter ${f1(c.ivcD)} cm, with ${c.ivcCollapse ? 'more' : 'less'} than 50% collapse on sniff. Estimated RA pressure ${rap} mmHg.</p>${GO('ivc')}</div>
       <div class="finding"><p><b>Pericardium.</b> ${esc(c.periText || 'No pericardial effusion.')}</p><span></span></div>
       <h3>Measurements</h3>
       <div class="table-wrap"><table class="vt"><thead><tr><th>Measurement</th><th class="num">Value</th><th>Normal (${sex === 'F' ? 'women' : 'men'})</th><th>Grade</th></tr></thead>
@@ -255,7 +255,7 @@ export default {
             ['LVEF (biplane)', `${R.ef}%`, link('eject')],
             ['LV geometry', R.geo, link('eject')],
             ['Diastolic grade', R.lap.grade === null ? 'normal LAP' : R.lap.grade === 0 ? 'normal' : `grade ${R.lap.grade}`, link('fill')],
-            ['RA pressure', `${R.rap} mmHg`, link('pressure')],
+            ['RA pressure', `${R.rap} mmHg`, link('ivc')],
             ['RV systolic pressure', `${R.rvsp} mmHg`, link('pressure')],
           ].map(([a, b, c]) => `<tr><td>${a}</td><td class="num">${b}</td>${SHOW_LINKS ? `<td>${c}</td>` : ''}</tr>`).join('');
           const head = art.querySelector('#report-inputs thead tr');
