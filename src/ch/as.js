@@ -8,7 +8,7 @@
 // stores the six values in ax; the slider then marks a band of their result and does not change
 // them. A move of the slider, Play, the tour or a heart's preset clears ax, and the values
 // follow the slider again.
-import { Sheet, clamp, mix } from '../sketch.js';
+import { Sheet, clamp, mix, MONO } from '../sketch.js';
 import { panel, spectral, vscale, caliper, tagBox } from '../scope.js';
 import { RR, EV } from '../cyclemodel.js';
 import { asGrade, asCriteria, AS_BANDS } from '../norms.js';
@@ -230,12 +230,28 @@ function avCW(ctx, P, v) {
   const peak = (g) => { let best = 0, bu = 0; for (let i = 0; i <= 200; i++) { const y = g(i / 200); if (y > best) { best = y; bu = i / 200; } } return bu; };
   const k = (bx.h * (1 - base)) / vs, yb = bx.y + bx.h * base, X = (ms) => bx.x + (ms / (2 * RR)) * bx.w;
   const labels = [];
-  for (const [ms, vel, text] of [[EV.avo + peak(gA) * T, v.vmax, `AV ${v.vmax.toFixed(1)}`], [RR + EV.avo + peak(gL) * T, v.vL, `LVOT ${v.vL.toFixed(2)}`]]) {
-    const x = X(ms), y = yb + vel * k;
-    caliper(ctx, x - 10, y, x + 10, y, { solid: true });
-    const r = tagBox(ctx, x + 14, y, [narrow ? text : `${text} m/s`], { size: 10.5, bounds: bx });
+  // the box tagBox() draws for a tag at (x, y). With no stenosis the two peaks are near the same
+  // velocity, and on a narrow panel a tag beside its caliper then meets a caliper or the other tag.
+  const boxAt = (x, y, text) => {
+    ctx.save();
+    ctx.font = `500 10.5px ${MONO}`;
+    const w = ctx.measureText(text).width + 12, h = 10.5 + 3 + 8;
+    ctx.restore();
+    const x0 = Math.max(bx.x + 4, Math.min(bx.x + bx.w - w - 4, x)), y0 = Math.max(bx.y + 4, Math.min(bx.y + bx.h - h - 4, y - h / 2));
+    return { x0, y0, x1: x0 + w, y1: y0 + h, h };
+  };
+  const meets = (a, b) => a.x0 < b.x1 + 2 && b.x0 < a.x1 + 2 && a.y0 < b.y1 + 2 && b.y0 < a.y1 + 2;
+  const peaks = [[EV.avo + peak(gA) * T, v.vmax, `AV ${v.vmax.toFixed(1)}`], [RR + EV.avo + peak(gL) * T, v.vL, `LVOT ${v.vL.toFixed(2)}`]]
+    .map(([ms, vel, text]) => ({ x: X(ms), y: yb + vel * k, text: narrow ? text : `${text} m/s` }));
+  const cals = peaks.map(({ x, y }) => ({ x0: x - 12, y0: y - 5, x1: x + 12, y1: y + 5 }));
+  peaks.forEach(({ x, y }) => caliper(ctx, x - 10, y, x + 10, y, { solid: true }));
+  peaks.forEach(({ x, y, text }, i) => {
+    // beside the caliper, else below it (the AV tag) or above it (the LVOT tag), else the other
+    const h = boxAt(x + 14, y, text).h, tries = i ? [y, y - h - 4, y + h + 4] : [y, y + h + 4, y - h - 4];
+    const ty = tries.find((t) => { const b = boxAt(x + 14, t, text); return ![...cals, ...labels].some((o) => meets(b, o)); }) ?? y;
+    const r = tagBox(ctx, x + 14, ty, [text], { size: 10.5, bounds: bx });
     labels.push({ x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h });
-  }
+  });
   const vr = v.vr.toFixed(2);
   if (narrow) note(ctx, bx, `ratio ${vr}`, 'top');
   else {
