@@ -5,7 +5,7 @@ const listeners = new Set();
 export const state = {
   chapter: 0,
   playing: false,   // the tour through all chapters is running
-  anim: false,      // the active chapter's own motion is running
+  anim: false,      // the open chapter plays its own sequence (main.js), with the tour paused
 };
 
 export function declare(defaults) {

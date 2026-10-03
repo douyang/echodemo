@@ -129,6 +129,9 @@ $('#btn-norms').addEventListener('click', () => openDialog('dlg-norms'));   // h
 $('#btn-about')?.addEventListener('click', () => openDialog('dlg-about'));
 
 // ---------------------------------------------------------------- the heart shown
+// The note under the title that described the chosen heart is off: the Heart menu names it, and
+// the menu is busy while a heart is built. The note's code and markup stay (#pheno-note).
+const SHOW_HEART_NOTE = false;
 const phenoSel = $('#pheno');
 let building = false;   // a disease heart is being built (model3d.js)
 /** The chapters' starting values for heart k: its presets, and every other preset key back at its default. */
@@ -148,10 +151,12 @@ function choosePheno(k) {
 function showPheno() {
   const k = state.pheno, P = PHENOS[k];
   phenoSel.value = k;
-  phenoSel.closest('.heart-pick').classList.toggle('is-disease', k !== 'normal');
+  const pick = phenoSel.closest('.heart-pick');
+  pick.classList.toggle('is-disease', k !== 'normal');
+  pick.setAttribute('aria-busy', String(building));
   const note = $('#pheno-note');
-  note.hidden = k === 'normal';
-  if (k !== 'normal') note.innerHTML = `<b>${esc(P.long)}.</b> ${esc(P.note || '')} ${building ? '<span class="pheno-busy">Building the heart…</span>' : 'Each chapter opens at this heart\'s values.'}`;
+  note.hidden = !SHOW_HEART_NOTE || k === 'normal';
+  if (!note.hidden) note.innerHTML = `<b>${esc(P.long)}.</b> ${esc(P.note || '')} ${building ? '<span class="pheno-busy">Building the heart…</span>' : 'Each chapter opens at this heart\'s values.'}`;
 }
 onPhenoBusy((b) => { building = b; showPheno(); });
 phenoSel.addEventListener('change', () => choosePheno(phenoSel.value));
@@ -198,8 +203,17 @@ function bindControls() {
       if (Number.isFinite(v)) set({ [el.dataset.key]: v, playing: false, anim: false });
     });
   }
-  // Play buttons of the severity pages run the active chapter's own motion
-  for (const b of $$('button[data-anim]')) b.addEventListener('click', () => set({ anim: !state.anim, playing: false }));
+  // the Play button of a severity page shows whether the page moves (its own sequence or the
+  // tour), and toggles it. Pause stops both and holds the page. Play continues the sequence,
+  // from tourAt after a control (takeUp).
+  for (const b of $$('button[data-anim]')) {
+    b.addEventListener('click', () => {
+      const on = state.playing || state.anim;
+      held = on;
+      if (!on) takeUp(CHAPTERS[state.chapter]);
+      set(on ? { playing: false, anim: false } : { anim: true });
+    });
+  }
 }
 function syncControls(changed) {
   const has = (k) => !changed || k in changed;
@@ -217,7 +231,10 @@ function syncControls(changed) {
     for (const b of $$('button[data-val]', g)) b.setAttribute('aria-pressed', String(String(parse(b.dataset.val)) === String(state[k])));
   }
   for (const el of $$('input[type="checkbox"][data-key]')) if (has(el.dataset.key)) el.checked = !!state[el.dataset.key];
-  if (has('anim')) for (const b of $$('button[data-anim]')) { b.setAttribute('aria-pressed', String(!!state.anim)); b.setAttribute('aria-label', state.anim ? 'Pause' : 'Play the progression'); }
+  if (has('anim') || has('playing')) {
+    const on = !!(state.anim || state.playing);
+    for (const b of $$('button[data-anim]')) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Pause' : 'Play the progression'); }
+  }
   for (const el of $$('input[type="number"][data-key]')) {
     const k = el.dataset.key;
     if (!has(k) || document.activeElement === el) continue;
@@ -228,7 +245,8 @@ function syncControls(changed) {
     const k = o.dataset.for;
     if (!has(k)) continue;
     const c = CHAPTERS.find((ch) => ch.format && ch.format[k]);
-    o.textContent = c ? c.format[k](state[k], state) : String(state[k]);
+    const t = c ? c.format[k](state[k], state) : String(state[k]);
+    if (o.textContent !== t) o.textContent = t;   // a step often keeps the text (a grade name)
   }
   // conditional controls: data-show-<key>="value1 value2"
   for (const el of $$('[data-show-view],[data-show-side]')) {
@@ -318,12 +336,13 @@ function drawTrack() {
   moveDot();
 }
 let dotX = -1;
+let dotT = 0;   // s: the tour time that the dot shows. It moves with the tour only, and holds in a pause.
 function moveDot() {
   const svg = $('#track');
   const dot = svg.querySelector('.dot');
   if (!dot) return;
   const w = svg.clientWidth || 600, i = state.chapter;
-  const f = state.playing && i < CHAPTERS.length - 1 ? Math.min(1, tourT / CHAPTERS[i].dwell) : 0;
+  const f = i < CHAPTERS.length - 1 ? Math.min(1, dotT / CHAPTERS[i].dwell) : 0;
   const x = trackX(i, w) + (trackX(Math.min(i + 1, CHAPTERS.length - 1), w) - trackX(i, w)) * f;
   if (Math.abs(x - dotX) < 0.3) return;
   dotX = x;
@@ -332,18 +351,47 @@ function moveDot() {
 }
 new ResizeObserver(() => drawTrack()).observe($('#track'));
 
+// ---------------------------------------------------------------- a chapter's own sequence
+// With the tour paused, the open chapter plays the steps it plays in the tour: tourEnter, then
+// tourTick from 0 s to its dwell, a hold, and again (ownTick below). It never moves to the next
+// chapter. state.anim says that it runs.
+/**
+ * Whether chapter c plays its own sequence when it opens: not with reduced motion, not without
+ * tour steps, and not on a severity page (a Play button) under a disease heart, which keeps the
+ * heart's grade.
+ */
+const ownPlays = (c) => !reducedMotion && !!c.tourTick && !(state.pheno !== 'normal' && $(`#ch-${c.key} button[data-anim]`));
+// Any input in the open chapter pauses the tour, and stops the chapter's sequence until the
+// chapter opens again (held): a pointer or the wheel on its figure or text, a click there, a
+// control's input or change, and the chapter's own keys. The Play button of a severity page
+// toggles the sequence instead (bindControls).
+let held = false;
+function hold(e) {
+  if (e.target.closest?.('button[data-anim]')) return;
+  held = true;
+  if (state.anim || state.playing) set({ anim: false, playing: false });
+}
+for (const type of ['pointerdown', 'wheel', 'click']) {
+  document.addEventListener(type, (e) => { if (e.target.closest?.('.fig.is-active, .chapter.is-active')) hold(e); }, { capture: true, passive: true });
+}
+for (const type of ['input', 'change']) document.addEventListener(type, hold, true);
+
 let active = -1;
 function showChapter() {
   const i = state.chapter;
   const c = CHAPTERS[i];
   document.documentElement.dataset.ch = c.key;
   tourT = 0;
+  stepFrom = 0;
+  dotT = 0;
+  entered = false;
+  inStep = false;
+  held = false;
   if (active >= 0 && active !== i) CHAPTERS[active].leave?.();
   active = i;
-  // a severity page opens with its progression playing; not during the tour, which moves the
-  // slider itself, and not with reduced motion. Any control stops it.
-  // Under a disease heart the page opens at that heart's grade instead.
-  const autoplay = !state.playing && !reducedMotion && state.pheno === 'normal' && !!$(`#ch-${c.key} button[data-anim]`);
+  // the chapter opens with its own sequence playing. Not during the tour: the tour plays the
+  // same steps, and then opens the next chapter.
+  const autoplay = !state.playing && ownPlays(c);
   if (!!state.anim !== autoplay) set({ anim: autoplay });
   $$('.chapter').forEach((a) => a.classList.toggle('is-active', a.id === `ch-${c.key}`));
   $$('.fig').forEach((f) => f.classList.toggle('is-active', f.id === `fig-${c.key}`));
@@ -359,7 +407,7 @@ function showChapter() {
   const sh = ensureFigure(i);
   if (sh && sh.resize) { sh.resize(); sh.dirty = true; }
   c.enter?.({ state, set, playing: state.playing });
-  if (state.playing) c.tourEnter?.(set, state);
+  if (state.playing) { c.tourEnter?.(stepSet, state); entered = true; inStep = true; }
   renderText(i);
 }
 
@@ -368,40 +416,98 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') { goChapter(state.chapter + 1); e.preventDefault(); }
   else if (e.key === 'ArrowLeft') { goChapter(state.chapter - 1); e.preventDefault(); }
   else if (e.key === ' ' && !e.target.closest('button')) { togglePlay(); e.preventDefault(); }
-  else CHAPTERS[state.chapter].key_?.(e.key, set, state);
+  // a key that the chapter takes (it sets state) is input in the chapter
+  else CHAPTERS[state.chapter].key_?.(e.key, (p) => { hold(e); set(p); }, state);
 });
 
 // ---------------------------------------------------------------- tour
+// The tour plays when the page opens (start). A click on Play all chapters pauses it, and the
+// open chapter then plays its own sequence from the same step. The next click continues in this
+// chapter from the step that it shows, never with tourEnter, which resets the chapter. A chapter
+// out of step (a control, a heart, or a chapter opened with no steps run) starts at the time that
+// matches its state (tourAt), or from the beginning when it has no tourAt.
 const play = $('#play');
-let tourT = 0;
+let tourT = 0;          // s into the open chapter's steps: the tour's, or the chapter's own sequence
+let entered = false;    // this pass began: tourEnter ran, or takeUp started the chapter at tourAt
+let inStep = false;     // the chapter shows the step at tourT: no user write to its keys since
+let autoWrites = 0;     // > 0 while the steps or a chapter's own animation write the state
 let tourDone = false;
+const HOLD = 1.5;   // s: the chapter's own sequence holds its last step, then starts again
+const STEP = 2.5;   // s: with reduced motion (Play only), the values change at this interval, not in a sweep
+let stepFrom = 0;   // s: those steps count from here, the time where the sequence was taken up
+/** The steps write the state through stepSet, so that the chapter stays in step. */
+function stepSet(p) { autoWrites++; try { set(p); } finally { autoWrites--; } }
+/** Chapter c at time t of its steps: tourEnter first, in a new pass. */
+function stepTo(c, t) {
+  if (!entered) { c.tourEnter?.(stepSet, state); entered = true; }
+  c.tourTick?.(t, stepSet, state);
+  inStep = true;
+}
+/** Before the steps continue: a chapter out of step starts at tourAt(state), or from the beginning. */
+function takeUp(c) {
+  if (!inStep) {
+    const t = c.tourAt?.(state);
+    if (Number.isFinite(t)) { tourT = Math.max(0, Math.min(t, c.dwell)); entered = true; }
+    else { tourT = 0; entered = false; }
+  }
+  stepFrom = tourT;
+}
+function ownTick(dt) {
+  const c = CHAPTERS[state.chapter];
+  if (!c.tourTick || (c.ready && !c.ready())) return;
+  tourT += dt;
+  const t = reducedMotion ? stepFrom + Math.floor((tourT - stepFrom) / STEP) * STEP : tourT;
+  stepTo(c, Math.min(t, c.dwell));
+  if (tourT >= c.dwell + HOLD) { tourT = 0; stepFrom = 0; entered = false; }
+}
 function tourTick(dt) {
   const i = state.chapter, c = CHAPTERS[i];
   if (c.ready && !c.ready()) return;   // a 3D chapter counts only while its model is on screen
   tourT += dt;
-  c.tourTick?.(tourT, set, state);
+  stepTo(c, tourT);
   if (tourT >= c.dwell) {
     if (i < CHAPTERS.length - 1) { set({ chapter: i + 1 }); return; }
+    // the end of the tour: it stops, and the last chapter continues with its own sequence
     tourT = c.dwell;
     tourDone = true;
-    set({ playing: false });
+    pauseTour();
   }
+  dotT = tourT;
   moveDot();
 }
+function pauseTour() {
+  set({ playing: false });
+  // the chapter continues its own sequence from the same step, unless an input in it holds it
+  if (!state.anim && !held && ownPlays(CHAPTERS[state.chapter])) set({ anim: true });
+}
 function togglePlay() {
-  if (state.playing) { set({ playing: false }); return; }
+  if (state.playing) { pauseTour(); return; }
   if (tourDone) {
+    // after the end of the tour, the tour starts again at chapter 01
     tourDone = false;
-    set({ playing: true });
-    if (state.chapter === 0) CHAPTERS[0].tourEnter?.(set, state); else set({ chapter: 0 });
+    set({ playing: true, anim: false });
+    if (state.chapter === 0) { tourT = 0; dotT = 0; entered = false; } else set({ chapter: 0 });
     return;
   }
-  set({ playing: true });
-  if (tourT === 0) CHAPTERS[state.chapter].tourEnter?.(set, state);
+  takeUp(CHAPTERS[state.chapter]);
+  dotT = tourT;
+  set({ playing: true, anim: false });
 }
 play.addEventListener('click', togglePlay);
 
 // ---------------------------------------------------------------- state -> view
+// While a chapter moves (its own sequence or the tour), its readouts and live sentence render at
+// most 5 times a second: a timer collects the renders. The figure, the sliders and their outputs
+// follow every step. When the motion stops (a pause, any control), the text renders at once.
+const TEXT_MS = 200;
+const textDue = new Set();
+let textTimer = 0;
+function flushText() {
+  clearTimeout(textTimer);
+  textTimer = 0;
+  for (const i of textDue) if (i === state.chapter || CHAPTERS[i].alwaysRender) renderText(i);
+  textDue.clear();
+}
 subscribe((s, changed) => {
   if ('pheno' in changed) { setPheno(s.pheno); setHeart(s.pheno); showPheno(); }
   if ('chapter' in changed) showChapter();
@@ -411,17 +517,32 @@ subscribe((s, changed) => {
     dotX = -1;
     moveDot();
   }
+  // a write by the user (a control, a heart) takes the open chapter out of step
+  if (inStep && !autoWrites && !('chapter' in changed)) {
+    const c = CHAPTERS[s.chapter], keys = c.watch || Object.keys(c.defaults || {});
+    if (Object.keys(changed).some((k) => keys.includes(k))) inStep = false;
+  }
   syncControls(changed);
   // re-render the text of every chapter whose keys changed
+  const moving = s.playing || s.anim;
   for (let i = 0; i < CHAPTERS.length; i++) {
     const c = CHAPTERS[i];
     const keys = c.watch || Object.keys(c.defaults || {});
     if (Object.keys(changed).some((k) => keys.includes(k) || k === 'chapter')) {
-      if (i === s.chapter || c.alwaysRender) renderText(i);
+      if (i === s.chapter || c.alwaysRender) {
+        if (moving && !('chapter' in changed)) {
+          textDue.add(i);
+          if (!textTimer) textTimer = setTimeout(flushText, TEXT_MS);
+        } else {
+          textDue.delete(i);
+          renderText(i);
+        }
+      }
       const sh = sheets[c.key];
       if (sh) sh.dirty = true;
     }
   }
+  if (!moving && textTimer) flushText();
   CHAPTERS[s.chapter].onState?.(s, changed);
 });
 
@@ -433,8 +554,10 @@ function frame(now) {
   lastT = now;
   const tdt = Math.min(0.25, raw);
   if (state.playing) tourTick(tdt);
+  else if (state.anim) ownTick(tdt);
   const c = CHAPTERS[state.chapter];
-  if (c.anim) c.anim(state.playing ? tdt : dt, state, set);
+  // the chapter's own animation (the cursor of 05) does not take the chapter out of step
+  if (c.anim) { autoWrites++; try { c.anim(state.playing || state.anim ? tdt : dt, state, set); } finally { autoWrites--; } }
   follow(c.pulse ? c.pulse(state) : null, now);
   const sh = sheets[c.key];
   if (sh && sh.render) sh.render();
@@ -505,6 +628,8 @@ function start() {
   syncControls();
   const fromHash = chapterOf(location.hash);
   renderAllText();
+  // the tour plays when the page opens, from the chapter that opens; not with reduced motion
+  if (!reducedMotion) set({ playing: true });
   if (fromHash > 0) set({ chapter: fromHash }); else showChapter();
   // a new #key in the address bar opens that chapter (showChapter writes the hash with
   // replaceState, which fires no hashchange)

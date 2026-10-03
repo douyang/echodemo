@@ -1,7 +1,8 @@
 // The heart the whole page shows: a normal heart, or one of four disease hearts. The choice sits
 // in the header, is kept between visits, moves the 3D heart and every echo view cut from it
 // (model3d.js), and sets the chapters' starting values (presets).
-// note: what the heart shows, with its sizes measured on the mesh (short-axis slices)
+// note: what the heart shows, with its sizes measured on the mesh (short-axis slices), for the
+// heart note (off: SHOW_HEART_NOTE in main.js)
 export const PHENOS = {
   normal: { name: 'Normal', long: 'Normal heart', a: 0, mesh: null },
   amyloid: {

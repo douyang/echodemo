@@ -267,6 +267,8 @@ export default {
   },
   tourEnter(set) { set({ arS: 0, arCine: true }); },
   tourTick(tt, set) { set({ arS: Math.round(clamp((tt - 1) / 15, 0, 1) * 200) / 200 }); },
+  // the time of the tour at which tourTick shows this state (its inverse): the tour continues from it
+  tourAt(s) { return 1 + s.arS * 15; },
   text(s, { cite }) {
     const m = model(s[KEY]);
     const g = m.grade;
