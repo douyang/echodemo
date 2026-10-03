@@ -88,8 +88,8 @@ const badOf = (v) => Object.fromEntries(Object.entries(ABN).map(([k, f]) => [k, 
  * Nagueh 2025, Figure 3: LA pressure and the grade of diastolic dysfunction. Step 1: three
  * variables. Step 2: the branch (a all normal; b reduced e′ only, E/A ≤0.8; c reduced e′ only,
  * E/A >0.8; d TR only, E/e′ only or any two; e all three). Step 3: S/D, LARS and LAVi. Step 4:
- * E/A gives the grade when the LA pressure is raised. IVRT, the alternative in step 3, counts only
- * when S/D, LARS and LAVi are not available; the model always has them.
+ * E/A gives the grade when the LA pressure is raised. Figure 3 lists IVRT as an alternative in
+ * step 3; the model always has S/D, LARS and LAVi, so its result does not use IVRT.
  */
 export function lapAlgorithm(v) {
   const eRed = ABN.sep(v) || ABN.lat(v) || ABN.avg(v);
@@ -464,7 +464,8 @@ const BRANCH = [
 const RESULT = { normal: ['Normal LA pressure', 'normal function'], g1: ['Normal LA pressure', 'grade 1'], ng: ['Normal LA pressure', 'not graded'], g2: ['Raised LA pressure', 'grade 2'], g3: ['Raised LA pressure', 'grade 3'] };
 const UP = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.2 7.2 5 2.6l3.8 4.6z" fill="currentColor"/></svg>';
 const DOWN = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.2 2.8 5 7.4l3.8-4.6z" fill="currentColor"/></svg>';
-const IVRT_NOTE = 'The algorithm uses IVRT only when S/D, LARS and LAVi are not available.';
+const IVRT_NOTE = 'Figure 3 lists IVRT as an alternative to S/D, LARS and LAVi. This model has all three, so IVRT does not change the result.';
+const IVRT_LINE = 'IVRT does not change the result: the model has S/D, LARS and LAVi';
 /** A slider's crossing stays in the change line this long (ms) while the moves after it cross nothing. */
 const HOLD = 2500;
 const num = (k, x) => x.toFixed(DEC[k]);
@@ -511,7 +512,7 @@ function buildDiagram(host) {
     <div class="ase-step" data-s="3">
       <p class="ase-sh"><span class="ase-sn">Step 3</span><span class="ase-sx">≥1 abnormal: raised LA pressure</span></p>
       ${row('sd')}${row('lars')}${row('lavi')}
-      <div class="ase-alt">${row('ivrt')}<p class="ase-note">Alternative. ${IVRT_NOTE}</p></div>
+      <div class="ase-alt">${row('ivrt')}<p class="ase-note">${IVRT_NOTE}</p></div>
       <p class="ase-s3"></p>
     </div>
     <div class="ase-step" data-s="4">
@@ -690,7 +691,7 @@ function changeLine(P, M, cause) {
   const parts = [flips.length ? flips.join(', ') : 'no cut-off crossed'];
   if (P.r.step1.n !== M.r.step1.n) parts.push(`Step 1: ${M.r.step1.n} of 3 abnormal`);
   if (cause.kind === 'edit' && ['sd', 'lars', 'lavi'].includes(cause.k) && P.bad[cause.k] !== M.bad[cause.k] && !M.r.step3) parts.push('Step 3 is not on the path');
-  if (cause.kind === 'edit' && cause.k === 'ivrt') parts.push(IVRT_NOTE.slice(0, -1));
+  if (cause.kind === 'edit' && cause.k === 'ivrt') parts.push(IVRT_LINE);
   parts.push(P.out === M.out ? `Result: ${STAGE[M.out]}, no change` : `Result: ${STAGE[P.out]} → ${STAGE[M.out]}`);
   return { text: `${head}: ${parts.join('. ')}.`, crossed };
 }
