@@ -23,7 +23,7 @@ const ED = 31;   // ms: end-diastole of the cycle model, where the LV is largest
 const ivsOf = (a) => 8.95 + 7.85 * a, lvidOf = (a) => 46.78 - 6.94 * a, pwOf = (a) => 8.91 + 6.09 * a;
 // the mesh's normal and amyloid corners (assets/anatomy.json)
 const lin = (a0, a1) => (a) => a0 + (a1 - a0) * a;
-const EDV = lin(111.86, 71.65), ESV = lin(38.75, 32.7), LAMAX = lin(49.78, 115.52);
+const EDV = lin(111.86, 71.65), ESV = lin(38.75, 32.7), LAMAX = lin(49.78, 115.16);
 const TAPSE = lin(20, 12), RVW = lin(3.4, 7.4), IAS = lin(5, 9), VALVE = lin(1.2, 3.2), EFF = lin(1.2, 6);
 // filling, tissue Doppler and strain at normal, grade 1, grade 2 and grade 3 filling
 const TRK = tracks([0, 0.35, 0.65, 1], {
