@@ -118,7 +118,7 @@
     </figure>
     <figure class="fig" id="fig-as">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Aortic stenosis from a normal valve to severe stenosis and then low flow: a parasternal long-axis view with the thickened walls and the calcified valve, the short-axis valve orifice to scale, continuous-wave and outflow Doppler, mitral inflow, and the measurements against their cut-offs.</figcaption>
+      <figcaption class="sr-only">Aortic stenosis from a normal valve to severe stenosis and then low flow: an apical five-chamber view with the LV outflow tract, the thickened and calcified valve, the aortic root and the jet, and the continuous-wave Doppler line through the valve; the continuous-wave trace with the dense LVOT envelope inside the aortic jet and both peak velocities marked; the short-axis valve orifice to scale; and the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-ar">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -839,7 +839,8 @@
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <div class="table-wrap"><table class="vt grade" id="as-table"></table></div>
+      <!-- the calculations, with buttons on six measurements (Baumgartner 2017): src/ch/as.js -->
+      <section class="ase asx" id="as-calc" aria-label="Aortic stenosis: measurements, calculations, grades and result"></section>
       <div class="prose" data-part="prose">
         <h3>Natural history</h3>
         <ol class="steps">
@@ -848,26 +849,31 @@
         <li><b>LV dysfunction</b> in severe stenosis is defined by an LVEF below 50%<span class="cite" data-ref="otto2020"></span>.</li>
         <li>In <b>low-flow, low-gradient stenosis</b>, LV systolic dysfunction reduces the transvalvular flow; the area is ≤1.0 cm², with a peak velocity below 4 m/s or a mean gradient below 40 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
         </ol>
-        <p>The ACC/AHA stages also require the symptom status: patients in stage C have no symptoms, and patients in stage D have symptoms<span class="cite" data-ref="otto2020"></span>. The figure models the echocardiographic findings only.</p>
+        <p>The ACC/AHA stages also require the symptom status: patients in stage C have no symptoms, and patients in stage D have symptoms<span class="cite" data-ref="otto2020"></span>. The figure and the diagram model the echocardiographic findings only, and the diagram names the echocardiographic pattern, not the stage.</p>
         <h3>Grading</h3>
-        <p class="eq">AVA = LVOT area × VTI(LVOT) ÷ VTI(AV) &nbsp;·&nbsp; mean gradient = mean of 4v² over ejection</p>
+        <p class="eq">AVA = LVOT area × VTI(LVOT) ÷ VTI(AV) &nbsp;·&nbsp; ΔP = 4v² &nbsp;·&nbsp; mean gradient = mean of 4v² over ejection</p>
+        <p>Chapter <a href="#pressure" data-go="pressure">04 Pressure</a> describes the stroke volume from the LVOT and the simplified Bernoulli equation. The stroke volume that crosses the LVOT also crosses the valve. The valve area therefore equals the LVOT area × the LVOT VTI ÷ the AV VTI, the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. The diagram grades each criterion by Table 3 of the EACVI/ASE recommendations<span class="cite" data-ref="baumgartner2017"></span>.</p>
         <ul>
         <li>The highest jet velocity should be recorded with continuous-wave (CW) Doppler from several acoustic windows, and the window that gives it should be reported; angle correction should not be used<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>The peak gradient is 4 × (peak velocity)². The mean gradient is the average of the instantaneous gradients over ejection, from the traced CW envelope<span class="cite" data-ref="baumgartner2017"></span>.</li>
         <li>A peak velocity ≥4.0 m/s, a mean gradient ≥40 mmHg or an area &lt;1.0 cm² each suggests severe stenosis; ideally, all three criteria are concordant<span class="cite" data-ref="baumgartner2017"></span>. A velocity ratio below 0.25 also indicates severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>The dimensionless index is the ratio of the LVOT VTI to the AV VTI. The velocity ratio is the ratio of the LVOT peak velocity to the AV peak velocity. Neither uses the LVOT diameter. The diagram grades both by the velocity-ratio cut-offs of Table 3.</li>
         <li>As the obstruction becomes more severe, the velocity peaks later in systole and the Doppler envelope becomes more rounded; in mild stenosis, the velocity peaks early and the envelope is triangular<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li>At normal flow, a mean gradient of 40 mmHg corresponds to an area nearer 0.8 than 1.0 cm²<span class="cite" data-ref="baumgartner2017"></span>. The band labeled “area” on the slider represents this range, in which the area and the gradient criteria are discordant.</li>
         </ul>
+        <p>In the diagram above, a change in one measurement moves the slider to a band of the new result. A move of the slider returns every value to the model. The slider has no band for paradoxical low-flow, low-gradient stenosis: in the model, the LVEF falls before the gradient does.</p>
         <h3>Low-flow, low-gradient aortic stenosis</h3>
+        <p>A high gradient is a peak velocity ≥4 m/s or a mean gradient ≥40 mmHg. It indicates severe stenosis whether the flow and the LV function are normal or reduced<span class="cite" data-ref="baumgartner2017"></span>. With an area &lt;1.0 cm² and a low gradient, the flow and the LVEF name the pattern<span class="cite" data-ref="baumgartner2017"></span>. Low flow is defined as a stroke volume index below 35 mL/m²<span class="cite" data-ref="baumgartner2017"></span>.</p>
         <ul>
-        <li>Low flow is defined as a stroke volume index below 35 mL/m²<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li><b>Classical low-flow, low-gradient stenosis</b> is defined by an area &lt;1.0 cm², a mean gradient &lt;40 mmHg and an LVEF &lt;50%<span class="cite" data-ref="baumgartner2017"></span>. During low-dose dobutamine echocardiography, a velocity ≥4.0 m/s with an area that remains ≤1.0 cm² confirms severe stenosis, whereas an increase in area to above 1.0 cm² suggests pseudo-severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li>With a normal LVEF, a small LV with a low stroke volume can produce a low gradient across a severe stenosis; this condition is termed <b>paradoxical low-flow, low-gradient stenosis</b><span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li><b>Classical low-flow, low-gradient stenosis</b> has an LVEF &lt;50%<span class="cite" data-ref="baumgartner2017"></span>. During low-dose dobutamine echocardiography, a velocity ≥4.0 m/s with an area that remains ≤1.0 cm² confirms severe stenosis, whereas an increase in area to above 1.0 cm² suggests pseudo-severe stenosis<span class="cite" data-ref="baumgartner2017"></span>. Stage D2 also requires symptoms and severe stenosis confirmed by dobutamine echocardiography<span class="cite" data-ref="otto2020"></span>.</li>
+        <li>In <b>paradoxical low-flow, low-gradient stenosis</b>, the LVEF is ≥50%. A small LV with a low stroke volume produces a low gradient across a severe stenosis<span class="cite" data-ref="baumgartner2017"></span>. Stage D3 also requires symptoms<span class="cite" data-ref="otto2020"></span>.</li>
+        <li><b>Normal-flow, low-gradient stenosis</b> has an LVEF ≥50% and a stroke volume index ≥35 mL/m²<span class="cite" data-ref="baumgartner2017"></span>. It often reflects an error of measurement, most often an LVOT diameter that is measured too small<span class="cite" data-ref="baumgartner2017"></span>. At normal flow, a mean gradient of 40 mmHg corresponds to an area nearer 0.8 than 1.0 cm²<span class="cite" data-ref="baumgartner2017"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
         <li>The thresholds for severe aortic stenosis are a peak velocity of 4 m/s, a mean gradient of 40 mmHg and a valve area of 1.0 cm²; ideally, all three criteria are concordant.</li>
+        <li>The continuity equation squares an error in the LVOT diameter. The dimensionless index and the velocity ratio do not use the diameter.</li>
         <li>LV wall thickening develops first, and the LVEF falls only late in the course of the disease.</li>
-        <li>A fall in gradient that accompanies a fall in LVEF does not indicate a less severe stenosis; the flow must be assessed.</li>
+        <li>A low gradient with an area below 1.0 cm² needs an assessment of the flow and the LVEF.</li>
         </ol>
       </div>
       <div class="quiz"></div>

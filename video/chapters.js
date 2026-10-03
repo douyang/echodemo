@@ -144,7 +144,7 @@ export const VIDEOS = {
       { set: { asS: 0.05, asCine: true }, name: 'No aortic stenosis', track: 'None', hold: 4 },
       { set: { asS: 0.145 }, name: 'Mild aortic stenosis', track: 'Mild', hold: 4 },
       { set: { asS: 0.265 }, name: 'Moderate aortic stenosis', track: 'Moderate', hold: 4 },
-      { set: { asS: 0.4 }, name: 'Severe stenosis by valve area only', track: 'Area only', pick: [0, 1], hold: 5 },
+      { set: { asS: 0.4 }, name: 'Normal-flow, low-gradient aortic stenosis', track: 'NF-LG', pick: [0, 1], hold: 5 },
       { set: { asS: 0.55 }, name: 'Severe aortic stenosis', track: 'Severe', hold: 4 },
       { set: { asS: 0.72 }, name: 'Very severe aortic stenosis', track: 'Very severe', hold: 4 },
       { set: { asS: 0.87 }, name: 'Severe aortic stenosis with LV dysfunction', track: 'LV dysfunction', line: '{s0} The LVEF is {LVEF}%, below 50%.', hold: 4 },

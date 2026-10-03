@@ -123,7 +123,8 @@ const specCache = new Map();
  *   (or an array of such functions for several signals, e.g. inflow and outflow);
  * o.scale: velocity at the top/bottom edge (m/s); o.base: baseline position, 0 top .. 1 bottom;
  * o.mode: 'pw' (narrow band, spectral window) or 'cw' (filled); o.nyq: PW Nyquist limit (m/s),
- * velocities beyond it wrap around; o.broad: 0..1 spectral broadening; o.key: cache key.
+ * velocities beyond it wrap around; o.broad: 0..1 spectral broadening; o.gain: the brightness of
+ * each signal (a list, 1 by default), for a faint jet over a dense signal; o.key: cache key.
  */
 export function spectral(ctx, box, o) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -167,7 +168,7 @@ export function spectral(ctx, box, o) {
               const band = m * broad + 0.02;
               s = Math.exp(-(((m - a) / band) ** 2)) + 0.18 * broad * (a < m ? 1 : 0);
             }
-            I = Math.max(I, Math.min(1, s));
+            I = Math.max(I, Math.min(1, s * (o.gain?.[k] ?? 1)));
           }
         }
         const n = noise[y * W + x];
