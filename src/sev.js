@@ -1,6 +1,6 @@
-// Severity pages (chapters 10–16): one slider walks a disease from normal to its end stage and
-// Play animates it. Shared here: keyframe tracks, the grade bands under the slider, the Play
-// motion, the beat clock, and the measurement strip drawn to scale.
+// Severity pages (chapters 10–17): one slider walks a disease from normal to its end stage, and
+// Play runs the page's own sequence (main.js). Shared here: keyframe tracks, the grade bands
+// under the slider, the grade bell of Play, the beat clock, and the measurement strip to scale.
 import { clamp, mix, SANS, MONO } from './sketch.js';
 import { reducedMotion } from './state.js';
 import { SC } from './scope.js';
@@ -81,40 +81,17 @@ function fitBands(host) {
 }
 
 // ---------------------------------------------------------------- Play and the beat
-const holds = new Map();
+const grades = new Map();
 /**
- * Advance s[key] from its value to 1 while Play (state.anim) is on, hold at the end, restart
- * at 0. Reduced motion: step between the band middles instead of a smooth sweep.
+ * The grade bell of Play. The page's own sequence moves the slider (its tourTick, run by main.js
+ * while state.anim is on). Here, a soft bell (music.js) sounds each time s[key] enters another
+ * grade. dt, set and the options are not used: the slider does not move here.
  */
-export function playSeverity(dt, s, set, key, list, o = {}) {
-  if (!s.anim) { holds.delete(key); return; }
-  const dur = o.dur ?? 16;
-  const h = holds.get(key) || { t: 0 };
-  holds.set(key, h);
-  const v = s[key];
-  // a soft bell (music.js) each time Play takes the slider into another grade
-  const band = (x) => list.findIndex((b) => x < b.b || b === list[list.length - 1]);
-  const to = (x) => { if (band(x) !== band(v)) cue('bell'); set({ [key]: x }); };
-  if (reducedMotion) {
-    h.t += dt;
-    if (h.t < 2.6) return;
-    h.t = 0;
-    const mids = list.map((b) => (b.a + b.b) / 2);
-    const next = mids.find((m) => m > v + 1e-3);
-    to(next === undefined ? mids[0] : Math.round(next * 1000) / 1000);
-    return;
-  }
-  if (v >= 1) {
-    h.t += dt;
-    if (h.t > 1.8) { h.t = 0; h.v = 0; to(0); }
-    return;
-  }
-  h.t = 0;
-  // keep the unrounded position; the store gets steps of 1/400
-  if (h.v === undefined || Math.abs(h.v - v) > 0.01) h.v = v;
-  h.v = Math.min(1, h.v + dt / dur);
-  const q = Math.round(h.v * 400) / 400;
-  if (q !== v) to(q);
+export function playSeverity(dt, s, set, key, list) {
+  if (!s.anim) { grades.delete(key); return; }
+  const g = list.findIndex((b) => s[key] < b.b || b === list[list.length - 1]);
+  if (grades.has(key) && grades.get(key) !== g) cue('bell');
+  grades.set(key, g);
 }
 
 /** Whether the cine of the page being drawn runs: Beat.at() sets it, the echo views read it. */

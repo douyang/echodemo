@@ -156,6 +156,7 @@
 
   <!-- ============================================================ chapters -->
   <section class="panel" id="panel" aria-live="off">
+    <!-- the heart note, off: it stays hidden (SHOW_HEART_NOTE in src/main.js) -->
     <p class="pheno-note" id="pheno-note" hidden></p>
 
     <!-- ======================================================== Physics -->
@@ -1363,8 +1364,19 @@
     <ol class="chapters" id="chapters">
       <li class="track" aria-hidden="true"><svg id="track" preserveAspectRatio="none"></svg></li>
     </ol>
+    <!-- phones: back, the chapter (a tap lists all of them), next; styles.css hides the numbers there -->
+    <div class="pager" id="pager">
+      <button class="pg-step" id="pg-prev" type="button" aria-label="Previous chapter"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="pg-cur" id="pg-cur" type="button" aria-haspopup="dialog" aria-controls="dlg-chapters"><span class="n">01</span><span class="t">Pulse</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="pg-step" id="pg-next" type="button" aria-label="Next chapter"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
   </nav>
 </div>
+
+<dialog id="dlg-chapters" aria-labelledby="chapters-title">
+  <div class="dlg-head"><h2 id="chapters-title">Chapters</h2><button class="tool" type="button" data-close>Close</button></div>
+  <div class="dlg-body"><ol class="chlist" id="chlist"></ol></div>
+</dialog>
 
 <dialog id="dlg-refs" aria-labelledby="refs-title">
   <div class="dlg-head"><h2 id="refs-title">Sources</h2><button class="tool" type="button" data-close>Close</button></div>

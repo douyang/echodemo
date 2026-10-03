@@ -453,6 +453,8 @@ export default {
   },
   tourEnter(set) { set({ amyS: 0 }); },
   tourTick(tt, set) { set({ amyS: Math.round(clamp((tt - 1) / 14, 0, 1) * 400) / 400 }); },
+  // the time of the tour at which tourTick shows this state (its inverse): the tour continues from it
+  tourAt(s) { return 1 + s.amyS * 14; },
   text(s, { cite }) {
     const m = model(q(s[KEY]));
     const dd = m.dd.grade === null ? 'a filling pattern that is not graded' : m.dd.grade === 0 ? 'normal diastolic function' : `${GRADE[m.dd.grade]} diastolic dysfunction`;

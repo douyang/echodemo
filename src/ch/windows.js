@@ -460,6 +460,9 @@ async function enter() {
   stage.start();
 }
 
+// the views of the tour, in its order
+const TOUR = ['plax', 'plax_av', 'rv_in', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a4c_rv', 'a5c', 'a2c', 'a3c', 'sc4c', 'sc_ivc', 'ssn'];
+
 export default {
   key: 'windows',
   part: 'views',
@@ -540,10 +543,12 @@ export default {
   },
   tourEnter(set) { set({ win: 'plax', view: 'plax', wcine: true }); },
   tourTick(tt, set) {
-    const seq = ['plax', 'plax_av', 'rv_in', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a4c_rv', 'a5c', 'a2c', 'a3c', 'sc4c', 'sc_ivc', 'ssn'];
-    const v = seq[Math.min(seq.length - 1, Math.floor(tt / (this.dwell / seq.length)))];
+    const v = TOUR[Math.min(TOUR.length - 1, Math.floor(tt / (this.dwell / TOUR.length)))];
     set({ win: VIEWS[v].win, view: v });
   },
+  // the time of the tour at which tourTick shows this view (its inverse); a view off the tour has
+  // none, and the tour then starts 07 from PLAX
+  tourAt(s) { const i = TOUR.indexOf(s.view); return i < 0 ? undefined : ((i + 0.01) * this.dwell) / TOUR.length; },
   text(s, { cite }) {
     const v = VIEWS[s.view], info = INFO[s.view];
     const m = echo && echo.measure && echo.measure.lvid ? echo.measure : null;

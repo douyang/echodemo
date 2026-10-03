@@ -319,6 +319,8 @@ export default {
     const want = tt < 4 ? 'normal' : tt < 8 ? 'hfref' : tt < 12 ? 'hfpef' : tt < 16 ? 'as' : 'mr';
     if (s.pv !== want) set({ pv: want, ...PV_PRESETS[want] });
   },
+  // the time of the tour at which tourTick shows this preset; a loop moved by hand has none
+  tourAt(s) { return { normal: 0, hfref: 4, hfpef: 8, as: 12, mr: 16 }[s.pv]; },
   text(s, { cite }) {
     const L = pvState(s);
     const work = `The stroke work, equal to the area of the loop, is ${fmt(area(loopPath(L)) * 1.333e-4, 2)} J.`;

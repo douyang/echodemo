@@ -672,6 +672,8 @@ export default {
     const c = tt < 3 ? 'none' : tt < 7 ? 'lad' : tt < 10.5 ? 'rca' : 'lcx';
     set({ culprit: c, wm: 3 });
   },
+  // the time of the tour at which tourTick shows this occlusion; scores set by hand have none
+  tourAt(s) { return { none: 0, lad: 3, rca: 7, lcx: 10.5 }[s.culprit]; },
   text(s, { cite }) {
     const S = scores(s);
     const bad = [];
