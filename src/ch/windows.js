@@ -173,7 +173,8 @@ function sizeInk() {
 /**
  * The plane tags: each view's code on the center line of its fan, as far out as the pane
  * allows, in its window color, the current view's bold; a current view off the nine, its code
- * in ink. No tag covers another, the pane's name or note, or the body figure.
+ * in ink. No tag covers another, the pane's name or note, or the body figure. In a pane under
+ * 260 px tall (a phone) nine tags would cover the heart: only the current plane's shows.
  */
 function drawTags(f0) {
   if (!ink) return;
@@ -219,7 +220,7 @@ function drawTags(f0) {
     const p = stage.project(g.O.clone().addScaledVector(g.d, echo.specOf(echo.view).depth * 0.8));
     if (p.z < 1) tag(CODE[st.view] || VIEWS[st.view].short, p.x, p.y, inkc, true, null);
   }
-  const order = [...planes.fans.keys()].sort((a, b) => (b === f0) - (a === f0));
+  const order = [...planes.fans.keys()].sort((a, b) => (b === f0) - (a === f0)).filter((k) => h >= 260 || k === f0);
   for (const k of order) {
     const gk = echo.geoms[k], spec = VIEWS[k];
     if (!gk) continue;
