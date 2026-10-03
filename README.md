@@ -246,32 +246,35 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 
 ## The chapter videos
 
-`video/chapter.html?ch=as` plays one chapter as a video, in the frame of the views video's dark cuts. Every chapter has one except 07, whose video is cut B of the views video above, and 18, which has no video yet. The video of 04 was rendered before its IVC moved to chapter 18; its steps now set the RA pressure (3, 8 and 15 mmHg) in place of the IVC. The chapter's figure is the site's own (`src/ch/*.js`), on paper and drawn 1.3 times larger than its layout. It steps through the chapter's states on the heartbeat (`video/chapters.js`): the steps follow the chapter's tour (the Play button), slowed, with a hold on each step. Numbers ease from one step to the next; the severity pages move their slider from the middle of one grade band to the middle of the next.
+`video/chapter.html?ch=as` plays one chapter as a video, in the frame of the views video's dark cuts. Every chapter has one except 07, whose video is cut B of the views video above. The chapter's figure is the site's own (`src/ch/*.js`), on paper and drawn 1.3 times larger than its layout. It steps through the chapter's states on the heartbeat (`video/chapters.js`): the steps follow the chapter's tour (the Play button), slowed, with a hold on each step. Numbers ease from one step to the next; the severity pages move their slider from the middle of one grade band to the middle of the next.
 
-- The caption names each step. By default its name and line are the chapter's live sentence at that step, with its numbers; a step can name its own sentences or quote a readout. The progress line names the steps. Where the figure has no measurement strip of its own, a pane beside it lists the chapter's readouts as they change.
+- The caption names each step. By default its name and line are the chapter's live sentence at that step, with its numbers; a step can name its own sentences or quote a readout. The video leaves out the citations, so a step leaves out a sentence that names a table without its source. The progress line names the steps. Where the figure has no measurement strip of its own, a pane beside it lists the chapter's readouts as they change.
 - The page runs on a clock of its own (`video/chapter.html`): `performance.now()` reads the time of the frame being drawn, and the chapter's motion (its `anim()`) runs in steps of 1/30 s from the start. A frame therefore depends on the frames before it: a chapter video renders in order in one job, and `--jobs` renders that many chapters at once.
-- The soundtrack is *Bright pulse* (`tools/score/pulse.py`), as on the views video: the chapter's steps are its windows, so the bass joins at the second step and the pluck and the pad brighten step by step. Seed 93 and the chapter's number from the time 08 Planes was in the list, so the scores rebuild as they were. The last hold takes up to six more beats (two at most in these videos), so that the end card falls on a bar line after whole four-bar phrases near 109 BPM.
+- The soundtrack is *Bright pulse* (`tools/score/pulse.py`), as on the views video: the chapter's steps are its windows, so the bass joins at the second step and the pluck and the pad brighten step by step. Seed 93 and the chapter's number from the time 08 Planes was in the list, so the scores rebuild as they were; 18 takes 9319, the next number after that list. The last hold takes up to six more beats (two at most in these videos), so that the end card falls on a bar line after whole four-bar phrases near 109 BPM.
+- A step can set the heart (`pheno`): the last step of 11 shows the bicuspid heart. A key named in `discrete` switches at the middle of a move instead of easing: the RA pressure of 04 takes 3, 8 or 15 mmHg and no value between.
 - Title card: the chapter's number, part and title, and the first sentence of its summary. End card as on the views video.
+- Rendered again after #22, #26 and #27: 04 (the RA pressure in place of the IVC), 10 (the path through the 2025 ASE algorithm) and 11 (the new figure and a bicuspid step); 18 is new. One frame late in each hold of the other 13 videos was drawn again from the current code and compared with the shipped video: all within encoding noise, except the captions of 15 that give the RA pressure: on the site that sentence now names chapter 18. That video was not rendered again for it.
 
 | Chapter | Steps | Length |
 |---|---|---|
 | 01 Pulse | Transmit frequency 2, 3.5, 5 and 7 MHz; time gain compensation | 0:48 |
 | 02 Image | Imaging depth 16 and 24 cm; reverberation, acoustic shadow, mirror image, side-lobe artifact | 0:49 |
 | 03 Shift | Beam at 0° and 60° to the flow; aliasing above the Nyquist limit; continuous-wave Doppler; color Doppler, then aliasing on color Doppler | 0:49 |
-| 04 Pressure | Stroke volume; an LVOT diameter error of 2 mm; RV systolic pressure at a peak TR velocity of 2.4, 3.0 and 3.5 m/s | 0:48 |
+| 04 Pressure | Stroke volume; an LVOT diameter error of 2 mm; RV systolic pressure at a peak TR velocity of 2.4, 3.0 and 3.5 m/s, with an RA pressure of 3, 8 and 15 mmHg | 0:48 |
 | 05 Cycle | The seven phases of the cardiac cycle, the cursor running through each | 0:50 |
 | 06 Loop | Normal, HFrEF, HFpEF, pressure load, volume load | 0:48 |
 | 07 Views | Cut B of the views video: the 12 core views, with the nine planes in Probe and body | 1:09 |
 | 08 Eject | Normal LV systolic function; dilated LV with an LVEF of 30%; foreshortened apical views; normal RV systolic function; RV systolic dysfunction | 0:48 |
 | 09 Segments | Normal wall motion; LAD, RCA and circumflex occlusion | 0:48 |
-| 10 Fill | Normal diastolic function; grades 1, 2 and 3 | 0:48 |
-| 11 Aortic stenosis | The eight grade bands, none to severe with low flow | 0:57 |
+| 10 Fill | Normal diastolic function; grades 1, 2 and 3, each with its path through the 2025 ASE algorithm | 0:48 |
+| 11 Aortic stenosis | The eight grade bands, none to classical low-flow, low-gradient stenosis; then the bicuspid heart with severe stenosis | 1:06 |
 | 12 Aortic regurgitation | None to severe with LV dysfunction | 0:48 |
 | 13 Mitral stenosis | None to severe; severe at a heart rate of 110/min | 0:48 |
 | 14 Mitral regurgitation | None to severe with LV dysfunction | 0:48 |
 | 15 Tricuspid regurgitation | None to torrential | 0:48 |
 | 16 Pericardium | No pericardial effusion to tamponade | 0:48 |
 | 17 Cardiac amyloidosis | A normal wall to relative apical sparing | 0:48 |
+| 18 Inferior vena cava | RA pressure 3 mmHg; indeterminate, 8 mmHg; 15 mmHg; severe TR (20 mmHg can be considered); positive-pressure ventilation; IVC or aorta | 0:57 |
 
 ```
 python3 tools/score/pulse.py as video/out/chapter-as.wav
@@ -282,7 +285,7 @@ node tools/storyboard.mjs --ch=as                              # one frame of ea
 
 ## The intro
 
-`video/out/intro.mp4` introduces the series in 71 seconds: a title card, one clip from each of eight chapters, and the end card. A review of the chapter videos and the views video picked the clips. Each clip is the most striking and most useful moment of its part of the site. No two clips teach the same lesson or show the same layout. Chapter 08 Planes is archived since the review: the clip of 07 takes the time of both clips, with the nine planes of 08 in its Probe and body pane.
+`video/out/intro.mp4` introduces the series in 71 seconds: a title card, one clip from each of eight chapters, and the end card. A review of the chapter videos and the views video picked the clips. Each clip is the most striking and most useful moment of its part of the site. No two clips teach the same lesson or show the same layout. Chapter 08 Planes is archived since the review: the clip of 07 takes the time of both clips, with the nine planes of 08 in its Probe and body pane. Since #26 and #27 the title card reads 18 chapters and the clip of 11 shows its new figure: those two clips were rendered again, and the other six are as before.
 
 | Start (s) | Chapter | Clip |
 |---|---|---|
@@ -302,6 +305,7 @@ Left out, with the reason:
 - 06: the cycle clip and the valve clips show its loads.
 - 08, 10: dense panels. LV function shows in the segments and amyloid clips.
 - 12, 13, 15: the layout of 11 and 14.
+- 18: added after the review.
 
 How it is built:
 - `video/reel.js` holds the clips. A chapter clip is a chapter video script with its holds and moves in bars. The clip of 07 is a cut of the views video with the nine planes in Probe and body, as in cut B.
@@ -314,11 +318,15 @@ How it is built:
 ```
 python3 tools/score/pulse.py intro video/out/intro.wav
 node tools/render-video.mjs --reel --jobs=3 --audio=auto       # the eight clips, three at a time, joined in order
+node tools/render-video.mjs --reel --clips=0,4 --audio=auto    # clips 0 and 4 again, joined with the six clips kept in video/out
 node tools/render-video.mjs --reel --stills=7,42.5             # PNG stills at those times of the intro
 ```
 
 ## Checks run before this commit
 
+- Chapter videos 04, 10, 11 and 18 and the intro. Before the renders, one frame late in each hold of the 16 shipped chapter videos was drawn again from this commit and compared with the video: 04 and 10 differ in the figure, and the other 13 lie within encoding noise (mean difference 3.2 to 4.1 of 255) apart from the captions of 15 that give the RA pressure. Stills of each step of the four new scripts were read against the chapter's text at that step; the fixes are in the scripts (no table named without its source, no caption that opens on a pronoun, the hepatic veins in the 20 mmHg step, no TR in the ventilation step). Renders, three at a time: 04 48.00 s and 1,440 frames, 10 48.00 s and 1,440, 11 66.00 s and 1,980, 18 56.57 s and 1,697, each the number its layout gives; no frame undoes the one before it (A, B, A); 10, 11 and 18 have no still stretch in the tour, and 04 holds still between moves (139 frames at most), as the site draws its figure. Audio in the MP4s −14.8 to −14.9 LUFS, true peak −2.8 to −4.2 dBFS; 4.4 to 17.5 MiB. The scores of 04, 10 and the intro rebuild bit for bit. Intro: clips 0 and 4 rendered again and joined with the six kept: 2,126 frames, as laid out; the kept clips match the shipped intro frame for frame, and the change across each cut matches it to 0.3 of 255; −15.0 LUFS, true peak −4.1 dBFS.
+- Chapter 11, the CW panel's VTI line: at 5.4 m/s (the very severe step) it met the tip of the jet in the second beat. The browser test again, 175 of 175 at 1440 × 900 and 174 of 174 at 390 × 844; layout audit of 11 at six sizes (320 × 640 to 1440 × 900), 13 states each: 0 findings, no sideways scroll, no page errors.
+- README screenshots: the 25 retaken from this commit with 18 chapters in the bar (WebP, quality 82). `report.webp` stays as it was; the report is hidden.
 - Chapter 18 on main with the phone bar, the tour and the new chapter 11 (#23, #25, #26). The chapter test, adapted for the tour on load and the phone bar: 92 of 92 at 1440 × 900 with the tour from 17 into 18, 90 of 90 at 390 × 844 and 89 of 90 at 320 × 640 (the one miss was the test's own text pattern for the phone bar, fixed and checked at 390 × 844). The phone bar with 18 chapters at 390 × 844 with touch: 28 of 28 (17 taps on next reach 18; 18 rows; part Right heart holds 18). All 18 chapters at both sizes, with the tour paused after load: 0 fails. Layout audit of 04, 07, 15, 16 and 18 at 320 × 640, 390 × 844, 834 × 1194 and 1440 × 900, 28 states each, with the tour paused: 0 findings, no sideways scroll, no page errors.
 - Chapter 18 Inferior vena cava, in a part of its own (Right heart); the hidden report becomes 19. A browser test passes 92 checks at 1440 × 900, with the tour from 17 into 18, and 90 each at 390 × 844 and 320 × 640. It covers each ▲▼ button and its limits, and the RA pressure on both sides of each cut-off: 2.1 and 2.2 cm, 50% and 45% with a sniff, 20% and 15% with quiet breathing, 2.5 and 2.6 cm for 20 mmHg. It also covers the secondary signs, ventilation, Reset, mouse and keyboard, the change line and its flashes, and `tourAt` against `tourTick`. In chapter 04, an RA pressure of 3, 8 and 15 mmHg gives an RV systolic pressure of 26, 31 and 38 mmHg at 2.4 m/s. Every link to 18 and from 18 opens its chapter. The dark theme draws, and no page error occurs. Layout audit of chapters 04, 07, 15, 16 and 18 at the 14 sizes, 28 states each (eight in 18, three in 04): no findings. The first pass found the sum under the 04 bar on the canvas edge at 320 × 640; the bar now lays out from the bottom up, and the states of 04 and 18 ran again at the six sizes that came before the fix. All 18 chapters at 1440 × 900 and 390 × 844: no page errors, no sideways scroll, numbered 01 to 18. The video pages of 04, 15 and 16 load with no page errors; no video was rendered. 64 cited claims were checked against their sources, each with a quote and a page.
 - Chapter 11 on main with the phone bar and the tour (#23, #25): the browser test again, 175 of 175 at 1440 × 900 and 174 of 174 at 390 × 844 and 320 × 640. Layout audit of 11 at six sizes (320 × 640 to 1440 × 900), 13 states each (the start, no stenosis, the middle of each of the eight bands, two edited states, the bicuspid heart): 0 findings, no sideways scroll, no page errors. The first run found the CW tags "AV" and "LVOT" on top of each other at 320 px with no stenosis, the state the tour starts from; each tag now takes the first place clear of both calipers, the other tag and the ratio note. All 17 chapters at both sizes: no page errors, no sideways scroll. The video page for 11 steps through its 8 holds with no page errors.

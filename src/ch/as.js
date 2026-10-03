@@ -265,9 +265,12 @@ function avCW(ctx, P, v) {
   if (narrow) note(ctx, bx, `ratio ${vr}`, 'top');
   else {
     // a bottom corner clear of the two labels: the left one, or the right one when a fast jet's
-    // label reaches the bottom
+    // label reaches the bottom. Near 5.4 m/s the jet's tip in the second beat also reaches the
+    // bottom, under the middle of the long form.
     const upper = { x0: bx.x, y0: bx.y, x1: bx.x + bx.w, y1: bx.y + bx.h * 0.5 };
-    note(ctx, bx, [`VTI: AV ${v.vtiA} cm · LVOT ${v.vtiL} cm · velocity ratio ${vr}`, `VTI ${v.vtiA} / ${v.vtiL} cm · ratio ${vr}`, `ratio ${vr}`], 'auto', [...labels, upper]);
+    const tipX = X(RR + EV.avo + peak(gA) * T), tipY = yb + v.vmax * k;
+    const tip = { x0: tipX - 24, y0: tipY - 14, x1: tipX + 24, y1: tipY + 2 };
+    note(ctx, bx, [`VTI: AV ${v.vtiA} cm · LVOT ${v.vtiL} cm · velocity ratio ${vr}`, `VTI ${v.vtiA} / ${v.vtiL} cm · ratio ${vr}`, `ratio ${vr}`], 'auto', [...labels, upper, tip]);
   }
   return bx;
 }
