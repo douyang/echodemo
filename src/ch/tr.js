@@ -290,7 +290,7 @@ export default {
       ],
       live: m.eroa <= 0.001
         ? '<b>No tricuspid regurgitation.</b> The play control animates the progression of tricuspid regurgitation from mild to torrential.'
-        : `<b>${g[0].toUpperCase()}${g.slice(1)} tricuspid regurgitation.</b> The EROA is ${fmt(m.eroa, 2)} cm², the vena contracta ${fmt(m.vc, 2)} cm and the regurgitant volume ${fmt(m.rvol)} mL${cite('zoghbi2017')}. The RV basal diameter is ${fmt(m.rvb, 1)} cm and the tricuspid annulus ${fmt(m.ta, 1)} cm; the IVC measures ${fmt(m.ivc, 1)} cm and ${m.collapses ? 'collapses' : 'collapses by less than 50%'} with a sniff, which corresponds to an estimated RA pressure of ${m.rap} mmHg; ${hv}.${beyond}`,
+        : `<b>${g[0].toUpperCase()}${g.slice(1)} tricuspid regurgitation.</b> The EROA is ${fmt(m.eroa, 2)} cm², the vena contracta ${fmt(m.vc, 2)} cm and the regurgitant volume ${fmt(m.rvol)} mL${cite('zoghbi2017')}. The RV basal diameter is ${fmt(m.rvb, 1)} cm and the tricuspid annulus ${fmt(m.ta, 1)} cm; the IVC measures ${fmt(m.ivc, 1)} cm and ${m.collapses ? 'collapses' : 'collapses by less than 50%'} with a sniff, which corresponds to an estimated RA pressure of ${m.rap} mmHg (<a href="#ivc" data-go="ivc">chapter 18</a>); ${hv}.${beyond}`,
       extra: (art) => {
         gradeTable(art.querySelector('#tr-table'), tableRows(m), 'ASE 2017 grading (Table 14, condensed)');
         gradeTable(art.querySelector('#tr-table2'), beyondRows(m), 'Beyond severe: EACVI 2022 (Table 16)', ['Severe', 'Massive', 'Torrential']);

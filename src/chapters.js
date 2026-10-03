@@ -1,4 +1,4 @@
-// The seventeen chapters in reading order, grouped into seven parts.
+// The eighteen chapters in reading order, grouped into eight parts.
 import pulse from './ch/pulse.js';
 import image from './ch/image.js';
 import windows from './ch/windows.js';
@@ -17,10 +17,12 @@ import mrPage from './ch/mr.js';
 import trPage from './ch/tr.js';
 import periPage from './ch/peri.js';
 import amyloidPage from './ch/amyloid.js';
+import ivcPage from './ch/ivc.js';
 import report from './ch/report.js';
 
 // The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come
-// back as chapter 18 when this is true (main.js shows the article of every chapter listed here).
+// back as chapter 19, in a part of its own after 18 IVC, when this is true (main.js shows the
+// article of every chapter listed here).
 // The Normal values table opens from it.
 const SHOW_REPORT = false;
 // 08 Planes is archived: its module and markup stay (index.html, #ch-planes, #fig-planes) and come
@@ -36,7 +38,8 @@ export const PARTS = [
   { key: 'valves', num: 'V', name: 'Valves' },
   { key: 'pericardium', num: 'VI', name: 'Pericardium' },
   { key: 'cardiomyopathy', num: 'VII', name: 'Cardiomyopathy' },
-  ...(SHOW_REPORT ? [{ key: 'report', num: 'VIII', name: 'Report' }] : []),
+  { key: 'ivc', num: 'VIII', name: 'Right heart' },
+  ...(SHOW_REPORT ? [{ key: 'report', num: 'IX', name: 'Report' }] : []),
 ];
 
-export const CHAPTERS = [pulse, image, shift, pressure, cycle, loop, windows, ...(SHOW_PLANES ? [planes] : []), eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, ...(SHOW_REPORT ? [report] : [])];
+export const CHAPTERS = [pulse, image, shift, pressure, cycle, loop, windows, ...(SHOW_PLANES ? [planes] : []), eject, segments, fill, asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, ivcPage, ...(SHOW_REPORT ? [report] : [])];
