@@ -1,11 +1,12 @@
 // Three changes to the heart model when it loads (model3d.js), after the pulmonary artery's bend:
-//   seatLeftVeins  The model's left pulmonary veins leave the left atrium's lateral wall beside the
-//                  mitral annulus and run out to the left, and the lower one lies in the apical
-//                  four-chamber plane: that view showed a tube leaving the LV's base. Each vein now
-//                  turns over its first centimetre, the upper one up, left and back, the lower one
-//                  back, left and a little down, in front of the descending aorta, out of the
-//                  four-chamber and long-axis planes. Where their shared mouth still crosses the
-//                  four-chamber plane, it is pressed into the line of the atrial wall.
+//   seatLeftVeins  The left pulmonary veins' shared mouth crosses the apical four-chamber plane
+//                  beside the mitral annulus; it is pressed into the line of the atrial wall. The
+//                  heart mesh now carries the veins' course (heartmodel's anatomy.py: the upper one
+//                  left, back and up, the lower one back, left and a little down, in front of the
+//                  descending aorta), so model3d.js calls this with bend: false. The bend, kept for
+//                  the older mesh, turned each built vein over its first centimetre; its systolic
+//                  and amyloid displacements did not turn with it, so in systole the veins crossed
+//                  the atrial wall and the lower one ran into the descending aorta.
 //   holdPapillary  An RV papillary muscle ran out through the RV free wall. Every papillary point
 //                  now stays at least 1.2 mm inside the heart's outer surface.
 //   trabeculate    The RV's trabeculations: the moderator band from the septum to the free wall,
@@ -77,7 +78,7 @@ const xyz = (attr) => {
 
 // ---------------------------------------------------------------- the left pulmonary veins
 /** Bend the left veins out of the four-chamber plane and press their mouth into the atrial wall. */
-export function seatLeftVeins(meshes, anat) {
+export function seatLeftVeins(meshes, anat, { bend = true } = {}) {
   const myo = meshes.Myocardium;
   if (!myo) return;
   const g = myo.geometry, P = g.attributes.position, n = P.count, reg = regionsOf(g);
@@ -96,7 +97,7 @@ export function seatLeftVeins(meshes, anat) {
     for (const m of [0, 1]) if (k[m]) c[m] = s[m].multiplyScalar(1 / k[m]);
   }
   const la = anat.point('la_c', 0, 0), mats = new Map(), p = V3();
-  for (const [m, name] of [[0, 'lower'], [1, 'upper']]) {
+  for (const [m, name] of bend ? [[0, 'lower'], [1, 'upper']] : []) {
     const idx = left.filter((_, j) => lab[j] === m), cen = c[m];
     // the vein's axis: the principal axis of its points, pointing away from the atrium's centre
     const C = new Float64Array(6);
@@ -128,20 +129,40 @@ export function seatLeftVeins(meshes, anat) {
   g.morphAttributes.position = [];
   turnMesh(g, mats, V3());
   g.morphAttributes.position = moves;
-  // the press: what bulges past the wall line u -> line + (u - line) * c, near the plane only
+  // the press: what bulges past the wall line u -> line + (u - line) * c, near the plane only.
+  // It presses the end-diastolic shape and the end state of each target (systole, amyloid, both),
+  // so a pressed point stays on the line through the beat and in the amyloid heart; pressing the
+  // end-diastolic shape alone left the systolic motion as loaded, and in systole the mouth crossed
+  // back through the atrial wall.
   const F = a4cFrame(anat), S = PRESS, [[u0, e0], [u1, e1]] = S.line;
+  const shift = (x, y, z) => {
+    const px = x - F.O.x, py = y - F.O.y, pz = z - F.O.z;
+    const u = px * F.r.x + py * F.r.y + pz * F.r.z, dep = px * F.d.x + py * F.d.y + pz * F.d.z, w = px * F.n.x + py * F.n.y + pz * F.n.z;
+    const ut = u0 + (u1 - u0) * clamp((dep - e0) / (e1 - e0), 0, 1);
+    if (u <= ut) return 0;
+    const k = (1 - smooth((Math.abs(w) - S.near) / S.reach)) * smooth((dep - S.band[0]) / S.soft) * (1 - smooth((dep - S.band[1]) / S.soft));
+    return k > 0 ? (ut - u) * k * (1 - S.keep) : 0;
+  };
+  const dict = myo.morphTargetDictionary || {}, MP = g.morphAttributes.position || [];
+  const target = (name) => (dict[name] === undefined ? null : MP[dict[name]]);
+  const Ta = target('amyloid'), Ts = target('systole'), Tab = target('amyloid_systole');
+  const at = (T, i) => (T ? [T.getX(i), T.getY(i), T.getZ(i)] : [0, 0, 0]);
+  const move = (T, i, d) => { if (T && d) T.setXYZ(i, T.getX(i) + F.r.x * d, T.getY(i) + F.r.y * d, T.getZ(i) + F.r.z * d); };
   for (let i = 0; i < n; i++) {
     if ((reg[i] !== 3 && reg[i] !== 7) || P.getX(i) <= -2.5) continue;
-    p.fromBufferAttribute(P, i).sub(F.O);
-    const u = p.dot(F.r), dep = p.dot(F.d), w = p.dot(F.n);
-    const ut = u0 + (u1 - u0) * clamp((dep - e0) / (e1 - e0), 0, 1);
-    if (u <= ut) continue;
-    const k = (1 - smooth((Math.abs(w) - S.near) / S.reach)) * smooth((dep - S.band[0]) / S.soft) * (1 - smooth((dep - S.band[1]) / S.soft));
-    if (k <= 0) continue;
-    const du = (ut - u) * k * (1 - S.keep);
-    P.setXYZ(i, P.getX(i) + F.r.x * du, P.getY(i) + F.r.y * du, P.getZ(i) + F.r.z * du);
+    const x = P.getX(i), y = P.getY(i), z = P.getZ(i), a = at(Ta, i), s = at(Ts, i), b = at(Tab, i);
+    const d0 = shift(x, y, z);
+    const da = shift(x + a[0], y + a[1], z + a[2]);
+    const ds = shift(x + s[0], y + s[1], z + s[2]);
+    const dab = shift(x + a[0] + s[0] + b[0], y + a[1] + s[1] + b[1], z + a[2] + s[2] + b[2]);
+    if (!d0 && !da && !ds && !dab) continue;
+    P.setXYZ(i, x + F.r.x * d0, y + F.r.y * d0, z + F.r.z * d0);
+    move(Ta, i, da - d0);
+    move(Ts, i, ds - d0);
+    move(Tab, i, dab - da - ds + d0);
   }
   P.needsUpdate = true;
+  for (const T of [Ta, Ts, Tab]) if (T) T.needsUpdate = true;
 }
 
 // ---------------------------------------------------------------- the heart's outer surface
