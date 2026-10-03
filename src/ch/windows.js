@@ -1,13 +1,20 @@
-// 07 Views: the canonical 2D views. Each view is a plane through the heart: left, the 3D heart
-// cut on the plane, or with Probe and body the whole heart with the probe, the body figure and
-// the planes of the nine standard views; right, the echo image that plane cuts from the same mesh.
+// 07 Views: the canonical 2D views. Each view is a plane through one heart, in three panes:
+//  - left, the planes of the nine standard views in one heart, each in the color of its window,
+//    the current view's lit, with the lines where the current plane crosses the others (a click
+//    on a plane takes the probe there); with Probe and body, the whole heart with the probe and
+//    the body figure (gl/bodykey.js) instead;
+//  - middle, the heart cut on the plane and seen square to it, with the tags;
+//  - right, the echo image that the plane cuts from the same mesh.
+// The left pane is the stage's second pane (gl/stage3d.js, Pane3D): prepare() sets the scene as
+// that pane shows it, and restore() puts it back for the cross-section, in each frame.
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { VIEWS, WINDOWS, ORDER, SHORT, MOVE, CODE } from '../views.js';
 import { loadModel } from '../model3d.js';
 import { sharedStage } from '../gl/shared.js';
 import { Labels } from '../gl/stage3d.js';
 import { Fan, crossing, rgb } from '../gl/fans.js';
-import { SANS } from '../sketch.js';
+import { SANS, tokens } from '../sketch.js';
+import { reducedMotion } from '../state.js';
 
 // What each view shows and what is measured there (ASE 2019, Tables 2.1-2.27 and Section IV).
 const INFO = {
@@ -49,33 +56,34 @@ const INFO = {
 };
 const WIN_KEYS = WINDOWS.map((w) => w.key);
 
-let stage = null, echo = null, ready = null, failed = false, fig = null, tick = 0, labels = null;
-let st = null, setState = null, lastMeas = '', on = false;
+let stage = null, pane = null, echo = null, model = null, ready = null, failed = false, fig = null, tick = 0, labels = null;
+let st = null, setState = null, lastMeas = '', on = false, bodyKey = null;
 
-// ---------------------------------------------------------------- the planes of Probe and body
-// The nine standard planes of 08 Planes (archived), in the Probe and body view only: each in the
-// color of its window, the current view's lit, with the lines where the current plane crosses
-// the others. The current plane is the echo's own fan, in ink. A click on a plane or on its tag
-// takes the probe to that view.
+// ---------------------------------------------------------------- the planes of the left pane
+// The nine standard planes of 08 Planes (archived): each in the color of its window, the current
+// view's lit, with the lines where the current plane crosses the others. The current plane is
+// also the echo's own fan, in ink. A click on a plane or on its tag takes the probe to that view.
 const NINE = ['plax', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a2c', 'a3c', 'sc4c', 'ssn'];
 /** The plane of the nine that view k lies on (the same plane and level), or null. */
 const OF_NINE = Object.fromEntries(Object.keys(VIEWS).map((k) => [k, NINE.includes(k) ? k
   : NINE.find((j) => VIEWS[j].plane === VIEWS[k].plane && VIEWS[j].level === VIEWS[k].level) || null]));
-const NOTE = { cut: 'Drag to orbit · Scroll or pinch to zoom', body: 'Drag to orbit · Scroll or pinch to zoom · Click a plane' };
+const LEFT = {
+  planes: { name: 'Planes', note: 'Drag to orbit · Click a plane' },
+  body: { name: 'Probe and body', note: 'Drag to orbit' },
+};
 const cssVar = (k) => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
 const winColor = (win) => cssVar(`--w-${win}`) || '#555';
 let planes = null, ink = null, inkOn = false, labelBoxes = [], down = null, hover = null;
 
-/** The nine fans (gl/fans.js) in the stage's overlay, made once: they read the heart's depth. */
+/** The nine fans (gl/fans.js) in the stage's overlay, made once: they read the left pane's depth. */
 function buildPlanes() {
   const group = new THREE.Group();
-  group.visible = false;
+  group.visible = false;   // drawn in the left pane only (prepare)
   const fans = new Map();
   for (const k of NINE) {
     if (!echo.geoms[k]) continue;
-    const f = new Fan(echo.geoms[k], VIEWS[k], rgb(winColor(VIEWS[k].win)), stage.pencil.rtNormal.depthTexture);
-    // the pencil probe marks the current view, and the body figure shows it on the chest
-    f.probe.visible = false;
+    const f = new Fan(echo.geoms[k], VIEWS[k], rgb(winColor(VIEWS[k].win)), pane.pencil.rtNormal.depthTexture);
+    f.probe.visible = false;   // the planes alone: no probe on them
     group.add(f.obj);
     fans.set(k, f);
   }
@@ -93,18 +101,6 @@ function retheme3d() {
   for (const [k, f] of planes.fans) f.setColor(rgb(winColor(VIEWS[k].win)));
   planes.lines.material.color.setRGB(...rgb(cssVar('--ink')));
   planes.key = '';
-}
-
-/** Show the planes with Probe and body, hide them with the cut. */
-function showPlanes(want) {
-  if (want && !planes && stage && echo) buildPlanes();
-  if (planes) { planes.group.visible = !!want; planes.key = ''; }
-  if (!want) {
-    clearInk();
-    hover = null;
-    const host = fig && fig.querySelector('.pane-3d');
-    if (host) host.style.cursor = '';
-  }
 }
 
 function clearInk() {
@@ -131,9 +127,9 @@ function crossings() {
   planes.lines.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
 }
 
-/** Each frame with Probe and body: a new heart's planes, the look, the crossings, the tags. */
+/** Each frame of the planes view: a new heart's planes, the look, the crossings, the tags. */
 function planesFrame() {
-  if (!planes || !st.wbody) return;
+  if (!planes) return;
   if (planes.geoms !== echo.geoms) {
     planes.geoms = echo.geoms;
     for (const [k, f] of planes.fans) {
@@ -154,8 +150,6 @@ function planesFrame() {
     crossings();
   } else if (echo.tr || planes.moving) crossings();   // the plane moves, and its crossings with it
   planes.moving = !!echo.tr;
-  const W = stage.pencil.w * stage.pencil.dpr, H = stage.pencil.h * stage.pencil.dpr;
-  for (const f of planes.fans.values()) f.setRes(W, H);
   drawTags(f0);
 }
 
@@ -173,8 +167,8 @@ function sizeInk() {
 /**
  * The plane tags: each view's code on the center line of its fan, as far out as the pane
  * allows, in its window color, the current view's bold; a current view off the nine, its code
- * in ink. No tag covers another, the pane's name or note, or the body figure. In a pane under
- * 260 px tall (a phone) nine tags would cover the heart: only the current plane's shows.
+ * in ink. No tag covers another, or the pane's name or note. In a pane under 260 px tall (a
+ * phone) nine tags would cover the heart: only the current plane's shows.
  */
 function drawTags(f0) {
   if (!ink) return;
@@ -186,14 +180,10 @@ function drawTags(f0) {
   const paper = cssVar('--paper'), inkc = cssVar('--ink');
   const placed = [];
   const host = ink.getBoundingClientRect();
-  for (const e of fig.querySelectorAll('#windows-3dlabel, #windows-note')) {
+  for (const e of fig.querySelectorAll('#windows-planelabel, #windows-note')) {
     if (!e.offsetParent) continue;
     const r = e.getBoundingClientRect();
     placed.push({ x: (r.left + r.right) / 2 - host.left, y: (r.top + r.bottom) / 2 - host.top, w: r.width, h: r.height });
-  }
-  if (stage.inset && stage.inset.rect) {
-    const r = stage.inset.rect(w, h);
-    placed.push({ x: r.x + r.w / 2, y: r.y + r.h / 2, w: r.w + 8, h: r.h + 8 });
   }
   labelBoxes = [];
   const tag = (text, x, y, color, bold, key) => {
@@ -203,7 +193,7 @@ function drawTags(f0) {
     // the nearest free place above or below
     let yy = null;
     for (const dy of [0, 15, -15, 30, -30, 45, -45, 60, -60]) if (free(y + dy)) { yy = y + dy; break; }
-    if (yy === null || x < 4 || x > w - 4 || yy < 10 || yy > h - 10) return;
+    if (yy === null || x - tw / 2 < 4 || x + tw / 2 > w - 4 || yy < 10 || yy > h - 10) return;
     placed.push({ x, y: yy, w: tw });
     ctx.lineJoin = 'round';
     ctx.lineWidth = 3.5;
@@ -217,7 +207,7 @@ function drawTags(f0) {
   };
   const g = echo.g;
   if (g && !f0 && !echo.tr) {
-    const p = stage.project(g.O.clone().addScaledVector(g.d, echo.specOf(echo.view).depth * 0.8));
+    const p = pane.project(g.O.clone().addScaledVector(g.d, echo.specOf(echo.view).depth * 0.8));
     if (p.z < 1) tag(CODE[st.view] || VIEWS[st.view].short, p.x, p.y, inkc, true, null);
   }
   const order = [...planes.fans.keys()].sort((a, b) => (b === f0) - (a === f0)).filter((k) => h >= 260 || k === f0);
@@ -226,7 +216,7 @@ function drawTags(f0) {
     if (!gk) continue;
     let p = null;
     for (let t = spec.depth * 0.94; t > 2; t -= 0.5) {
-      const q = stage.project(gk.O.clone().addScaledVector(gk.d, t));
+      const q = pane.project(gk.O.clone().addScaledVector(gk.d, t));
       if (q.z < 1 && q.x > 36 && q.x < w - 36 && q.y > 30 && q.y < h - 56) { p = q; break; }
     }
     if (p) tag(CODE[k], p.x, p.y, winColor(spec.win), k === f0, k);
@@ -235,15 +225,15 @@ function drawTags(f0) {
 
 /** The plane of the nine under the pointer: its tag, else the nearest fan the ray meets. */
 function planeAt(e) {
-  if (!planes || !ink) return null;
+  if (!planes || !ink || !pane) return null;
   const r = ink.getBoundingClientRect();
   const x = e.clientX - r.left, y = e.clientY - r.top;
   const b = labelBoxes.find((q) => x >= q.x0 && x <= q.x1 && y >= q.y0 && y <= q.y1);
   if (b) return b.key;
-  const c = stage.pencil.canvas.getBoundingClientRect();
+  const c = pane.pencil.canvas.getBoundingClientRect();
   if (!c.width || !c.height) return null;
   const ray = new THREE.Raycaster();
-  ray.setFromCamera(new THREE.Vector2(((e.clientX - c.left) / c.width) * 2 - 1, -((e.clientY - c.top) / c.height) * 2 + 1), stage.camera);
+  ray.setFromCamera(new THREE.Vector2(((e.clientX - c.left) / c.width) * 2 - 1, -((e.clientY - c.top) / c.height) * 2 + 1), pane.camera);
   const meshes = [];
   for (const [k, f] of planes.fans) {
     f.mesh.userData.view = k;
@@ -261,17 +251,105 @@ function planeAt(e) {
 function pickPlanes(host) {
   host.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
   host.addEventListener('click', (e) => {
-    if (!st.wbody || !on || !down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
+    if (st.wbody || !on || !down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
     const k = planeAt(e);
     if (k && OF_NINE[st.view] !== k) setState({ win: VIEWS[k].win, view: k });
   });
   host.addEventListener('pointermove', (e) => {
-    if (!st.wbody || !on || e.buttons || e.pointerType === 'touch') return;
+    if (st.wbody || !on || e.buttons || e.pointerType === 'touch') return;
     const k = planeAt(e);
     host.style.cursor = k ? 'pointer' : '';
     hover = k;
   });
   host.addEventListener('pointerleave', () => { host.style.cursor = ''; hover = null; });
+}
+
+// ---------------------------------------------------------------- the left pane's scene
+// The left pane draws the heart whole, with the whole liver in the subcostal views: in the planes
+// view without the pericardium or the probe, with the nine planes; with Probe and body, as the
+// probe and body view always was (pericardium, probe, body figure, no planes). The cross-section
+// keeps the scene as the echo sets it: cut on the plane, with its sector and probe.
+let saved = null;
+const pLiver = { a: 0, a0: 0, a1: 0, t0: 0, T: 700 };
+function prepare(p) {
+  const H = stage.heart, L = echo.liver3d, body = !!st.wbody;
+  saved = {
+    cut: H.clip.length ? H.clipPlane.clone() : null,
+    lcut: L && L.clip.length ? L.clipPlane.clone() : null,
+    liver: L ? [L.liver.alpha, L.layer.alpha] : null,
+    probe: echo.probeRoot ? echo.probeRoot.visible : false,
+  };
+  if (planes) planes.group.visible = !body;
+  if (echo.probeRoot) echo.probeRoot.visible = body && saved.probe;
+  H.setPericardium(body);
+  H.setCut(null);
+  if (L) {
+    L.liver.setAlpha(pLiver.a);
+    L.layer.setAlpha(0);
+    L.setCut(null);
+  }
+  if (planes && !body) {
+    const W = p.pencil.w * p.pencil.dpr, Hh = p.pencil.h * p.pencil.dpr;
+    for (const f of planes.fans.values()) f.setRes(W, Hh);
+  }
+}
+function restore() {
+  const H = stage.heart, L = echo.liver3d;
+  if (planes) planes.group.visible = false;
+  if (!saved) return;
+  if (echo.probeRoot) echo.probeRoot.visible = saved.probe;
+  H.setPericardium(true);
+  H.setCut(saved.cut);
+  if (L && saved.liver) {
+    L.liver.setAlpha(saved.liver[0]);
+    L.layer.setAlpha(saved.liver[1]);
+    L.setCut(saved.lcut);
+  }
+  saved = null;
+}
+/** The whole liver of the left pane in the subcostal views, faded as the plane moves. */
+function liverTo(T0 = 700) {
+  const v = VIEWS[st.view], a1 = v && v.win === 'sub' ? 1 : 0;
+  if (a1 === pLiver.a1) return;
+  Object.assign(pLiver, { a0: pLiver.a, a1, t0: performance.now(), T: reducedMotion ? 1 : T0 });
+}
+function stepLiver() {
+  const u = Math.min(1, (performance.now() - pLiver.t0) / pLiver.T);
+  pLiver.a = pLiver.a0 + (pLiver.a1 - pLiver.a0) * u * u * (3 - 2 * u);
+}
+
+/** The left pane's camera: the whole heart from the front, head up; with the probe, farther back. */
+function aimPane(instant = false) {
+  if (pane) pane.view(new THREE.Vector3(-0.38, -0.2, -1).normalize(), new THREE.Vector3(0, 1, 0), st.wbody ? 3.6 : 3.0, stage.center.clone(), instant);
+}
+
+/** Probe and body in the left pane (on), or the planes (off). */
+async function leftPane(body) {
+  if (body && !bodyKey) {
+    const { BodyKey } = await import('../gl/bodykey.js');
+    if (!bodyKey) {
+      bodyKey = new BodyKey(model.heart.meshes.Myocardium, model.anat);
+      bodyKey.retheme(tokens());
+    }
+  }
+  if (!pane || !on) return;
+  pane.inset = st.wbody && bodyKey ? bodyKey : null;
+  keySite();
+  aimPane();
+  if (st.wbody) {
+    clearInk();
+    hover = null;
+    const host = fig.querySelector('.pane-planes');
+    if (host) host.style.cursor = '';
+  } else if (!planes) buildPlanes();
+  if (planes) planes.key = '';
+}
+/** The body figure's probe at the current view's window, its beam toward the sector's middle. */
+function keySite() {
+  const g = echo && echo.g, v = VIEWS[st.view];
+  if (!pane || !pane.inset || !g || !v) return;
+  const spec = echo.specOf(echo.view);
+  bodyKey.setView(v.win, g.O.clone().addScaledVector(g.d, spec.depth * 0.45), g.r, spec);
 }
 
 function note(msg) {
@@ -290,15 +368,19 @@ async function ensure() {
   if (failed) throw new Error('3D view unavailable');
   if (!ready) {
     ready = (async () => {
-      const model = await loadModel();
+      model = await loadModel();
       const e = await import('../echo.js');
       stage = await sharedStage();
+      pane = stage.addPane();
       echo = new e.EchoView(model, fig.querySelector('#windows-canvas'), { stage });
       echo.showOverlay(false);
       echo.top = 42;
       echo.retheme();
       labels = new Labels(fig.querySelector('#windows-overlay'));
       ink = fig.querySelector('#windows-ink');
+      pane.prepare = prepare;
+      pane.restore = restore;
+      pane.layer = echo.liver3d;
       return true;
     })().catch((err) => { failed = true; note('The 3D view could not be started on this device.'); throw err; });
   }
@@ -308,28 +390,33 @@ async function ensure() {
 /** Tags for the cross-section, in columns beside the sector. */
 function sectionTags(stg) {
   if (!labels) return;
-  if (st.wbody || !st.wlabels) { labels.update([], null, 1, 1); return; }
-  const host = fig.querySelector('.pane-3d').getBoundingClientRect();
-  // the pane's name and its note stay clear of the tags
-  const keep = ['#windows-3dlabel', '#windows-note'].map((q) => fig.querySelector(q)).filter((e) => e && e.offsetParent).map((e) => {
+  if (!st.wlabels) { labels.update([], null, 1, 1); return; }
+  const host = fig.querySelector('.pane-section').getBoundingClientRect();
+  // the pane's name stays clear of the tags
+  const keep = ['#windows-3dlabel'].map((q) => fig.querySelector(q)).filter((e) => e && e.offsetParent).map((e) => {
     const r = e.getBoundingClientRect();
     return { x0: r.left - host.left, y0: r.top - host.top, x1: r.right - host.left, y1: r.bottom - host.top };
   });
   // laid out at end-diastole, so the tags hold still through the beat and none comes and goes
-  // with it; each leader starts where its structure is now
-  const now = new Map(echo.sectionLabels(stg.state.s).map((it) => [it.id, it]));
-  labels.update(echo.sectionLabels(0), echo.sectorBox(), host.width, host.height, keep, now);
+  // with it; each leader starts where its structure is now. A narrow pane takes the views' short
+  // names (RVOT, IVS).
+  const short = host.width < 340;
+  const now = new Map(echo.sectionLabels(stg.state.s, short).map((it) => [it.id, it]));
+  labels.update(echo.sectionLabels(0, short), echo.sectorBox(), host.width, host.height, keep, now);
 }
 
 function onFrame(stg) {
   if (!echo) return;
+  // the plane, eased: the three panes follow it in each frame
+  echo.advance();
+  stepLiver();
+  if (st.wbody) { if (echo.tr) keySite(); } else planesFrame();
   sectionTags(stg);
-  planesFrame();
   if (tick++ % 2) return;   // about 30 frames a second is enough for the echo
   // the scanner line sits under the view's name, which takes two lines on a phone
   const lab = fig.querySelector('#windows-label');
   if (lab && lab.offsetParent) echo.top = 32 + Math.max(10, lab.offsetHeight);
-  echo.labels = false;      // the labels name the structures on the model, not on the echo
+  echo.labels = false;      // the tags name the structures on the cross-section, not on the echo
   echo.calipers = !st.wcine;
   echo.frame({ ...stg.state });
   const m = echo.measure;
@@ -337,25 +424,39 @@ function onFrame(stg) {
   if (key !== lastMeas) { lastMeas = key; setState({ wmeas: key }); }
 }
 
+function paneNames(s) {
+  const l = fig && fig.querySelector('#windows-planelabel');
+  if (l) l.textContent = LEFT[s.wbody ? 'body' : 'planes'].name;
+  if (!failed) note(LEFT[s.wbody ? 'body' : 'planes'].note);
+}
+
 async function enter() {
   on = true;
   try { await ensure(); } catch (e) { return; }
   if (!on) return;
   stage.onError = (err) => note(`The 3D view stopped: ${String(err.message || err).slice(0, 120)}`);
-  stage.attach(fig.querySelector('.gl-host'));
+  stage.attach(fig.querySelector('.pane-section .gl-host'));
+  pane.attach(fig.querySelector('.pane-planes .gl-host'));
+  pane.on = true;
   stage.opts.beat = st.wcine;
   stage.opts.stillPhase = 0;
+  stage.inset = null;
   stage.heart.group.visible = true;
   stage.heart.setPericardium(true);
   echo.showOverlay(true);
   echo.section = true;
-  echo.setView(st.view);
-  echo.setBody(st.wbody);
-  showPlanes(st.wbody);
+  stage.resize();
+  pane.resize();
+  echo.resize();
+  echo.setView(st.view, { animate: false });
+  liverTo(1);
+  pLiver.t0 = 0;
+  stepLiver();
+  await leftPane(st.wbody);
+  if (!on) return;
+  aimPane(true);
   stage.onFrame = onFrame;
   fig.classList.add('gl-ready');
-  stage.resize();
-  echo.resize();
   stage.start();
 }
 
@@ -374,25 +475,40 @@ export default {
     setState = set;
     fig = document.getElementById('fig-windows');   // warm() may run before the figure is first shown
     fillViewRow(state.win);
-    pickPlanes(fig.querySelector('.pane-3d'));
+    pickPlanes(fig.querySelector('.pane-planes'));
   },
   enter() { enter(); },
   leave() {
     on = false;
+    hover = null;
     if (labels) labels.update([], null, 1, 1);
-    showPlanes(false);
-    if (stage) { stage.opts.labeled = false; stage.inset = null; }   // the stage is shared with 08 Planes (archived)
+    clearInk();
+    if (pane) { pane.on = false; pane.inset = null; }
+    if (planes) planes.group.visible = false;
     if (echo) echo.showOverlay(false);
-    if (stage && stage.onFrame === onFrame) { stage.stop(); stage.onFrame = null; }
+    if (stage) {
+      stage.opts.labeled = false;   // the stage is shared with 08 Planes (archived) and others
+      stage.inset = null;
+      stage.heart.group.visible = true;
+      stage.heart.setCut(null);
+      if (stage.onFrame === onFrame) { stage.stop(); stage.onFrame = null; }
+    }
   },
   warm() { ensure().catch(() => {}); },
   ready() { return failed || (on && stage && stage.running && stage.onFrame === onFrame); },
   resize() {
-    if (!stage) return;
+    if (!stage || !on) return;
     stage.resize();
-    if (echo) { echo.resize(); echo.setView(st.view); }
+    pane.resize();
+    if (echo) { echo.resize(); echo.setView(st.view, { animate: false }); }
+    aimPane(true);
   },
-  retheme() { if (stage) stage.retheme(); if (echo) echo.retheme(); retheme3d(); },
+  retheme() {
+    if (stage) stage.retheme();
+    if (echo) echo.retheme();
+    if (bodyKey) bodyKey.retheme(tokens());
+    retheme3d();
+  },
   onState(s, ch) {
     if ('win' in ch) {
       fillViewRow(s.win);
@@ -403,14 +519,14 @@ export default {
       const lab = fig && fig.querySelector('#windows-label');
       if (lab) lab.textContent = VIEWS[s.view].name;
     }
-    if ('wbody' in ch || 'chapter' in ch) {
-      const l3 = fig && fig.querySelector('#windows-3dlabel');
-      if (l3) l3.textContent = s.wbody ? 'Probe and body' : 'Cross-section';
-      if (!failed) note(s.wbody ? NOTE.body : NOTE.cut);
-    }
+    if ('wbody' in ch || 'chapter' in ch) paneNames(s);
     if (!stage || !echo || !on) return;
-    if ('view' in ch) echo.setView(s.view);
-    if ('wbody' in ch) { echo.setBody(s.wbody); showPlanes(s.wbody); }
+    if ('view' in ch) {
+      echo.setView(s.view);
+      liverTo(echo.tr ? echo.tr.T : 700);
+      keySite();
+    }
+    if ('wbody' in ch) leftPane(s.wbody);
     if ('wcine' in ch) stage.opts.beat = s.wcine;
   },
   key_(k, set, s) {
