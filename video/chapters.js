@@ -1,6 +1,5 @@
 // The chapter videos (video/chapter.html?ch=key): one for each chapter but 07, whose video is cut
-// P of the views video (video/cuts.js), and 18, which has none yet. No DOM: the page, the render
-// tool and the score read it.
+// B of the views video (video/cuts.js). No DOM: the page, the render tool and the score read it.
 //
 // A video: the title card (intro, in beats; one beat = 60/70 s), then the chapter's figure
 // through its steps, then the end card (outro). The steps follow the chapter's own tour (its
@@ -19,7 +18,9 @@
 // A video: pane (the figure pane's name), zoom (the figure is laid out for a box `zoom` times
 // smaller and drawn larger), side (the measurements pane; false for none), sub (the title
 // card's line; by default the first sentence of the chapter's dek), quant (a step for each
-// number that moves, as its slider has: the figure sees the values the site shows), presets.
+// number that moves, as its slider has: the figure sees the values the site shows), presets,
+// discrete (numbers that change at the middle of a move, as text does: a control with set values).
+// A step's pheno names the heart (src/pheno.js); the 2D views draw its valves.
 import { BEAT, FPS } from './timeline.js';
 
 const STEP = { move: 3, hold: 5 };
@@ -69,6 +70,7 @@ export const VIDEOS = {
   pressure: {
     pane: 'Flow and gradients',
     quant: { calErr: 0.5, trV: 0.05 },
+    discrete: ['rap'],
     steps: [
       { set: { sv: 70, lvotD: 2, calErr: 0, hr: 70, trV: 2.4, rap: 3 }, name: 'Stroke volume from the LVOT', track: 'Stroke volume', pick: [0], hold: 6 },
       { set: { calErr: 2 }, name: 'LVOT diameter error of 2 mm', track: '+2 mm', pick: [0], move: 4, hold: 6 },
@@ -142,14 +144,18 @@ export const VIDEOS = {
     side: false,
     quant: { asS: 0.005 },
     steps: [
-      { set: { asS: 0.05, asCine: true }, name: 'No aortic stenosis', track: 'None', hold: 4 },
-      { set: { asS: 0.145 }, name: 'Mild aortic stenosis', track: 'Mild', hold: 4 },
+      { set: { asS: 0.05, asCine: true, pheno: 'normal' }, name: 'No aortic stenosis', track: 'None', pick: [0], hold: 4 },
+      // the AVA (1.22 cm²) lies in the moderate band: the line says why the grade is mild (asGrade, src/norms.js)
+      { set: { asS: 0.145 }, name: 'Mild aortic stenosis', track: 'Mild', line: '{s0} With an AVA of 1.0 cm² or more, the peak velocity and the mean gradient grade the valve.', hold: 4 },
       { set: { asS: 0.265 }, name: 'Moderate aortic stenosis', track: 'Moderate', hold: 4 },
       { set: { asS: 0.4 }, name: 'Normal-flow, low-gradient aortic stenosis', track: 'NF-LG', pick: [0, 1], hold: 5 },
       { set: { asS: 0.55 }, name: 'Severe aortic stenosis', track: 'Severe', hold: 4 },
       { set: { asS: 0.72 }, name: 'Very severe aortic stenosis', track: 'Very severe', hold: 4 },
       { set: { asS: 0.87 }, name: 'Severe aortic stenosis with LV dysfunction', track: 'LV dysfunction', line: '{s0} The LVEF is {LVEF}%, below 50%.', hold: 4 },
       { set: { asS: 0.97 }, name: 'Classical low-flow, low-gradient aortic stenosis', track: 'Low flow', pick: [0, 1, 2], hold: 6 },
+      // the bicuspid heart (src/pheno.js) at its severe grade: the cusps dome, and the short axis shows two
+      { set: { asS: 0.55, pheno: 'bav' }, name: 'Bicuspid aortic valve, severe stenosis', track: 'Bicuspid',
+        line: 'The right and left cusps are fused, with a raphe. The valve domes in systole and opens off centre, and the ascending aorta measures 3.9 cm.', move: 3, hold: 6 },
     ],
   },
   ar: {
@@ -224,6 +230,23 @@ export const VIDEOS = {
       { set: { amyS: 0.45 }, track: 'Wall ≥12 mm', pick: [0, 1], move: 4, hold: 6 },
       { set: { amyS: 0.6 }, track: 'ESC criteria met', pick: [0, 1], move: 4, hold: 6 },
       { set: { amyS: 0.9 }, name: 'Relative apical sparing', track: 'Apical sparing', pick: [0, 2], move: 4, hold: 7 },
+    ],
+  },
+  // 18: from a normal IVC to a raised RA pressure, severe TR and ventilation (the chapter's tour),
+  // then the IVC and the aorta side by side
+  ivc: {
+    pane: 'IVC and hepatic veins',
+    side: false,
+    quant: { ivcD: 0.1, ivcSniff: 5 },
+    steps: [
+      { set: { ivcD: 1.8, ivcSniff: 60, ivcQuiet: 30, ivcBreath: 'sniff', ivcSec: 'unclear', ivcTR: 'none' }, track: '3 mmHg', pick: [0, 1, 2], hold: 6 },
+      { set: { ivcD: 2.4 }, name: 'Indeterminate: RA pressure 8 mmHg', track: '8 mmHg', pick: [0, 1, 3], move: 4, hold: 6 },
+      { set: { ivcSniff: 30 }, track: '15 mmHg', pick: [0, 1, 3], move: 4, hold: 6 },
+      { set: { ivcTR: 'severe', ivcD: 2.7 }, name: 'Severe tricuspid regurgitation', track: 'Severe TR', pick: [3, 4, 5, 6], move: 4, hold: 7 },
+      // without TR, so that the hepatic veins show no sign that would set the estimate (Mukherjee 2025: 8 mmHg if doubt remains)
+      { set: { ivcBreath: 'ppv', ivcTR: 'none' }, track: 'Ventilation', pick: [0, 1, 2], move: 3, hold: 6 },
+      { set: { ivcD: 1.8, ivcSniff: 60, ivcBreath: 'sniff', ivcTR: 'none' }, name: 'IVC or aorta', track: 'IVC or aorta',
+        line: 'The IVC has a thin wall, lies in the liver, receives the hepatic veins and narrows on a sniff. The aorta has a thick wall, lies outside the liver, gives off the celiac trunk and the SMA, and pulsates with no change on a sniff.', move: 3, hold: 7 },
     ],
   },
 };

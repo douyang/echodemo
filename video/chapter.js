@@ -17,6 +17,7 @@ import { state, set, subscribe, declare } from '../src/state.js';
 import { RR } from '../src/cyclemodel.js';
 import { ecg } from '../src/scope.js';
 import { scanner } from '../src/scanner.js';
+import { setHeart } from '../src/echo2d.js';
 
 // The figure is laid out for a smaller box and drawn larger, so its lines and lettering have the
 // weight they have on the site: while it draws, the page reports a device pixel ratio equal to
@@ -278,7 +279,8 @@ function mix(a, b, p) {
   const out = {};
   for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
     const x = a[k], y = b[k];
-    out[k] = typeof x === 'number' && typeof y === 'number' ? snap(k, x + (y - x) * p) : p < 0.5 ? x ?? y : y ?? x;
+    // a number eases, unless the video names it discrete (a control with set values, such as the RA pressure)
+    out[k] = typeof x === 'number' && typeof y === 'number' && !V.discrete?.includes(k) ? snap(k, x + (y - x) * p) : p < 0.5 ? x ?? y : y ?? x;
   }
   return out;
 }
@@ -532,6 +534,8 @@ async function init() {
   await applyTheme();
   for (const c of CHAPTERS) if (c.defaults) declare(c.defaults);
   declare({ pheno: 'normal' });
+  // the heart a step shows (its pheno): the 2D views draw its valves, as the site's menu sets them (src/main.js)
+  subscribe((s, changed) => { if ('pheno' in changed) setHeart(s.pheno); });
   set({ chapter: IDX, playing: true, anim: false });
   const src = await loadSource();
   SUB = V.sub || (plain($('.dek', src.art)?.innerHTML || '').match(/^.*?[.!?](?=\s|$)/) || [''])[0];
