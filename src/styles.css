@@ -293,9 +293,18 @@ a:hover { text-decoration-color: var(--accent); }
 .split { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
 .split.wide { grid-template-columns: 1.45fr 1fr; }
 .split > div { position: relative; min-width: 0; }
+/* chapter 07: the planes (or Probe and body), the cross-section and the echo of one plane, side by
+   side; in a taller stage the planes go across the top */
+.split.views3 { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: "planes section echo"; }
+.split.views3 > .pane-planes { grid-area: planes; }
+.split.views3 > .pane-section { grid-area: section; }
+.split.views3 > .pane-2d { grid-area: echo; }
+/* a narrow pane draws under its name (the probe in the cross-section): a halo of paper keeps it legible */
+.split.views3 .pane-label { text-shadow: 0 0 2px var(--paper), 0 0 4px var(--paper), 0 0 6px var(--paper); }
 .ink { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 @container (max-aspect-ratio: 19 / 20) {
   .split { grid-template-columns: minmax(0, 1fr); grid-template-rows: 44% 56%; }
+  .split.views3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 48% 52%; grid-template-areas: "planes planes" "section echo"; }
 }
 .pane-label {
   position: absolute;
@@ -783,6 +792,10 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .chapters .n { font-size: 0.75rem; text-align: center; }
   .chapters button { text-align: center; padding: 6px 0 8px; }
   .split { grid-template-columns: 1fr; grid-template-rows: 40% 60%; }
+  /* chapter 07: the planes across the top, the cross-section and the echo side by side under
+     them, in a taller figure */
+  .split.views3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 46% 54%; grid-template-areas: "planes planes" "section echo"; }
+  html[data-ch="windows"] .stage { height: min(64vh, 560px); }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }
   .split.wide .pane-2d { display: none; }
   /* with the free plane on, its echo shows under the 3D view */
