@@ -83,7 +83,7 @@ function a4c(ctx, box, m, t, mode) {
   const dims = (vol, r) => { const L = Math.cbrt(vol / (0.524 * r * r)); return [r * L, L]; };
   const [rwMax, rlMax] = dims(raMax, 0.85 + 0.1 * m.s), [rwMin, rlMin] = dims(raMin, 0.85 + 0.1 * m.s);
   const g = {
-    lvL: [8.4, 7.2], lvW: [4.6 - 0.3 * m.s, 3.0 - 0.2 * m.s], lvWall: [0.9, 1.3], ivs: [0.9, 1.25],
+    lvL: [8.4, 7.2], lvW: [4.6 - 0.3 * m.s, 3.0 - 0.2 * m.s], lvWall: [0.9, 1.35], ivs: [0.9, 1.35],
     rvW: [m.rvb, m.rvb * (0.85 + 0.08 * m.s)], rvWall: 0.4, laW: [3.3, 4.0], laL: [4.1, 4.9], raW: [rwMin, rwMax], raL: [rlMin, rlMax],
     ma: 3.1, ta: m.ta, tv: { gap: m.gap, thick: 0.1 },
   };
@@ -230,7 +230,7 @@ function draw(sh, t) {
   const bxs = [trCW(ctx, p1, m), hvPW(ctx, p2, m)];
   const [c1, c2] = cols(p3, [1.3, 1], 10);
   drawIVC(ctx, c1, { d: m.ivc, collapse: m.coll }, { title: `IVC · M-MODE · RAP ${m.rap} mmHg` });
-  drawPSAXpm(ctx, c2, { lvid: [4.6 - 0.3 * m.s, 3.0], wall: [0.9, 1.3], ei: [m.ei, 1 + (m.ei - 1) * 0.4], rvw: [m.rvb * 0.62, m.rvb * 0.55] }, { t: tt, title: `PSAX · EI ${m.ei.toFixed(1)}` });
+  drawPSAXpm(ctx, c2, { lvid: [4.6 - 0.3 * m.s, 3.0], wall: [0.9, 1.35], ei: [m.ei, 1 + (m.ei - 1) * 0.4], rvw: [m.rvb * 0.62, m.rvb * 0.55] }, { t: tt, title: `PSAX · EI ${m.ei.toFixed(1)}` });
   for (const bx of bxs) cursor(ctx, bx, beat.sweep);
 }
 

@@ -62,13 +62,17 @@ function spline(pts, n = 10, closed = false) {
 /** Offset an open polyline away from a reference point by thickness th(i/n) (cm). */
 function offsetAway(poly, th, ref) {
   const n = poly.length;
-  return poly.map((p, i) => {
-    const a = poly[Math.max(0, i - 1)], b = poly[Math.min(n - 1, i + 1)];
-    let nn = unit(perp(sub(b, a)));
-    if ((p[0] - ref[0]) * nn[0] + (p[1] - ref[1]) * nn[1] < 0) nn = mul(nn, -1);
-    const d = typeof th === 'function' ? th(i / (n - 1)) : th;
-    return add(p, mul(nn, d));
-  });
+  const nrm = poly.map((p, i) => unit(perp(sub(poly[Math.min(n - 1, i + 1)], poly[Math.max(0, i - 1)]))));
+  const sg = sideAway(poly, nrm, ref);
+  return poly.map((p, i) => add(p, mul(nrm[i], sg * (typeof th === 'function' ? th(i / (n - 1)) : th))));
+}
+/**
+ * The one side of a line (normals nrm) that faces away from ref at most of its points. A test at
+ * each point alone fails where the line runs toward ref, near an end: there it picks the other
+ * side, and the offset folds back across the line (the septum into the LVOT in systole).
+ */
+function sideAway(poly, nrm, ref) {
+  return poly.reduce((s, p, i) => s + Math.sign(dot(sub(p, ref), nrm[i])), 0) < 0 ? -1 : 1;
 }
 const ribbon = (inner, outer) => [...inner, ...outer.slice().reverse()];
 /** A polyline resampled to n points at even steps along its length. */
@@ -120,6 +124,13 @@ const centroid = (poly) => mul(poly.reduce((a, p) => add(a, p), [0, 0]), 1 / pol
 const ellipse = (c, rx, ry = rx, n = 40) => Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2; return [c[0] + rx * Math.cos(a), c[1] + ry * Math.sin(a)]; });
 /** A closed ring between two ellipses about c. */
 const ring = (c, r0, r1, n = 32, k = 1) => { const a = ellipse(c, r0, r0 * k, n), b = ellipse(c, r1, r1 * k, n); return ribbon([...a, a[0]], [...b, b[0]]); };
+/** The centre of an ellipse of radii a and b (axes along x and y) through p and q: of the two, the one nearer near. */
+function ellipseThrough(p, q, a, b, near) {
+  const P = [p[0] / a, p[1] / b], Q = [q[0] / a, q[1] / b];
+  const M = lerp2(P, Q, 0.5), d = len(sub(Q, P)), n = perp(unit(sub(Q, P))), h = Math.sqrt(Math.max(0, 1 - (d / 2) ** 2));
+  const cs = [1, -1].map((sg) => { const c = add(M, mul(n, sg * h)); return [c[0] * a, c[1] * b]; });
+  return len(sub(cs[0], near)) <= len(sub(cs[1], near)) ? cs[0] : cs[1];
+}
 /** Points on an arc about c (radians, y down), a0 to a1. */
 const arc = (c, r, a0, a1, n = 30) => Array.from({ length: n + 1 }, (_, i) => { const a = mix(a0, a1, i / n); return [c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]; });
 /** The point at fraction f along a polyline, by index. */
@@ -741,6 +752,8 @@ function plaxBox(shapes, C, R, half) {
 }
 
 // ---------------------------------------------------------------- apical four-chamber
+/** The septum's share of the LV width in an apical view, and its share of the systolic narrowing. */
+const SEP = 0.44, SEP_SYS = 0.4;
 /**
  * LV cavity width (cm) at level u (0 mitral annulus .. 1 apex) in an apical view: it widens from
  * the annulus (ma) to its widest (lvW) over the basal 22% of the length, then narrows to a round
@@ -791,15 +804,18 @@ function a4cShape(g, c, ph, dyn = {}) {
   const out = mul(nl, -1);                             // toward the RV free wall
   const N = 36;
   const widthAt = (u) => lvWidth(u, lvW, ma);
+  const widthAt0 = (u) => lvWidth(u, at(g.lvW, 0), at(g.ma ?? 3.1, 0));
   const Pax = (u) => lerp2(B, A, u);
   // even steps to 80% of the length, then shorter ones: the width falls fast near the apex, and
   // even steps there would leave a faceted, pointed tip
   const U = (i) => { const x = i / N; return x <= 0.8 ? x : 0.8 + 0.2 * (1 - (1 - (x - 0.8) / 0.2) ** 2); };
   const sep = [], lat = [];
   for (let i = 0; i <= N; i++) {
-    const u = U(i), w = widthAt(u);
-    sep.push(add(Pax(u), mul(nl, bow(u) - w * 0.44 * (1 - 0.06 * Math.sin(Math.PI * u)))));
-    lat.push(add(Pax(u), mul(nl, w * 0.56 * (1 + 0.05 * Math.sin(Math.PI * u)))));
+    const u = U(i), w = widthAt(u), w0 = widthAt0(u);
+    // the septum takes 40% of the systolic narrowing and the lateral wall 60%, so the septum's
+    // RV face moves 2 to 3 mm, as in the 3D model; at end-diastole the walls lie as before
+    sep.push(add(Pax(u), mul(nl, bow(u) - (SEP * w0 - SEP_SYS * (w0 - w)) * (1 - 0.06 * Math.sin(Math.PI * u)))));
+    lat.push(add(Pax(u), mul(nl, ((1 - SEP) * w0 - (1 - SEP_SYS) * (w0 - w)) * (1 + 0.05 * Math.sin(Math.PI * u)))));
   }
   const lvCav = [...sep, ...lat.slice(0, -1).reverse()];   // septal hinge -> apex -> lateral hinge
   const S0 = sep[0], L0 = lat[0];
@@ -809,12 +825,9 @@ function a4cShape(g, c, ph, dyn = {}) {
   const sepT = trabeculate(sep, trab, lvC, 0.7), latT = trabeculate(lat, trab, lvC, 2.1);
   const lvCavT = [...sepT, ...latT.slice(0, -1).reverse()];
   // septum: LV septal border offset toward the RV by its thickness
-  const nsep = (i) => {
-    const a = sep[Math.max(0, i - 1)], b = sep[Math.min(N, i + 1)];
-    let nn = unit(perp(sub(b, a)));
-    if ((sep[i][0] - lvC[0]) * nn[0] + (sep[i][1] - lvC[1]) * nn[1] < 0) nn = mul(nn, -1);
-    return nn;
-  };
+  const sepN = sep.map((p, i) => unit(perp(sub(sep[Math.min(N, i + 1)], sep[Math.max(0, i - 1)]))));
+  const sepSg = sideAway(sep, sepN, lvC);
+  const nsep = (i) => mul(sepN[i], sepSg);
   const rvSep = sep.map((p, i) => add(p, mul(nsep(i), ivs * (1 - 0.25 * (i / N) ** 3))));
   const iRvApex = Math.round(N * 0.74);
   const ivsRib = ribbon(sepT.slice(0, iRvApex + 2), rvSep.slice(0, iRvApex + 2));
@@ -1225,10 +1238,14 @@ function a5cShape(g, c, ph) {
   const Pax = (u) => lerp2(B, A, u);
   const U = (i) => { const x = i / N; return x <= 0.8 ? x : 0.8 + 0.2 * (1 - (1 - (x - 0.8) / 0.2) ** 2); };
   const sep = [], lat = [];
+  const lvW0 = at(g.lvW, 0);
   for (let i = 0; i <= N; i++) {
-    const u = U(i), w = lvWidth(u, lvW, bw);
-    sep.push(add(Pax(u), mul(nl, -w * 0.44 * (1 - 0.06 * Math.sin(Math.PI * u)))));
-    lat.push(add(Pax(u), mul(nl, w * 0.56 * (1 + 0.05 * Math.sin(Math.PI * u)))));
+    const u = U(i), w = lvWidth(u, lvW, bw), w0 = lvWidth(u, lvW0, bw);
+    // the septum under the aortic valve is the front wall of the outflow tract: it keeps its place
+    // through systole (the LVOT keeps its diameter), and the septum below it moves as in the A4C
+    const k = smooth((u - 0.12) / 0.28);
+    sep.push(add(Pax(u), mul(nl, -(SEP * w0 - k * SEP_SYS * (w0 - w)) * (1 - 0.06 * Math.sin(Math.PI * u)))));
+    lat.push(add(Pax(u), mul(nl, ((1 - SEP) * w0 - (1 - SEP_SYS) * (w0 - w)) * (1 + 0.05 * Math.sin(Math.PI * u)))));
   }
   const lvCav = [...sep, ...lat.slice(0, -1).reverse()];   // aortic annulus (septal hinge) -> apex -> lateral mitral hinge
   const Al = sep[0], L0 = lat[0];
@@ -1236,12 +1253,9 @@ function a5cShape(g, c, ph) {
   const trab = (u) => 0.13 * smooth((u - 0.58) / 0.3);
   const sepT = trabeculate(sep, trab, lvC, 0.7), latT = trabeculate(lat, trab, lvC, 2.1);
   const lvCavT = [...sepT, ...latT.slice(0, -1).reverse()];
-  const nsep = (i) => {
-    const a = sep[Math.max(0, i - 1)], b = sep[Math.min(N, i + 1)];
-    let nn = unit(perp(sub(b, a)));
-    if ((sep[i][0] - lvC[0]) * nn[0] + (sep[i][1] - lvC[1]) * nn[1] < 0) nn = mul(nn, -1);
-    return nn;
-  };
+  const sepN = sep.map((p, i) => unit(perp(sub(sep[Math.min(N, i + 1)], sep[Math.max(0, i - 1)]))));
+  const sepSg = sideAway(sep, sepN, lvC);
+  const nsep = (i) => mul(sepN[i], sepSg);
   // the septum thins over its last centimetre, the membranous part under the aortic valve
   const rvSep = sep.map((p, i) => add(p, mul(nsep(i), ivs * (1 - 0.25 * (i / N) ** 3) * mix(0.35, 1, smooth(U(i) / 0.12)))));
   const iRvApex = Math.round(N * 0.74);
@@ -1773,20 +1787,30 @@ export function drawPSAXav(ctx, box, g, o = {}) {
   const rvIn = arc(C, r + 0.42, a0, a1), rvOutC = arc(C, r + 1.55, a0, a1), rvWallO = arc(C, r + 1.9, a0, a1);
   const fat = ribbon(arc(C, r + 0.2, a0, a1), rvIn);
   const rvWall = ribbon(rvOutC, rvWallO);
-  // left atrium behind, right atrium to the left, the atrial septum between
-  const laC = [C[0] + 0.3, C[1] + r + 1.55], raC = [C[0] - r - 1.2, C[1] + 1.25];
-  const la = ellipse(laC, 2.1, 1.25), ra = ellipse(raC, 1.3, 1.45);
+  // tricuspid hinges at the left end of the outflow band
+  const tvH1 = rvIn[0], tvH2 = rvOutC[0];
+  // left atrium behind, right atrium to the left, the atrial septum between. The RA wall meets
+  // the tricuspid hinges and stays open between them: the RA opens into the RV through the valve
+  const laC = [C[0] + 0.3, C[1] + r + 1.55], raA = 1.2, raB = 1.3;
+  const raC = ellipseThrough(tvH1, tvH2, raA, raB, [C[0] - r - 1.2, C[1] + 1.25]);
+  const la = ellipse(laC, 2.1, 1.25), ra = ellipse(raC, raA, raB);
   const laRib = ribbon([...la, la[0]], [...ellipse(laC, 2.3, 1.45), [laC[0] + 2.3, laC[1]]]);
-  const raRib = ribbon([...ra, ra[0]], [...ellipse(raC, 1.5, 1.65), [raC[0] + 1.5, raC[1]]]);
+  const angOf = (P) => Math.atan2((P[1] - raC[1]) / raB, (P[0] - raC[0]) / raA);
+  let s0 = angOf(tvH1), s1 = angOf(tvH2);
+  if (s1 < s0) s1 += 2 * PI;
+  if (s1 - s0 < PI) [s0, s1] = [s1, s0 + 2 * PI];   // the long way round, away from the valve
+  const raWall = Array.from({ length: 41 }, (_, i) => { const t = mix(s0, s1, i / 40); return [raC[0] + raA * Math.cos(t), raC[1] + raB * Math.sin(t)]; });
+  const raRib = ribbon(raWall, offsetAway(raWall, 0.2, raC));
   const root = ring(C, r, r + 0.22, 48);
   // tricuspid leaflets across the left end of the outflow band, pulmonary cusps at the right end
-  const tvH1 = rvIn[0], tvH2 = rvOutC[0], tvDir = unit(sub(rvIn[3], rvIn[0]));
+  const tvDir = unit(sub(rvIn[3], rvIn[0]));
   // each pair swings open to lie along its own walls, the tricuspid into the right ventricle,
-  // the pulmonic cusps into the pulmonary artery
-  const tvL = tubeValve(tvH1, tvH2, tvDir, 1 - ph.tvShut, 0.25);
+  // the pulmonic cusps into the pulmonary artery. Shut, they meet 1 mm past their hinge line:
+  // this cut is only 1.1 cm across, and a deeper meeting point reads as a bowed valve
+  const tvL = tubeValve(tvH1, tvH2, tvDir, 1 - ph.tvShut, 0.08);
   const n = rvIn.length - 1;
   const pvH1 = rvIn[n], pvH2 = rvOutC[n], pvDir = unit(sub(rvIn[n], rvIn[n - 3]));
-  const pvL = tubeValve(pvH1, pvH2, pvDir, ph.avOpen, 0.3);
+  const pvL = tubeValve(pvH1, pvH2, pvDir, ph.avOpen, 0.1);
   const pa = [[pvH1, add(pvH1, mul(add(pvDir, [0.3, 0.9]), 1.6))], [pvH2, add(pvH2, mul(add(pvDir, [0.2, 0.9]), 1.8))]];
   // aortic cusps: closed, the three lines of the "Y"; open, a curved triangle of area AVA
   const area = Math.max(0.02, (g.ava ?? 3) * ph.avOpen);
@@ -1825,7 +1849,7 @@ export function drawPSAXav(ctx, box, g, o = {}) {
     { polys: [rvWall], e: DB.myo - 1 },
     { polys: [laRib, raRib], e: DB.myo - 2 },
     { polys: [root], e: DB.fibrous },
-    { borders: [rvIn, rvOutC, la, ra], e: DB.myo, spec: 6 },
+    { borders: [rvIn, rvOutC, la, raWall], e: DB.myo, spec: 6 },
     { lines: pa, e: DB.fibrous - 3, w: 0.18 },
     ...leaves([...tvL, ...pvL].map(flapOf), null, DB.valve - 2),
     // the cusps' free edges; shut, three meet in a Y with a small nodule at the centre, two in a line

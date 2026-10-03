@@ -186,7 +186,7 @@ const beat = new Beat(RR);
 function a5c(ctx, box, v, t) {
   const ef = v.ef / 100;
   const lvids = v.lvidd * Math.sqrt(Math.max(0.2, 1 - ef) / 0.38) * 0.625;
-  const sysW = v.wall * (1 + 0.9 * (ef - 0.15));
+  const sysW = v.wall * (1 + 1.1 * (ef - 0.15));   // 50% thicker in systole at an LVEF of 60%
   const lvL = 7.9 + 0.8 * (v.lvidd - 4.8);
   const laMax = v.lavi * BSA, laMin = laMax * 0.62;
   const dims = (vol) => { const L = Math.cbrt(vol / (0.524 * 0.8 * 0.8)); return [0.8 * L, L]; };
