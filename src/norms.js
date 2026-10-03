@@ -151,7 +151,7 @@ export const NORM_TABLES = [
       ['Progressive, moderate', '1.6–2.5', '100–149', '5–9', '30–49'],
       ['Severe', '≤1.5', '≥150', '≥10', '≥50'],
     ],
-    note: 'The mean gradient applies at a heart rate of 60–80 bpm. ACC/AHA defines severe stenosis as an MVA ≤1.5 cm², which corresponds to a pressure half-time ≥150 ms.',
+    note: 'The mean gradient applies at a heart rate of 60–80 bpm. ACC/AHA lists an MVA ≤1.5 cm² and a pressure half-time ≥150 ms for severe stenosis; by MVA = 220 ÷ pressure half-time, 150 ms corresponds to 1.47 cm².',
     ref: 'pandian2023,otto2020',
   },
   {

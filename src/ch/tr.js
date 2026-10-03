@@ -1,6 +1,6 @@
 // 15 Tricuspid regurgitation: one slider from no leak to torrential TR. The orifice area rises
-// in step with the slider; the orifice turns elliptical as the annulus dilates, so the vena
-// contracta grows faster than a round orifice would give. The right heart and the veins follow.
+// in step with the slider; the vena contracta, the regurgitant volume and the jet area follow it
+// through the cut-offs of each grade. The right heart and the veins follow.
 // Grades: ASE 2017 to severe; EACVI 2022 Table 16 for massive and torrential.
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
@@ -15,10 +15,16 @@ const KEY = 'trS';
 const VA = 28;             // cm/s, aliasing velocity for PISA (ASE 2017); the plume format draws the view at it
 const NYQ = 60;            // cm/s, the scanner format's scale for the jet (ASE 2017: 50-70)
 
-const aspectOf = mono([[0, 1], [0.4, 1], [0.6, 2.57], [0.8, 4.33], [1, 5.5]]);
-const vtiOf = mono([[0, 115], [0.4, 113], [0.6, 100], [0.8, 94], [1, 92]]);
+// By the EROA as printed, so that each parameter crosses its cut-off where the EROA crosses its own
+// (0.20, 0.40, 0.60 and 0.80 cm²; ASE 2017 and EACVI 2022): the vena contracta (cm) at 0.3, 0.7, 1.4
+// and 2.1, the regurgitant volume (mL) at 30, 45, 60 and 75, and the color jet area (cm²) at 5 and
+// above 10. The orifice is narrow in the four-chamber plane while it is small, and wide when the
+// annulus dilates. The volume implies a jet VTI that falls from 150 to 85 cm as the RV-RA gradient falls.
+const vcOf = mono([[0, 0], [0.2, 0.3], [0.4, 0.7], [0.6, 1.4], [0.8, 2.1], [1, 2.6]]);
+const rvolOf = mono([[0, 0], [0.2, 30], [0.4, 45], [0.6, 60], [0.8, 75], [1, 85]]);
+const jetOf = mono([[0, 0], [0.2, 4.6], [0.4, 10.6], [0.6, 16], [0.8, 22], [1, 26]]);
 const TRK = tracks([0, 0.2, 0.4, 0.6, 0.8, 1], {
-  v: [2.3, 2.45, 2.6, 2.1, 1.85, 1.7],
+  v: [2.3, 2.3, 2.6, 1.94, 1.8, 1.7],
   ivc: [1.6, 1.8, 2.3, 2.6, 2.9, 3.1],
   coll: [0.6, 0.55, 0.35, 0.2, 0.1, 0.05],
   hvS: [-0.45, -0.4, -0.15, 0.12, 0.35, 0.45],
@@ -30,7 +36,6 @@ const TRK = tracks([0, 0.2, 0.4, 0.6, 0.8, 1], {
   tapse: [23, 24, 23, 21, 18, 15],
   ei: [1.0, 1.05, 1.15, 1.3, 1.45, 1.55],
   gap: [0, 0.1, 0.3, 0.6, 0.9, 1.1],
-  jetA: [0, 5, 11, 16, 22, 26],
   rvL: [7.0, 7.1, 7.4, 7.8, 8.1, 8.4],
 });
 
@@ -40,9 +45,9 @@ export function model(s) {
   // the values as the page prints them, each calculation from the rounded values before it, so
   // that the grade, the flags and the sentences agree with the numbers on screen
   m.eroa = shown(s, 2);                              // cm², one to one with the slider
-  const k = aspectOf(s);
-  m.vc = shown(2 * Math.sqrt((k * m.eroa) / Math.PI), 2);
-  m.rvol = shown(m.eroa * vtiOf(s));
+  m.vc = shown(vcOf(m.eroa), 2);
+  m.rvol = shown(rvolOf(m.eroa));
+  m.jetA = jetOf(m.eroa);
   m.v = shown(m.v, 1);
   m.q = m.eroa * m.v * 100;                          // mL/s peak flow
   m.r = shown(m.q > 0 ? Math.sqrt(m.q / (2 * Math.PI * VA)) : 0, 2);

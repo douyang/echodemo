@@ -10,14 +10,21 @@ import { BSA } from './pressure.js';
 import { JETS } from '../jets.js';
 
 const KEY = 'arS';
-const VTI = 200;          // cm, AR jet
-const FWD = 60;           // mL, forward stroke volume
 const LVOT = 2.1;         // cm
 const V0 = 4.4;           // m/s, AR velocity at aortic closure
 
 const eroaOf = mono([[0, 0], [0.08, 0.03], [0.3, 0.1], [0.52, 0.3], [0.8, 0.42], [1, 0.5]]);
-const phtOf = mono([[0, 700], [0.03, 640], [0.1, 500], [0.3, 200], [0.5, 140]]);
-const edvOf = mono([[0, 0], [0.03, 3], [0.1, 10], [0.3, 20], [0.5, 30]]);
+// By the EROA as printed, so that each parameter crosses its ASE 2017 cut-off where the EROA crosses
+// its own (0.10 and 0.30 cm²). The jet VTI (cm) falls as the leak grows, because a larger leak
+// decelerates faster; with the forward volume (mL), the regurgitant volume meets 30 and 60 mL and the
+// regurgitant fraction 30% and 50% at the EROA cut-offs.
+const vtiOf = mono([[0, 300], [0.1, 300], [0.3, 200], [0.5, 170]]);
+const fwdOf = mono([[0, 70], [0.1, 70], [0.3, 60], [0.5, 57]]);
+// the vena contracta (cm: 0.3, >0.6) and the jet width in the LVOT (%: 25, 65) through the same cut pairs
+const vcOf = mono([[0, 0], [0.1, 0.3], [0.3, 0.61], [0.5, 0.8]]);
+const ratioOf = mono([[0, 0], [0.1, 25], [0.3, 65], [0.5, 80]]);
+const phtOf = mono([[0, 700], [0.03, 640], [0.1, 500], [0.3, 199.4], [0.5, 140]]);
+const edvOf = mono([[0, 0], [0.03, 3], [0.1, 10], [0.25, 15], [0.3, 20], [0.5, 30]]);
 const TR = tracks([0, 0.3, 0.52, 0.8, 1], {
   lvedd: [4.8, 5.1, 6.0, 6.7, 7.1],
   lvesd: [3.0, 3.2, 3.9, 4.9, 5.4],
@@ -34,14 +41,15 @@ export function model(s) {
   // the values as the page prints them, each calculation from the rounded values before it, so
   // that the grade, the flags and the sentences agree with the numbers on screen
   m.eroa = shown(eroaOf(s), 2);
-  m.rvol = shown(m.eroa * VTI);
-  m.rf = shown((m.rvol / (m.rvol + FWD)) * 100);
-  m.vc = shown(2 * Math.sqrt(m.eroa / Math.PI), 2);
-  m.jw = m.vc * 2.2;
-  m.ratio = shown((m.jw / LVOT) * 100);
+  m.rvol = shown(m.eroa * vtiOf(m.eroa));
+  m.fwd = fwdOf(m.eroa);
+  m.rf = shown((m.rvol / (m.rvol + m.fwd)) * 100);
+  m.vc = shown(vcOf(m.eroa), 2);
+  m.ratio = shown(ratioOf(m.eroa));
+  m.jw = (m.ratio / 100) * LVOT;
   m.pht = shown(phtOf(m.eroa));
   m.edv = shown(edvOf(m.eroa));
-  m.sv = FWD + m.rvol;
+  m.sv = m.fwd + m.rvol;
   m.lvotVti = shown(m.sv / (Math.PI * (LVOT / 2) ** 2));
   // the diameters in whole millimetres, as the ACC/AHA criteria give them
   m.lveddMm = shown(m.lvedd * 10);
