@@ -1,4 +1,4 @@
-// 16 Pericardium: one slider from no effusion through mild, moderate and severe (large)
+// Pericardial effusion: one slider from no effusion through mild, moderate and severe (large)
 // effusion to tamponade. The fluid layer at end-diastole sets the size grade (ESC 2015 and 2025:
 // <10, 10-20, >20 mm). As the sac fills, the pressure in it rises; when it reaches the right
 // atrial pressure the right heart is compressed first: the RA folds in from late diastole, the
@@ -48,7 +48,7 @@ export function model(s) {
   m.coll = m.collPct / 100;
   m.raColPct = shown(m.raCol * 100);
   m.rr = 60000 / m.hr;
-  // the RA pressure as chapter 18 estimates it from the IVC (Mukherjee 2025): a sniff, collapse ≥50%
+  // the RA pressure as the IVC chapter estimates it from the IVC (Mukherjee 2025): a sniff, collapse ≥50%
   m.collapses = m.collPct >= 50;
   m.rapIvc = rapEstimate({ d: m.ivc, col: m.collPct, mode: 'sniff', sec: 'unclear' }).rap;
   m.tamp = clamp(m.tamp, 0, 1);
@@ -261,7 +261,7 @@ function tampRows(m) {
 export default {
   key: 'peri',
   part: 'pericardium',
-  title: 'Pericardium',
+  title: 'Pericardial effusion',
   nav: 'Peri',
   dwell: 18,
   defaults: { periS: 0.45, periCine: true },

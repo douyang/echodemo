@@ -1,4 +1,4 @@
-// 03 Shift: the Doppler equation. The beam meets moving blood at an angle; the scanner turns
+// Doppler: the Doppler equation. The beam meets moving blood at an angle; the scanner turns
 // the frequency shift into velocity, assumes the angle is zero, and (in pulsed modes) can only
 // measure up to the Nyquist limit set by the sample depth.
 import { Sheet, clamp, mix, MONO, SANS, rng } from '../sketch.js';
@@ -199,7 +199,7 @@ const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 export default {
   key: 'shift',
   part: 'physics',
-  title: 'Shift',
+  title: 'Doppler',
   dwell: 16,
   defaults: { dmode: 'pw', angle: 0, vtrue: 1.0, sdepth: 10, f0: 2.5 },
   format: {

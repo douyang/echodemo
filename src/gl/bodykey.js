@@ -1,4 +1,4 @@
-// The body key (chapter 07, Probe and body): the patient in a corner of the 3D view, turned as
+// The body key (Views, Probe and body): the patient in a corner of the 3D view, turned as
 // the camera is, drawn in pencil like the heart (pencil.js, renderInset). The body is an outline:
 // inside it beats the model's own heart in red pencil, placed as it lies in the chest, and the
 // probe sits on the skin at the view's window with its sector toward the heart.

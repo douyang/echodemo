@@ -1,4 +1,4 @@
-// 17 Cardiac amyloidosis: one slider takes the model heart from normal to advanced amyloid
+// Cardiac amyloidosis: one slider takes the model heart from normal to advanced amyloid
 // cardiomyopathy. The burden (0 to 1) blends the heart mesh toward its amyloid shape, and the
 // echo views are cut from that mesh, so the calipers measure the walls on the screen. Doppler,
 // strain and filling follow an illustrative trajectory set inside the cited ranges (ASE 2025,

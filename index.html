@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart by Ultrasound</title>
-<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, cardiac physiology, the standard views, ventricular function, valvular disease, pericardial disease, cardiac amyloidosis and the inferior vena cava.">
+<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, cardiac physiology, the inferior vena cava and Doppler hemodynamics, ventricular function, valvular disease, pericardial disease and cardiac amyloidosis.">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -19,7 +19,7 @@
   <header class="masthead">
     <p class="eyebrow"><span class="eyebrow-long">An illustrated, interactive guide · </span>Echocardiography</p>
     <h1 class="title">The Heart by <em>Ultrasound.</em></h1>
-    <p class="subtitle">Ultrasound physics, cardiac physiology, the standard views, ventricular function and cardiac disease</p>
+    <p class="subtitle">Ultrasound physics, the standard views, cardiac physiology, hemodynamics, ventricular function and cardiac disease</p>
   </header>
 
   <div class="tools">
@@ -68,18 +68,6 @@
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">An ultrasound beam intersects flowing blood at an angle. The Doppler display below shows the measured velocity, the Nyquist limit and aliasing.</figcaption>
     </figure>
-    <figure class="fig" id="fig-pressure">
-      <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Left: stroke volume from the outflow tract area and the velocity-time integral. Right: right ventricular systolic pressure from the tricuspid regurgitation velocity, as a bar that stacks the pressure difference on the right atrial pressure.</figcaption>
-    </figure>
-    <figure class="fig" id="fig-cycle">
-      <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Wiggers diagram of one heartbeat: aortic, left ventricular and left atrial pressure, left ventricular volume, the ECG, the heart sounds, mitral inflow and left ventricular outflow Doppler, and an apical four-chamber frame at the chosen moment.</figcaption>
-    </figure>
-    <figure class="fig" id="fig-loop">
-      <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Left ventricular pressure-volume loop with the end-systolic and end-diastolic pressure-volume relations and the arterial elastance line, beside the normal loop.</figcaption>
-    </figure>
     <figure class="fig" id="fig-windows">
       <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
       <div class="split views3">
@@ -89,7 +77,7 @@
       </div>
       <figcaption class="sr-only">Three views of one imaging plane. Left: a three-dimensional heart with the imaging planes of the nine standard views, each in the color of its acoustic window, and the current plane highlighted; with Probe and body, the whole heart with the probe and a figure of the body instead. Middle: the heart cut in the current plane and seen perpendicular to it, with the structures labeled. Right: the echocardiographic image of the same plane.</figcaption>
     </figure>
-    <!-- 08 Planes, archived: hidden, and not in CHAPTERS (src/chapters.js, SHOW_PLANES) -->
+    <!-- Planes, archived: hidden, and not in CHAPTERS (src/order.js, SHOW_PLANES) -->
     <figure class="fig" id="fig-planes" hidden>
       <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
       <div class="split wide">
@@ -97,6 +85,22 @@
         <div class="pane-2d"><canvas class="fig-canvas" id="planes-canvas" aria-hidden="true"></canvas><p class="pane-label" id="planes-label">Apical four-chamber</p></div>
       </div>
       <figcaption class="sr-only">A three-dimensional heart with the imaging planes of the chosen standard views drawn through it, each in the color of its acoustic window, with the lines where the planes cross. Beside it, the echocardiographic view of the focused plane.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-cycle">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Wiggers diagram of one heartbeat: aortic, left ventricular and left atrial pressure, left ventricular volume, the ECG, the heart sounds, mitral inflow and left ventricular outflow Doppler, and an apical four-chamber frame at the chosen moment.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-loop">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Left ventricular pressure-volume loop with the end-systolic and end-diastolic pressure-volume relations and the arterial elastance line, beside the normal loop.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-ivc">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">The inferior vena cava in four views. The subcostal long axis shows the IVC through the liver into the right atrium, a hepatic vein that joins it, and the diaphragm. A caliper sits 1 to 2 cm from the right atrium, square to the long axis. The IVC narrows with breathing and with a sniff. An M-mode recording shows the IVC through quiet breathing and a sniff, with its largest and smallest diameters. Hepatic vein pulsed-wave Doppler shows the S, D and A waves. Their pattern follows the RA pressure, and S reverses in severe tricuspid regurgitation. The IVC and the abdominal aorta are side by side in long axis, with the features that distinguish them. A strip shows the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-pressure">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Left: stroke volume from the outflow tract area and the velocity-time integral. Right: right ventricular systolic pressure from the tricuspid regurgitation velocity, as a bar that stacks the pressure difference on the right atrial pressure.</figcaption>
     </figure>
     <figure class="fig" id="fig-eject">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -143,10 +147,6 @@
     <figure class="fig" id="fig-amyloid">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Cardiac amyloidosis from a normal heart to advanced disease: a parasternal long-axis view at end-diastole with calipers on the septum, the cavity and the inferolateral wall, and an apical four-chamber view, both cut from the heart model; mitral inflow and septal tissue Doppler; the 17-segment longitudinal strain bull's-eye; and the measurements against their cut-offs.</figcaption>
-    </figure>
-    <figure class="fig" id="fig-ivc">
-      <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">The inferior vena cava in four views. The subcostal long axis shows the IVC through the liver into the right atrium, a hepatic vein that joins it, and the diaphragm. A caliper sits 1 to 2 cm from the right atrium, square to the long axis. The IVC narrows with breathing and with a sniff. An M-mode recording shows the IVC through quiet breathing and a sniff, with its largest and smallest diameters. Hepatic vein pulsed-wave Doppler shows the S, D and A waves. Their pattern follows the RA pressure, and S reverses in severe tricuspid regurgitation. The IVC and the abdominal aorta are side by side in long axis, with the features that distinguish them. A strip shows the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-report" hidden>
       <div class="sheet-host" id="report-host"></div>
@@ -270,7 +270,7 @@
     </article>
 
     <article class="chapter" id="ch-shift">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">03</span><div><h2 class="ch-title">Shift</h2><p class="ch-kicker">The Doppler effect</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">03</span><div><h2 class="ch-title">Doppler</h2><p class="ch-kicker">The Doppler effect</p></div></div>
       <p class="dek" data-part="dek">Doppler echocardiography measures blood velocity from the frequency shift of the returning echoes. The angle between the beam and the direction of flow, together with the Nyquist limit, determines the velocity that the ultrasound system can report.</p>
       <div class="controls">
         <div class="control">
@@ -326,65 +326,147 @@
       <div class="quiz"></div>
     </article>
 
-    <article class="chapter" id="ch-pressure">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">04</span><div><h2 class="ch-title">Pressure</h2><p class="ch-kicker">Doppler hemodynamics</p></div></div>
-      <p class="dek" data-part="dek">Almost every echocardiographic report includes two Doppler calculations: stroke volume from the LV outflow tract and RV systolic pressure from the tricuspid regurgitant jet. Stroke volume is the product of the LVOT area and the LVOT VTI. RV systolic pressure is the pressure difference calculated from the peak TR velocity with the simplified Bernoulli equation plus the RA pressure estimated from the IVC.</p>
+    <!-- ======================================================== Views -->
+    <article class="chapter" id="ch-windows">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">04</span><div><h2 class="ch-title">Views</h2><p class="ch-kicker">Acoustic windows and imaging planes</p></div></div>
+      <p class="dek" data-part="dek">Each standard transthoracic view is a single imaging plane through the heart. The plane is determined by the position of the probe, the rotation of its marker and the tilt of the beam.</p>
       <div class="controls">
-        <div class="row2">
-          <div class="control">
-            <label for="sv">Stroke volume <output data-for="sv"></output></label>
-            <input type="range" id="sv" data-key="sv" min="20" max="120" step="1">
-          </div>
-          <div class="control">
-            <label for="lvotD">LVOT diameter <output data-for="lvotD"></output></label>
-            <input type="range" id="lvotD" data-key="lvotD" min="1.6" max="2.6" step="0.01">
-          </div>
-          <div class="control">
-            <label for="calErr">Caliper error <output data-for="calErr"></output></label>
-            <input type="range" id="calErr" data-key="calErr" min="-3" max="3" step="0.5">
-          </div>
-          <div class="control">
-            <label for="hr">Heart rate <output data-for="hr"></output></label>
-            <input type="range" id="hr" data-key="hr" min="40" max="140" step="1">
-          </div>
-          <div class="control">
-            <label for="trV">Peak TR velocity <output data-for="trV"></output></label>
-            <input type="range" id="trV" data-key="trV" min="1.5" max="5" step="0.05">
+        <div class="control">
+          <span class="label">Window</span>
+          <div class="seg" role="group" aria-label="Acoustic window" data-key="win">
+            <button type="button" data-val="plax">Parasternal long</button><button type="button" data-val="psax">Parasternal short</button><button type="button" data-val="apical">Apical</button><button type="button" data-val="sub">Subcostal</button><button type="button" data-val="ssn">Suprasternal</button>
           </div>
         </div>
         <div class="control">
-          <span class="label"><span>RA pressure, from the IVC: <a href="#ivc" data-go="ivc">chapter 18</a></span></span>
-          <div class="seg" role="group" aria-label="RA pressure" data-key="rap">
-            <button type="button" data-val="3">3 mmHg</button><button type="button" data-val="8">8 mmHg</button><button type="button" data-val="15">15 mmHg</button>
-          </div>
+          <span class="label">View <output>[ and ] step through all</output></span>
+          <div class="seg" role="group" aria-label="View" data-key="view" id="view-seg"></div>
+        </div>
+        <div class="toggles">
+          <label class="check"><input type="checkbox" id="w-labels" data-key="wlabels"> Labels</label>
+          <label class="check"><input type="checkbox" id="w-body" data-key="wbody"> Probe and body</label>
         </div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
       <div class="prose" data-part="prose">
-        <h3>Stroke volume</h3>
-        <p class="eq">SV = 0.785 × d² × VTI &nbsp;(d, VTI in cm; SV in mL)</p>
-        <p>The LV outflow tract is assumed to be circular, with diameter d<span class="cite" data-ref="zoghbi2017"></span>. The LVOT diameter is measured in a zoomed parasternal long-axis view from inner edge to inner edge in mid-systole<span class="cite" data-ref="baumgartner2017"></span>. The LVOT velocity is recorded with pulsed-wave Doppler from the apical five-chamber or apical long-axis view, with the sample volume just below the aortic valve<span class="cite" data-ref="mitchell2019"></span>. Both measurements should be made at the same level<span class="cite" data-ref="baumgartner2017"></span>.</p>
-        <p>Because the diameter is squared, a small error in its measurement produces a large error in the calculated stroke volume. Repeated LVOT diameter measurements vary by 5 to 8%, which is the largest source of error in the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. A 2 mm error in the diameter of a 2.0 cm outflow tract changes the calculated stroke volume by approximately 20%.</p>
-        <p>Normal resting values from catheterization studies are a stroke volume of 60 to 100 mL, a cardiac output of 4 to 8 L/min and a cardiac index of 2.5 to 4.0 L/min/m²<span class="cite" data-ref="humbert2022"></span>.</p>
-        <h3>Flow through an orifice</h3>
-        <p class="eq">flow rate = area × velocity &nbsp;·&nbsp; volume per beat = area × VTI</p>
-        <p>The flow rate through an orifice equals the area of the orifice multiplied by the velocity of the blood in it. The volume that passes in one beat equals the area multiplied by the VTI. The stroke volume above is this product for the LV outflow tract<span class="cite" data-ref="zoghbi2017"></span>. Two methods apply the same principle to the valves.</p>
+        <h3>Acoustic windows</h3>
+        <p>The ASE guideline describes four acoustic windows: parasternal, apical, subcostal and suprasternal notch<span class="cite" data-ref="mitchell2019"></span>. Parasternal and apical imaging is performed with the patient in the left lateral decubitus position, and subcostal and suprasternal imaging with the patient supine<span class="cite" data-ref="mitchell2019"></span>.</p>
         <ul>
-        <li><b>Continuity equation.</b> The volume that passes through the LV outflow tract also passes through the aortic valve. The aortic valve area therefore equals the LVOT area multiplied by the LVOT VTI and divided by the aortic VTI<span class="cite" data-ref="baumgartner2017"></span>. <a href="#as" data-go="as">Chapter 11</a> calculates the valve area in this way.</li>
-        <li><b>Flow convergence (PISA).</b> Blood accelerates toward a regurgitant orifice in roughly hemispheric shells, with a higher velocity and a smaller area in each shell nearer the orifice<span class="cite" data-ref="zoghbi2017"></span>. Color Doppler shows the shell at the aliasing velocity (Va), where the color changes (<a href="#shift" data-go="shift">chapter 03</a>). The surface area of a hemisphere of radius r is 2πr², so the regurgitant flow rate is 2πr² × Va<span class="cite" data-ref="zoghbi2017"></span>. At the time of the peak jet velocity, the flow rate divided by the peak velocity from CW Doppler gives the effective regurgitant orifice area (EROA)<span class="cite" data-ref="zoghbi2017"></span>. The EROA multiplied by the VTI of the jet gives the regurgitant volume<span class="cite" data-ref="zoghbi2017"></span>. <a href="#mr" data-go="mr">Chapter 14</a> and <a href="#tr" data-go="tr">chapter 15</a> use this method.</li>
+        <li><b>Parasternal long axis.</b> The probe is placed in the third or fourth left intercostal space, with the marker toward the right shoulder at 9 to 10 o’clock<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Parasternal short axis.</b> The probe is rotated 90° clockwise from the long-axis position, so that the marker points to the left shoulder<span class="cite" data-ref="mitchell2019"></span>. The beam is then tilted inferiorly to move the plane from the great vessels to the mitral valve and the papillary muscles; for the apical level, the probe is moved one or two intercostal spaces lower and more laterally<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Apical window.</b> The probe is placed at the apical impulse, with the marker at 4 to 5 o’clock<span class="cite" data-ref="mitchell2019"></span>. From the four-chamber view, the two-chamber view is obtained by a counterclockwise rotation of about 60°, and the three-chamber view by a further 60°<span class="cite" data-ref="mitchell2019"></span>. The five-chamber view is obtained by tilting the beam anteriorly<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Subcostal window.</b> The probe is placed below the xiphoid. The subcostal views show the heart, the pericardium, the RV free wall and the inferior vena cava (IVC)<span class="cite" data-ref="mitchell2019"></span>; with the beam angled slightly to the patient's left, they show the abdominal aorta. <a href="#ivc" data-go="ivc">Chapter 07</a> measures the IVC and distinguishes it from the aorta.</li>
+        <li><b>Suprasternal window.</b> The suprasternal views show the ascending aorta, the aortic arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
-        <h3>Pressure gradients and RV systolic pressure</h3>
-        <p class="eq">ΔP = 4 v² &nbsp;·&nbsp; RVSP = 4 × (peak TR velocity)² + RA pressure</p>
-        <p>The simplified Bernoulli equation calculates the pressure difference in mmHg from a velocity in m/s<span class="cite" data-ref="baumgartner2017"></span>. It is valid when the velocity proximal to the narrowing is 1.5 m/s or less<span class="cite" data-ref="quinones2002"></span>. The peak TR velocity gives the pressure difference between the RV and the RA, and the RA pressure estimated from the IVC is added to obtain the RV systolic pressure<span class="cite" data-ref="mukherjee2025"></span>.</p>
-        <p>The IVC diameter and its collapse with a sniff give the RA pressure as one of three values: 3, 8 or 15 mmHg<span class="cite" data-ref="mukherjee2025"></span>. <a href="#ivc" data-go="ivc">Chapter 18</a> shows the measurement of the IVC and the pattern that gives each value.</p>
-        <p>A resting peak TR velocity of 2.9 m/s or more, or of 2.8 m/s or more with two other echocardiographic signs, suggests pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <h3>The interactive figure</h3>
+        <p>The left panel shows the whole heart from the front, with the imaging planes of the nine standard views, each in the color of its acoustic window. The current plane is highlighted, with the lines along which it intersects the other planes. Selecting a plane displays its view. The <b>Probe and body</b> option replaces the planes with the current plane and the probe, and with a small figure of the body, oriented as the heart is, with the probe on the skin at the acoustic window, the heart within the chest, the head and the patient's left side. The middle panel shows the heart model sectioned in the imaging plane and viewed perpendicular to that plane, in the orientation of the echocardiographic image. The <b>Labels</b> option displays the names of the structures on the model. The right panel shows the echocardiographic image of the same plane through the model. When another view is selected, the plane moves from its current position, as the probe would move.</p>
+        <p>Below the diaphragm, the liver, the IVC, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views. These structures are not part of the heart model, and only the liver appears in the 3D view. Each view is labeled with its view class name for image annotation, where the annotation list contains the view. The model is a normal adult heart; in a patient, the angles vary with the position of the heart.</p>
+        <h3>Apical foreshortening</h3>
+        <p>In an apical view without foreshortening, the LV occupies about two thirds and the LA about one third of the long axis<span class="cite" data-ref="mitchell2019"></span>. When the plane does not pass through the true apex, the LV appears short and round, and LV volumes are underestimated<span class="cite" data-ref="lang2015"></span>.</p>
+        <p>The minimum dataset of the British Society of Echocardiography lists the views in scanning order and specifies at least two cardiac cycles for each clip<span class="cite" data-ref="bse2020"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Stroke volume equals the LVOT area × the LVOT VTI, and an error in the LVOT diameter is squared in the calculation.</li>
-        <li>The simplified Bernoulli equation gives the pressure difference as ΔP = 4v².</li>
-        <li>RV systolic pressure equals 4 × (peak TR velocity)² plus the RA pressure estimated from the IVC.</li>
-        <li>The flow rate through an orifice equals its area × the velocity. The continuity equation and the PISA method both use this principle.</li>
+        <li>The parasternal short-axis view is obtained by rotating the probe 90° clockwise from the parasternal long-axis view.</li>
+        <li>The apical two-chamber and three-chamber views are obtained from the four-chamber view by successive counterclockwise rotations of about 60°.</li>
+        <li>A foreshortened apical view does not pass through the true apex, and it underestimates the LV volumes.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+    <!-- Planes, archived: main.js keeps an article left out of CHAPTERS hidden -->
+    <article class="chapter" id="ch-planes">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">05</span><div><h2 class="ch-title">Planes</h2><p class="ch-kicker">The standard imaging planes</p></div></div>
+      <p class="dek" data-part="dek">Each standard view is a plane through the same heart. Displayed together, the planes show which views intersect along a common line, which views are parallel and which views contain a given structure.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">View sets</span>
+          <div class="seg" role="group" aria-label="View sets" id="planes-sets">
+            <button type="button" data-set="nine">Nine views</button><button type="button" data-set="long">Parasternal long</button><button type="button" data-set="stack">Short-axis stack</button><button type="button" data-set="apical">Apical</button><button type="button" data-set="all">All</button><button type="button" data-set="none">Clear</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Views <output>click: add, focus, remove</output></span>
+          <div class="chips" id="planes-views"></div>
+        </div>
+        <div class="control">
+          <span class="label">Find a structure</span>
+          <div class="seg" role="group" aria-label="Structure" data-key="pstruct"><button type="button" data-val="none">None</button></div>
+        </div>
+        <div class="control">
+          <span class="label">Viewpoint</span>
+          <div class="seg" role="group" aria-label="Camera" data-key="pcam">
+            <button type="button" data-val="front">Front</button><button type="button" data-val="apex">Apex</button><button type="button" data-val="side">Side</button><button type="button" data-val="plane">En face</button>
+          </div>
+        </div>
+        <div class="toggles">
+          <label class="check"><input type="checkbox" data-key="pheart"> Heart</label>
+          <label class="check"><input type="checkbox" data-key="plines"> Intersections with the focused plane</label>
+          <label class="check"><input type="checkbox" data-key="pcut"> Cut at the focused plane</label>
+          <label class="check"><input type="checkbox" data-key="pfree"> Free plane</label>
+        </div>
+        <div class="free" id="planes-free" hidden>
+          <p class="free-head"><span>Free plane, from the focused view</span> <output id="pfree-state"></output></p>
+          <div class="row2">
+            <div class="control">
+              <label for="prot">Rotate, + clockwise <output data-for="prot"></output></label>
+              <input type="range" id="prot" data-key="prot" min="-180" max="180" step="1">
+            </div>
+            <div class="control">
+              <label for="ptilt">Tilt <output data-for="ptilt"></output></label>
+              <input type="range" id="ptilt" data-key="ptilt" min="-45" max="45" step="1">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="control">
+              <label for="prock">Rock, + to the right <output data-for="prock"></output></label>
+              <input type="range" id="prock" data-key="prock" min="-40" max="40" step="1">
+            </div>
+            <div class="control">
+              <label for="pslide">Slide <output data-for="pslide"></output></label>
+              <input type="range" id="pslide" data-key="pslide" min="-5" max="5" step="0.1">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="control">
+              <label for="psweep">Sweep <output data-for="psweep"></output></label>
+              <input type="range" id="psweep" data-key="psweep" min="-5" max="5" step="0.1">
+            </div>
+            <div class="control free-reset"><button type="button" class="chip" id="pfree-reset">Back to the focused view</button></div>
+          </div>
+          <div class="control free-goto">
+            <label for="pgoto">Go to a view</label>
+            <select id="pgoto"></select>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt matrix" id="planes-matrix"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>Spatial relations of the views</h3>
+        <ul>
+        <li><b>The apical planes intersect along the LV long axis.</b> The apical four-, two- and three-chamber planes all contain the long axis of the LV. According to the ASE guideline, the probe is rotated about 60° between these views<span class="cite" data-ref="mitchell2019"></span>; the angles of this model are given in the figure. Viewed from the apex, the three planes radiate from the long axis.</li>
+        <li><b>The short-axis planes are nearly parallel.</b> Tilting the probe moves the plane in steps from the mitral valve level to the papillary muscle level and the apex<span class="cite" data-ref="mitchell2019"></span>. Viewed from the side, the planes form a stack.</li>
+        <li><b>The long- and short-axis planes are perpendicular.</b> The parasternal short-axis view is obtained by a 90° rotation of the probe from the parasternal long-axis view<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Small tilts produce additional views.</b> From the parasternal long-axis view, a tilt toward the right hip produces the RV inflow view, and an anterior tilt produces the RV outflow view. From the apical four-chamber view, an anterior tilt brings the LVOT and the aortic valve into the plane<span class="cite" data-ref="mitchell2019"></span>.</li>
+        </ul>
+        <h3>Free plane</h3>
+        <p>The <b>Free plane</b> controls move a plane away from the focused view in the same ways that a probe is moved: rotation about the beam, tilt of the beam across the plane, rock of the beam within the plane, slide of the probe along the plane and sweep of the probe across it. The echocardiographic image displays the section that this plane cuts from the heart, and the <b>En face</b> viewpoint turns the 3D heart so that the plane is viewed perpendicular to its surface. In this model, a rotation of 60° counterclockwise from the four-chamber view produces the two-chamber view, and a rotation of 120° produces the three-chamber view. A rotation of 90° clockwise from the parasternal long axis produces the short axis at the mitral valve level.</p>
+        <p>The probe remains in the acoustic window of the focused view, so the free plane is compared only with the standard views of that window. A plane from another window can cut the heart in almost the same section, as the apical and subcostal four-chamber planes do, but it constitutes a different view. The comparison uses the angle between the planes, with the orientation marker on the same side, and the distance of the view's center from the free plane. The same plane with the marker on the opposite side produces a mirror image, and the free-plane panel reports the reversed marker. Within 20° and 3 cm, the nearest view is marked; within 10° and 1.5 cm, the plane settles onto that view when the control is released.</p>
+        <p><b>Back to the focused view</b> returns the probe to the focused view in steps: slide and sweep first, then tilt and rock, and rotation last. Each step begins before the previous step ends, so the movement is continuous. <b>Go to a view</b> moves the free plane to any standard view. For a view in the same window, the selected view becomes the focused view; the control values are then recalculated relative to that view and return to zero. For a view in another window, the probe first returns to the focused view and then moves across the chest to the new window.</p>
+        <h3>Structures in each view</h3>
+        <p>The table lists the structures that the ASE guideline names for each displayed view<span class="cite" data-ref="mitchell2019"></span>. Selection of a structure highlights the views that contain it. The figure shows only the parent views, not their zoomed or LV-focused variants.</p>
+        <h3>Clinical relevance</h3>
+        <ul>
+        <li>A finding should be confirmed in two views that intersect it at different angles.</li>
+        <li>Some measurements combine two views of the same site; the LVOT diameter (zoomed parasternal long-axis view) and the LVOT velocity (apical five-chamber view) must be obtained at the same level<span class="cite" data-ref="baumgartner2017"></span>.</li>
+        <li>Each apical view shows two opposite walls of the LV, and together the three apical views include all 17 segments<span class="cite" data-ref="lang2015"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>The apical four-, two- and three-chamber planes are related by rotation about the LV long axis.</li>
+        <li>The parasternal short-axis planes are nearly parallel sections through the heart.</li>
+        <li>Each structure appears in several views and should be examined in at least two of them.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -491,147 +573,172 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== Views -->
-    <article class="chapter" id="ch-windows">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">07</span><div><h2 class="ch-title">Views</h2><p class="ch-kicker">Acoustic windows and imaging planes</p></div></div>
-      <p class="dek" data-part="dek">Each standard transthoracic view is a single imaging plane through the heart. The plane is determined by the position of the probe, the rotation of its marker and the tilt of the beam.</p>
+    <!-- ======================================================== Hemodynamics -->
+    <article class="chapter" id="ch-ivc">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">07</span><div><h2 class="ch-title">Inferior vena cava</h2><p class="ch-kicker">RA pressure and hepatic veins</p></div></div>
+      <p class="dek" data-part="dek">The inferior vena cava (IVC) drains into the right atrium. Its diameter at end-expiration and its collapse with a sniff give an estimate of the RA pressure. The RV systolic pressure uses this estimate, and every report states it. Hepatic vein flow adds to the estimate. The abdominal aorta lies next to the IVC. Its position, wall, branches and Doppler signal distinguish it from the IVC.</p>
       <div class="controls">
         <div class="control">
-          <span class="label">Window</span>
-          <div class="seg" role="group" aria-label="Acoustic window" data-key="win">
-            <button type="button" data-val="plax">Parasternal long</button><button type="button" data-val="psax">Parasternal short</button><button type="button" data-val="apical">Apical</button><button type="button" data-val="sub">Subcostal</button><button type="button" data-val="ssn">Suprasternal</button>
+          <span class="label">Breathing</span>
+          <div class="seg" role="group" aria-label="Breathing" data-key="ivcBreath">
+            <button type="button" data-val="quiet">Quiet</button><button type="button" data-val="sniff">Sniff</button><button type="button" data-val="ppv">Ventilation</button>
           </div>
         </div>
         <div class="control">
-          <span class="label">View <output>[ and ] step through all</output></span>
-          <div class="seg" role="group" aria-label="View" data-key="view" id="view-seg"></div>
-        </div>
-        <div class="toggles">
-          <label class="check"><input type="checkbox" id="w-labels" data-key="wlabels"> Labels</label>
-          <label class="check"><input type="checkbox" id="w-body" data-key="wbody"> Probe and body</label>
+          <span class="label">Tricuspid regurgitation</span>
+          <div class="seg" role="group" aria-label="Tricuspid regurgitation" data-key="ivcTR">
+            <button type="button" data-val="none">None</button><button type="button" data-val="severe">Severe</button>
+          </div>
         </div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
+      <section class="ase" id="ivc-ase" aria-label="2025 ASE estimate of the RA pressure from the IVC"></section>
       <div class="prose" data-part="prose">
-        <h3>Acoustic windows</h3>
-        <p>The ASE guideline describes four acoustic windows: parasternal, apical, subcostal and suprasternal notch<span class="cite" data-ref="mitchell2019"></span>. Parasternal and apical imaging is performed with the patient in the left lateral decubitus position, and subcostal and suprasternal imaging with the patient supine<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <h3>Imaging the IVC</h3>
+        <ol class="steps">
+        <li><b>Window.</b> The subcostal window shows the IVC, with the patient supine<span class="cite" data-ref="mitchell2019"></span>. Bent knees relax the abdominal muscles<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Long axis.</b> From the subcostal four-chamber view, the probe turns about 90° counterclockwise and points toward the liver. The IVC then runs through the liver for several centimeters into the RA<span class="cite" data-ref="mitchell2019"></span>. A clip records a full respiratory cycle<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Site.</b> The caliper crosses the IVC perpendicular to its long axis<span class="cite" data-ref="rudski2010"></span>, 1 to 2 cm from its junction with the RA<span class="cite" data-ref="mitchell2019"></span>. The 2025 guideline gives 0.5 to 3.0 cm from the RA ostium<span class="cite" data-ref="mukherjee2025"></span>. A review places the site about 1 cm below the junction of the hepatic vein<span class="cite" data-ref="assavapokee2024"></span>.</li>
+        <li><b>End-expiration.</b> The measurement uses end-expiration, where the diameter is usually largest<span class="cite" data-ref="mukherjee2025,mitchell2019"></span>.</li>
+        <li><b>Sniff.</b> A sniff is a rapid inspiration. It changes the intrathoracic pressure more than quiet breathing does. A second recording follows the IVC through the sniff<span class="cite" data-ref="mitchell2019"></span>. The collapse is the fall in diameter, as a percentage of the expiratory diameter<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>M-mode.</b> M-mode measures the diameter and its change with breathing more accurately than 2D imaging, because its temporal resolution is higher<span class="cite" data-ref="mukherjee2025"></span>. The M-mode line must cross the IVC at a right angle. An oblique line overestimates the diameter<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Short axis.</b> A short-axis view shows whether the long-axis plane passes through the center of the IVC, where the diameter is largest<span class="cite" data-ref="mitchell2019"></span>. During a sniff, it also shows whether the IVC moves out of the plane<span class="cite" data-ref="mitchell2019"></span>.</li>
+        </ol>
+        <h3>RA pressure from the IVC</h3>
+        <p>When the RA pressure rises, the IVC dilates, and its collapse with inspiration decreases<span class="cite" data-ref="rudski2010"></span>. The 2025 ASE guideline gives the RA pressure as one of three values<span class="cite" data-ref="mukherjee2025"></span>:</p>
         <ul>
-        <li><b>Parasternal long axis.</b> The probe is placed in the third or fourth left intercostal space, with the marker toward the right shoulder at 9 to 10 o’clock<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Parasternal short axis.</b> The probe is rotated 90° clockwise from the long-axis position, so that the marker points to the left shoulder<span class="cite" data-ref="mitchell2019"></span>. The beam is then tilted inferiorly to move the plane from the great vessels to the mitral valve and the papillary muscles; for the apical level, the probe is moved one or two intercostal spaces lower and more laterally<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Apical window.</b> The probe is placed at the apical impulse, with the marker at 4 to 5 o’clock<span class="cite" data-ref="mitchell2019"></span>. From the four-chamber view, the two-chamber view is obtained by a counterclockwise rotation of about 60°, and the three-chamber view by a further 60°<span class="cite" data-ref="mitchell2019"></span>. The five-chamber view is obtained by tilting the beam anteriorly<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Subcostal window.</b> The probe is placed below the xiphoid. The subcostal views show the heart, the pericardium, the RV free wall and the inferior vena cava (IVC)<span class="cite" data-ref="mitchell2019"></span>; with the beam angled slightly to the patient's left, they show the abdominal aorta. <a href="#ivc" data-go="ivc">Chapter 18</a> measures the IVC and distinguishes it from the aorta.</li>
-        <li><b>Suprasternal window.</b> The suprasternal views show the ascending aorta, the aortic arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>3 mmHg</b> (range 0–5): IVC ≤2.1 cm with ≥50% collapse.</li>
+        <li><b>8 mmHg</b> (range 5–10): IVC ≤2.1 cm with &lt;50% collapse, or IVC &gt;2.1 cm with ≥50% collapse.</li>
+        <li><b>15 mmHg</b> (range 10–20): IVC &gt;2.1 cm with &lt;50% collapse<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        </ul>
+        <p>The two mixed patterns are indeterminate. Secondary signs of a raised RA pressure then decide the value<span class="cite" data-ref="mukherjee2025"></span>:</p>
+        <ul>
+        <li>RA enlargement</li>
+        <li>an atrial septum that bulges into the LA throughout the cardiac cycle</li>
+        <li>a restrictive right-sided diastolic filling pattern</li>
+        <li>a tricuspid E/e′ ratio &gt;6</li>
+        <li>diastolic predominance in the hepatic veins, a systolic filling fraction &lt;55%<span class="cite" data-ref="mukherjee2025"></span></li>
+        </ul>
+        <p>With none of these signs, the estimate falls to 3 mmHg. With signs present, it rises to 15 mmHg. If uncertainty remains, the estimate is 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p>A value of 20 mmHg can be considered when the IVC is wider than 2.5 cm and collapses less than 50%, with dilated hepatic veins. Spontaneous echo contrast or color-flow reflux in the vessel supports this value. The pattern suggests a markedly raised RA pressure, severe TR or impaired venous return<span class="cite" data-ref="mukherjee2025"></span>. A small, collapsed IVC suggests an RA pressure below 3 mmHg, as in hypovolemia<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p>When the patient cannot sniff, the collapse with quiet breathing replaces the sniff, with a cut-off of 20%. A normal IVC gives 3 mmHg with ≥20% collapse and 8 mmHg with less. A dilated IVC gives 8 and 15 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p>The report should give the RA pressure as a single value, not as a range<span class="cite" data-ref="mukherjee2025"></span>. It should always state the estimate, as “unable to assess” when the images do not allow it<span class="cite" data-ref="taub2025"></span>.</p>
+        <h3>Uses of the estimate</h3>
+        <ul>
+        <li>The RV systolic pressure equals 4 × (peak TR velocity)² plus the RA pressure<span class="cite" data-ref="mukherjee2025"></span>. <a href="#pressure" data-go="pressure">Chapter 08</a> adds the RA pressure to the TR gradient.</li>
+        <li>A peak TR velocity ≥2.8 m/s with at least two other signs suggests pulmonary hypertension. An IVC wider than 2.1 cm is one of these signs<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li>With an RA pressure estimate, the 2025 diastolic algorithm uses a PA systolic pressure ≥35 mmHg in place of the peak TR velocity<span class="cite" data-ref="nagueh2025"></span> (<a href="#fill" data-go="fill">chapter 11</a>).</li>
+        <li>In tamponade, the IVC is dilated (&gt;2.1 cm) and collapses by less than 50% with inspiration<span class="cite" data-ref="klein2013"></span> (<a href="#peri" data-go="peri">chapter 17</a>).</li>
+        </ul>
+        <h3>Hepatic veins</h3>
+        <p>The hepatic veins drain into the IVC, and the subcostal window shows them<span class="cite" data-ref="mitchell2019"></span>. Color Doppler often shows the middle hepatic vein, which usually lies at the best Doppler angle<span class="cite" data-ref="mitchell2019"></span>. For PW Doppler, a 3–5 mm sample volume sits about 1 to 2 cm from the junction with the IVC. The recording covers a whole respiratory cycle. The peak S and D velocities should come from end-expiration<span class="cite" data-ref="mitchell2019"></span>. From the subcostal window, forward flow toward the RA moves away from the probe and shows below the baseline<span class="cite" data-ref="quinones2002"></span>.</p>
+        <ul>
+        <li><b>Waves.</b> S is forward flow into the IVC in systole, and D is forward flow in early diastole. A is a reversal with atrial contraction. Some patients have a brief reversal after S<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Normal.</b> S is larger than D<span class="cite" data-ref="mukherjee2025"></span>. Both S and D increase with inspiration<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Raised RA pressure.</b> The systolic predominance is lost, and S/D falls below 1. A systolic filling fraction, S/(S + D), below 55% is a sensitive and specific sign of a raised RA pressure<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>Tricuspid regurgitation.</b> With increasing TR, S becomes blunted, and in severe TR it reverses<span class="cite" data-ref="zoghbi2017"></span>. Systolic reversal is specific for severe TR. Atrial fibrillation, pacing, heart block, respiration, preload and RA or RV compliance also change the pattern, and the interpretation must consider them<span class="cite" data-ref="zoghbi2017"></span>. <a href="#tr" data-go="tr">Chapter 16</a> follows these changes from mild to torrential TR.</li>
+        <li><b>Positive-pressure ventilation.</b> The hepatic vein velocities stay valid when they are averaged over at least five beats and one respiratory cycle<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>Report.</b> The report should name an abnormal hepatic vein pattern when it is relevant: in pericardial disease, volume assessment or tricuspid valve disease<span class="cite" data-ref="taub2025"></span>.</li>
+        </ul>
+        <h3>IVC or aorta</h3>
+        <p>From the IVC view, the probe angles and slides slightly to the patient’s left, and the abdominal aorta shows in long axis<span class="cite" data-ref="mitchell2019"></span>. <a href="#windows" data-go="windows">Chapter 04</a> cuts both subcostal views from the heart model. The two vessels differ in seven features:</p>
+        <ul>
+        <li><b>Side.</b> The IVC runs on the right side of the spine<span class="cite" data-ref="tucker2023"></span>. It lies within the liver. The aorta lies in the midline, to the left of the IVC and apart from the liver<span class="cite" data-ref="assavapokee2024"></span>.</li>
+        <li><b>Course.</b> In the subcostal view, the aorta usually runs more vertically than the IVC<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Wall.</b> The IVC is a thin-walled vessel<span class="cite" data-ref="tucker2023"></span>. The aorta has a thicker, pulsatile wall<span class="cite" data-ref="marin2016"></span>.</li>
+        <li><b>Breathing.</b> The aorta does not change with respiration, and this helps to distinguish it from the IVC<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Pulsation.</b> Pulsation alone does not identify the aorta. In hyperdynamic states and in TR, the IVC can pulse more than the aorta<span class="cite" data-ref="assavapokee2024"></span>.</li>
+        <li><b>Connections.</b> The IVC opens into the RA, and the hepatic veins drain into it<span class="cite" data-ref="assavapokee2024"></span>. The celiac trunk and the superior mesenteric artery (SMA) arise from the front of the aorta, outside the liver<span class="cite" data-ref="assavapokee2024"></span>.</li>
+        <li><b>Doppler.</b> The two vessels have different PW Doppler patterns<span class="cite" data-ref="marin2016"></span>. In the subcostal view, color and PW Doppler show aortic flow moving upward and to the left in the sector<span class="cite" data-ref="mitchell2019"></span>. Hepatic vein flow has S, D and A waves, and its forward flow shows below the baseline<span class="cite" data-ref="mitchell2019,quinones2002"></span>.</li>
+        </ul>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li><b>Positive-pressure ventilation.</b> The collapse of the IVC does not estimate the RA pressure. If the RA pressure is clinically relevant, an invasive measurement should replace the estimate. Secondary signs can show whether it is normal or raised. If uncertainty remains, the estimate is 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>A small IVC under ventilation.</b> In 49 patients on positive-pressure ventilation, an IVC of 12 mm or less predicted an RA pressure of 10 mmHg or less in every case. The sensitivity was 25%, and a larger IVC did not predict the RA pressure<span class="cite" data-ref="jue1992"></span>. The 2010 guideline gives the same 12 mm<span class="cite" data-ref="rudski2010"></span>. The 2025 guideline quotes 2.1 cm for this finding<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>Athletes, young adults and pregnancy.</b> A dilated IVC can be normal in healthy young adults and in athletes. It is also common in pregnancy, because the blood volume increases. Other signs of a raised filling pressure and the clinical findings then decide<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>No sniff.</b> When the patient cannot sniff, quiet breathing replaces the sniff, with a cut-off of 20%<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>Off-axis cut.</b> A long-axis plane beside the center of the IVC shows less than its full diameter. A short-axis view confirms that the plane passes through the center<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Translation.</b> A change in diameter with breathing can result from movement of the IVC into another imaging plane<span class="cite" data-ref="mukherjee2025"></span>. A short-axis view during the sniff shows this movement<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Raised intra-abdominal pressure.</b> It can collapse the IVC despite a raised RA pressure<span class="cite" data-ref="assavapokee2024"></span>.</li>
+        <li><b>Oblique M-mode line.</b> An M-mode line that does not cross the IVC at a right angle overestimates the diameter<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Severe TR.</b> An IVC wider than 2.5 cm with &lt;50% collapse, dilated hepatic veins and reflux can result from severe TR<span class="cite" data-ref="mukherjee2025"></span>. Hepatic vein flow reverses in systole<span class="cite" data-ref="zoghbi2017"></span>. The IVC can then pulse more than the aorta<span class="cite" data-ref="assavapokee2024"></span>. A triangular TR signal from early equalization of the RV and RA pressures underestimates the RV–RA gradient<span class="cite" data-ref="mukherjee2025"></span>.</li>
         </ul>
         <h3>The interactive figure</h3>
-        <p>The left panel shows the whole heart from the front, with the imaging planes of the nine standard views, each in the color of its acoustic window. The current plane is highlighted, with the lines along which it intersects the other planes. Selecting a plane displays its view. The <b>Probe and body</b> option replaces the planes with the current plane and the probe, and with a small figure of the body, oriented as the heart is, with the probe on the skin at the acoustic window, the heart within the chest, the head and the patient's left side. The middle panel shows the heart model sectioned in the imaging plane and viewed perpendicular to that plane, in the orientation of the echocardiographic image. The <b>Labels</b> option displays the names of the structures on the model. The right panel shows the echocardiographic image of the same plane through the model. When another view is selected, the plane moves from its current position, as the probe would move.</p>
-        <p>Below the diaphragm, the liver, the IVC, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views. These structures are not part of the heart model, and only the liver appears in the 3D view. Each view is labeled with its view class name for image annotation, where the annotation list contains the view. The model is a normal adult heart; in a patient, the angles vary with the position of the heart.</p>
-        <h3>Apical foreshortening</h3>
-        <p>In an apical view without foreshortening, the LV occupies about two thirds and the LA about one third of the long axis<span class="cite" data-ref="mitchell2019"></span>. When the plane does not pass through the true apex, the LV appears short and round, and LV volumes are underestimated<span class="cite" data-ref="lang2015"></span>.</p>
-        <p>The minimum dataset of the British Society of Echocardiography lists the views in scanning order and specifies at least two cardiac cycles for each clip<span class="cite" data-ref="bse2020"></span>.</p>
+        <p>The subcostal long axis shows the IVC through the liver into the RA, with a hepatic vein that joins it 0.9 cm from the RA. The caliper sits 1.8 cm from the RA, square to the long axis, on the M-mode line. The M-mode shows two quiet breaths and a sniff, quiet breathing alone, or ventilation without collapse. The hepatic veins follow the RA pressure and reverse in severe TR. The values are illustrative and do not come from a patient.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>The parasternal short-axis view is obtained by rotating the probe 90° clockwise from the parasternal long-axis view.</li>
-        <li>The apical two-chamber and three-chamber views are obtained from the four-chamber view by successive counterclockwise rotations of about 60°.</li>
-        <li>A foreshortened apical view does not pass through the true apex, and it underestimates the LV volumes.</li>
+        <li>The IVC caliper sits perpendicular to the long axis, 1 to 2 cm from the RA, at end-expiration. A sniff tests the collapse.</li>
+        <li>An IVC ≤2.1 cm with ≥50% collapse gives an RA pressure of 3 mmHg. An IVC &gt;2.1 cm with &lt;50% collapse gives 15 mmHg.</li>
+        <li>The mixed patterns give 8 mmHg. Secondary signs can lower it to 3 mmHg or raise it to 15 mmHg.</li>
+        <li>Under positive-pressure ventilation, the collapse of the IVC does not estimate the RA pressure.</li>
+        <li>A raised RA pressure lowers the hepatic vein S/D below 1, and severe TR reverses systolic flow.</li>
+        <li>The aorta lies to the left of the IVC and outside the liver. It has a thicker wall and anterior branches, and it does not change with breathing.</li>
         </ol>
+        <p class="note">Related chapters: <a href="#pressure" data-go="pressure">08 Doppler hemodynamics</a> · <a href="#windows" data-go="windows">04 Views</a> · <a href="#tr" data-go="tr">16 Tricuspid regurgitation</a> · <a href="#peri" data-go="peri">17 Pericardial effusion</a></p>
       </div>
       <div class="quiz"></div>
     </article>
-    <!-- 08 Planes, archived: main.js keeps an article left out of CHAPTERS hidden -->
-    <article class="chapter" id="ch-planes">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">08</span><div><h2 class="ch-title">Planes</h2><p class="ch-kicker">The standard imaging planes</p></div></div>
-      <p class="dek" data-part="dek">Each standard view is a plane through the same heart. Displayed together, the planes show which views intersect along a common line, which views are parallel and which views contain a given structure.</p>
+
+    <article class="chapter" id="ch-pressure">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">08</span><div><h2 class="ch-title">Doppler hemodynamics</h2><p class="ch-kicker">Flow, area and pressure from Doppler</p></div></div>
+      <p class="dek" data-part="dek">Almost every echocardiographic report includes two Doppler calculations: stroke volume from the LV outflow tract and RV systolic pressure from the tricuspid regurgitant jet. Stroke volume is the product of the LVOT area and the LVOT VTI. RV systolic pressure is the pressure difference calculated from the peak TR velocity with the simplified Bernoulli equation plus the RA pressure estimated from the IVC.</p>
       <div class="controls">
-        <div class="control">
-          <span class="label">View sets</span>
-          <div class="seg" role="group" aria-label="View sets" id="planes-sets">
-            <button type="button" data-set="nine">Nine views</button><button type="button" data-set="long">Parasternal long</button><button type="button" data-set="stack">Short-axis stack</button><button type="button" data-set="apical">Apical</button><button type="button" data-set="all">All</button><button type="button" data-set="none">Clear</button>
+        <div class="row2">
+          <div class="control">
+            <label for="sv">Stroke volume <output data-for="sv"></output></label>
+            <input type="range" id="sv" data-key="sv" min="20" max="120" step="1">
+          </div>
+          <div class="control">
+            <label for="lvotD">LVOT diameter <output data-for="lvotD"></output></label>
+            <input type="range" id="lvotD" data-key="lvotD" min="1.6" max="2.6" step="0.01">
+          </div>
+          <div class="control">
+            <label for="calErr">Caliper error <output data-for="calErr"></output></label>
+            <input type="range" id="calErr" data-key="calErr" min="-3" max="3" step="0.5">
+          </div>
+          <div class="control">
+            <label for="hr">Heart rate <output data-for="hr"></output></label>
+            <input type="range" id="hr" data-key="hr" min="40" max="140" step="1">
+          </div>
+          <div class="control">
+            <label for="trV">Peak TR velocity <output data-for="trV"></output></label>
+            <input type="range" id="trV" data-key="trV" min="1.5" max="5" step="0.05">
           </div>
         </div>
         <div class="control">
-          <span class="label">Views <output>click: add, focus, remove</output></span>
-          <div class="chips" id="planes-views"></div>
-        </div>
-        <div class="control">
-          <span class="label">Find a structure</span>
-          <div class="seg" role="group" aria-label="Structure" data-key="pstruct"><button type="button" data-val="none">None</button></div>
-        </div>
-        <div class="control">
-          <span class="label">Viewpoint</span>
-          <div class="seg" role="group" aria-label="Camera" data-key="pcam">
-            <button type="button" data-val="front">Front</button><button type="button" data-val="apex">Apex</button><button type="button" data-val="side">Side</button><button type="button" data-val="plane">En face</button>
-          </div>
-        </div>
-        <div class="toggles">
-          <label class="check"><input type="checkbox" data-key="pheart"> Heart</label>
-          <label class="check"><input type="checkbox" data-key="plines"> Intersections with the focused plane</label>
-          <label class="check"><input type="checkbox" data-key="pcut"> Cut at the focused plane</label>
-          <label class="check"><input type="checkbox" data-key="pfree"> Free plane</label>
-        </div>
-        <div class="free" id="planes-free" hidden>
-          <p class="free-head"><span>Free plane, from the focused view</span> <output id="pfree-state"></output></p>
-          <div class="row2">
-            <div class="control">
-              <label for="prot">Rotate, + clockwise <output data-for="prot"></output></label>
-              <input type="range" id="prot" data-key="prot" min="-180" max="180" step="1">
-            </div>
-            <div class="control">
-              <label for="ptilt">Tilt <output data-for="ptilt"></output></label>
-              <input type="range" id="ptilt" data-key="ptilt" min="-45" max="45" step="1">
-            </div>
-          </div>
-          <div class="row2">
-            <div class="control">
-              <label for="prock">Rock, + to the right <output data-for="prock"></output></label>
-              <input type="range" id="prock" data-key="prock" min="-40" max="40" step="1">
-            </div>
-            <div class="control">
-              <label for="pslide">Slide <output data-for="pslide"></output></label>
-              <input type="range" id="pslide" data-key="pslide" min="-5" max="5" step="0.1">
-            </div>
-          </div>
-          <div class="row2">
-            <div class="control">
-              <label for="psweep">Sweep <output data-for="psweep"></output></label>
-              <input type="range" id="psweep" data-key="psweep" min="-5" max="5" step="0.1">
-            </div>
-            <div class="control free-reset"><button type="button" class="chip" id="pfree-reset">Back to the focused view</button></div>
-          </div>
-          <div class="control free-goto">
-            <label for="pgoto">Go to a view</label>
-            <select id="pgoto"></select>
+          <span class="label"><span>RA pressure, from the IVC: <a href="#ivc" data-go="ivc">chapter 07</a></span></span>
+          <div class="seg" role="group" aria-label="RA pressure" data-key="rap">
+            <button type="button" data-val="3">3 mmHg</button><button type="button" data-val="8">8 mmHg</button><button type="button" data-val="15">15 mmHg</button>
           </div>
         </div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <div class="table-wrap"><table class="vt matrix" id="planes-matrix"></table></div>
       <div class="prose" data-part="prose">
-        <h3>Spatial relations of the views</h3>
+        <h3>Stroke volume</h3>
+        <p class="eq">SV = 0.785 × d² × VTI &nbsp;(d, VTI in cm; SV in mL)</p>
+        <p>The LV outflow tract is assumed to be circular, with diameter d<span class="cite" data-ref="zoghbi2017"></span>. The LVOT diameter is measured in a zoomed parasternal long-axis view from inner edge to inner edge in mid-systole<span class="cite" data-ref="baumgartner2017"></span>. The LVOT velocity is recorded with pulsed-wave Doppler from the apical five-chamber or apical long-axis view, with the sample volume just below the aortic valve<span class="cite" data-ref="mitchell2019"></span>. Both measurements should be made at the same level<span class="cite" data-ref="baumgartner2017"></span>.</p>
+        <p>Because the diameter is squared, a small error in its measurement produces a large error in the calculated stroke volume. Repeated LVOT diameter measurements vary by 5 to 8%, which is the largest source of error in the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. A 2 mm error in the diameter of a 2.0 cm outflow tract changes the calculated stroke volume by approximately 20%.</p>
+        <p>Normal resting values from catheterization studies are a stroke volume of 60 to 100 mL, a cardiac output of 4 to 8 L/min and a cardiac index of 2.5 to 4.0 L/min/m²<span class="cite" data-ref="humbert2022"></span>.</p>
+        <h3>Flow through an orifice</h3>
+        <p class="eq">flow rate = area × velocity &nbsp;·&nbsp; volume per beat = area × VTI</p>
+        <p>The flow rate through an orifice equals the area of the orifice multiplied by the velocity of the blood in it. The volume that passes in one beat equals the area multiplied by the VTI. The stroke volume above is this product for the LV outflow tract<span class="cite" data-ref="zoghbi2017"></span>. Two methods apply the same principle to the valves.</p>
         <ul>
-        <li><b>The apical planes intersect along the LV long axis.</b> The apical four-, two- and three-chamber planes all contain the long axis of the LV. According to the ASE guideline, the probe is rotated about 60° between these views<span class="cite" data-ref="mitchell2019"></span>; the angles of this model are given in the figure. Viewed from the apex, the three planes radiate from the long axis.</li>
-        <li><b>The short-axis planes are nearly parallel.</b> Tilting the probe moves the plane in steps from the mitral valve level to the papillary muscle level and the apex<span class="cite" data-ref="mitchell2019"></span>. Viewed from the side, the planes form a stack.</li>
-        <li><b>The long- and short-axis planes are perpendicular.</b> The parasternal short-axis view is obtained by a 90° rotation of the probe from the parasternal long-axis view<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Small tilts produce additional views.</b> From the parasternal long-axis view, a tilt toward the right hip produces the RV inflow view, and an anterior tilt produces the RV outflow view. From the apical four-chamber view, an anterior tilt brings the LVOT and the aortic valve into the plane<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Continuity equation.</b> The volume that passes through the LV outflow tract also passes through the aortic valve. The aortic valve area therefore equals the LVOT area multiplied by the LVOT VTI and divided by the aortic VTI<span class="cite" data-ref="baumgartner2017"></span>. <a href="#as" data-go="as">Chapter 12</a> calculates the valve area in this way.</li>
+        <li><b>Flow convergence (PISA).</b> Blood accelerates toward a regurgitant orifice in roughly hemispheric shells, with a higher velocity and a smaller area in each shell nearer the orifice<span class="cite" data-ref="zoghbi2017"></span>. Color Doppler shows the shell at the aliasing velocity (Va), where the color changes (<a href="#shift" data-go="shift">chapter 03</a>). The surface area of a hemisphere of radius r is 2πr², so the regurgitant flow rate is 2πr² × Va<span class="cite" data-ref="zoghbi2017"></span>. At the time of the peak jet velocity, the flow rate divided by the peak velocity from CW Doppler gives the effective regurgitant orifice area (EROA)<span class="cite" data-ref="zoghbi2017"></span>. The EROA multiplied by the VTI of the jet gives the regurgitant volume<span class="cite" data-ref="zoghbi2017"></span>. <a href="#mr" data-go="mr">Chapter 15</a> and <a href="#tr" data-go="tr">chapter 16</a> use this method.</li>
         </ul>
-        <h3>Free plane</h3>
-        <p>The <b>Free plane</b> controls move a plane away from the focused view in the same ways that a probe is moved: rotation about the beam, tilt of the beam across the plane, rock of the beam within the plane, slide of the probe along the plane and sweep of the probe across it. The echocardiographic image displays the section that this plane cuts from the heart, and the <b>En face</b> viewpoint turns the 3D heart so that the plane is viewed perpendicular to its surface. In this model, a rotation of 60° counterclockwise from the four-chamber view produces the two-chamber view, and a rotation of 120° produces the three-chamber view. A rotation of 90° clockwise from the parasternal long axis produces the short axis at the mitral valve level.</p>
-        <p>The probe remains in the acoustic window of the focused view, so the free plane is compared only with the standard views of that window. A plane from another window can cut the heart in almost the same section, as the apical and subcostal four-chamber planes do, but it constitutes a different view. The comparison uses the angle between the planes, with the orientation marker on the same side, and the distance of the view's center from the free plane. The same plane with the marker on the opposite side produces a mirror image, and the free-plane panel reports the reversed marker. Within 20° and 3 cm, the nearest view is marked; within 10° and 1.5 cm, the plane settles onto that view when the control is released.</p>
-        <p><b>Back to the focused view</b> returns the probe to the focused view in steps: slide and sweep first, then tilt and rock, and rotation last. Each step begins before the previous step ends, so the movement is continuous. <b>Go to a view</b> moves the free plane to any standard view. For a view in the same window, the selected view becomes the focused view; the control values are then recalculated relative to that view and return to zero. For a view in another window, the probe first returns to the focused view and then moves across the chest to the new window.</p>
-        <h3>Structures in each view</h3>
-        <p>The table lists the structures that the ASE guideline names for each displayed view<span class="cite" data-ref="mitchell2019"></span>. Selection of a structure highlights the views that contain it. The figure shows only the parent views, not their zoomed or LV-focused variants.</p>
-        <h3>Clinical relevance</h3>
-        <ul>
-        <li>A finding should be confirmed in two views that intersect it at different angles.</li>
-        <li>Some measurements combine two views of the same site; the LVOT diameter (zoomed parasternal long-axis view) and the LVOT velocity (apical five-chamber view) must be obtained at the same level<span class="cite" data-ref="baumgartner2017"></span>.</li>
-        <li>Each apical view shows two opposite walls of the LV, and together the three apical views include all 17 segments<span class="cite" data-ref="lang2015"></span>.</li>
-        </ul>
+        <h3>Pressure gradients and RV systolic pressure</h3>
+        <p class="eq">ΔP = 4 v² &nbsp;·&nbsp; RVSP = 4 × (peak TR velocity)² + RA pressure</p>
+        <p>The simplified Bernoulli equation calculates the pressure difference in mmHg from a velocity in m/s<span class="cite" data-ref="baumgartner2017"></span>. It is valid when the velocity proximal to the narrowing is 1.5 m/s or less<span class="cite" data-ref="quinones2002"></span>. The peak TR velocity gives the pressure difference between the RV and the RA, and the RA pressure estimated from the IVC is added to obtain the RV systolic pressure<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p>The IVC diameter and its collapse with a sniff give the RA pressure as one of three values: 3, 8 or 15 mmHg<span class="cite" data-ref="mukherjee2025"></span>. <a href="#ivc" data-go="ivc">Chapter 07</a> shows the measurement of the IVC and the pattern that gives each value.</p>
+        <p>A resting peak TR velocity of 2.9 m/s or more, or of 2.8 m/s or more with two other echocardiographic signs, suggests pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>The apical four-, two- and three-chamber planes are related by rotation about the LV long axis.</li>
-        <li>The parasternal short-axis planes are nearly parallel sections through the heart.</li>
-        <li>Each structure appears in several views and should be examined in at least two of them.</li>
+        <li>Stroke volume equals the LVOT area × the LVOT VTI, and an error in the LVOT diameter is squared in the calculation.</li>
+        <li>The simplified Bernoulli equation gives the pressure difference as ΔP = 4v².</li>
+        <li>RV systolic pressure equals 4 × (peak TR velocity)² plus the RA pressure estimated from the IVC.</li>
+        <li>The flow rate through an orifice equals its area × the velocity. The continuity equation and the PISA method both use this principle.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -639,7 +746,7 @@
 
     <!-- ======================================================== Function -->
     <article class="chapter" id="ch-eject">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">08</span><div><h2 class="ch-title">Eject</h2><p class="ch-kicker">Ventricular systolic function</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">09</span><div><h2 class="ch-title">Systolic function</h2><p class="ch-kicker">LVEF, strain and RV function</p></div></div>
       <p class="dek" data-part="dek">LVEF is the fraction of the end-diastolic volume that the LV ejects. It is measured from biplane LV volumes, and RV systolic function is assessed with separate measures.</p>
       <div class="controls">
         <div class="control">
@@ -719,7 +826,7 @@
     </article>
 
     <article class="chapter" id="ch-segments">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">09</span><div><h2 class="ch-title">Segments</h2><p class="ch-kicker">Regional wall motion</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">10</span><div><h2 class="ch-title">Regional wall motion</h2><p class="ch-kicker">The 17-segment model</p></div></div>
       <p class="dek" data-part="dek">In the standard model, the LV wall is divided into 17 segments. Each coronary artery usually supplies a specific set of segments, so the distribution of abnormal wall motion indicates the artery involved.</p>
       <div class="controls">
         <div class="control">
@@ -765,7 +872,7 @@
     </article>
 
     <article class="chapter" id="ch-fill">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">10</span><div><h2 class="ch-title">Fill</h2><p class="ch-kicker">LV diastolic function</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">11</span><div><h2 class="ch-title">Diastolic function</h2><p class="ch-kicker">Filling and LA pressure</p></div></div>
       <p class="dek" data-part="dek">LV diastolic function determines the LA pressure that is required to fill the LV. As LV relaxation slows and the LV then stiffens, the mitral inflow, the mitral annular velocities, the pulmonary venous flow and the LA change together. The 2025 ASE algorithm uses these measurements to classify the LA pressure as normal or raised and to grade diastolic dysfunction.</p>
       <div class="controls">
         <div class="control sev">
@@ -798,7 +905,7 @@
         </ul>
         <h3>The 2025 ASE algorithm in sinus rhythm</h3>
         <ol class="steps">
-        <li><b>Step 1</b> assesses three variables: reduced e′ (septal ≤6, lateral ≤7 or average ≤6.5 cm/s); raised E/e′ (septal ≥15, lateral ≥13 or average ≥14); and a peak TR velocity ≥2.8 m/s, or a PA systolic pressure ≥35 mmHg when the RA pressure is known<span class="cite" data-ref="nagueh2025"></span>. <a href="#ivc" data-go="ivc">Chapter 18</a> estimates the RA pressure from the IVC.</li>
+        <li><b>Step 1</b> assesses three variables: reduced e′ (septal ≤6, lateral ≤7 or average ≤6.5 cm/s); raised E/e′ (septal ≥15, lateral ≥13 or average ≥14); and a peak TR velocity ≥2.8 m/s, or a PA systolic pressure ≥35 mmHg when the RA pressure is known<span class="cite" data-ref="nagueh2025"></span>. <a href="#ivc" data-go="ivc">Chapter 07</a> estimates the RA pressure from the IVC.</li>
         <li><b>Step 2</b> depends on which step 1 variables are abnormal. If all three are normal, the LA pressure and diastolic function are normal. If reduced e′ alone is abnormal and E/A is ≤0.8, the LA pressure is normal, with grade 1 diastolic dysfunction. In a symptomatic patient with a normal LA pressure at rest, diastolic exercise echocardiography is recommended. If all three are abnormal, the LA pressure is raised. Reduced e′ alone with E/A &gt;0.8, raised E/e′ alone, a raised peak TR velocity alone and any two abnormal variables require step 3<span class="cite" data-ref="nagueh2025"></span>.</li>
         <li><b>Step 3</b> assesses the pulmonary vein S/D ratio (≤0.67), LA reservoir strain (≤18%) and the LA volume index (&gt;34 mL/m²). Figure 3 lists IVRT ≤70 ms as an alternative variable. One or more abnormal variables indicate a raised LA pressure. If none is abnormal, the LA pressure is normal, and the algorithm assigns no grade<span class="cite" data-ref="nagueh2025"></span>.</li>
         <li>In <b>step 4</b>, E/A grades a raised LA pressure: E/A &lt;2 indicates grade 2 and E/A ≥2 indicates grade 3 diastolic dysfunction<span class="cite" data-ref="nagueh2025"></span>.</li>
@@ -821,7 +928,7 @@
 
     <!-- ======================================================== Valves -->
     <article class="chapter" id="ch-as">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">11</span><div><h2 class="ch-title">Aortic stenosis</h2><p class="ch-kicker">LV pressure load</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">12</span><div><h2 class="ch-title">Aortic stenosis</h2><p class="ch-kicker">LV pressure load</p></div></div>
       <p class="dek" data-part="dek">In calcific aortic stenosis, the valve orifice narrows, the transvalvular jet velocity increases and the LV wall thickens in response to the pressure load. In the late stage, LV systolic dysfunction reduces the stroke volume, and the transvalvular gradient decreases with it.</p>
       <div class="controls">
         <div class="control sev">
@@ -848,7 +955,7 @@
         <p>The ACC/AHA stages also require the symptom status: patients in stage C have no symptoms, and patients in stage D have symptoms<span class="cite" data-ref="otto2020"></span>. The figure and the diagram model the echocardiographic findings only, and the diagram names the echocardiographic pattern, not the stage.</p>
         <h3>Grading</h3>
         <p class="eq">AVA = LVOT area × VTI(LVOT) ÷ VTI(AV) &nbsp;·&nbsp; ΔP = 4v² &nbsp;·&nbsp; mean gradient = mean of 4v² over ejection</p>
-        <p>Chapter <a href="#pressure" data-go="pressure">04 Pressure</a> describes the stroke volume from the LVOT and the simplified Bernoulli equation. The stroke volume that crosses the LVOT also crosses the valve. The valve area therefore equals the LVOT area × the LVOT VTI ÷ the AV VTI, the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. The diagram grades each criterion by Table 3 of the EACVI/ASE recommendations<span class="cite" data-ref="baumgartner2017"></span>. Table 3 grades a peak velocity of 2.5 m/s or less as aortic sclerosis without stenosis<span class="cite" data-ref="baumgartner2017"></span>. The ACC/AHA progressive stage starts at 2.0 m/s<span class="cite" data-ref="otto2020"></span>.</p>
+        <p>Chapter <a href="#pressure" data-go="pressure">08 Doppler hemodynamics</a> describes the stroke volume from the LVOT and the simplified Bernoulli equation. The stroke volume that crosses the LVOT also crosses the valve. The valve area therefore equals the LVOT area × the LVOT VTI ÷ the AV VTI, the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. The diagram grades each criterion by Table 3 of the EACVI/ASE recommendations<span class="cite" data-ref="baumgartner2017"></span>. Table 3 grades a peak velocity of 2.5 m/s or less as aortic sclerosis without stenosis<span class="cite" data-ref="baumgartner2017"></span>. The ACC/AHA progressive stage starts at 2.0 m/s<span class="cite" data-ref="otto2020"></span>.</p>
         <ul>
         <li>The highest jet velocity should be recorded with continuous-wave (CW) Doppler from several acoustic windows, and the window that gives it should be reported; angle correction should not be used<span class="cite" data-ref="baumgartner2017"></span>.</li>
         <li>The peak gradient is 4 × (peak velocity)². The mean gradient is the average of the instantaneous gradients over ejection, from the traced CW envelope<span class="cite" data-ref="baumgartner2017"></span>.</li>
@@ -876,7 +983,7 @@
     </article>
 
     <article class="chapter" id="ch-ar">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">12</span><div><h2 class="ch-title">Aortic regurgitation</h2><p class="ch-kicker">LV volume and pressure load</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">13</span><div><h2 class="ch-title">Aortic regurgitation</h2><p class="ch-kicker">LV volume and pressure load</p></div></div>
       <p class="dek" data-part="dek">In aortic regurgitation, blood flows back from the aorta through the incompetent aortic valve into the LV during diastole. The LV receives blood from both the LA and the aorta, dilates and ejects a large stroke volume. In the late stage, LV systolic dysfunction develops.</p>
       <div class="controls">
         <div class="control sev">
@@ -917,7 +1024,7 @@
     </article>
 
     <article class="chapter" id="ch-ms">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">13</span><div><h2 class="ch-title">Mitral stenosis</h2><p class="ch-kicker">LV inflow obstruction</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">14</span><div><h2 class="ch-title">Mitral stenosis</h2><p class="ch-kicker">LV inflow obstruction</p></div></div>
       <p class="dek" data-part="dek">In rheumatic mitral stenosis, the commissures fuse and the leaflets dome in diastole. As the mitral orifice narrows, LA pressure increases, the LA enlarges and pulmonary artery pressure rises, with secondary involvement of the right heart.</p>
       <div class="controls">
         <div class="control sev">
@@ -943,7 +1050,7 @@
         <li>In <b>severe stenosis</b>, the valve area is ≤1.5 cm² and the pressure half-time is ≥150 ms; LA enlargement is severe, and the PA systolic pressure is above 50 mmHg<span class="cite" data-ref="otto2020"></span>.</li>
         </ol>
         <p>The ASE divides progressive stenosis into mild stenosis (valve area &gt;2.5 cm², pressure half-time &lt;100 ms, mean gradient &lt;5 mmHg, PA systolic pressure &lt;30 mmHg) and moderate stenosis (valve area 2.5–1.6 cm², pressure half-time 100–149 ms, mean gradient 5–9 mmHg, PA systolic pressure 30–49 mmHg)<span class="cite" data-ref="pandian2023"></span>.</p>
-        <p>Without pulmonary stenosis or RV outflow obstruction, the PA systolic pressure equals the RV systolic pressure<span class="cite" data-ref="mukherjee2025"></span>: 4 × (peak TR velocity)² plus the RA pressure (<a href="#pressure" data-go="pressure">chapter 04</a>). The figure adds an RA pressure of 3 mmHg, and 8 mmHg in severe stenosis. In a patient, the IVC gives this estimate (<a href="#ivc" data-go="ivc">chapter 18</a>).</p>
+        <p>Without pulmonary stenosis or RV outflow obstruction, the PA systolic pressure equals the RV systolic pressure<span class="cite" data-ref="mukherjee2025"></span>: 4 × (peak TR velocity)² plus the RA pressure (<a href="#pressure" data-go="pressure">chapter 08</a>). The figure adds an RA pressure of 3 mmHg, and 8 mmHg in severe stenosis. In a patient, the IVC gives this estimate (<a href="#ivc" data-go="ivc">chapter 07</a>).</p>
         <h3>Measurement of valve area and gradient</h3>
         <p class="eq">MVA = 220 ÷ pressure half-time</p>
         <ul>
@@ -962,7 +1069,7 @@
     </article>
 
     <article class="chapter" id="ch-mr">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">14</span><div><h2 class="ch-title">Mitral regurgitation</h2><p class="ch-kicker">Left heart volume overload</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">15</span><div><h2 class="ch-title">Mitral regurgitation</h2><p class="ch-kicker">Left heart volume overload</p></div></div>
       <p class="dek" data-part="dek">In mitral regurgitation, part of the LV stroke volume flows back into the LA through the incompetent mitral valve during systole. The LV and LA dilate to accommodate the additional volume, and LV systolic dysfunction develops late in the course.</p>
       <div class="controls">
         <div class="control sev">
@@ -993,7 +1100,7 @@
         </ol>
         <h3>PISA method</h3>
         <p class="eq">flow = 2π r² × Va &nbsp;·&nbsp; EROA = flow ÷ peak velocity &nbsp;·&nbsp; RVol = EROA × VTI</p>
-        <p>Blood accelerates as it converges on the regurgitant orifice; at the aliasing velocity (Va), the color changes, and the isovelocity surface at Va is a hemisphere of radius r<span class="cite" data-ref="zoghbi2017"></span>. The color baseline should be shifted toward the jet to lower Va to about 30 to 40 cm/s, and the radius should be measured at the time of the peak jet velocity<span class="cite" data-ref="zoghbi2017"></span>. At this setting, a radius of 1.0 cm or more is specific for severe MR<span class="cite" data-ref="zoghbi2017"></span>. The method applies the principle of <a href="#pressure" data-go="pressure">chapter 04</a>: the flow rate through a surface equals its area × the velocity.</p>
+        <p>Blood accelerates as it converges on the regurgitant orifice; at the aliasing velocity (Va), the color changes, and the isovelocity surface at Va is a hemisphere of radius r<span class="cite" data-ref="zoghbi2017"></span>. The color baseline should be shifted toward the jet to lower Va to about 30 to 40 cm/s, and the radius should be measured at the time of the peak jet velocity<span class="cite" data-ref="zoghbi2017"></span>. At this setting, a radius of 1.0 cm or more is specific for severe MR<span class="cite" data-ref="zoghbi2017"></span>. The method applies the principle of <a href="#pressure" data-go="pressure">chapter 08</a>: the flow rate through a surface equals its area × the velocity.</p>
         <p>The figure applies the method in four steps:</p>
         <ol class="steps">
         <li>The color scale is set so that the flow aliases at 32 cm/s. In a study, the view is zoomed on the mitral valve, and the color baseline is shifted toward the jet.</li>
@@ -1024,7 +1131,7 @@
     </article>
 
     <article class="chapter" id="ch-tr">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">15</span><div><h2 class="ch-title">Tricuspid regurgitation</h2><p class="ch-kicker">Right heart volume overload</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">16</span><div><h2 class="ch-title">Tricuspid regurgitation</h2><p class="ch-kicker">Right heart volume overload</p></div></div>
       <p class="dek" data-part="dek">Tricuspid regurgitation imposes a volume overload on the right heart. The RV, the tricuspid annulus and the RA dilate, and the systemic veins distend. In torrential regurgitation, the jet velocity falls because the RV and RA pressures approach each other.</p>
       <div class="controls">
         <div class="control sev">
@@ -1061,7 +1168,7 @@
         <li>The regurgitant volume threshold for severe TR (45 mL) is lower than that for severe MR (60 mL) at the same EROA, because the TR velocity is lower<span class="cite" data-ref="zoghbi2017"></span>.</li>
         <li>The figure shows the flow convergence at an aliasing velocity of 28 cm/s. Its color jet area is the value at a scale of 50 to 70 cm/s, at which the jet area criterion is defined<span class="cite" data-ref="zoghbi2017"></span>. The flow rate 2πr² × 28 cm/s equals the EROA × the peak TR velocity. Because the velocity falls as the regurgitation increases, the PISA radius stays at 0.9 cm or less up to an EROA of 0.80 cm².</li>
         <li>At the time of left-sided valve surgery, tricuspid repair is reasonable when the tricuspid annulus measures more than 4.0 cm in diastole, even with less than severe TR<span class="cite" data-ref="otto2020"></span>.</li>
-        <li>In severe TR, the IVC can pulse more than the aorta, so pulsation alone does not distinguish the two vessels<span class="cite" data-ref="assavapokee2024"></span>. <a href="#ivc" data-go="ivc">Chapter 18</a> shows the recording of the IVC and the hepatic veins, and the RA pressure from the IVC.</li>
+        <li>In severe TR, the IVC can pulse more than the aorta, so pulsation alone does not distinguish the two vessels<span class="cite" data-ref="assavapokee2024"></span>. <a href="#ivc" data-go="ivc">Chapter 07</a> shows the recording of the IVC and the hepatic veins, and the RA pressure from the IVC.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
@@ -1075,7 +1182,7 @@
 
     <!-- ======================================================== Pericardium -->
     <article class="chapter" id="ch-peri">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">16</span><div><h2 class="ch-title">Pericardium</h2><p class="ch-kicker">Pericardial effusion and tamponade</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Pericardial effusion</h2><p class="ch-kicker">Effusion size and tamponade</p></div></div>
       <p class="dek" data-part="dek">A pericardial effusion appears on echocardiography as an echo-free space around the heart. As the fluid accumulates, the pressure in the pericardial sac rises; when it reaches the pressure in the right heart, the cardiac chambers cannot fill normally, a condition termed tamponade.</p>
       <div class="controls">
         <div class="control sev">
@@ -1105,9 +1212,9 @@
         <li><b>Right atrium.</b> The RA wall inverts near the peak of the R wave and remains inverted until atrial filling during ventricular systole raises the atrial pressure<span class="cite" data-ref="klein2013"></span>. RA collapse for more than one third of the cardiac cycle is nearly 100% sensitive and specific for tamponade<span class="cite" data-ref="klein2013"></span>. In the original study, an RA collapse time of more than 0.34 of the cardiac cycle had a sensitivity of 94% and a specificity of 100%<span class="cite" data-ref="gillam1983"></span>.</li>
         <li><b>Right ventricle.</b> The RV free wall collapses in early diastole, after the T wave<span class="cite" data-ref="klein2013"></span>. RV diastolic collapse occurs when the cardiac output has decreased by about 20% but the systemic blood pressure has not fallen<span class="cite" data-ref="klein2013"></span>.</li>
         <li><b>Left atrium.</b> LA collapse also occurs in about one quarter of patients with tamponade and is a highly specific sign<span class="cite" data-ref="spodick2003"></span>.</li>
-        <li><b>IVC.</b> The IVC is wider than 2.1 cm and collapses by less than 50% with inspiration. This finding is present in more than 90% of patients with tamponade, but many other cardiac diseases also cause it<span class="cite" data-ref="klein2013"></span>. The ESC 2025 guideline uses an IVC diameter cut-off of 20 mm, which has a sensitivity of 97% and a specificity of 40%<span class="cite" data-ref="schulzmenger2025"></span>. <a href="#ivc" data-go="ivc">Chapter 18</a> shows the measurement of the IVC and the RA pressure that it gives.</li>
+        <li><b>IVC.</b> The IVC is wider than 2.1 cm and collapses by less than 50% with inspiration. This finding is present in more than 90% of patients with tamponade, but many other cardiac diseases also cause it<span class="cite" data-ref="klein2013"></span>. The ESC 2025 guideline uses an IVC diameter cut-off of 20 mm, which has a sensitivity of 97% and a specificity of 40%<span class="cite" data-ref="schulzmenger2025"></span>. <a href="#ivc" data-go="ivc">Chapter 07</a> shows the measurement of the IVC and the RA pressure that it gives.</li>
         <li><b>Respiratory variation of inflow.</b> With inspiration, the mitral E velocity falls by more than 25–30% and the tricuspid E velocity increases by more than 40–60%<span class="cite" data-ref="schulzmenger2025"></span>. The RV enlarges and the LV becomes smaller during inspiration, and the reverse occurs during expiration<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>Hepatic veins.</b> Diastolic forward flow in the hepatic veins decreases or reverses on the first beat of expiration<span class="cite" data-ref="klein2013"></span>. When the IVC is difficult to assess, dilated hepatic veins confirm a raised systemic venous pressure<span class="cite" data-ref="klein2013"></span>. <a href="#ivc" data-go="ivc">Chapter 18</a> shows the normal hepatic vein waves.</li>
+        <li><b>Hepatic veins.</b> Diastolic forward flow in the hepatic veins decreases or reverses on the first beat of expiration<span class="cite" data-ref="klein2013"></span>. When the IVC is difficult to assess, dilated hepatic veins confirm a raised systemic venous pressure<span class="cite" data-ref="klein2013"></span>. <a href="#ivc" data-go="ivc">Chapter 07</a> shows the normal hepatic vein waves.</li>
         </ul>
         <h3>Pitfalls</h3>
         <ul>
@@ -1130,7 +1237,7 @@
 
     <!-- ======================================================== Cardiomyopathy -->
     <article class="chapter" id="ch-amyloid">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Cardiac amyloidosis</h2><p class="ch-kicker">Echocardiographic signs</p></div></div>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Cardiac amyloidosis</h2><p class="ch-kicker">Echocardiographic signs</p></div></div>
       <p class="dek" data-part="dek">In cardiac amyloidosis, amyloid fibrils accumulate between the myocardial cells. The LV walls thicken around a small cavity, LV filling becomes restrictive, and the base loses longitudinal shortening before the apex. These echocardiographic findings raise the suspicion of cardiac amyloidosis.</p>
       <div class="controls">
         <div class="control sev">
@@ -1170,7 +1277,7 @@
         <li>A multicenter study found apical sparing in 32% of patients in whom amyloidosis was suspected and then excluded, and in 6% of healthy individuals<span class="cite" data-ref="cotella2024"></span>.</li>
         <li>The base-to-apex strain gradient corresponds to the total amyloid mass in each region, which is largest at the base<span class="cite" data-ref="bravo2019"></span>.</li>
         <li>An EF ÷ |GLS| ratio of more than 4.1 distinguished amyloidosis from other causes of increased LV wall thickness with a sensitivity of 89.7% and a specificity of 91.7%<span class="cite" data-ref="pagourelias2017"></span>. A normal EF can mask impaired long-axis function.</li>
-        <li>GLS is normal when more negative than −18% and abnormal when less negative than −16%<span class="cite" data-ref="thomas2025"></span> (<a href="#eject" data-go="eject">chapter 08</a>). The ESC criteria use a stricter cut-off: an absolute GLS below 15%<span class="cite" data-ref="esc2021"></span>.</li>
+        <li>GLS is normal when more negative than −18% and abnormal when less negative than −16%<span class="cite" data-ref="thomas2025"></span> (<a href="#eject" data-go="eject">chapter 09</a>). The ESC criteria use a stricter cut-off: an absolute GLS below 15%<span class="cite" data-ref="esc2021"></span>.</li>
         </ul>
         <h3>ESC 2021 echocardiographic criteria</h3>
         <p>The criteria require an unexplained LV wall thickness of 12 mm or more together with either two of the three findings in the first table or a score of 8 or more in the second table<span class="cite" data-ref="esc2021"></span>. The score assigns points for a thick wall around a small cavity, a high E/e′, a low TAPSE, a low GLS and relative sparing of the apical septum<span class="cite" data-ref="boldrini2020"></span>. The criteria raise the suspicion of cardiac amyloidosis. In the ESC diagnostic pathways, they are used together with other tests<span class="cite" data-ref="esc2021"></span>.</p>
@@ -1189,114 +1296,7 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== Report (hidden: SHOW_REPORT in src/chapters.js) -->
-    <!-- ======================================================== Right heart -->
-    <article class="chapter" id="ch-ivc">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Inferior vena cava</h2><p class="ch-kicker">RA pressure and hepatic veins</p></div></div>
-      <p class="dek" data-part="dek">The inferior vena cava (IVC) drains into the right atrium. Its diameter at end-expiration and its collapse with a sniff give an estimate of the RA pressure. The RV systolic pressure uses this estimate, and every report states it. Hepatic vein flow adds to the estimate. The abdominal aorta lies next to the IVC. Its position, wall, branches and Doppler signal distinguish it from the IVC.</p>
-      <div class="controls">
-        <div class="control">
-          <span class="label">Breathing</span>
-          <div class="seg" role="group" aria-label="Breathing" data-key="ivcBreath">
-            <button type="button" data-val="quiet">Quiet</button><button type="button" data-val="sniff">Sniff</button><button type="button" data-val="ppv">Ventilation</button>
-          </div>
-        </div>
-        <div class="control">
-          <span class="label">Tricuspid regurgitation</span>
-          <div class="seg" role="group" aria-label="Tricuspid regurgitation" data-key="ivcTR">
-            <button type="button" data-val="none">None</button><button type="button" data-val="severe">Severe</button>
-          </div>
-        </div>
-      </div>
-      <dl class="readouts"></dl>
-      <p class="live"></p>
-      <section class="ase" id="ivc-ase" aria-label="2025 ASE estimate of the RA pressure from the IVC"></section>
-      <div class="prose" data-part="prose">
-        <h3>Imaging the IVC</h3>
-        <ol class="steps">
-        <li><b>Window.</b> The subcostal window shows the IVC, with the patient supine<span class="cite" data-ref="mitchell2019"></span>. Bent knees relax the abdominal muscles<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Long axis.</b> From the subcostal four-chamber view, the probe turns about 90° counterclockwise and points toward the liver. The IVC then runs through the liver for several centimeters into the RA<span class="cite" data-ref="mitchell2019"></span>. A clip records a full respiratory cycle<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Site.</b> The caliper crosses the IVC perpendicular to its long axis<span class="cite" data-ref="rudski2010"></span>, 1 to 2 cm from its junction with the RA<span class="cite" data-ref="mitchell2019"></span>. The 2025 guideline gives 0.5 to 3.0 cm from the RA ostium<span class="cite" data-ref="mukherjee2025"></span>. A review places the site about 1 cm below the junction of the hepatic vein<span class="cite" data-ref="assavapokee2024"></span>.</li>
-        <li><b>End-expiration.</b> The measurement uses end-expiration, where the diameter is usually largest<span class="cite" data-ref="mukherjee2025,mitchell2019"></span>.</li>
-        <li><b>Sniff.</b> A sniff is a rapid inspiration. It changes the intrathoracic pressure more than quiet breathing does. A second recording follows the IVC through the sniff<span class="cite" data-ref="mitchell2019"></span>. The collapse is the fall in diameter, as a percentage of the expiratory diameter<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>M-mode.</b> M-mode measures the diameter and its change with breathing more accurately than 2D imaging, because its temporal resolution is higher<span class="cite" data-ref="mukherjee2025"></span>. The M-mode line must cross the IVC at a right angle. An oblique line overestimates the diameter<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Short axis.</b> A short-axis view shows whether the long-axis plane passes through the center of the IVC, where the diameter is largest<span class="cite" data-ref="mitchell2019"></span>. During a sniff, it also shows whether the IVC moves out of the plane<span class="cite" data-ref="mitchell2019"></span>.</li>
-        </ol>
-        <h3>RA pressure from the IVC</h3>
-        <p>When the RA pressure rises, the IVC dilates, and its collapse with inspiration decreases<span class="cite" data-ref="rudski2010"></span>. The 2025 ASE guideline gives the RA pressure as one of three values<span class="cite" data-ref="mukherjee2025"></span>:</p>
-        <ul>
-        <li><b>3 mmHg</b> (range 0–5): IVC ≤2.1 cm with ≥50% collapse.</li>
-        <li><b>8 mmHg</b> (range 5–10): IVC ≤2.1 cm with &lt;50% collapse, or IVC &gt;2.1 cm with ≥50% collapse.</li>
-        <li><b>15 mmHg</b> (range 10–20): IVC &gt;2.1 cm with &lt;50% collapse<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        </ul>
-        <p>The two mixed patterns are indeterminate. Secondary signs of a raised RA pressure then decide the value<span class="cite" data-ref="mukherjee2025"></span>:</p>
-        <ul>
-        <li>RA enlargement</li>
-        <li>an atrial septum that bulges into the LA throughout the cardiac cycle</li>
-        <li>a restrictive right-sided diastolic filling pattern</li>
-        <li>a tricuspid E/e′ ratio &gt;6</li>
-        <li>diastolic predominance in the hepatic veins, a systolic filling fraction &lt;55%<span class="cite" data-ref="mukherjee2025"></span></li>
-        </ul>
-        <p>With none of these signs, the estimate falls to 3 mmHg. With signs present, it rises to 15 mmHg. If uncertainty remains, the estimate is 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</p>
-        <p>A value of 20 mmHg can be considered when the IVC is wider than 2.5 cm and collapses less than 50%, with dilated hepatic veins. Spontaneous echo contrast or color-flow reflux in the vessel supports this value. The pattern suggests a markedly raised RA pressure, severe TR or impaired venous return<span class="cite" data-ref="mukherjee2025"></span>. A small, collapsed IVC suggests an RA pressure below 3 mmHg, as in hypovolemia<span class="cite" data-ref="mukherjee2025"></span>.</p>
-        <p>When the patient cannot sniff, the collapse with quiet breathing replaces the sniff, with a cut-off of 20%. A normal IVC gives 3 mmHg with ≥20% collapse and 8 mmHg with less. A dilated IVC gives 8 and 15 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</p>
-        <p>The report should give the RA pressure as a single value, not as a range<span class="cite" data-ref="mukherjee2025"></span>. It should always state the estimate, as “unable to assess” when the images do not allow it<span class="cite" data-ref="taub2025"></span>.</p>
-        <h3>Uses of the estimate</h3>
-        <ul>
-        <li>The RV systolic pressure equals 4 × (peak TR velocity)² plus the RA pressure<span class="cite" data-ref="mukherjee2025"></span>. <a href="#pressure" data-go="pressure">Chapter 04</a> adds the RA pressure to the TR gradient.</li>
-        <li>A peak TR velocity ≥2.8 m/s with at least two other signs suggests pulmonary hypertension. An IVC wider than 2.1 cm is one of these signs<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        <li>With an RA pressure estimate, the 2025 diastolic algorithm uses a PA systolic pressure ≥35 mmHg in place of the peak TR velocity<span class="cite" data-ref="nagueh2025"></span> (<a href="#fill" data-go="fill">chapter 10</a>).</li>
-        <li>In tamponade, the IVC is dilated (&gt;2.1 cm) and collapses by less than 50% with inspiration<span class="cite" data-ref="klein2013"></span> (<a href="#peri" data-go="peri">chapter 16</a>).</li>
-        </ul>
-        <h3>Hepatic veins</h3>
-        <p>The hepatic veins drain into the IVC, and the subcostal window shows them<span class="cite" data-ref="mitchell2019"></span>. Color Doppler often shows the middle hepatic vein, which usually lies at the best Doppler angle<span class="cite" data-ref="mitchell2019"></span>. For PW Doppler, a 3–5 mm sample volume sits about 1 to 2 cm from the junction with the IVC. The recording covers a whole respiratory cycle. The peak S and D velocities should come from end-expiration<span class="cite" data-ref="mitchell2019"></span>. From the subcostal window, forward flow toward the RA moves away from the probe and shows below the baseline<span class="cite" data-ref="quinones2002"></span>.</p>
-        <ul>
-        <li><b>Waves.</b> S is forward flow into the IVC in systole, and D is forward flow in early diastole. A is a reversal with atrial contraction. Some patients have a brief reversal after S<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Normal.</b> S is larger than D<span class="cite" data-ref="mukherjee2025"></span>. Both S and D increase with inspiration<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>Raised RA pressure.</b> The systolic predominance is lost, and S/D falls below 1. A systolic filling fraction, S/(S + D), below 55% is a sensitive and specific sign of a raised RA pressure<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        <li><b>Tricuspid regurgitation.</b> With increasing TR, S becomes blunted, and in severe TR it reverses<span class="cite" data-ref="zoghbi2017"></span>. Systolic reversal is specific for severe TR. Atrial fibrillation, pacing, heart block, respiration, preload and RA or RV compliance also change the pattern, and the interpretation must consider them<span class="cite" data-ref="zoghbi2017"></span>. <a href="#tr" data-go="tr">Chapter 15</a> follows these changes from mild to torrential TR.</li>
-        <li><b>Positive-pressure ventilation.</b> The hepatic vein velocities stay valid when they are averaged over at least five beats and one respiratory cycle<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        <li><b>Report.</b> The report should name an abnormal hepatic vein pattern when it is relevant: in pericardial disease, volume assessment or tricuspid valve disease<span class="cite" data-ref="taub2025"></span>.</li>
-        </ul>
-        <h3>IVC or aorta</h3>
-        <p>From the IVC view, the probe angles and slides slightly to the patient’s left, and the abdominal aorta shows in long axis<span class="cite" data-ref="mitchell2019"></span>. <a href="#windows" data-go="windows">Chapter 07</a> cuts both subcostal views from the heart model. The two vessels differ in seven features:</p>
-        <ul>
-        <li><b>Side.</b> The IVC runs on the right side of the spine<span class="cite" data-ref="tucker2023"></span>. It lies within the liver. The aorta lies in the midline, to the left of the IVC and apart from the liver<span class="cite" data-ref="assavapokee2024"></span>.</li>
-        <li><b>Course.</b> In the subcostal view, the aorta usually runs more vertically than the IVC<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Wall.</b> The IVC is a thin-walled vessel<span class="cite" data-ref="tucker2023"></span>. The aorta has a thicker, pulsatile wall<span class="cite" data-ref="marin2016"></span>.</li>
-        <li><b>Breathing.</b> The aorta does not change with respiration, and this helps to distinguish it from the IVC<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Pulsation.</b> Pulsation alone does not identify the aorta. In hyperdynamic states and in TR, the IVC can pulse more than the aorta<span class="cite" data-ref="assavapokee2024"></span>.</li>
-        <li><b>Connections.</b> The IVC opens into the RA, and the hepatic veins drain into it<span class="cite" data-ref="assavapokee2024"></span>. The celiac trunk and the superior mesenteric artery (SMA) arise from the front of the aorta, outside the liver<span class="cite" data-ref="assavapokee2024"></span>.</li>
-        <li><b>Doppler.</b> The two vessels have different PW Doppler patterns<span class="cite" data-ref="marin2016"></span>. In the subcostal view, color and PW Doppler show aortic flow moving upward and to the left in the sector<span class="cite" data-ref="mitchell2019"></span>. Hepatic vein flow has S, D and A waves, and its forward flow shows below the baseline<span class="cite" data-ref="mitchell2019,quinones2002"></span>.</li>
-        </ul>
-        <h3>Pitfalls</h3>
-        <ul>
-        <li><b>Positive-pressure ventilation.</b> The collapse of the IVC does not estimate the RA pressure. If the RA pressure is clinically relevant, an invasive measurement should replace the estimate. Secondary signs can show whether it is normal or raised. If uncertainty remains, the estimate is 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        <li><b>A small IVC under ventilation.</b> In 49 patients on positive-pressure ventilation, an IVC of 12 mm or less predicted an RA pressure of 10 mmHg or less in every case. The sensitivity was 25%, and a larger IVC did not predict the RA pressure<span class="cite" data-ref="jue1992"></span>. The 2010 guideline gives the same 12 mm<span class="cite" data-ref="rudski2010"></span>. The 2025 guideline quotes 2.1 cm for this finding<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        <li><b>Athletes, young adults and pregnancy.</b> A dilated IVC can be normal in healthy young adults and in athletes. It is also common in pregnancy, because the blood volume increases. Other signs of a raised filling pressure and the clinical findings then decide<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        <li><b>No sniff.</b> When the patient cannot sniff, quiet breathing replaces the sniff, with a cut-off of 20%<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        <li><b>Off-axis cut.</b> A long-axis plane beside the center of the IVC shows less than its full diameter. A short-axis view confirms that the plane passes through the center<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Translation.</b> A change in diameter with breathing can result from movement of the IVC into another imaging plane<span class="cite" data-ref="mukherjee2025"></span>. A short-axis view during the sniff shows this movement<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Raised intra-abdominal pressure.</b> It can collapse the IVC despite a raised RA pressure<span class="cite" data-ref="assavapokee2024"></span>.</li>
-        <li><b>Oblique M-mode line.</b> An M-mode line that does not cross the IVC at a right angle overestimates the diameter<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Severe TR.</b> An IVC wider than 2.5 cm with &lt;50% collapse, dilated hepatic veins and reflux can result from severe TR<span class="cite" data-ref="mukherjee2025"></span>. Hepatic vein flow reverses in systole<span class="cite" data-ref="zoghbi2017"></span>. The IVC can then pulse more than the aorta<span class="cite" data-ref="assavapokee2024"></span>. A triangular TR signal from early equalization of the RV and RA pressures underestimates the RV–RA gradient<span class="cite" data-ref="mukherjee2025"></span>.</li>
-        </ul>
-        <h3>The interactive figure</h3>
-        <p>The subcostal long axis shows the IVC through the liver into the RA, with a hepatic vein that joins it 0.9 cm from the RA. The caliper sits 1.8 cm from the RA, square to the long axis, on the M-mode line. The M-mode shows two quiet breaths and a sniff, quiet breathing alone, or ventilation without collapse. The hepatic veins follow the RA pressure and reverse in severe TR. The values are illustrative and do not come from a patient.</p>
-        <h3>Key points</h3>
-        <ol class="steps">
-        <li>The IVC caliper sits perpendicular to the long axis, 1 to 2 cm from the RA, at end-expiration. A sniff tests the collapse.</li>
-        <li>An IVC ≤2.1 cm with ≥50% collapse gives an RA pressure of 3 mmHg. An IVC &gt;2.1 cm with &lt;50% collapse gives 15 mmHg.</li>
-        <li>The mixed patterns give 8 mmHg. Secondary signs can lower it to 3 mmHg or raise it to 15 mmHg.</li>
-        <li>Under positive-pressure ventilation, the collapse of the IVC does not estimate the RA pressure.</li>
-        <li>A raised RA pressure lowers the hepatic vein S/D below 1, and severe TR reverses systolic flow.</li>
-        <li>The aorta lies to the left of the IVC and outside the liver. It has a thicker wall and anterior branches, and it does not change with breathing.</li>
-        </ol>
-        <p class="note">Related chapters: <a href="#pressure" data-go="pressure">04 Pressure</a> · <a href="#windows" data-go="windows">07 Views</a> · <a href="#tr" data-go="tr">15 Tricuspid regurgitation</a> · <a href="#peri" data-go="peri">16 Pericardium</a></p>
-      </div>
-      <div class="quiz"></div>
-    </article>
-
+    <!-- ======================================================== Report (hidden: SHOW_REPORT in src/order.js) -->
     <article class="chapter" id="ch-report" hidden>
       <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">Standardized echocardiography reporting</p></div></div>
       <p class="dek" data-part="dek">The standardized echocardiography report presents the findings of a study in a fixed order, so that the referring clinician can decide the next step. The summary statement is placed first. The findings for each structure follow, with structure described before function, and every measured value is classified as normal or abnormal.</p>

@@ -1,16 +1,16 @@
-// "Echo views": a video of the key echo views of chapter 07 (Views) of The Heart by Ultrasound.
+// "Echo views": a video of the key echo views of the chapter Views of The Heart by Ultrasound.
 // One cut (?cut=A|B|C|D), one frame at a time: tools/render-video.mjs calls
 // window.__video.frame(i) and captures the frame. Nothing here runs on a clock of its own: the
 // heartbeat, the plane, the cameras and the text follow t = i / FPS alone, so any frame renders
-// the same whether it is drawn alone or in a sequence. ?reel=k draws the clip of 07 in the intro
+// the same whether it is drawn alone or in a sequence. ?reel=k draws the clip of Views in the intro
 // (video/reel.js): its cut, the progress line of the intro, its eyebrow and its frames of the whole.
 //
 // Three panes, drawn from the one heart mesh by the site's own code:
 //  - Probe and body: the whole heart from the front with the probe (drawn in pencil with the
 //    heart: the stage's tools) and the body key (src/gl/bodykey.js, a pencil inset) above it. In
-//    cut B and the intro's clip of 07 (CUT.planes) the pane also has the planes of the nine
+//    cut B and the intro's clip of Views (CUT.planes) the pane also has the planes of the nine
 //    standard views in their window colors (src/gl/fans.js), the current plane in ink and the
-//    lines where it crosses the others, as chapter 07 drew them in its Probe and body view in
+//    lines where it crosses the others, as Views drew them in its Probe and body view in
 //    PR #20 (the site now draws them in a pane of their own, src/ch/windows.js; the videos were
 //    not rendered again). The archived cut P draws All planes here instead (PR #19);
 //  - Cross-section: the heart cut on the plane and seen square to it, with the site's tags;
@@ -65,7 +65,7 @@ const px = (el, r) => Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px
 
 // ---------------------------------------------------------------- the cut and its layout
 const params = new URLSearchParams(location.search);
-/** The clip of 07 in the intro (?reel=k): its place in the whole, or null for a cut. */
+/** The clip of Views in the intro (?reel=k): its place in the whole, or null for a cut. */
 const RL = params.has('reel') ? reelLayout() : null;
 const CLIP = RL ? RL.clips[Number(params.get('reel'))] : null;
 if (RL && !CLIP?.cut) throw new Error(`no views clip ${params.get('reel')} in the intro`);
@@ -122,7 +122,7 @@ LAYOUTS.planes = {
 };
 /** Cut P (archived): the left pane draws All planes, the three-pane chapter of PR #19, not the probe and body. */
 const PLANES = CUT.left === 'planes';
-/** Cut B and the intro's clip of 07 (CUT.planes): the nine planes in the Probe and body pane, as chapter 07 drew them there in PR #20. */
+/** Cut B and the intro's clip of Views (CUT.planes): the nine planes in the Probe and body pane, as Views drew them there in PR #20. */
 const BODY_PLANES = !PLANES && !!CUT.planes;
 const LAY = PLANES ? LAYOUTS.planes : LAYOUTS[CUT.aspect];
 const PANE_NAME = { body: PLANES ? 'All planes' : 'Probe and body', section: 'Cross-section', echo: 'Ultrasound image' };
@@ -311,7 +311,7 @@ let stage = null, model = null, echo = null, key = null, bodyPencil = null, labe
 const PL = {};        // each view's plane: geometry, rotation, centre, settings
 const TAGS = {};      // each view's tags on the cross-section, laid out once
 let SITES = null;     // each window's place on the skin of the body key (cm from the midline, the notch)
-// The nine planes (cut B and the intro's clip of 07 in Probe and body; All planes in the archived
+// The nine planes (cut B and the intro's clip of Views in Probe and body; All planes in the archived
 // cut P): the nine views' fans, the current plane in ink, its crossings, the tags
 const NINE = ['plax', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a2c', 'a3c', 'sc4c', 'ssn'];
 const NINE_FANS = new Map();
@@ -352,7 +352,7 @@ async function initScene() {
   if (echo.ro) echo.ro.disconnect();
   atZoom(E.zoom, () => echo.setSize(E.w, E.h));
   Object.assign(ec.style, { left: `${E.x0}px`, width: `${ec.width}px`, height: `${ec.height}px` });
-  echo.labels = false;               // chapter 07: the tags name the structures on the model, not the echo
+  echo.labels = false;               // Views: the tags name the structures on the model, not the echo
   echo.calipers = false;
   echo.section = true;
   echo.cutOn = false;                // each pass sets its own cut
@@ -409,7 +409,7 @@ async function initScene() {
 const paneColor = (name) => (DIAGRAMS === 'paper' ? LIGHT[name] : cssVar(name));
 
 /**
- * The nine planes, as chapter 07 drew them in its Probe and body view in PR #20 (src/ch/windows.js): the
+ * The nine planes, as Views drew them in its Probe and body view in PR #20 (src/ch/windows.js): the
  * fans of the nine standard views in their window colors and the current plane in ink, in the
  * overlay of the stage, drawn by the left pane's pencil (it reads that pencil's depth). In the
  * Probe and body pane the camera frames each view as before. All planes (cut P, archived) has one
@@ -496,7 +496,7 @@ function planesOff(P) {
 }
 
 /**
- * The plane tags, as chapter 07 places them in Probe and body: each view's code on the center
+ * The plane tags, as Views places them in Probe and body: each view's code on the center
  * line of its fan, as far out as the pane allows, in its window color, the current view's in
  * bold; at rest on a view that is not one of the nine, its code in ink. No tag covers another or
  * the body key.
@@ -979,7 +979,7 @@ function updateTrack(t, fade) {
 // ---------------------------------------------------------------- cards
 function updateCards(t) {
   const a = L.tour.t0, b = L.tour.t1, d = DISSOLVE / 2;
-  // the clip of 07 has no cards. The first clip has the title card, and the last clip has the end card.
+  // the clip of Views has no cards. The first clip has the title card, and the last clip has the end card.
   const titleOn = CLIP ? 0 : 1 - ease((t - (a - d)) / DISSOLVE);
   const endOn = CLIP ? 0 : ease((t - (b - d)) / DISSOLVE);
   const C = cardEls;

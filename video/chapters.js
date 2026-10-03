@@ -66,7 +66,7 @@ export const VIDEOS = {
       { set: { vtrue: 2 }, name: 'Aliasing on color Doppler', track: 'Color, 2 m/s', pick: [0, 3], move: 4 },
     ],
   },
-  // 04: a caliper error on the LVOT, then the TR jet and the RA pressure (from the IVC, chapter 18)
+  // Doppler hemodynamics: a caliper error on the LVOT, then the TR jet and the RA pressure (from the IVC chapter)
   pressure: {
     pane: 'Flow and gradients',
     quant: { calErr: 0.5, trV: 0.05 },

@@ -1,4 +1,4 @@
-// 15 Tricuspid regurgitation: one slider from no leak to torrential TR. The orifice area rises
+// Tricuspid regurgitation: one slider from no leak to torrential TR. The orifice area rises
 // in step with the slider; the vena contracta, the regurgitant volume and the jet area follow it
 // through the cut-offs of each grade. The right heart and the veins follow.
 // Grades: ASE 2017 to severe; EACVI 2022 Table 16 for massive and torrential.
@@ -9,6 +9,7 @@ import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols
 import { drawA4C, drawIVC, drawPSAXpm, cal, measures } from '../echo2d.js';
 import { rapEstimate } from '../norms.js';
 import { BSA } from './pressure.js';
+import { numOf } from '../order.js';
 import { JETS } from '../jets.js';
 
 const KEY = 'trS';
@@ -52,7 +53,7 @@ export function model(s) {
   m.q = m.eroa * m.v * 100;                          // mL/s peak flow
   m.r = shown(m.q > 0 ? Math.sqrt(m.q / (2 * Math.PI * VA)) : 0, 2);
   for (const [key, d] of [['ivc', 1], ['rvb', 1], ['ta', 1], ['ravi', 0], ['tapse', 0], ['jetA', 0], ['E', 2]]) m[key] = shown(m[key], d);
-  // the RA pressure as chapter 18 estimates it (Mukherjee 2025): a sniff, collapse ≥50%
+  // the RA pressure as the IVC chapter estimates it (Mukherjee 2025): a sniff, collapse ≥50%
   m.collPct = shown(m.coll * 100);
   m.coll = m.collPct / 100;
   m.collapses = m.collPct >= 50;
@@ -305,7 +306,7 @@ export default {
       ],
       live: m.eroa <= 0.001
         ? '<b>No tricuspid regurgitation.</b> The play control animates the progression of tricuspid regurgitation from mild to torrential.'
-        : `<b>${g[0].toUpperCase()}${g.slice(1)} tricuspid regurgitation.</b> The EROA is ${fmt(m.eroa, 2)} cm², the vena contracta ${fmt(m.vc, 2)} cm and the regurgitant volume ${fmt(m.rvol)} mL${cite('zoghbi2017')}. The RV basal diameter is ${fmt(m.rvb, 1)} cm and the tricuspid annulus ${fmt(m.ta, 1)} cm; the IVC measures ${fmt(m.ivc, 1)} cm and ${m.collapses ? 'collapses' : 'collapses by less than 50%'} with a sniff, which corresponds to an estimated RA pressure of ${m.rap} mmHg (<a href="#ivc" data-go="ivc">chapter 18</a>); ${hv}.${beyond}`,
+        : `<b>${g[0].toUpperCase()}${g.slice(1)} tricuspid regurgitation.</b> The EROA is ${fmt(m.eroa, 2)} cm², the vena contracta ${fmt(m.vc, 2)} cm and the regurgitant volume ${fmt(m.rvol)} mL${cite('zoghbi2017')}. The RV basal diameter is ${fmt(m.rvb, 1)} cm and the tricuspid annulus ${fmt(m.ta, 1)} cm; the IVC measures ${fmt(m.ivc, 1)} cm and ${m.collapses ? 'collapses' : 'collapses by less than 50%'} with a sniff, which corresponds to an estimated RA pressure of ${m.rap} mmHg (<a href="#ivc" data-go="ivc">chapter ${numOf('ivc')}</a>); ${hv}.${beyond}`,
       extra: (art) => {
         gradeTable(art.querySelector('#tr-table'), tableRows(m), 'ASE 2017 grading (Table 14, condensed)');
         gradeTable(art.querySelector('#tr-table2'), beyondRows(m), 'Beyond severe: EACVI 2022 (Table 16)', ['Severe', 'Massive', 'Torrential']);

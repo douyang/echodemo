@@ -1,21 +1,22 @@
 // The intro: one clip from each of eight chapters, between a title card and the end card. The
 // cuts fall on the bar lines of one score. No DOM. The pages, the render tool and the score read it.
-//  - video/chapter.html?reel=k draws a chapter clip. video/index.html?reel=k draws the clip of 07.
+//  - video/chapter.html?reel=k draws a chapter clip. video/index.html?reel=k draws the clip of Views.
 //  - tools/render-video.mjs --reel renders the clips and joins them in order.
 //  - tools/score/pulse.py intro writes the score. The clips are its windows.
 //
 // The clips come from a review of the chapter videos and the views video. Each is the most
 // striking and most useful moment of its part of the site. No two clips teach the same lesson or
-// show the same layout. Chapter 08 Planes is archived since the review: the clip of 07 has the
-// time of both clips, and the nine planes of 08 in its Probe and body pane (video/cuts.js,
-// planes). Left out, with the reason:
-//  - 01, 03, 04: diagrams. The valve clips show Doppler in use.
-//  - 06: the cycle clip and the valve clips show its loads.
-//  - 08, 10: dense panels. LV function shows in the segments and amyloid clips.
-//  - 12, 13, 15: the layout of 11 and 14.
+// show the same layout. Planes is archived since the review: the clip of Views has the time of
+// both clips, and the nine planes of Planes in its Probe and body pane (video/cuts.js, planes).
+// Left out, with the reason:
+//  - Pulse, Doppler, Doppler hemodynamics: diagrams. The valve clips show Doppler in use.
+//  - Loop: the cycle clip and the valve clips show its loads.
+//  - Systolic function, Diastolic function: dense panels. LV function shows in the segments and
+//    amyloid clips.
+//  - AR, MS, TR: the layout of AS and MR.
 //
 // A clip has ch (the chapter's key) and bars (its length in bars of the score). A chapter clip has
-// a video in the shape of video/chapters.js. The clip of 07 has a cut of the views video
+// a video in the shape of video/chapters.js. The clip of Views has a cut of the views video
 // (video/cuts.js). Holds and moves are in bars. Captions are the chapter's own text: its live
 // text at the step's state, or a sentence from its page.
 import { BEAT, FPS } from './timeline.js';

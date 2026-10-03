@@ -390,7 +390,7 @@ export class Pencil {
       r.clearDepth();
       r.render(opts.overlayScene, camera);
     }
-    // an inset in a corner (the body key, chapter 07): its own scene and camera on paper, lit
+    // an inset in a corner (the body key in Views): its own scene and camera on paper, lit
     // and encoded as ordinary shaded scenes are, so its paper matches the page's
     if (opts.inset && opts.inset.pencil) this.renderInset(opts.inset);
     else if (opts.inset) {

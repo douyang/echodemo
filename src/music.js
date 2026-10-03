@@ -9,7 +9,7 @@
 //    root in eighths, a soft kick on every beat, off-beat hats, and the brand's plucked arpeggio
 //    with a dotted-eighth echo. The pad, the sub and the arpeggio dip on each kick. No claps.
 //  - Cues (cue()): a new chapter sounds the brand's rising fourth, G5 then C6 ("value lands");
-//    smaller changes (a view or a plane set in chapter 07, any switch or tick box, the heart shown, a
+//    smaller changes (a view or a plane set in Views, any switch or tick box, the heart shown, a
 //    grade while a severity page plays) a single soft bell on a note of the chord that plays. A
 //    bell never follows a chapter cue within 0.6 s, nor another bell within 0.25 s.
 // The brand's films run at 120 BPM; this page keeps the heart's tempo, so the beat is the heart.

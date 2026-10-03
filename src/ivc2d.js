@@ -1,4 +1,4 @@
-// Parametric views of the IVC for chapter 18, drawn to scale in cm as the views of echo2d.js are:
+// Parametric views of the IVC for the IVC chapter, drawn to scale in cm as the views of echo2d.js are:
 // the subcostal long axis of the IVC with the hepatic vein and the RA, its M-mode, hepatic vein
 // PW Doppler, and the IVC and the abdominal aorta side by side. One breathing model (dAt) drives
 // the 2D view, the M-mode and the IVC of the pair, so all three show the same diameter at the

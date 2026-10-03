@@ -1,4 +1,4 @@
-// The liver in the 3D views of the subcostal window (chapter 07 and the views video): drawn by
+// The liver in the 3D views of the subcostal window (Views and the views video): drawn by
 // the pencil renderer as a layer of its own over the heart (gl/pencil.js), so it can come and
 // go with a fade. Two solids, cut on the imaging plane as the heart is:
 //  - liver: the liver of abdomen.js, the one the echo cuts in the IVC and aorta views;

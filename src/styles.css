@@ -20,7 +20,7 @@
   --echo: #121619;
   --focus: #2b5d8a;
   --grain: 0.07;
-  /* acoustic windows (chapters 07-08) */
+  /* acoustic windows (Views, Planes) */
   --w-plax: #2f6db5;
   --w-psax: #2c8452;
   --w-apical: #c0561c;
@@ -299,7 +299,7 @@ a:hover { text-decoration-color: var(--accent); }
 .split { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
 .split.wide { grid-template-columns: 1.45fr 1fr; }
 .split > div { position: relative; min-width: 0; }
-/* chapter 07: the planes (or Probe and body), the cross-section and the echo of one plane, side by
+/* Views: the planes (or Probe and body), the cross-section and the echo of one plane, side by
    side; in a taller stage the planes go across the top */
 .split.views3 { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: "planes section echo"; }
 .split.views3 > .pane-planes { grid-area: planes; }
@@ -413,7 +413,7 @@ a:hover { text-decoration-color: var(--accent); }
 
 /* controls */
 .controls { display: grid; gap: 12px; margin: 0 0 18px; }
-/* chapter 08 free plane: its own block, marked when it is near or on a standard view */
+/* Planes (archived) free plane: its own block, marked when it is near or on a standard view */
 .free { display: grid; gap: 10px; padding: 10px 12px 12px; border: 1px solid var(--rule); border-radius: 8px; }
 .free[hidden] { display: none; }
 .free-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin: 0; font: 500 0.6875rem/1.3 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); }
@@ -463,7 +463,7 @@ a:hover { text-decoration-color: var(--accent); }
 .vt.grade td { vertical-align: top; padding: 5px 4px; }
 .vt.grade td:first-child { color: var(--ink-2); }
 
-/* view chips (chapter 08) */
+/* view chips (Planes) */
 .chips { display: grid; gap: 7px; }
 .chips .win { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .chips .win > span { width: 100%; font: 500 0.625rem/1.2 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
@@ -486,7 +486,7 @@ a:hover { text-decoration-color: var(--accent); }
 .chip.dim { opacity: 0.42; }
 .chip.has { text-decoration: underline 2px var(--flag); text-underline-offset: 3px; }
 
-/* structure-by-view table (chapter 08) */
+/* structure-by-view table (Planes) */
 .matrix { width: auto; min-width: 100%; }
 .matrix thead th { vertical-align: bottom; }
 .matrix th.v { padding: 6px 3px; cursor: pointer; color: var(--c); letter-spacing: 0.04em; text-transform: none; font: 600 0.6875rem/1 var(--sans); }
@@ -545,7 +545,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 .seg button:hover:not([aria-pressed="true"]) { color: var(--ink); }
-/* chapter 10: one button per segment, filled by its wall motion score */
+/* Regional wall motion: one button per segment, filled by its wall motion score */
 .segpick { display: flex; flex-direction: column; gap: 3px; }
 .segpick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
 .segpick-level { width: 3.6em; font: 500 0.625rem/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
@@ -615,7 +615,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .q .opts button.wrong { border-color: var(--flag); color: var(--flag); text-decoration: line-through; }
 .q .why { margin: 8px 0 0; font: 400 0.875rem/1.45 var(--serif); color: var(--ink-2); }
 
-/* ------------------------------------------------------------------ report sheet (13) */
+/* ------------------------------------------------------------------ report sheet */
 .sheet-host { position: absolute; inset: 0; overflow-y: auto; padding: 8px var(--gutter) 24px; scrollbar-width: thin; }
 .sheet {
   max-width: 760px;
@@ -822,7 +822,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .chapters .n { font-size: 0.75rem; text-align: center; }
   .chapters button { text-align: center; padding: 6px 0 8px; }
   .split { grid-template-columns: 1fr; grid-template-rows: 40% 60%; }
-  /* chapter 07: the planes across the top, the cross-section and the echo side by side under
+  /* Views: the planes across the top, the cross-section and the echo side by side under
      them, in a taller figure */
   .split.views3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 46% 54%; grid-template-areas: "planes planes" "section echo"; }
   html[data-ch="windows"] .stage { height: min(64vh, 560px); }
@@ -870,7 +870,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .heart-pick[aria-busy="true"] svg { animation: none; opacity: 0.4; }
 }
 
-/* chapter 10: the occlusion buttons sit on the figure, over the views they change */
+/* Regional wall motion: the occlusion buttons sit on the figure, over the views they change */
 .occl { position: absolute; top: 14px; left: 16px; z-index: 2; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
 .occl-label { font: 500 0.625rem/1.2 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); }
 .occl .seg { background: var(--paper-2); }
@@ -887,7 +887,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .occl .seg button { padding: 7px 10px; }
 }
 
-/* chapter 08: the view the free plane goes to */
+/* Planes: the view the free plane goes to */
 .free-goto select { width: 100%; max-width: 100%; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper-2); color: var(--ink); font: 500 0.8125rem var(--sans); }
 
 /* a short stage: 07 drops its orbit note, and the tags on the heart get smaller */
@@ -897,7 +897,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .tag small { font-size: 0.72rem; }
 }
 
-/* ------------------------------------------------- chapter 10: the 2025 ASE algorithm in the text
+/* ------------------------------------------------- Diastolic function: the 2025 ASE algorithm in the text
    Nagueh 2025, Figure 3, top to bottom: the path lit, ▲▼ buttons on the nine measurements, a
    short flash on each part that changes (src/ch/fill.js). The result and the change line stay
    in view while the steps scroll. */
@@ -1059,7 +1059,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .ase-b { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 12px); }
 }
 
-/* ------------------------------------------------- chapter 11: the calculations in the text
+/* ------------------------------------------------- Aortic stenosis: the calculations in the text
    The six measurements with ▲▼ buttons, the formulas from them with their numbers, the grade
    band of each criterion (Baumgartner 2017, Table 3) and the result (src/ch/as.js). The frame,
    the buttons, the change line and the flashes are the .ase rules above. */
@@ -1121,8 +1121,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 }
 @media (max-width: 820px) and (max-height: 640px) {
   .asx-go { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 12px); }
-/* ------------------------------------------------- chapter 18: the RA pressure from the IVC
-   Mukherjee 2025, Table 4 and Figure 3, in the classes of chapter 10's diagram (.ase-*): the
+/* ------------------------------------------------- Inferior vena cava: the RA pressure from the IVC
+   Mukherjee 2025, Table 4 and Figure 3, in the classes of the diastolic function diagram (.ase-*): the
    diameter and the collapse with ▲▼ buttons, the secondary signs, the result. src/ch/ivc.js */
 #ivc-ase .ase-row.is-off .ase-nm, #ivc-ase .ase-row.is-off .ase-v, #ivc-ase .ase-row.is-off .ase-cut { color: var(--ink-3); }
 #ivc-ase .ase-row.is-off .ase-mk { border-style: dashed; }
@@ -1140,7 +1140,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 @container ase (max-width: 340px) {
   .ivc-signs, .ivc-sec { padding-left: 0; }
 }
-/* on phones and tablets the figure takes four views: a taller stage, as for chapter 07, and the
+/* on phones and tablets the figure takes four views: a taller stage, as for Views, and the
    sticky result under it */
 @media (max-width: 820px) {
   html[data-ch="ivc"] .stage { height: min(60vh, 520px); }

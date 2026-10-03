@@ -1,12 +1,13 @@
-// 18 Inferior vena cava: the RA pressure from the IVC (ASE 2025, Mukherjee: Table 4, Figure 3).
+// Inferior vena cava: the RA pressure from the IVC (ASE 2025, Mukherjee: Table 4, Figure 3).
 // The figure: the subcostal long axis of the IVC with a caliper 1 to 2 cm from the RA, the IVC on
 // M-mode through quiet breathing and a sniff, hepatic vein PW Doppler, and the IVC and the
 // abdominal aorta side by side. The text: the steps of the estimate as a diagram, with ▲▼
 // buttons on the IVC diameter and its collapse; each change lights the values and the result
-// it changes, and one line names the cause and the effect (as chapter 10 does).
+// it changes, and one line names the cause and the effect (as Diastolic function does).
 import { Sheet, clamp } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { cine, meters, rows, cols } from '../sev.js';
+import { numOf } from '../order.js';
 import { drawSubcostal, drawMmode, drawHV, drawPair, dAt, respAt, SEQ, RR, HV, hvRatios } from '../ivc2d.js';
 import { rapEstimate, RAP_RANGE } from '../norms.js';
 import { cue } from '../music.js';
@@ -331,7 +332,7 @@ function tourState(tt) {
 
 const ivcPage = {
   key: 'ivc',
-  part: 'ivc',
+  part: 'hemodynamics',
   title: 'Inferior vena cava',
   nav: 'IVC',
   dwell: 16,
@@ -385,7 +386,7 @@ const ivcPage = {
       live = `<b>RA pressure ${e.rap} mmHg.</b> The IVC measures ${D} cm at end-expiration, ${dil}. It collapses by ${m.col}% with a sniff (${e.collapses ? '≥50%' : '<50%'}). The estimate is ${e.rap} mmHg, range ${RAP_RANGE[e.rap]} mmHg${c}.`;
     }
     if (e.consider20) live += ` The IVC is wider than 2.5 cm and collapses less than 50%. The hepatic veins are dilated, with reflux in systole. A value of 20 mmHg can be considered${c}.`;
-    if (m.hv === 'reversal') live += ` Hepatic vein flow reverses in systole, a specific sign of severe TR (<a href="#tr" data-go="tr">chapter 15</a>)${cite('zoghbi2017')}.`;
+    if (m.hv === 'reversal') live += ` Hepatic vein flow reverses in systole, a specific sign of severe TR (<a href="#tr" data-go="tr">chapter ${numOf('tr')}</a>)${cite('zoghbi2017')}.`;
     else if (m.hv === 'blunted') live += ` Hepatic vein S/D is ${fmt(m.sd, 1)} and S/(S + D) ${fmt(m.sff)}%, below 1 and 55%: signs of a raised RA pressure${c}.`;
     else live += ` Hepatic vein flow is systolic-dominant, with S/D ${fmt(m.sd, 1)} and S/(S + D) ${fmt(m.sff)}%${c}.`;
     const cut = m.mode === 'quiet' ? 20 : 50;

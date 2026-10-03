@@ -1,4 +1,4 @@
-// One WebGL stage for the chapters that show the 3D heart (07 Views; 08 Planes, archived): the heart
+// One WebGL stage for the chapters that show the 3D heart (Views; Planes, archived): the heart
 // mesh can live in one scene only, and one GL context is lighter on a phone.
 let pending = null;
 

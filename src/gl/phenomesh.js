@@ -181,7 +181,7 @@ function lvCoords(F, x, y, z) {
   const rx = qx - hc * F.Z.x, ry = qy - hc * F.Z.y, rz = qz - hc * F.Z.z;
   return { h, u: h / F.L, r: Math.hypot(rx, ry, rz), rx, ry, rz };
 }
-/** Segment coordinates as chapter 09 counts them: level from the endocardial apex, and angle. */
+/** Segment coordinates as Regional wall motion counts them: level from the endocardial apex, and angle. */
 function segCoords(F, x, y, z) {
   const qx = x - F.apexEndo.x, qy = y - F.apexEndo.y, qz = z - F.apexEndo.z;
   const h = qx * F.Z.x + qy * F.Z.y + qz * F.Z.z;
