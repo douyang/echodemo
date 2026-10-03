@@ -29,10 +29,13 @@ export function mitral({ mva, sv, hr }) {
 }
 
 const mvaOf = mono([[0, 4.5], [0.25, 2.5], [0.5, 1.5], [0.75, 1.0], [1, 0.75]]);
+// Peak TR velocity (m/s) by the valve area as printed. The PA systolic pressure follows from it,
+// 4v² + the RA pressure, as an echo study derives it, and meets the ASE bands (Pandian 2023): 30 mmHg
+// from an area of 2.50 cm² and 50 mmHg from 1.50 cm². The keys sit half-way between printed areas.
+const trvOf = mono([[0.75, 3.9], [1.0, 3.6], [1.505, 3.35], [2.505, 2.55], [4.5, 2.3]]);
 const TRK = tracks([0, 0.25, 0.5, 0.75, 1], {
   lavi: [24, 32, 45, 58, 70],
   la: [3.2, 3.8, 4.6, 5.2, 5.8],
-  pasp: [24, 29, 40, 52, 65],
   rvb: [3.4, 3.5, 3.8, 4.2, 4.6],
   tapse: [23, 22, 21, 19, 17],
   thick: [0.12, 0.25, 0.35, 0.45, 0.5],
@@ -51,9 +54,10 @@ export function model(s, hr = 70) {
   // the values as the page prints them, so that the flags and the sentences agree with them
   m.pht = shown(m.pht);
   m.mg = shown(m.mg, 1);
-  for (const [k, d] of [['lavi', 0], ['pasp', 0], ['rvb', 1], ['tapse', 0]]) m[k] = shown(m[k], d);
-  m.rap = m.pasp >= 50 ? 8 : 3;
-  m.trv = shown(Math.sqrt(Math.max(0, m.pasp - m.rap) / 4), 1);
+  for (const [k, d] of [['lavi', 0], ['rvb', 1], ['tapse', 0]]) m[k] = shown(m[k], d);
+  m.rap = m.mva <= 1.5 ? 8 : 3;                      // the RA pressure the figure adds: 8 mmHg once severe
+  m.trv = shown(trvOf(m.mva), 1);
+  m.pasp = shown(4 * m.trv * m.trv + m.rap);
   m.tip = 2 * Math.sqrt(m.mva / Math.PI);
   m.grade = gradeOf(s);
   return m;

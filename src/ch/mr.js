@@ -12,10 +12,17 @@ import { JETS } from '../jets.js';
 const KEY = 'mrS';
 const VMAX = 5.0;        // m/s, MR jet (LV-LA gradient about 100 mmHg)
 const VTI = 150;         // cm, MR jet
-const FWD = 60;          // mL, forward stroke volume
-const VA = 30;           // cm/s, aliasing velocity for PISA (ASE 2017); the plume format draws the view at it
+// cm/s, the aliasing velocity for PISA (ASE 2017: 30-40). At 5 m/s, 32 cm/s puts the radius of 1.0 cm
+// at an EROA of 0.40 cm², where the grade turns severe. The plume format draws the view at it.
+const VA = 32;
 const NYQ = 60;          // cm/s, the scanner format's scale for the jet (ASE 2017: 50-70)
 
+// By the EROA as printed, so that each parameter crosses its ASE 2017 cut-off where the EROA crosses
+// its own (0.20 and 0.40 cm²): the forward volume (mL) puts the regurgitant fraction at 30% and 50%
+// there, the vena contracta (cm) at 0.3 and 0.7, and the jet at 20% and more than 50% of the LA.
+const fwdOf = mono([[0, 70], [0.2, 70], [0.4, 60.7], [0.65, 58]]);
+const vcOf = mono([[0, 0], [0.2, 0.3], [0.4, 0.7], [0.65, 0.9]]);
+const jetOf = mono([[0, 0], [0.2, 0.2], [0.4, 0.51], [0.65, 0.6]]);
 const eroaOf = mono([[0, 0], [0.06, 0.03], [0.3, 0.2], [0.4, 0.3], [0.5, 0.4], [0.78, 0.55], [1, 0.65]]);
 const TR = tracks([0, 0.3, 0.5, 0.78, 1], {
   lvedd: [4.8, 5.1, 5.6, 6.2, 6.6],
@@ -27,7 +34,6 @@ const TR = tracks([0, 0.3, 0.5, 0.78, 1], {
   pvS: [0.55, 0.45, 0.2, -0.2, -0.35],
   pvD: [0.4, 0.45, 0.55, 0.7, 0.8],
   trv: [2.3, 2.4, 2.6, 2.95, 3.3],
-  jetF: [0, 0.15, 0.3, 0.5, 0.6],
   gap: [0, 0.04, 0.12, 0.3, 0.4],
   lvL: [8.4, 8.6, 9.0, 9.6, 10.0],
   ma: [3.1, 3.2, 3.4, 3.7, 3.9],
@@ -52,14 +58,16 @@ export function model(s) {
   // a leak through part of systole has a shorter jet VTI: less volume for the same EROA
   m.onset = onsetOf(m.eroa);
   m.rvol = shown(m.eroa * VTI * (1 - m.onset));
-  m.rf = shown((m.rvol / (m.rvol + FWD)) * 100);
-  m.vc = shown(2 * Math.sqrt(m.eroa / Math.PI), 2);
+  m.fwd = fwdOf(m.eroa);
+  m.rf = shown((m.rvol / (m.rvol + m.fwd)) * 100);
+  m.vc = shown(vcOf(m.eroa), 2);
+  m.jetF = shown(jetOf(m.eroa) * 100) / 100;         // the jet's share of the LA, in whole percent
   m.q = m.eroa * VMAX * 100;                        // mL/s peak flow
   m.r = shown(m.q > 0 ? Math.sqrt(m.q / (2 * Math.PI * VA)) : 0, 2);
   m.lvesdMm = shown(m.lvesd * 10);                   // the ACC/AHA criteria are in mm
   m.lvesd = m.lvesdMm / 10;
   for (const [k, d] of [['ef', 0], ['lavi', 0], ['E', 2], ['A', 2], ['trv', 1]]) m[k] = shown(m[k], d);
-  m.sv = FWD + m.rvol;
+  m.sv = m.fwd + m.rvol;
   m.edv = m.sv / (m.ef / 100);
   m.edvi = m.edv / BSA;
   m.sd = m.pvS / m.pvD;
@@ -261,7 +269,7 @@ function draw(sh, t) {
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 function tableRows(m) {
   const size = m.lavi <= 34 && m.lvedd <= 5.8 ? 0 : m.lavi <= 42 && m.lvedd <= 6.0 ? 1 : 2;
-  const jet = m.jetF < 0.2 ? 0 : m.jetF < 0.5 ? 1 : 2;
+  const jet = m.jetF < 0.2 ? 0 : m.jetF <= 0.5 ? 1 : 2;
   const conv = m.r < 0.3 ? 0 : m.r < 1.0 ? 1 : 2;
   const cw = m.rvol < 30 ? 0 : m.rvol < 60 ? 1 : 2;
   const vc = m.vc < 0.3 ? 0 : m.vc < 0.7 ? 1 : 2;
