@@ -598,10 +598,8 @@ export class EchoView {
   }
 
   /**
-   * Probe and body: the whole heart from the front, head up, with the plane and the probe, and
-   * the body key in a corner (gl/bodykey.js). Off: the cut, seen square to it. No page calls it
-   * now: chapter 07 draws the body key in its All planes pane (ch/windows.js), and the views
-   * video draws this view in its own pane (video/app.js).
+   * Probe and body (chapter 07): the whole heart from the front, head up, with the plane and
+   * the probe, and the body key in a corner (gl/bodykey.js). Off: the cut, seen square to it.
    */
   async setBody(on) {
     this.bodyOn = !!on;
@@ -656,7 +654,6 @@ export class EchoView {
    * Show a view. With animate (the default once a plane is on screen), the plane moves from
    * where it is to the new one: it turns along the shortest rotation while the point it
    * images slides across, the way a probe is tilted, rotated and slid, never from nothing.
-   * opts.T: the move's length (ms); opts.instant: the 3D camera goes to the plane at once.
    */
   setView(key, opts = {}) {
     const from = this.g;
@@ -693,22 +690,21 @@ export class EchoView {
     this.fan.visible = this.fanLine.visible = this.probe.visible = true;
     this._place3d(this.g, spec);
     if (this.bodyOn) this._keySite();   // the camera stays where the viewer put it
-    else this._aim(g1, spec, !!opts.instant);
+    else this._aim(g1, spec);
   }
 
   /**
    * The 3D camera for plane g: obliquely onto the cut, or square to it (section), turned as
-   * the echo is: the probe at the top, screen-right the same side. It eases there, unless
-   * instant (a plane that follows a slider).
+   * the echo is: the probe at the top, screen-right the same side. It eases there.
    */
-  _aim(g, spec, instant = false) {
+  _aim(g, spec) {
     if (!this.stage || !g) return;
     const target = g.O.clone().addScaledVector(g.d, spec.depth * (this.section ? 0.5 : 0.45));
     this.stage.opts.labeled = !!this.section;
-    if (this.section) this.stage.view(g.n.clone(), g.d.clone().negate(), 0.137 * spec.depth, target, instant);
+    if (this.section) this.stage.view(g.n.clone(), g.d.clone().negate(), 0.137 * spec.depth, target);
     else {
       const look = g.n.clone().addScaledVector(g.r, -0.55).addScaledVector(g.d, 0.35).normalize();
-      this.stage.view(look, g.d.clone().negate(), 2.7, target, instant);
+      this.stage.view(look, g.d.clone().negate(), 2.7, target);
     }
   }
 
@@ -721,10 +717,9 @@ export class EchoView {
 
   /**
    * Label points for the cross-section: the view's structures that lie on the plane and in
-   * the sector, as screen points of the 3D stage. Returns [{ id, x, y, text }]: the full names,
-   * or with short the view's own (RVOT, IVS), for a narrow pane.
+   * the sector, as screen points of the 3D stage. Returns [{ id, x, y, text }].
    */
-  sectionLabels(s, short = false) {
+  sectionLabels(s) {
     const g = this.g;
     if (!g || !this.stage) return [];
     const spec = this.specOf(this.view);
@@ -745,7 +740,7 @@ export class EchoView {
       if (Math.abs(Math.atan2(q[0], q[1])) > half || Math.hypot(q[0], q[1]) > spec.depth) continue;
       const p = this.stage.project(g.O.clone().addScaledVector(g.r, q[0]).addScaledVector(g.d, q[1]));
       if (p.z > 1) continue;
-      out.push({ id, x: p.x, y: p.y, text: (!short && FULL[txt]) || txt.charAt(0).toUpperCase() + txt.slice(1) });
+      out.push({ id, x: p.x, y: p.y, text: FULL[txt] || txt.charAt(0).toUpperCase() + txt.slice(1) });
     }
     return out;
   }

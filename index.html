@@ -82,12 +82,20 @@
     </figure>
     <figure class="fig" id="fig-windows">
       <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
-      <div class="split views3">
-        <div class="pane-3d pane-planes"><div class="gl-host"></div><canvas class="ink" id="planes-ink" aria-hidden="true"></canvas><p class="pane-label">All planes</p><p class="fig-note" id="planes-note">Drag to orbit · Scroll or pinch to zoom · Click a plane</p></div>
-        <div class="pane-3d pane-section"><div class="gl-host"></div><div class="overlay" id="windows-overlay"></div><p class="pane-label" id="windows-3dlabel">Cross-section</p></div>
+      <div class="split">
+        <div class="pane-3d"><div class="gl-host"></div><canvas class="ink" id="windows-ink" aria-hidden="true"></canvas><div class="overlay" id="windows-overlay"></div><p class="pane-label" id="windows-3dlabel">Cross-section</p><p class="fig-note" id="windows-note">Drag to orbit · Scroll or pinch to zoom</p></div>
         <div class="pane-2d"><canvas class="fig-canvas" id="windows-canvas" aria-hidden="true"></canvas><p class="pane-label" id="windows-label">Parasternal long axis</p></div>
       </div>
-      <figcaption class="sr-only">Three views of one imaging plane. Left: a three-dimensional heart with the planes of the chosen standard views, each in the color of its acoustic window, and the current plane with the probe. Right, top: the heart cut in the current plane and seen perpendicular to it, with the structures labeled. Right, bottom: the echocardiographic image of the same plane.</figcaption>
+      <figcaption class="sr-only">Left: a three-dimensional heart with the ultrasound sector plane that cuts it; with Probe and body, the whole heart with the imaging planes of the nine standard views, each in the color of its acoustic window. Right: the matching echocardiographic view with the chambers and valves labeled.</figcaption>
+    </figure>
+    <!-- 08 Planes, archived: hidden, and not in CHAPTERS (src/chapters.js, SHOW_PLANES) -->
+    <figure class="fig" id="fig-planes" hidden>
+      <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
+      <div class="split wide">
+        <div class="pane-3d"><div class="gl-host"></div><canvas class="ink" id="planes-ink" aria-hidden="true"></canvas><p class="pane-label">All planes</p><p class="fig-note" id="planes-note">Drag to orbit · Scroll or pinch to zoom · Click a tag</p></div>
+        <div class="pane-2d"><canvas class="fig-canvas" id="planes-canvas" aria-hidden="true"></canvas><p class="pane-label" id="planes-label">Apical four-chamber</p></div>
+      </div>
+      <figcaption class="sr-only">A three-dimensional heart with the imaging planes of the chosen standard views drawn through it, each in the color of its acoustic window, with the lines where the planes cross. Beside it, the echocardiographic view of the focused plane.</figcaption>
     </figure>
     <figure class="fig" id="fig-eject">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -480,7 +488,7 @@
     <!-- ======================================================== Views -->
     <article class="chapter" id="ch-windows">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">07</span><div><h2 class="ch-title">Views</h2><p class="ch-kicker">Acoustic windows and imaging planes</p></div></div>
-      <p class="dek" data-part="dek">Each standard transthoracic view is a single imaging plane through the heart. The plane is determined by the position of the probe, the rotation of its marker and the tilt of the beam. Displayed together, the planes show which views intersect along a common line, which views are parallel and which views contain a given structure.</p>
+      <p class="dek" data-part="dek">Each standard transthoracic view is a single imaging plane through the heart. The plane is determined by the position of the probe, the rotation of its marker and the tilt of the beam.</p>
       <div class="controls">
         <div class="control">
           <span class="label">Window</span>
@@ -492,14 +500,51 @@
           <span class="label">View <output>[ and ] step through all</output></span>
           <div class="seg" role="group" aria-label="View" data-key="view" id="view-seg"></div>
         </div>
+        <div class="toggles">
+          <label class="check"><input type="checkbox" id="w-labels" data-key="wlabels"> Labels</label>
+          <label class="check"><input type="checkbox" id="w-body" data-key="wbody"> Probe and body</label>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Acoustic windows</h3>
+        <p>The ASE guideline describes four acoustic windows: parasternal, apical, subcostal and suprasternal notch<span class="cite" data-ref="mitchell2019"></span>. Parasternal and apical imaging is performed with the patient in the left lateral decubitus position, and subcostal and suprasternal imaging with the patient supine<span class="cite" data-ref="mitchell2019"></span>.</p>
+        <ul>
+        <li><b>Parasternal long axis.</b> The probe is placed in the third or fourth left intercostal space, with the marker toward the right shoulder at 9 to 10 o’clock<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Parasternal short axis.</b> The probe is rotated 90° clockwise from the long-axis position, so that the marker points to the left shoulder<span class="cite" data-ref="mitchell2019"></span>. The beam is then tilted inferiorly to move the plane from the great vessels to the mitral valve and the papillary muscles; for the apical level, the probe is moved one or two intercostal spaces lower and more laterally<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Apical window.</b> The probe is placed at the apical impulse, with the marker at 4 to 5 o’clock<span class="cite" data-ref="mitchell2019"></span>. From the four-chamber view, the two-chamber view is obtained by a counterclockwise rotation of about 60°, and the three-chamber view by a further 60°<span class="cite" data-ref="mitchell2019"></span>. The five-chamber view is obtained by tilting the beam anteriorly<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Subcostal window.</b> The probe is placed below the xiphoid. The subcostal views show the heart, the pericardium, the RV free wall and the inferior vena cava (IVC)<span class="cite" data-ref="mitchell2019"></span>; with the beam angled slightly to the patient's left, they show the abdominal aorta.</li>
+        <li><b>Suprasternal window.</b> The suprasternal views show the ascending aorta, the aortic arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
+        </ul>
+        <h3>The interactive figure</h3>
+        <p>The left panel shows the heart model sectioned in the imaging plane and viewed perpendicular to that plane, in the orientation of the echocardiographic image. The <b>Labels</b> option displays the names of the structures on the model. The <b>Probe and body</b> option shows the whole heart from the front, with the imaging plane through it and the probe. This option also shows a small figure of the body, oriented as the heart is, with the probe on the skin at the acoustic window, the heart within the chest, the head and the patient's left side. It also displays the imaging planes of the nine standard views, each in the color of its acoustic window, and the lines along which the current plane intersects them. Selecting a plane displays its view. The right panel shows the echocardiographic image of the same plane through the model. When another view is selected, the plane moves from its current position, as the probe would move.</p>
+        <p>Below the diaphragm, the liver, the IVC, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine are simple shapes added for the subcostal views. These structures are not part of the heart model, and only the liver appears in the 3D view. Each view is labeled with its view class name for image annotation, where the annotation list contains the view. The model is a normal adult heart; in a patient, the angles vary with the position of the heart.</p>
+        <h3>Apical foreshortening</h3>
+        <p>In an apical view without foreshortening, the LV occupies about two thirds and the LA about one third of the long axis<span class="cite" data-ref="mitchell2019"></span>. When the plane does not pass through the true apex, the LV appears short and round, and LV volumes are underestimated<span class="cite" data-ref="lang2015"></span>.</p>
+        <p>The minimum dataset of the British Society of Echocardiography lists the views in scanning order and specifies at least two cardiac cycles for each clip<span class="cite" data-ref="bse2020"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>The parasternal short-axis view is obtained by rotating the probe 90° clockwise from the parasternal long-axis view.</li>
+        <li>The apical two-chamber and three-chamber views are obtained from the four-chamber view by successive counterclockwise rotations of about 60°.</li>
+        <li>The IVC diameter is measured in the subcostal view, 1 to 2 cm from the junction with the right atrium<span class="cite" data-ref="mitchell2019"></span>.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+    <!-- 08 Planes, archived: main.js keeps an article left out of CHAPTERS hidden -->
+    <article class="chapter" id="ch-planes">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">08</span><div><h2 class="ch-title">Planes</h2><p class="ch-kicker">The standard imaging planes</p></div></div>
+      <p class="dek" data-part="dek">Each standard view is a plane through the same heart. Displayed together, the planes show which views intersect along a common line, which views are parallel and which views contain a given structure.</p>
+      <div class="controls">
         <div class="control">
-          <span class="label">Plane sets</span>
-          <div class="seg" role="group" aria-label="Plane sets" id="planes-sets">
+          <span class="label">View sets</span>
+          <div class="seg" role="group" aria-label="View sets" id="planes-sets">
             <button type="button" data-set="nine">Nine views</button><button type="button" data-set="long">Parasternal long</button><button type="button" data-set="stack">Short-axis stack</button><button type="button" data-set="apical">Apical</button><button type="button" data-set="all">All</button><button type="button" data-set="none">Clear</button>
           </div>
         </div>
         <div class="control">
-          <span class="label">Planes <output>click: show, go to, hide</output></span>
+          <span class="label">Views <output>click: add, focus, remove</output></span>
           <div class="chips" id="planes-views"></div>
         </div>
         <div class="control">
@@ -508,20 +553,18 @@
         </div>
         <div class="control">
           <span class="label">Viewpoint</span>
-          <div class="seg" role="group" aria-label="Viewpoint of all planes" data-key="pcam">
+          <div class="seg" role="group" aria-label="Camera" data-key="pcam">
             <button type="button" data-val="front">Front</button><button type="button" data-val="apex">Apex</button><button type="button" data-val="side">Side</button><button type="button" data-val="plane">En face</button>
           </div>
         </div>
         <div class="toggles">
-          <label class="check"><input type="checkbox" id="w-labels" data-key="wlabels"> Labels</label>
-          <label class="check"><input type="checkbox" id="w-body" data-key="wbody"> Probe and body</label>
           <label class="check"><input type="checkbox" data-key="pheart"> Heart</label>
-          <label class="check"><input type="checkbox" data-key="plines"> Intersections with the current plane</label>
-          <label class="check"><input type="checkbox" data-key="pcut"> Cut at the current plane</label>
+          <label class="check"><input type="checkbox" data-key="plines"> Intersections with the focused plane</label>
+          <label class="check"><input type="checkbox" data-key="pcut"> Cut at the focused plane</label>
           <label class="check"><input type="checkbox" data-key="pfree"> Free plane</label>
         </div>
         <div class="free" id="planes-free" hidden>
-          <p class="free-head"><span>Free plane, from the current view</span> <output id="pfree-state"></output></p>
+          <p class="free-head"><span>Free plane, from the focused view</span> <output id="pfree-state"></output></p>
           <div class="row2">
             <div class="control">
               <label for="prot">Rotate, + clockwise <output data-for="prot"></output></label>
@@ -547,7 +590,7 @@
               <label for="psweep">Sweep <output data-for="psweep"></output></label>
               <input type="range" id="psweep" data-key="psweep" min="-5" max="5" step="0.1">
             </div>
-            <div class="control free-reset"><button type="button" class="chip" id="pfree-reset">Back to the view</button></div>
+            <div class="control free-reset"><button type="button" class="chip" id="pfree-reset">Back to the focused view</button></div>
           </div>
           <div class="control free-goto">
             <label for="pgoto">Go to a view</label>
@@ -559,35 +602,19 @@
       <p class="live"></p>
       <div class="table-wrap"><table class="vt matrix" id="planes-matrix"></table></div>
       <div class="prose" data-part="prose">
-        <h3>Acoustic windows</h3>
-        <p>The ASE guideline describes four acoustic windows: parasternal, apical, subcostal and suprasternal notch<span class="cite" data-ref="mitchell2019"></span>. Parasternal and apical imaging is performed with the patient in the left lateral decubitus position, and subcostal and suprasternal imaging with the patient supine<span class="cite" data-ref="mitchell2019"></span>.</p>
-        <ul>
-        <li><b>Parasternal long axis.</b> The probe is placed in the third or fourth left intercostal space, with the marker toward the right shoulder at 9 to 10 o’clock<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Parasternal short axis.</b> The probe is rotated 90° clockwise from the long-axis position, so that the marker points to the left shoulder<span class="cite" data-ref="mitchell2019"></span>. The beam is then tilted inferiorly to move the plane from the great vessels to the mitral valve and the papillary muscles; for the apical level, the probe is moved one or two intercostal spaces lower and more laterally<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Apical window.</b> The probe is placed at the apical impulse, with the marker at 4 to 5 o’clock<span class="cite" data-ref="mitchell2019"></span>. From the four-chamber view, the two-chamber view is obtained by a counterclockwise rotation of about 60°, and the three-chamber view by a further 60°<span class="cite" data-ref="mitchell2019"></span>. The five-chamber view is obtained by tilting the beam anteriorly<span class="cite" data-ref="mitchell2019"></span>.</li>
-        <li><b>Subcostal window.</b> The probe is placed below the xiphoid. The subcostal views show the heart, the pericardium, the RV free wall and the inferior vena cava (IVC)<span class="cite" data-ref="mitchell2019"></span>; with the beam angled slightly to the patient's left, they show the abdominal aorta.</li>
-        <li><b>Suprasternal window.</b> The suprasternal views show the ascending aorta, the aortic arch, the head vessels and the descending aorta<span class="cite" data-ref="mitchell2019"></span>.</li>
-        </ul>
-        <h3>The interactive figure</h3>
-        <p>The figure shows one imaging plane in three panes. The <b>All planes</b> pane shows the whole heart with the planes of the selected views, each in the color of its acoustic window. The current plane is drawn in ink, with the probe at its apex. The <b>Cross-section</b> pane shows the heart model sectioned in the current plane and viewed perpendicular to that plane, in the orientation of the echocardiographic image. The third pane shows the echocardiographic image of the same plane. When another view is selected, the plane moves from its current position, as the probe would move, and the three panes follow the same movement.</p>
-        <p>The <b>Labels</b> option displays the names of the structures in the cross-section. The <b>Probe and body</b> option adds a small figure of the body to the All planes pane. The figure is oriented as the heart is, with the probe on the skin at the acoustic window. The <b>Heart</b>, <b>Intersections</b> and <b>Cut</b> options apply to the All planes pane. They show the heart, draw the lines where the current plane crosses the other planes, and cut the heart at that plane.</p>
-        <p>Simple shapes below the diaphragm are added for the subcostal views. They represent the liver, the IVC, two hepatic veins, the abdominal aorta with the celiac trunk and the superior mesenteric artery, and the spine. These structures are not part of the heart model, and only the liver appears in the 3D panes. Each view is labeled with its view class name for image annotation, where the annotation list contains the view. The model is a normal adult heart; in a patient, the angles vary with the position of the heart.</p>
         <h3>Spatial relations of the views</h3>
         <ul>
-        <li><b>The apical planes intersect along the LV long axis.</b> The apical four-, two- and three-chamber planes all contain the long axis of the LV. According to the ASE guideline, the probe is rotated about 60° between these views<span class="cite" data-ref="mitchell2019"></span>; the angles of this model are given below the controls. Viewed from the apex, the three planes radiate from the long axis.</li>
+        <li><b>The apical planes intersect along the LV long axis.</b> The apical four-, two- and three-chamber planes all contain the long axis of the LV. According to the ASE guideline, the probe is rotated about 60° between these views<span class="cite" data-ref="mitchell2019"></span>; the angles of this model are given in the figure. Viewed from the apex, the three planes radiate from the long axis.</li>
         <li><b>The short-axis planes are nearly parallel.</b> Tilting the probe moves the plane in steps from the mitral valve level to the papillary muscle level and the apex<span class="cite" data-ref="mitchell2019"></span>. Viewed from the side, the planes form a stack.</li>
         <li><b>The long- and short-axis planes are perpendicular.</b> The parasternal short-axis view is obtained by a 90° rotation of the probe from the parasternal long-axis view<span class="cite" data-ref="mitchell2019"></span>.</li>
         <li><b>Small tilts produce additional views.</b> From the parasternal long-axis view, a tilt toward the right hip produces the RV inflow view, and an anterior tilt produces the RV outflow view. From the apical four-chamber view, an anterior tilt brings the LVOT and the aortic valve into the plane<span class="cite" data-ref="mitchell2019"></span>.</li>
         </ul>
         <h3>Free plane</h3>
-        <p>The <b>Free plane</b> controls move a plane away from the current view in the same ways that a probe is moved: rotation about the beam, tilt of the beam across the plane, rock of the beam within the plane, slide of the probe along the plane and sweep of the probe across it. The cross-section and the echocardiographic image display the section that this plane cuts from the heart, and the <b>En face</b> viewpoint turns the All planes pane so that the plane is viewed perpendicular to its surface. In this model, a rotation of 60° counterclockwise from the four-chamber view produces the two-chamber view, and a rotation of 120° produces the three-chamber view. A rotation of 90° clockwise from the parasternal long axis produces the short axis at the mitral valve level.</p>
-        <p>The probe remains in the acoustic window of the current view, so the free plane is compared only with the standard views of that window. A plane from another window can cut the heart in almost the same section, as the apical and subcostal four-chamber planes do, but it constitutes a different view. The comparison uses the angle between the planes, with the orientation marker on the same side, and the distance of the view's center from the free plane. The same plane with the marker on the opposite side produces a mirror image, and the free-plane panel reports the reversed marker. Within 20° and 3 cm, the nearest view is marked; within 10° and 1.5 cm, the plane settles onto that view when the control is released.</p>
-        <p><b>Back to the view</b> returns the probe to the current view in steps: slide and sweep first, then tilt and rock, and rotation last. Each step begins before the previous step ends, so the movement is continuous. <b>Go to a view</b> moves the free plane to any standard view. For a view in the same window, the selected view becomes the current view; the control values are then recalculated relative to that view and return to zero. For a view in another window, the probe first returns to the current view and then moves across the chest to the new window.</p>
+        <p>The <b>Free plane</b> controls move a plane away from the focused view in the same ways that a probe is moved: rotation about the beam, tilt of the beam across the plane, rock of the beam within the plane, slide of the probe along the plane and sweep of the probe across it. The echocardiographic image displays the section that this plane cuts from the heart, and the <b>En face</b> viewpoint turns the 3D heart so that the plane is viewed perpendicular to its surface. In this model, a rotation of 60° counterclockwise from the four-chamber view produces the two-chamber view, and a rotation of 120° produces the three-chamber view. A rotation of 90° clockwise from the parasternal long axis produces the short axis at the mitral valve level.</p>
+        <p>The probe remains in the acoustic window of the focused view, so the free plane is compared only with the standard views of that window. A plane from another window can cut the heart in almost the same section, as the apical and subcostal four-chamber planes do, but it constitutes a different view. The comparison uses the angle between the planes, with the orientation marker on the same side, and the distance of the view's center from the free plane. The same plane with the marker on the opposite side produces a mirror image, and the free-plane panel reports the reversed marker. Within 20° and 3 cm, the nearest view is marked; within 10° and 1.5 cm, the plane settles onto that view when the control is released.</p>
+        <p><b>Back to the focused view</b> returns the probe to the focused view in steps: slide and sweep first, then tilt and rock, and rotation last. Each step begins before the previous step ends, so the movement is continuous. <b>Go to a view</b> moves the free plane to any standard view. For a view in the same window, the selected view becomes the focused view; the control values are then recalculated relative to that view and return to zero. For a view in another window, the probe first returns to the focused view and then moves across the chest to the new window.</p>
         <h3>Structures in each view</h3>
-        <p>The table lists the structures that the ASE guideline names for each displayed view<span class="cite" data-ref="mitchell2019"></span>. Selection of a structure highlights the views that contain it. The All planes pane shows only the parent views, not their zoomed or LV-focused variants.</p>
-        <h3>Apical foreshortening</h3>
-        <p>In an apical view without foreshortening, the LV occupies about two thirds and the LA about one third of the long axis<span class="cite" data-ref="mitchell2019"></span>. When the plane does not pass through the true apex, the LV appears short and round, and LV volumes are underestimated<span class="cite" data-ref="lang2015"></span>.</p>
-        <p>The minimum dataset of the British Society of Echocardiography lists the views in scanning order and specifies at least two cardiac cycles for each clip<span class="cite" data-ref="bse2020"></span>.</p>
+        <p>The table lists the structures that the ASE guideline names for each displayed view<span class="cite" data-ref="mitchell2019"></span>. Selection of a structure highlights the views that contain it. The figure shows only the parent views, not their zoomed or LV-focused variants.</p>
         <h3>Clinical relevance</h3>
         <ul>
         <li>A finding should be confirmed in two views that intersect it at different angles.</li>
@@ -596,10 +623,8 @@
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>The parasternal short-axis view is obtained by rotating the probe 90° clockwise from the parasternal long-axis view, so the two planes are perpendicular.</li>
-        <li>The apical four-, two- and three-chamber planes intersect along the LV long axis. The two- and three-chamber views are obtained from the four-chamber view by successive counterclockwise rotations of about 60°.</li>
+        <li>The apical four-, two- and three-chamber planes are related by rotation about the LV long axis.</li>
         <li>The parasternal short-axis planes are nearly parallel sections through the heart.</li>
-        <li>The IVC diameter is measured in the subcostal view, 1 to 2 cm from the junction with the right atrium<span class="cite" data-ref="mitchell2019"></span>.</li>
         <li>Each structure appears in several views and should be examined in at least two of them.</li>
         </ol>
       </div>

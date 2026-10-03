@@ -32,9 +32,9 @@ import score as SC                                # noqa: E402  (timeline, measu
 SR = 48000
 BPM = 109.3
 SEEDS = {'A': 9201, 'B': 9202, 'C': 9102, 'D': 9204}
-SEEDS['P'] = 9307                                 # cut P, the video of chapter 07 (views and planes)
+SEEDS['P'] = 9307                                 # cut P (archived), the three-pane video of PR #19
 # the chapter videos (video/chapters.js), by key: 93 and the chapter's number when it was scored,
-# before 07 and 08 became one chapter; the seeds stay, so the scores rebuild as they were
+# with 08 Planes in the list (archived since); the seeds stay, so the scores rebuild as they were
 SEEDS.update({'PULSE': 9301, 'IMAGE': 9302, 'SHIFT': 9303, 'PRESSURE': 9304, 'CYCLE': 9305, 'LOOP': 9306,
               'EJECT': 9309, 'SEGMENTS': 9310, 'FILL': 9311, 'AS': 9312, 'AR': 9313,
               'MS': 9314, 'MR': 9315, 'TR': 9316, 'PERI': 9317, 'AMYLOID': 9318})

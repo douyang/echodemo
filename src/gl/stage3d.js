@@ -1,5 +1,4 @@
-// Shared WebGL stage: the heart with the imaging plane (chapter 07 Views). A second pane
-// (Pane3D) draws the same scene from a camera of its own, in a canvas of its own.
+// Shared WebGL stage: the heart with the imaging plane (chapter 07 Views).
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { Pencil } from './pencil.js';
 import { loadModel } from '../model3d.js';
@@ -85,61 +84,6 @@ class Trackball {
   }
 }
 
-/**
- * Camera preset for a pane o (the stage or a Pane3D): the direction the camera looks along,
- * screen-up, the distance in heart radii and the target. It eases there (o.tween) unless instant.
- */
-function aimView(o, labeled, dir, up, distScale = 2.55, target = null, instant = false) {
-  const tgt = (target || o.center).clone();
-  const d = dir.clone().normalize();
-  // a labeled figure backs off to leave room for the tags: in a portrait host, and in a
-  // host too narrow for a tag column on each side of the heart (about 0.8 of the height wide)
-  const aspect = o.camera.aspect || 1;
-  let fit = 1;
-  if (labeled && aspect < 1) fit = Math.pow(1 / aspect, 0.85) * 1.1;
-  else if (labeled) {
-    const cols = (2 * Math.min(150, 0.25 * o.pencil.w)) / Math.max(1, o.pencil.h);
-    fit = Math.min(1.4, Math.max(1, 0.8 / Math.max(0.2, aspect - cols)));
-  } else fit = Math.max(1, 0.85 / aspect);   // the imaging plane: the whole heart across a narrow pane
-  const pos = tgt.clone().addScaledVector(d, -o.radius * distScale * fit);
-  const upv = up.clone().normalize();
-  if (instant || reducedMotion) {
-    o.camera.position.copy(pos);
-    o.camera.up.copy(upv);
-    o.controls.target.copy(tgt);
-    o.camera.lookAt(tgt);
-    o.tween = null;
-    return;
-  }
-  o.tween = {
-    t: 0,
-    p0: o.camera.position.clone(), p1: pos,
-    u0: o.camera.up.clone(), u1: upv,
-    c0: o.controls.target.clone(), c1: tgt,
-  };
-}
-
-/** One step of a pane's camera ease (aimView) and its trackball. */
-function stepCamera(o, dt) {
-  if (o.tween) {
-    const tw = o.tween;
-    tw.t = Math.min(1, tw.t + dt / 0.9);
-    const k = smooth(tw.t);
-    o.camera.position.lerpVectors(tw.p0, tw.p1, k);
-    o.camera.up.lerpVectors(tw.u0, tw.u1, k).normalize();
-    o.controls.target.lerpVectors(tw.c0, tw.c1, k);
-    if (tw.t >= 1) o.tween = null;
-  }
-  o.controls.update();
-  o.camera.updateMatrixWorld();
-}
-
-/** Screen point (px of the pane) of world point v seen by camera on pencil r. */
-function projectOn(camera, r, v) {
-  const p = v.clone().project(camera);
-  return { x: (p.x * 0.5 + 0.5) * r.w, y: (-p.y * 0.5 + 0.5) * r.h, z: p.z };
-}
-
 export class Stage3D {
   /** opts.Renderer: a class with the Pencil interface. */
   constructor(opts = {}) {
@@ -167,14 +111,7 @@ export class Stage3D {
     this.tools = [];      // pencil items of meshes in the scene beside the heart (the probe)
     this.layer = null;    // a layer drawn over the heart, fading in and out (gl/liver3d.js)
     this.tween = null;
-    this.pane2 = null;    // a second pane on this scene (addPane)
     this.ready = this._load();
-  }
-
-  /** The second pane: one per stage, made on first use (after ready). */
-  addPane() {
-    if (!this.pane2) this.pane2 = new Pane3D(this);
-    return this.pane2;
   }
 
   async _load() {
@@ -213,7 +150,7 @@ export class Stage3D {
     this.camera.updateProjectionMatrix();
   }
 
-  retheme() { this.pencil.setTheme(tokens()); if (this.pane2) this.pane2.pencil.setTheme(tokens()); }
+  retheme() { this.pencil.setTheme(tokens()); }
 
   start() {
     if (this.running) return;
@@ -242,7 +179,33 @@ export class Stage3D {
 
   /** Camera preset: direction the camera looks along, and screen-up vector. */
   view(dir, up, distScale = 2.55, target = null, instant = false) {
-    aimView(this, this.opts.labeled, dir, up, distScale, target, instant);
+    const tgt = (target || this.center).clone();
+    const d = dir.clone().normalize();
+    // a labeled figure backs off to leave room for the tags: in a portrait host, and in a
+    // host too narrow for a tag column on each side of the heart (about 0.8 of the height wide)
+    const aspect = this.camera.aspect || 1;
+    let fit = 1;
+    if (this.opts.labeled && aspect < 1) fit = Math.pow(1 / aspect, 0.85) * 1.1;
+    else if (this.opts.labeled) {
+      const cols = (2 * Math.min(150, 0.25 * this.pencil.w)) / Math.max(1, this.pencil.h);
+      fit = Math.min(1.4, Math.max(1, 0.8 / Math.max(0.2, aspect - cols)));
+    } else fit = Math.max(1, 0.85 / aspect);   // the imaging plane: the whole heart across a narrow pane
+    const pos = tgt.clone().addScaledVector(d, -this.radius * distScale * fit);
+    const upv = up.clone().normalize();
+    if (instant || reducedMotion) {
+      this.camera.position.copy(pos);
+      this.camera.up.copy(upv);
+      this.controls.target.copy(tgt);
+      this.camera.lookAt(tgt);
+      this.tween = null;
+      return;
+    }
+    this.tween = {
+      t: 0,
+      p0: this.camera.position.clone(), p1: pos,
+      u0: this.camera.up.clone(), u1: upv,
+      c0: this.controls.target.clone(), c1: tgt,
+    };
   }
 
   presetFor(cut) {
@@ -284,10 +247,17 @@ export class Stage3D {
       this.lvCenter = this.anat.point('lv_eq', 0, 0).lerp(this.anat.point('mv', 0, 0), 0.25);
     }
 
-    stepCamera(this, dt);
-    // the second pane's camera first: the chapter's frame reads both cameras
-    const P2 = this.pane2 && this.pane2.on && this.pane2.host ? this.pane2 : null;
-    if (P2) stepCamera(P2, dt);
+    if (this.tween) {
+      const tw = this.tween;
+      tw.t = Math.min(1, tw.t + dt / 0.9);
+      const k = smooth(tw.t);
+      this.camera.position.lerpVectors(tw.p0, tw.p1, k);
+      this.camera.up.lerpVectors(tw.u0, tw.u1, k).normalize();
+      this.controls.target.lerpVectors(tw.c0, tw.c1, k);
+      if (tw.t >= 1) this.tween = null;
+    }
+    this.controls.update();
+    this.camera.updateMatrixWorld();
 
     // the 2D figure that follows the model (labels, echo) and the 3D view fail apart
     if (this.onFrame) { try { this.onFrame(this); } catch (err) { this.report(err); } }
@@ -305,10 +275,13 @@ export class Stage3D {
       layer: this.layer,
       inset: this.inset ? this.inset.frame(this.camera, this.pencil.w, this.pencil.h) : null,
     });
-    if (P2) P2.draw(boil, a);
   }
 
-  project(v) { return projectOn(this.camera, this.pencil, v); }
+  project(v) {
+    const p = v.clone().project(this.camera);
+    const r = this.pencil;
+    return { x: (p.x * 0.5 + 0.5) * r.w, y: (-p.y * 0.5 + 0.5) * r.h, z: p.z };
+  }
 
   /**
    * Screen box (px) of the heart on the kept side of the cut: the end-diastolic
@@ -364,95 +337,6 @@ export class Stage3D {
     scan(this.sample.heart);
     if (this.heart.peri && this.heart.peri.visible) scan(this.sample.peri);
     return Number.isFinite(x0) ? { x0, y0, x1, y1 } : null;
-  }
-}
-
-
-/**
- * A second pane on the stage's scene (chapter 07: the planes beside the cross-section). It has
- * its own canvas, pencil renderer, camera and trackball. The stage draws it after its own pane
- * in each frame (tick): prepare() sets the scene for this pane (its cut, overlays and layer),
- * the pencil draws the scene with the stage's camera posed as this pane's camera (the lights ride
- * on that camera), and restore() puts the scene and the camera back. The video page draws two
- * panes from one scene in the same way (video/app.js).
- */
-export class Pane3D {
-  constructor(stage) {
-    this.stage = stage;
-    this.pencil = new Pencil();
-    this.pencil.setTheme(tokens());
-    this.camera = new THREE.PerspectiveCamera(stage.camera.fov, 1, stage.camera.near, stage.camera.far);
-    this.camera.position.copy(stage.camera.position);
-    this.center = stage.center;
-    this.radius = stage.radius;
-    this.controls = new Trackball(this.camera, this.pencil.canvas);
-    this.controls.minDistance = stage.radius * 1.2;
-    this.controls.maxDistance = stage.radius * 5;
-    this.controls.target.copy(stage.center);
-    this.controls.onStart(() => { this.tween = null; this.controls.vel = { x: 0, y: 0 }; });
-    this.host = null;
-    this.on = false;      // drawn in each frame of the stage while on
-    this.tween = null;
-    this.inset = null;    // a key in a corner, as the stage's (gl/bodykey.js)
-    this.layer = null;    // a layer over the heart, as the stage's (gl/liver3d.js)
-    this.prepare = null;  // (pane) => void: the scene as this pane shows it
-    this.restore = null;  // (pane) => void: the scene back as the stage's pane shows it
-  }
-
-  attach(host) {
-    if (this.host === host) return;
-    this.host = host;
-    host.appendChild(this.pencil.canvas);
-    this.resize();
-  }
-
-  resize() {
-    if (!this.host) return;
-    const r = this.host.getBoundingClientRect();
-    const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
-    this.pencil.setSize(w, h);
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
-  }
-
-  /** Camera preset, as the stage's view(); this pane has no tags beside the heart. */
-  view(dir, up, distScale = 2.55, target = null, instant = false) {
-    aimView(this, false, dir, up, distScale, target, instant);
-  }
-
-  project(v) { return projectOn(this.camera, this.pencil, v); }
-
-  /** The scene from this pane's camera into its canvas (Stage3D.tick). */
-  draw(boil, amyloid) {
-    const s = this.stage, cam = s.camera, c = this.camera;
-    const keep = { p: cam.position.clone(), q: cam.quaternion.clone(), u: cam.up.clone(), aspect: cam.aspect };
-    cam.position.copy(c.position);
-    cam.quaternion.copy(c.quaternion);
-    cam.up.copy(c.up);
-    cam.aspect = c.aspect;
-    cam.updateProjectionMatrix();
-    cam.updateMatrixWorld();
-    try {
-      if (this.prepare) this.prepare(this);
-      this.pencil.render(s.scene, cam, s.heart, {
-        boil,
-        amyloid,
-        look: s.opts.look,
-        time: s.clock,
-        overlayScene: s.overlayScene.children.length ? s.overlayScene : null,
-        tools: s.tools,
-        layer: this.layer,
-        inset: this.inset ? this.inset.frame(cam, this.pencil.w, this.pencil.h) : null,
-      });
-    } finally {
-      if (this.restore) this.restore(this);
-      cam.position.copy(keep.p);
-      cam.quaternion.copy(keep.q);
-      cam.up.copy(keep.u);
-      cam.aspect = keep.aspect;
-      cam.updateProjectionMatrix();
-      cam.updateMatrixWorld();
-    }
   }
 }
 
