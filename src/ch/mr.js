@@ -8,10 +8,13 @@
 // follow the slider again.
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
-import { mitralV, RR, EV } from '../cyclemodel.js';
+import { mitralV, RR, EV, cycleAt } from '../cyclemodel.js';
 import { MR_MILD, MR_SEVERE, MR_QUANT_LABEL, mrIntegrated } from '../norms.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, waveLetter } from '../sev.js';
-import { drawA4C, cal, measures, heartShown } from '../echo2d.js';
+import { drawA4C, cal, measures, heartShown, jet, barFor } from '../echo2d.js';
+import { MeshPanel } from '../meshpanel.js';
+import { laWeight, lvSizeOf, lvByEf } from '../meshcal.js';
+import { onPlane, hingesOf, closureOf, blood, cavity, area, middle, sub, add, mul, dot, unit, perp } from '../meshjet.js';
 import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
@@ -238,8 +241,77 @@ function laDims(vol, r) {
   return [r * L, L];
 }
 
-/** The A4C at the values on screen: the chambers and the jet from the measurements, the walls from the model. */
+// The four-chamber view cut from the heart mesh (meshpanel.js): the heart the page shows, its LA
+// at the printed LA volume index (meshcal.js laWeight), its LV at the printed LVEDD and LVEF
+// (lvSizeOf, lvByEf), and the jet drawn on it as on the parametric view. The scanner format
+// (jets.js) keeps the parametric view.
+const MESH = new MeshPanel('a4c', { diseases: ['la', 'lvSize'], lv: true, redraw: () => { if (sheet) sheet.dirty = true; } });
+
+/**
+ * The jet on the mesh view at systolic weight s: from where the mitral leaflets meet, into the
+ * LA, which clips it; its length and width from the jet area as a share of the LA's area on the
+ * plane, as the parametric view sizes them. ax: the LV's long axis, for the PISA radius.
+ */
+function mrJet(ev, v, s) {
+  const h = hingesOf(ev, 'MitralValve');
+  if (!h) return null;
+  const an = ev.anchors(s), apex = onPlane(ev, an.apex), M = middle(h);
+  let nrm = perp(unit(sub(h[1], h[0])));
+  if (dot(sub(apex, M), nrm) < 0) nrm = mul(nrm, -1);
+  const O = closureOf(ev, 'MitralValve', M, nrm) || M;
+  // the LA's blood reaches up between the shut leaflets to where they meet: the cavity is cut
+  // there, parallel to the hinge line
+  const side = perp(nrm);
+  const LA = cavity(ev, blood(ev, onPlane(ev, an.la)), [[add(O, side), sub(O, side)]]);
+  if (LA.length < 12) return null;
+  let lMax = 0, w0 = Infinity, w1 = -Infinity;
+  for (const p of LA) {
+    lMax = Math.max(lMax, -dot(sub(p, M), nrm));
+    const x = dot(sub(p, M), side);
+    w0 = Math.min(w0, x);
+    w1 = Math.max(w1, x);
+  }
+  const jA = (v.jet / 100) * area(LA);
+  const jl = Math.min(lMax * 0.92, Math.sqrt((jA / 0.55) * 1.3));
+  const jw = jl > 0 ? Math.min((w1 - w0) * 0.9, jA / (0.55 * jl)) : 0;
+  const ax = unit(sub(apex, M));
+  // into the LA against the LV's long axis, leaning toward the LA's middle
+  const dir = unit(add(mul(ax, -0.8), mul(unit(sub(middle(LA), O)), 0.2)));
+  return { O, dir, clip: LA, ax, jl, jw };
+}
+
+/** The A4C at the values on screen: the chambers and the jet from the measurements. */
 function a4c(ctx, box, v, t, mode) {
+  const t0 = EV.mvc + v.onset * (EV.mvo - EV.mvc);
+  const sys = t >= t0 && t <= EV.mvo;
+  const a = sys ? Math.pow(Math.max(0, Math.sin(Math.PI * (t - t0) / (EV.mvo - t0))), 0.35) : 0;
+  // with no flow convergence, the jet is drawn from the flow through its vena contracta
+  const pisa = v.flow > 0, q = pisa ? v.flow : Math.PI * (Math.max(v.vc, 0.24) / 2) ** 2 * v.vmax * 100;
+  const tags = (list) => [...list, ...(v.flail ? [['flail leaflet', 'flail']] : [])];
+  if (JETS === 'plume') {
+    // one view at the aliasing velocity: the flow convergence with its radius, and the jet
+    const heart = st.pheno || 'normal';
+    const W8 = lvByEf(heart, lvSizeOf(heart, v.lvedd), v.ef), sy = cycleAt(t).s;
+    MESH.draw(ctx, box, fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${VA} cm/s`, `A4C · COLOR ${VA}`), {
+      tms: t, disease: { la: laWeight(v.lavi, heart), lvSize: W8.size + (W8.esSize - W8.size) * sy }, lvK: W8.k,
+      // deeper as the LA grows (its length as the cube root of its volume, 5 cm at 25 mL/m²)
+      deeper: Math.max(0, 5 * (Math.cbrt(v.lavi / 25) - 1)),
+      names: [['lv', 'LV', 'apex', 0.45], ['rv', 'RV'], ['la', 'LA'], ['ra', 'RA']],
+      over: (c, F, ev) => {
+        if (!v.leak) return;
+        const J = mrJet(ev, v, sy);
+        if (!J) return;
+        jet(c, F, { q, va: VA, vc: v.vc, jl: J.jl, jw: J.jw, a, pisa, O: J.O, dir: J.dir, clip: J.clip });
+        barFor(c, F, -VA, VA);
+        // the PISA radius from the orifice into the LV, along its long axis
+        if (pisa && a > 0.5) cal(c, F, J.O, add(J.O, mul(J.ax, v.r)), '', { solid: true });
+      },
+      lines: tags([`PISA r ${v.r.toFixed(2)} cm`, `VC ${v.vc.toFixed(2)} cm`, [`jet ${v.jet}% of LA`, `jet ${v.jet}% LA`]]),
+    });
+    return;
+  }
+  // the scanner format: the parametric view, its chambers from the measurements and its walls
+  // from the model
   const laMax = v.lavi * BSA, laMin = laMax * 0.55;
   const [wMax, lMax] = laDims(laMax, 0.8 + 0.1 * v.s), [wMin, lMin] = laDims(laMin, 0.8 + 0.1 * v.s);
   const wall = 0.9 - 0.08 * v.s;
@@ -249,32 +321,10 @@ function a4c(ctx, box, v, t, mode) {
     rvW: [3.4 + 0.3 * v.s, 2.8 + 0.3 * v.s], laW: [wMin, wMax], laL: [lMin, lMax], raW: [3.2, 3.8], raL: [3.9, 4.5],
     ma: v.ma, ta: 3.0, mv: { gap: v.gap, thick: 0.13 },
   };
-  const t0 = EV.mvc + v.onset * (EV.mvo - EV.mvc);
-  const sys = t >= t0 && t <= EV.mvo;
-  const a = sys ? Math.pow(Math.max(0, Math.sin(Math.PI * (t - t0) / (EV.mvo - t0))), 0.35) : 0;
   const laArea = (Math.PI / 4) * wMax * lMax;
   const jA = (v.jet / 100) * laArea;
   const jl = Math.min(lMax * 0.92, Math.sqrt(jA / 0.55 * 1.3));
   const jw = jl > 0 ? Math.min(wMax * 0.9, jA / (0.55 * jl)) : 0;
-  // with no flow convergence, the jet is drawn from the flow through its vena contracta
-  const pisa = v.flow > 0, q = pisa ? v.flow : Math.PI * (Math.max(v.vc, 0.24) / 2) ** 2 * v.vmax * 100;
-  const tags = (list) => [...list, ...(v.flail ? [['flail leaflet', 'flail']] : [])];
-  if (JETS === 'plume') {
-    // one view at the aliasing velocity: the flow convergence with its radius, and the jet
-    drawA4C(ctx, box, g, {
-      t, depth: 16 + 1.2 * v.s, title: fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${VA} cm/s`, `A4C · COLOR ${VA}`),
-      jets: v.leak ? { mr: { q, va: VA, vc: v.vc, jl, jw, a, pisa } } : {},
-      after: (c, F, geo) => {
-        if (pisa && a > 0.5) {
-          // from the orifice into the LV, along its long axis
-          const O = geo.mv.gapMid;
-          cal(c, F, O, [O[0] + geo.ax[0] * v.r, O[1] + geo.ax[1] * v.r], '', { solid: true });
-        }
-        measures(c, F, tags([`PISA r ${v.r.toFixed(2)} cm`, `VC ${v.vc.toFixed(2)} cm`, [`jet ${v.jet}% of LA`, `jet ${v.jet}% LA`]]));
-      },
-    });
-    return;
-  }
   // Jet: the standard scale. PISA: zoomed on the valve, the baseline shifted toward the jet
   // (down: MR runs away from the probe) until the flow aliases at VA; variance off
   const zoom = mode === 'pisa';

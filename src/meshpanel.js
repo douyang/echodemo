@@ -58,9 +58,11 @@ export class MeshPanel {
    * of the moves within the beat (echo.js setMotion); o.standoff: cm of fluid between the probe
    * and the heart, and o.deeper: cm added to the view's depth; o.sac: lung and fat outside the
    * sac, and o.still (0 to 1): the sac keeps still in systole; o.lvK: the LV's own contraction
-   * (echo.js setLvSys); o.fore: cm the probe sits off the plane (echo.js setFore); o.lines: the
+   * (echo.js setLvSys); o.fore: cm the probe sits off the plane (echo.js setFore); o.over(ctx,
+   * F, ev): drawn on the image before the box and the names (jets, calipers); o.lines: the
    * measurement box (echo2d.js measures); o.names: chamber names, [[anchor, text], ...], kept
-   * clear of the box.
+   * clear of the box; [anchor, text, toward, f] puts the name fraction f of the way from anchor
+   * to anchor toward.
    * Returns F, or null while the model loads.
    */
   draw(ctx, P, title, o = {}) {
@@ -95,7 +97,8 @@ export class MeshPanel {
     }
     ctx.drawImage(ev.canvas, bx.x, bx.y, w, h);
     const F = this.frameOf(P, bx);
-    this.depthMarks(ctx, bx);
+    if (o.over) o.over(ctx, F, ev);
+    this.depthMarks(ctx, bx, F.barEnd);
     if (o.lines) measures(ctx, F, o.lines);
     if (o.names) this.tags(ctx, F, o.names, cycleAt(tms).s, F.meas || null);
     return F;
@@ -118,8 +121,11 @@ export class MeshPanel {
     };
   }
 
-  /** Depth marks in the strip right of the image, as echo2d.js finish() draws them. */
-  depthMarks(ctx, bx) {
+  /**
+   * Depth marks in the strip right of the image, as echo2d.js finish() draws them; no number
+   * above barEnd, where a color bar's legend (echo2d.js barFor) takes the strip.
+   */
+  depthMarks(ctx, bx, barEnd = 0) {
     const mp = this.ev.map, depth = this.ev.specOf(this.view).depth;
     if (!mp) return;
     ctx.save();
@@ -136,7 +142,7 @@ export class MeshPanel {
       ctx.moveTo(x, y);
       ctx.lineTo(x + l, y);
       ctx.stroke();
-      if (d % 5 === 0) ctx.fillText(String(d), x + 8, y + 3.5);
+      if (d % 5 === 0 && y - 6 > barEnd) ctx.fillText(String(d), x + 8, y + 3.5);
     }
     ctx.restore();
   }
@@ -156,10 +162,11 @@ export class MeshPanel {
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(8,10,12,0.85)';
     ctx.fillStyle = 'rgba(214,222,226,0.92)';
-    for (const [k, name] of list) {
+    for (const [k, name, toward, f] of list) {
       if (!an[k]) continue;
       const hw = ctx.measureText(name).width / 2 + 3;
-      const [x0, y0] = F.P(F.cm(an[k]));
+      const at = toward && an[toward] ? an[k].clone().lerp(an[toward], f) : an[k];
+      const [x0, y0] = F.P(F.cm(at));
       const x = clamp(x0, bx.x + hw + 2, bx.x + bx.w - hw - 2), y = clamp(y0, bx.y + 10, bx.y + bx.h - 10);
       if (avoid && x + hw > avoid.x && x - hw < avoid.x + avoid.w && y + 9 > avoid.y && y - 9 < avoid.y + avoid.h) continue;
       ctx.strokeText(name, x, y);
