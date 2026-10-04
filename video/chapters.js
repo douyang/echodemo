@@ -155,7 +155,7 @@ export const VIDEOS = {
       { set: { asS: 0.97 }, name: 'Classical low-flow, low-gradient aortic stenosis', track: 'Low flow', pick: [0, 1, 2], hold: 6 },
       // the bicuspid heart (src/pheno.js) at its severe grade: the cusps dome, and the short axis shows two
       { set: { asS: 0.55, pheno: 'bav' }, name: 'Bicuspid aortic valve, severe stenosis', track: 'Bicuspid',
-        line: 'The right and left cusps are fused, with a raphe. The valve domes in systole and opens off centre, and the ascending aorta measures 3.9 cm.', move: 3, hold: 6 },
+        line: 'The right and left cusps are fused, with a raphe. The valve domes in systole and opens off centre, and the ascending aorta measures 3.6 cm.', move: 3, hold: 6 },
     ],
   },
   ar: {

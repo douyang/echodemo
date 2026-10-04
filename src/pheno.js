@@ -19,7 +19,7 @@ export const PHENOS = {
   },
   bav: {
     name: 'Bicuspid AS', long: 'Bicuspid aortic valve, severe aortic stenosis', a: 0, mesh: 'bav',
-    note: 'The right and left cusps fused, with a raphe: the valve domes and opens as a slit. Severe stenosis; LV walls 12.5 mm; ascending aorta 3.9 cm.',
+    note: 'The right and left cusps fused, with a raphe: the valve domes and opens as a slit. Severe stenosis; LV walls 12.5 mm; ascending aorta 3.6 cm.',
   },
 };
 export const PHENO_KEYS = Object.keys(PHENOS);

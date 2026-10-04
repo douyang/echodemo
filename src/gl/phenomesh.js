@@ -434,6 +434,11 @@ export const DISEASE = {
   // chordae next to the leaflets move with them.
   msValve: { valve: 'ms' },
   mvThick: { valve: 'thick' },
+  // Calcific aortic stenosis (chapter 12). avSten: the cusps stiff, each swinging open by 1 - w of
+  // its own swing (shut at weight 1); avThick: the cusps thicker, by 1 mm at their bases and
+  // 0.5 mm at their free edges per unit of weight.
+  avSten: { valve: 'as' },
+  avThick: { valve: 'avthick' },
 };
 /** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {
@@ -666,6 +671,7 @@ async function buildGrow(ctx, key, kind) {
  * take the change of the leaflet point next to them, fading over 1 cm.
  */
 async function buildValve(ctx, key, kind) {
+  if (kind === 'as' || kind === 'avthick') return buildAortic(ctx, key, kind);
   const { meshes, F } = ctx;
   const tick = slicer();
   const mesh = meshes.MitralValve, g = mesh.geometry, base = g.attributes.position.array, idx = g.index.array, n = base.length / 3;
@@ -750,6 +756,48 @@ async function buildValve(ctx, key, kind) {
     addTarget(ch, `dx_${key}_mid`, cm);
     addTarget(ch, `dx_${key}_far`, cf);
   }
+  return { shift: () => V3(0, 0, 0) };
+}
+
+/**
+ * An aortic valve target (avSten, avThick), in the scheme of buildValve: the valve model's
+ * shapes run shut (its base) to open (its leaflets target), so the change of the open cusps is
+ * in the middle and open shapes alone. How far a point lies from the cusp's base to its free
+ * edge: its distance from the root's axis, shut, against the root's radius.
+ */
+async function buildAortic(ctx, key, kind) {
+  const { meshes, F } = ctx;
+  const mesh = meshes.AorticValve, g = mesh.geometry, base = g.attributes.position.array, idx = g.index.array, n = base.length / 3;
+  const mid = targetOf(mesh, 'leaflets_mid'), far = targetOf(mesh, 'leaflets');
+  const ax = F.aoAxis || (F.aoAxis = aorticAxis(F)), C = F.av;
+  const rho = new Float32Array(n);
+  let R = 1e-6;
+  for (let i = 0; i < n; i++) {
+    const x = base[3 * i] - C.x, y = base[3 * i + 1] - C.y, z = base[3 * i + 2] - C.z, h = x * ax.x + y * ax.y + z * ax.z;
+    rho[i] = Math.hypot(x - h * ax.x, y - h * ax.y, z - h * ax.z);
+    R = Math.max(R, rho[i]);
+  }
+  const em = new Float32Array(base.length), ef = new Float32Array(base.length), ed = new Float32Array(base.length);
+  if (kind === 'as') {
+    // a stiff cusp swings as a whole, less far: every point loses the same share of its swing
+    for (let j = 0; j < base.length; j++) { em[j] = -mid[j]; ef[j] = -far[j]; }
+  } else {
+    const shape = (t) => { const o = new Float32Array(base.length); for (let i = 0; i < o.length; i++) o[i] = base[i] + (t ? t[i] : 0); return o; };
+    const n0 = normals(shape(null), idx), nm = normals(shape(mid), idx), nf = normals(shape(far), idx);
+    for (let i = 0; i < n; i++) {
+      // calcium gathers at the base of the cusps: 1 mm there, 0.5 mm at the free edges, per unit
+      const f = 1 - Math.min(1, rho[i] / R), t = 0.05 * (1 - 0.5 * f);
+      for (let k = 0; k < 3; k++) {
+        const j = 3 * i + k;
+        ed[j] = t * n0[j];
+        em[j] = t * (nm[j] - n0[j]);
+        ef[j] = t * (nf[j] - n0[j]);
+      }
+    }
+  }
+  addTarget(mesh, `dx_${key}`, ed);
+  addTarget(mesh, `dx_${key}_mid`, em);
+  addTarget(mesh, `dx_${key}_far`, ef);
   return { shift: () => V3(0, 0, 0) };
 }
 

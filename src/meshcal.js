@@ -137,6 +137,11 @@ const LVD = {
   },
 };
 
+/** The lvWall weight whose wall at the middle of the four-chamber trace is wallMm thick on heart key; held to the table. */
+export function lvWallOf(heart, wallMm) {
+  return invert(LV_WL, (LV[heart] || LV.normal).wall, wallMm);
+}
+
 /** The size weight whose LVIDd (mm, parasternal long axis) is lvedd on heart key; held to the table. */
 export function lvSizeOf(heart, lvedd) {
   return invert(LV_SZ, (LVD[heart] || LVD.normal).d, lvedd);
@@ -265,6 +270,47 @@ export function msArea(heart, ms, thick) {
 }
 /** The leaflets' own thickness near the tips (mm) on heart key. */
 export const mvOwnThick = (heart) => (MSV[heart] || MSV.normal).own;
+
+// ---------------------------------------------------------------- the aortic valve (chapter 12)
+// avSten and avThick (phenomesh.js DISEASE) with the valve open in mid-systole: area, the orifice
+// (cm²) seen along the root's axis, the open area inside the cusps that planimetry traces, by
+// thickening weight (mm at the cusps' bases, AS_TH) and then by avSten weight (AS_W); shift, how
+// far (cm) the short axis at the aortic valve moves along its normal to pass through the cusp
+// tips that bound it. own: each heart's cusps (mm), with no target on.
+const AS_W = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+const AS_TH = [0, 1, 2, 3, 4];
+const ASV = {
+  normal: { own: 0.77, area: [[2.64, 2.43, 2.12, 1.85, 1.57, 1.34, 1.06, 0.79, 0.49, 0.38, 0.31], [2.45, 2.22, 1.99, 1.71, 1.43, 1.18, 1.01, 0.73, 0.56, 0.41, 0.3], [2.26, 2.03, 1.8, 1.57, 1.34, 1.06, 0.88, 0.67, 0.48, 0.39, 0.29], [2.07, 1.88, 1.63, 1.42, 1.23, 0.99, 0.77, 0.62, 0.41, 0.35, 0.29], [1.96, 1.73, 1.53, 1.29, 1.06, 0.92, 0.67, 0.57, 0.47, 0.33, 0.26]], shift: [[0.36, 0.32, 0.3, 0.28, 0.27, 0.23, 0.24, 0.17, 0.04, -0.01, -0.04], [0.34, 0.33, 0.29, 0.27, 0.26, 0.25, 0.18, 0.14, 0.04, -0.03, 0.01], [0.34, 0.32, 0.29, 0.26, 0.23, 0.2, 0.2, 0.09, -0.04, -0.06, -0.12], [0.31, 0.31, 0.28, 0.27, 0.22, 0.17, 0.17, 0.07, -0.07, -0.07, -0.1], [0.29, 0.28, 0.27, 0.25, 0.21, 0.15, 0.11, 0.01, -0.09, -0.07, -0.11]] },
+  amyloid: { own: 2.05, area: [[2.26, 2.04, 1.77, 1.56, 1.24, 0.98, 0.73, 0.61, 0.49, 0.44, 0.31], [2.14, 1.9, 1.65, 1.43, 1.05, 0.85, 0.62, 0.55, 0.44, 0.38, 0.32], [1.92, 1.73, 1.49, 1.33, 0.92, 0.78, 0.63, 0.55, 0.43, 0.36, 0.27], [1.76, 1.54, 1.33, 1.16, 0.83, 0.64, 0.55, 0.51, 0.39, 0.31, 0.29], [1.62, 1.41, 1.19, 1.04, 0.73, 0.59, 0.48, 0.48, 0.31, 0.33, 0.32]], shift: [[0.49, 0.48, 0.46, 0.42, 0.37, 0.34, 0.27, 0.23, 0.16, 0.17, 0.08], [0.45, 0.47, 0.45, 0.41, 0.37, 0.32, 0.23, 0.17, 0.12, 0.11, 0.07], [0.47, 0.46, 0.45, 0.4, 0.38, 0.28, 0.18, 0.11, 0.08, 0.14, 0.01], [0.46, 0.46, 0.43, 0.38, 0.35, 0.24, 0.12, 0.05, 0.05, 0.01, 0.01], [0.44, 0.44, 0.42, 0.36, 0.32, 0.2, 0.08, 0.03, 0.06, -0.03, -0.1]] },
+  icm: { own: 0.78, area: [[2.8, 2.5, 2.21, 1.92, 1.63, 1.4, 1.07, 0.78, 0.53, 0.42, 0.38], [2.59, 2.33, 2.06, 1.8, 1.49, 1.23, 0.91, 0.73, 0.52, 0.45, 0.35], [2.38, 2.14, 1.91, 1.65, 1.39, 1.12, 0.86, 0.67, 0.51, 0.35, 0.34], [2.22, 1.99, 1.73, 1.54, 1.25, 1.06, 0.79, 0.62, 0.48, 0.38, 0.32], [2.08, 1.84, 1.62, 1.39, 1.14, 0.93, 0.7, 0.56, 0.49, 0.38, 0.34]], shift: [[0.38, 0.38, 0.37, 0.34, 0.32, 0.28, 0.26, 0.22, 0.12, 0.07, -0], [0.38, 0.37, 0.36, 0.32, 0.3, 0.29, 0.26, 0.19, 0.12, 0.07, 0.03], [0.36, 0.35, 0.35, 0.31, 0.3, 0.27, 0.23, 0.14, 0.07, 0.01, 0.03], [0.34, 0.35, 0.34, 0.29, 0.28, 0.24, 0.19, 0.12, 0.03, 0.03, -0.02], [0.34, 0.32, 0.31, 0.28, 0.26, 0.23, 0.18, 0.06, 0.01, 0.05, -0.01]] },
+  barlow: { own: 0.77, area: [[2.77, 2.51, 2.22, 1.97, 1.69, 1.39, 1.13, 0.7, 0.69, 0.5, 0.51], [2.54, 2.31, 2.06, 1.81, 1.56, 1.25, 0.99, 0.67, 0.56, 0.49, 0.35], [2.4, 2.12, 1.88, 1.67, 1.43, 1.14, 0.91, 0.67, 0.59, 0.45, 0.47], [2.25, 2.01, 1.76, 1.52, 1.28, 1.05, 0.83, 0.66, 0.57, 0.43, 0.47], [2.08, 1.85, 1.63, 1.42, 1.16, 0.96, 0.77, 0.62, 0.52, 0.51, 0.42]], shift: [[0.08, 0.07, 0.05, 0.03, 0, -0.02, -0.07, -0.14, -0.23, -0.29, -0.39], [0.08, 0.08, 0.05, 0.03, -0.01, -0.05, -0.1, -0.16, -0.26, -0.29, -0.39], [0.09, 0.07, 0.05, 0.02, -0.01, -0.07, -0.12, -0.19, -0.25, -0.31, -0.38], [0.08, 0.06, 0.04, 0.01, -0.05, -0.1, -0.15, -0.21, -0.27, -0.32, -0.4], [0.08, 0.05, 0.03, -0.01, -0.06, -0.11, -0.17, -0.23, -0.27, -0.34, -0.4]] },
+  bav: { own: 1.89, area: [[0.81, 0.62, 0.51, 0.4, 0.3, 0.28, 0.3, 0.27, 0.31, 0.3, 0.32], [0.73, 0.62, 0.47, 0.37, 0.3, 0.3, 0.29, 0.26, 0.29, 0.3, 0.28], [0.73, 0.56, 0.43, 0.35, 0.28, 0.29, 0.29, 0.32, 0.29, 0.33, 0.32], [0.66, 0.51, 0.43, 0.35, 0.27, 0.32, 0.34, 0.28, 0.3, 0.3, 0.31], [0.6, 0.5, 0.41, 0.33, 0.29, 0.27, 0.31, 0.34, 0.29, 0.31, 0.25]], shift: [[0.4, 0.36, 0.34, 0.23, 0.2, 0.14, 0.08, -0, -0.12, -0.16, -0.31], [0.38, 0.35, 0.28, 0.2, 0.17, 0.08, 0.07, 0.04, -0.12, -0.16, -0.25], [0.37, 0.31, 0.22, 0.17, 0.18, 0.11, 0.03, -0.01, -0.09, -0.14, -0.26], [0.34, 0.24, 0.16, 0.1, 0.14, 0.07, 0.01, -0.03, -0.07, -0.14, -0.22], [0.29, 0.2, 0.14, 0.11, 0.07, 0.06, -0.03, -0.08, -0.09, -0.17, -0.2]] },
+};
+/**
+ * The weights that show an aortic orifice of ava cm² by planimetry, with cusps cuspMm thick, on
+ * heart key: { as, thick, shift }, as msWeights does for the mitral valve: thick, what the cusps
+ * add to the heart's own (0 to 4 mm); as, from the area table at that thickness, made monotone
+ * and held to its range; shift, the short axis at the aortic valve moved to the cusp tips.
+ */
+export function asWeights(heart, ava, cuspMm) {
+  const T = ASV[heart] || ASV.normal;
+  const thick = Math.min(AS_TH[AS_TH.length - 1], Math.max(0, cuspMm - T.own));
+  const [i, t] = cell(AS_TH, thick);
+  let lo = Infinity;
+  const area = AS_W.map((_, k) => (lo = Math.min(lo, lerp(T.area[i][k], T.area[i + 1][k], t))));
+  const w = invert(AS_W, area, ava);
+  const [j, u] = cell(AS_W, w);
+  const at = (r) => lerp(T.shift[r][j], T.shift[r][j + 1], u);
+  return { as: w, thick, shift: lerp(at(i), at(i + 1), t) };
+}
+/** The aortic orifice (cm²) that the weights of asWeights show on heart key. */
+export function asArea(heart, w, thick) {
+  const T = ASV[heart] || ASV.normal, [i, t] = cell(AS_TH, thick), [j, u] = cell(AS_W, w);
+  const at = (r) => lerp(T.area[r][j], T.area[r][j + 1], u);
+  return lerp(at(i), at(i + 1), t);
+}
+/** The cusps' own thickness (mm) on heart key. */
+export const avOwnThick = (heart) => (ASV[heart] || ASV.normal).own;
 
 // Foreshortening (chapter 09): the fraction of the traced length lost at end-diastole against the
 // probe's offset off the plane (cm, echo.js setFore), by LV size weight, on the normal heart.

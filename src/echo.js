@@ -480,6 +480,7 @@ export class EchoView {
     this.sac = false;     // true: lung and fat outside the sac, so fluid in it shows as a dark band
     this.fore = 0;        // cm the probe sits off the view's plane, aimed at the same point: a foreshortened view (setFore)
     this.shift = 0;       // cm the view's plane moves along its own normal (setShift)
+    this.calc = {};       // a chapter's calcified valves: level 0 to 1 by valve mesh name (setCalc)
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -601,6 +602,11 @@ export class EchoView {
     if (Math.abs(cm - this.shift) < 1e-4) return;
     this.shift = cm;
     this.pv = -2;
+  }
+
+  /** A chapter's calcified valves, level 0 to 1 by valve mesh name: brighter leaflets with a shadow behind. */
+  setCalc(levels = {}) {
+    this.calc = levels;
   }
 
   /** The probe set back along the beam by cm, past fluid in front of the heart: the plane moves, the heart stays. */
@@ -1108,11 +1114,21 @@ export class EchoView {
     // leaflets: the mesh gives each one as a thin closed loop, about 1 mm across
     // a disease heart's own valve is brighter: a calcified bicuspid aortic valve (with a faint
     // shadow behind it), the thick myxomatous leaflets of a Barlow mitral valve
+    // and a chapter's calcified valve (setCalc): up to +7 dB and a shadow of 6 dB at level 1
     const ph = this.heart || {};
-    const hot = ph.key === 'bav' ? 'AorticValve' : ph.key === 'barlow' ? 'MitralValve' : null;
-    const leaf = valves.filter((L) => closed(L) && L.valve !== hot).map((L) => L.pts);
-    const hotLeaf = valves.filter((L) => closed(L) && L.valve === hot).map((L) => L.pts);
-    const hotDb = ph.key === 'bav' ? DB.valve + 7 : DB.valve + 3, hotShadow = ph.key === 'bav' ? 6 : 0;
+    const hotOf = {};
+    if (ph.key === 'bav') hotOf.AorticValve = [DB.valve + 7, 6];
+    if (ph.key === 'barlow') hotOf.MitralValve = [DB.valve + 3, 0];
+    for (const [k, c] of Object.entries(this.calc)) {
+      if (!(c > 0)) continue;
+      const own = hotOf[k] || [DB.valve, 0];
+      hotOf[k] = [Math.max(own[0], DB.valve + 7 * c), Math.max(own[1], 6 * c)];
+    }
+    const leaf = valves.filter((L) => closed(L) && !hotOf[L.valve]).map((L) => L.pts);
+    const hotLayers = Object.entries(hotOf).flatMap(([k, [db, shadow]]) => {
+      const pts = valves.filter((L) => closed(L) && L.valve === k).map((L) => L.pts);
+      return [{ polys: pts, e: db, shadow }, { borders: pts, e: db, spec: 7, w: 0.06, closed: true }];
+    });
     // below the diaphragm: the liver with its bright capsule, the veins and arteries in it or
     // behind it (thin-walled veins, thicker brighter arteries), the vertebral bodies casting
     // a shadow; the coronary arteries on the heart
@@ -1267,8 +1283,7 @@ export class EchoView {
       { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: 8, spec: 10, w: 0.15, all: true },
       { polys: leaf, e: DB.valve },
       { borders: leaf, e: DB.valve, spec: 7, w: 0.06, closed: true },
-      { polys: hotLeaf, e: hotDb, shadow: hotShadow },
-      { borders: hotLeaf, e: hotDb, spec: 7, w: 0.06, closed: true },
+      ...hotLayers,
       // coronary arteries run in epicardial fat: a bright sleeve, the wall, the dark lumen
       { lines: cor, closed: true, e: DB.fat + 4, w: 0.5 },
       { borders: cor, e: DB.fibrous, spec: 6, w: 0.07, closed: true, all: true },
