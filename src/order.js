@@ -4,7 +4,8 @@
 // The order follows the ASE comprehensive examination (Mitchell 2019): instrumentation, the views,
 // then the measurements; the RA pressure (Mukherjee 2025) before the pressures that add it; then
 // function, the valves by valve as in the ASE report (Taub 2025), each stenosis before its
-// regurgitation, the pericardium and amyloid.
+// regurgitation, the pericardium and amyloid; stress echocardiography, an examination of its own,
+// comes last.
 
 // The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come back
 // as the last chapter, in a part of its own, when this is true. The Normal values table opens from it.
@@ -16,7 +17,7 @@ export const SHOW_PLANES = false;
 
 export const ORDER = [
   'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'cycle', 'loop', 'ivc', 'pressure',
-  'eject', 'segments', 'fill', 'as', 'ar', 'ms', 'mr', 'tr', 'peri', 'amyloid', ...(SHOW_REPORT ? ['report'] : []),
+  'eject', 'segments', 'fill', 'as', 'ar', 'ms', 'mr', 'tr', 'peri', 'amyloid', 'stress', ...(SHOW_REPORT ? ['report'] : []),
 ];
 
 /** A chapter's number as the page prints it ("08"); '' for a chapter that is not shown. */

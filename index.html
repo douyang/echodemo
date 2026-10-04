@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart by Ultrasound</title>
-<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, cardiac physiology, the inferior vena cava and Doppler hemodynamics, ventricular function, valvular disease, pericardial disease and cardiac amyloidosis.">
+<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, cardiac physiology, the inferior vena cava and Doppler hemodynamics, ventricular function, valvular disease, pericardial disease, cardiac amyloidosis and stress echocardiography.">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -147,6 +147,16 @@
     <figure class="fig" id="fig-amyloid">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Cardiac amyloidosis from a normal heart to advanced disease: a parasternal long-axis view at end-diastole with calipers on the septum, the cavity and the inferolateral wall, and an apical four-chamber view, both cut from the heart model; mitral inflow and septal tissue Doppler; the 17-segment longitudinal strain bull's-eye; and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-stress">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <div class="occl">
+        <span class="occl-label" id="sx-view-label">View</span>
+        <div class="seg" role="group" aria-labelledby="sx-view-label" data-key="sxView">
+          <button type="button" data-val="a4c">A4C</button><button type="button" data-val="a2c">A2C</button><button type="button" data-val="a3c">A3C</button>
+        </div>
+      </div>
+      <figcaption class="sr-only">Buttons for the apical four-, two- and three-chamber views. Dobutamine stress echocardiography as a quad screen: the chosen view at rest, at low dose, at peak and in recovery, each cut from the heart model and beating at the heart rate of its stage, with the segment numbers on its walls colored by their wall motion score. Beside it, the response of each of the 17 segments on a bull's-eye, and the protocol: the dobutamine dose in 3-minute stages, atropine, and the heart rate against its target.</figcaption>
     </figure>
     <figure class="fig" id="fig-report" hidden>
       <div class="sheet-host" id="report-host"></div>
@@ -1311,6 +1321,61 @@
         <li>An LV wall thickness of 12 mm or more without another cause, a small LV cavity and enlargement of both atria suggest cardiac amyloidosis.</li>
         <li>Restrictive filling, septal s′, e′ and a′ velocities below 5 cm/s and relative apical sparing of longitudinal strain support the diagnosis.</li>
         <li>The echocardiographic criteria raise the suspicion of cardiac amyloidosis but do not establish the diagnosis alone.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-stress">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Stress echocardiography</h2><p class="ch-kicker">Dobutamine stress, ischemia and viability</p></div></div>
+      <p class="dek" data-part="dek">Stress echocardiography compares the wall motion at rest with the wall motion during stress. A segment that is normal at rest and becomes abnormal with stress indicates ischemia in the territory of its coronary artery.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Case</span>
+          <div class="seg" role="group" aria-label="Case" data-key="sxCase">
+            <button type="button" data-val="normal">Normal</button><button type="button" data-val="lad">LAD</button><button type="button" data-val="rca">RCA</button><button type="button" data-val="lcx">LCX</button><button type="button" data-val="multi">Two vessels</button><button type="button" data-val="scar">Scar</button><button type="button" data-val="viable">Viable</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Principle</h3>
+        <p>Stress increases the oxygen demand of the myocardium. Beyond a flow-limiting coronary stenosis, the subendocardial blood flow falls with stress, and the wall of that territory thickens less and moves inward less<span class="cite" data-ref="pellikka2020"></span>. In the ischemic cascade, myocardial contractility decreases before the ST segment changes and before angina occurs<span class="cite" data-ref="nesto1987"></span>, and perfusion abnormalities occur before wall motion abnormalities<span class="cite" data-ref="pellikka2020"></span>.</p>
+        <h3>Dobutamine protocol</h3>
+        <ul>
+        <li>Exercise is the preferred stress for a patient who can exercise, because the test also measures the exercise capacity. Dobutamine is the alternative for a patient who cannot exercise, and the preferred agent for the assessment of viability<span class="cite" data-ref="pellikka2020"></span>.</li>
+        <li>Dobutamine starts at 5 µg/kg/min and increases every 3 minutes to 10, 20, 30 and 40 µg/kg/min. When the heart rate does not reach its target, atropine is given in doses of 0.25 to 0.5 mg at 1-minute intervals, to a total of 1.0 to 2.0 mg<span class="cite" data-ref="pellikka2020"></span>.</li>
+        <li>The target heart rate is 85% of the age-predicted maximum<span class="cite" data-ref="pellikka2020"></span>. The maximum is commonly estimated as 220 − age<span class="cite" data-ref="tanaka2001"></span>: for the 60-year-old patient in the figure, 160/min, and the target is 136/min. A test that does not reach the target heart rate is less sensitive for ischemia<span class="cite" data-ref="pellikka2020"></span>.</li>
+        <li>The test stops at the target heart rate, or for hypotension, new or worsening wall motion abnormalities, significant arrhythmias, severe hypertension or intolerable symptoms<span class="cite" data-ref="pellikka2020"></span>.</li>
+        <li>Stress testing is contraindicated in acute coronary syndromes, severe arrhythmias, malignant hypertension, significant LVOT obstruction and symptomatic severe aortic stenosis<span class="cite" data-ref="pellikka2020"></span>.</li>
+        </ul>
+        <h3>Images</h3>
+        <p>The images of each stage are recorded digitally. The peak images are compared with the rest, low-dose and pre-peak or early recovery images, side by side in a quad-screen format<span class="cite" data-ref="pellikka2020"></span>. The figure shows rest, low dose, peak and early recovery, as some laboratories do<span class="cite" data-ref="pellikka2020"></span>. Each of its views beats at the heart rate of its stage; systole shortens with the heart rate as total electromechanical systole does at rest<span class="cite" data-ref="boudoulas1981"></span>, and diastole shortens more. The LVEF and the end-systolic volume in the readouts are measured on the figure's own four- and two-chamber views, by the biplane method of disks, as in <a href="#eject" data-go="eject">chapter 09</a>. The patient and the numbers are illustrative.</p>
+        <p>An ultrasound enhancing agent (contrast) is used whenever two or more contiguous segments, or a coronary territory, cannot be visualized<span class="cite" data-ref="pellikka2020"></span>.</p>
+        <h3>Reading the test</h3>
+        <ul>
+        <li>Each segment is scored at rest and at each stage: 1, normal or hyperkinetic; 2, hypokinetic; 3, severely hypokinetic or akinetic; 4, dyskinetic; 5, aneurysmal. The wall motion score index is the sum of the scores divided by the number of segments visualized<span class="cite" data-ref="pellikka2020"></span>. The segments and their coronary territories are those of <a href="#segments" data-go="segments">chapter 10</a>.</li>
+        <li><b>Normal.</b> Every segment is normal at rest and with stress. With dobutamine, the normal response is a marked increase in contractility (hyperkinesis) and a smaller LV cavity, from the lower preload and afterload. The absence of hyperkinesis can indicate coronary obstruction, but it is not specific<span class="cite" data-ref="pellikka2020"></span>.</li>
+        <li><b>Ischemic.</b> A new wall motion abnormality with stress in a segment that is normal at rest, or worse function with stress in a segment that is abnormal at rest<span class="cite" data-ref="pellikka2020"></span>.</li>
+        <li><b>Fixed.</b> A severe abnormality at rest that does not change with stress, with no biphasic response: a transmural infarct, or one with a limited epicardial rim of viable myocardium. Akinesis that turns into dyskinesis is a mechanical response of infarcted myocardium, not ischemia<span class="cite" data-ref="pellikka2020"></span>.</li>
+        <li><b>Viable.</b> A dysfunctional segment that improves at low dose has contractile reserve. A biphasic response, improvement at low dose and worsening at higher doses, has the highest positive predictive value for recovery of function after revascularization; segments with sustained improvement are less likely to recover. Remodeled segments, supplied by arteries without severe stenosis, may or may not improve with dobutamine<span class="cite" data-ref="pellikka2020"></span>. Contractile reserve in 4 to 5 dysfunctional segments is the minimum that predicts an increase in LVEF of 5% or more and a better outcome with revascularization<span class="cite" data-ref="pellikka2020"></span>.</li>
+        </ul>
+        <h3>High-risk findings and prognosis</h3>
+        <ul>
+        <li>Stress-induced wall motion abnormalities in more than one coronary territory, and cavity dilatation, are high-risk findings that the report should note. With dobutamine, a fall in LVEF and a larger end-systolic cavity are less frequent than with exercise, even in left main or multivessel disease<span class="cite" data-ref="pellikka2020"></span>.</li>
+        <li>Wall motion abnormalities that occur at a low heart rate or rate–pressure product usually indicate severe stenosis or multivessel disease. Abnormalities that persist into recovery indicate more severe ischemia<span class="cite" data-ref="pellikka2020"></span>.</li>
+        <li>In a study of 1,500 patients, the peak wall motion score index separated three groups: an index of 1, with a cardiac event rate of 0.9% a year; an index of 1.1 to 1.7, with 3.1% a year; and an index of 1.7 or more, with 5.2% a year<span class="cite" data-ref="pellikka2020"></span>.</li>
+        <li>The earlier ASE guideline reported an average sensitivity of 88% and an average specificity of 83% for coronary stenosis. As with every stress test, the sensitivity is higher in multivessel than in single-vessel disease<span class="cite" data-ref="pellikka2020"></span>.</li>
+        </ul>
+        <h3>Other uses</h3>
+        <p>Stress echocardiography also answers questions outside coronary disease<span class="cite" data-ref="lancellotti2017"></span>. In classical low-flow, low-gradient aortic stenosis, low-dose dobutamine tests the flow reserve, an increase in stroke volume of 20% or more (<a href="#as" data-go="as">chapter 12</a>)<span class="cite" data-ref="lancellotti2017"></span>. With exercise, an average E/e′ above 14 or a septal E/e′ above 15 indicates a raised filling pressure (<a href="#fill" data-go="fill">chapter 11</a>)<span class="cite" data-ref="pellikka2020"></span>. In valve disease and in hypertrophic cardiomyopathy, exercise shows the symptoms, the PA systolic pressure and the LVOT gradient; a PA systolic pressure of 60 mmHg or more and an LVOT gradient above 50 mmHg are cut-offs of clinical significance<span class="cite" data-ref="lancellotti2017"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Stress echocardiography compares each segment at rest and with stress. A new or worse wall motion abnormality indicates ischemia.</li>
+        <li>Dobutamine increases in 3-minute stages from 5 to 40 µg/kg/min, with atropine if needed, until the heart rate reaches 85% of the age-predicted maximum.</li>
+        <li>Abnormalities in more than one territory, at a low heart rate or that persist into recovery indicate severe or multivessel disease.</li>
+        <li>A dysfunctional segment that improves at low dose is viable. A biphasic response best predicts recovery of function after revascularization.</li>
         </ol>
       </div>
       <div class="quiz"></div>

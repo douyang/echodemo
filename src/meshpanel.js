@@ -37,6 +37,14 @@ export class MeshPanel {
     this.shifts = null;
     this.state = 'idle';     // idle, loading, ready, failed
     this.last = '';          // what the canvas holds: time, size, disease and heart
+    this.regKey = '';        // the regional wall motion the view holds (draw's o.regional)
+  }
+
+  /** Show another view (views.js key): the next draw cuts it. */
+  setView(view) {
+    if (view === this.view) return;
+    this.view = view;
+    if (this.ev) { this.ev.setView(view, { animate: false }); this.last = ''; }
   }
 
   /** Load the model and the disease targets, once. */
@@ -75,7 +83,9 @@ export class MeshPanel {
    * anchor puts it there. o.drive(drive, t): the valves' drive at time t (ms) for this view, from
    * the cycle model's (cyclemodel.js), for a valve that moves otherwise. o.shift: cm the plane
    * moves along its normal (echo.js setShift). o.calc: calcified valves, level by valve mesh
-   * name (echo.js setCalc).
+   * name (echo.js setCalc). o.regional: { key, scale, peri }, regional wall motion (echo.js
+   * setRegional), taken when its key changes; o.noSys: the heart's own systolic change is off,
+   * as where a chapter sets the wall motion itself (echo.js noSys).
    * Returns F, or null while the model loads.
    */
   draw(ctx, P, title, o = {}) {
@@ -103,10 +113,13 @@ export class MeshPanel {
     ev.setFore(o.fore || 0);
     ev.setShift(o.shift || 0);
     ev.setCalc(o.calc || {});
+    const reg = o.regional || null, regKey = reg ? reg.key : '';
+    if (regKey !== this.regKey) { ev.setRegional(reg ? reg.scale : null, reg ? reg.peri : null); this.regKey = regKey; }
+    ev.noSys = !!o.noSys;
     const tms = o.tms ?? 0;
     const c = cycleAt(tms);
     const drive = o.drive ? o.drive(c.drive, c.t) : c.drive;
-    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, o.lvK ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), ev.model.pheno.version, JSON.stringify(drive)].join('|');
+    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, o.lvK ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive)].join('|');
     if (key !== this.last) {
       ev.frame({ s: c.s, v: c.v, drive, phase: c.phase, t: c.t });
       this.last = key;
