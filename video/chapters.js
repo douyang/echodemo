@@ -179,8 +179,9 @@ export const VIDEOS = {
       { set: { msS: 0.03, msCine: true, hr: 70 }, name: 'No mitral stenosis', track: 'None', line: 'The mitral valve area is {Mitral valve area} cm², and the pressure half-time is {Pressure half-time} ms.', hold: 5 },
       { set: { msS: 0.15 }, name: 'Mild mitral stenosis', track: 'Mild', move: 4, hold: 6 },
       { set: { msS: 0.37 }, name: 'Moderate mitral stenosis', track: 'Moderate', move: 4, hold: 6 },
-      { set: { msS: 0.85 }, name: 'Severe mitral stenosis', track: 'Severe', move: 4, hold: 6 },
-      { set: { hr: 110 }, name: 'Severe mitral stenosis, heart rate 110/min', track: 'Heart rate 110', pick: [0], move: 4, hold: 7 },
+      // severe: the numbers without the agreement line; at 110/min, the gradient and why its bands do not apply
+      { set: { msS: 0.85 }, name: 'Severe mitral stenosis', track: 'Severe', pick: [0, 1, 2], move: 4, hold: 6 },
+      { set: { hr: 110 }, name: 'Severe mitral stenosis, heart rate 110/min', track: 'Heart rate 110', pick: [1, 3], move: 4, hold: 7 },
     ],
   },
   mr: {
