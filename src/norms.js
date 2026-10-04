@@ -203,10 +203,13 @@ export const NORM_TABLES = [
 ];
 
 // ------------------------------------------------------------------ cut-off helpers
-// LVEF band and words (Lang 2015 Table 4 partitions).
+// LVEF band and words (Lang 2015 Table 4 partitions). The normal range by sex (%); above it the
+// site calls the LVEF hyperdynamic, a term of the ASE reporting guideline (Taub 2025), which gives
+// no number for it.
+export const LVEF_RANGE = { M: [52, 72], F: [54, 74] };
 export function lvefBand(ef, sex = 'M') {
-  const lo = sex === 'F' ? 54 : 52;
-  if (ef >= lo) return ef > 74 ? 'hyperdynamic' : 'normal';
+  const [lo, hi] = LVEF_RANGE[sex === 'F' ? 'F' : 'M'];
+  if (ef >= lo) return ef > hi ? 'hyperdynamic' : 'normal';
   if (ef >= 41) return 'mildly abnormal';
   if (ef >= 30) return 'moderately abnormal';
   return 'severely abnormal';
@@ -259,7 +262,15 @@ export function rapEstimate({ d, col, mode = 'sniff', sec = 'unclear', reflux = 
 }
 /** The range of an RA pressure value (Mukherjee 2025 Table 4). */
 export const RAP_RANGE = { 3: '0–5', 8: '5–10', 15: '10–20' };
-// Right-heart grades (Mukherjee 2025 Table 1).
+// Right-heart grades (Mukherjee 2025 Table 1). Table 1 lists 1.3 cm in the mild and the moderate
+// band of TAPSE, and 7.2 cm/s in both bands of S′; these take the moderate band, as the bands of
+// FAC exclude their lower limit. RV_BANDS: the four bands of each, normal to severe, at the
+// decimals the site prints (TAPSE in mm).
+export const RV_BANDS = {
+  tapse: ['>17', '13.1–17.0', '10.1–13.0', '≤10.0'],
+  sPrime: ['>9.5', '7.3–9.5', '5.1–7.2', '≤5.0'],
+  fac: ['>35', '30–35', '23–29', '≤22'],
+};
 export function tapseGrade(mm) {
   const cm = mm / 10;
   if (cm > 1.7) return 'normal';

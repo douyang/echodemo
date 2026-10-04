@@ -763,7 +763,7 @@
           </div>
           <div class="control">
             <label for="ef">Ejection fraction <output data-for="ef"></output></label>
-            <input type="range" id="ef" data-key="ef" min="10" max="75" step="1">
+            <input type="range" id="ef" data-key="ef" min="10" max="80" step="1">
           </div>
           <div class="control">
             <label for="wall">Wall thickness <output data-for="wall"></output></label>
@@ -797,6 +797,8 @@
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
+      <!-- the measurements, with buttons on the traced volumes (LV) and on TAPSE, S′ and the RV areas (RV): src/ch/eject.js -->
+      <section class="ase asx" id="eject-calc" aria-label="Systolic function: measurements and bands"></section>
       <div class="prose" data-part="prose">
         <h3>Biplane method of disks</h3>
         <p>The biplane method of disks (modified Simpson’s rule) is the recommended 2D method; 3D echocardiography should be used when it is available and image quality is good<span class="cite" data-ref="lang2015"></span>. The LV is traced at end-diastole and end-systole, the frames that <a href="#cycle" data-go="cycle">chapter 05</a> defines, in the apical four- and two-chamber views. The software divides the LV into a stack of thin disks and sums their volumes. LV volumes should not be calculated from linear dimensions<span class="cite" data-ref="lang2015"></span>.</p>
@@ -805,17 +807,18 @@
         <h3>Normal values</h3>
         <ul>
         <li>Normal LVEF is 52–72% in men and 54–74% in women. LVEF is mildly abnormal at 41–51% in men and 41–53% in women, moderately abnormal at 30–40% and severely abnormal below 30%<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>The EDV index is normal at 34–74 mL/m² in men and 29–61 mL/m² in women, and the ESV index at 11–31 mL/m² in men and 8–24 mL/m² in women<span class="cite" data-ref="lang2015"></span>.</li>
         <li>The heart failure categories by LVEF are reduced (≤40%), mildly reduced (41–49%) and preserved (≥50%)<span class="cite" data-ref="heidenreich2022"></span>.</li>
         <li>The valve chapters define LV dysfunction by other LVEF cut-offs: below 50% in aortic stenosis (<a href="#as" data-go="as">chapter 12</a>), 55% or less in aortic regurgitation (<a href="#ar" data-go="ar">chapter 13</a>) and 60% or less in mitral regurgitation (<a href="#mr" data-go="mr">chapter 15</a>)<span class="cite" data-ref="otto2020"></span>.</li>
         <li>Global longitudinal strain is normal when more negative than −18%, borderline from −16% to −18% and abnormal when less negative than −16%<span class="cite" data-ref="thomas2025"></span>. GLS varies between vendors and software versions, so serial studies of one patient should use the same equipment and software<span class="cite" data-ref="lang2015"></span>.</li>
         </ul>
-        <p>A single LVEF should be reported, together with the method of measurement<span class="cite" data-ref="taub2025"></span>. In serial 2D studies of stable patients, the EF varied by more than 10 percentage points; with non-contrast 3D echocardiography, it varied by about 6 percentage points<span class="cite" data-ref="thavendiranathan2013"></span>.</p>
+        <p>The ASE reporting guideline describes global LV systolic function as normal, hyperdynamic or reduced, with a grade of the reduction<span class="cite" data-ref="taub2025"></span>. A single LVEF should be reported, together with the method of measurement<span class="cite" data-ref="taub2025"></span>. In serial 2D studies of stable patients, the EF varied by more than 10 percentage points; with non-contrast 3D echocardiography, it varied by about 6 percentage points<span class="cite" data-ref="thavendiranathan2013"></span>.</p>
         <h3>RV systolic function</h3>
         <p>The ASE guideline grades three simple measures of RV systolic function<span class="cite" data-ref="mukherjee2025"></span>:</p>
         <ul>
         <li><b>TAPSE.</b> TAPSE is the M-mode excursion of the lateral tricuspid annulus toward the apex, recorded in the RV-focused four-chamber view<span class="cite" data-ref="mitchell2019"></span>. It is normal above 17 mm.</li>
         <li><b>S′.</b> S′ is the systolic tissue Doppler velocity of the same point of the annulus. It is normal above 9.5 cm/s.</li>
-        <li><b>Fractional area change.</b> The fractional area change (FAC) of the RV is (end-diastolic area − end-systolic area) ÷ end-diastolic area. It is normal above 35%<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>Fractional area change.</b> The fractional area change (FAC) of the RV is (end-diastolic area − end-systolic area) ÷ end-diastolic area. It is normal above 35%<span class="cite" data-ref="mukherjee2025"></span>. The RV area is normal below 25 cm² at end-diastole and below 14 cm² at end-systole<span class="cite" data-ref="mukherjee2025"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">

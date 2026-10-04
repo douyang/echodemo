@@ -110,7 +110,7 @@ export const VIDEOS = {
     pane: 'Volumes and function',
     quant: { edv: 1, ef: 1, fore: 1, tapse: 0.5, sPrime: 0.5, fac: 1 },
     steps: [
-      { set: { side: 'lv', edv: 120, ef: 60, wall: 9, fore: 0, tapse: 22, sPrime: 12, fac: 45, frame8: 'cine' }, name: 'Normal LV systolic function', track: 'Normal LV', pick: [0, 2], hold: 6 },
+      { set: { side: 'lv', edv: 120, ef: 60, wall: 9, fore: 0, ejSex: 'M', tapse: 22, sPrime: 12, fac: 45, rvEda: 20, frame8: 'cine' }, name: 'Normal LV systolic function', track: 'Normal LV', pick: [0, 2], hold: 6 },
       { set: { edv: 200, ef: 30 }, name: 'Dilated LV with reduced LVEF', track: 'Reduced LVEF', pick: [0, 1], move: 4, hold: 6 },
       { set: { edv: 120, ef: 60, fore: 20 }, name: 'Foreshortened apical views', track: 'Foreshortened', pick: [2, 3], move: 4, hold: 6 },
       { set: { fore: 0, side: 'rv' }, name: 'Normal RV systolic function', track: 'Normal RV', pick: [0, 1], move: 4, hold: 6 },
