@@ -13,6 +13,14 @@ import { scanner } from './scanner.js';
 import { diseaseTargets, lvMask } from './model3d.js';
 import { measures } from './echo2d.js';
 
+// the panels started on this page (start): a video page waits for all of them (video/chapter.js)
+const STARTED = new Set();
+/** True when every mesh panel started on this page has its model and targets, or has failed. */
+export function meshPanelsReady() {
+  for (const p of STARTED) if (p.state !== 'ready' && p.state !== 'failed') return false;
+  return true;
+}
+
 export class MeshPanel {
   /**
    * view: a view key of views.js (a4c, plax...). o.diseases: the disease keys the chapter
@@ -35,6 +43,7 @@ export class MeshPanel {
   start() {
     if (this.state !== 'idle') return;
     this.state = 'loading';
+    STARTED.add(this);
     (async () => {
       const S = await scanner();
       const shifts = this.diseases.length ? await diseaseTargets(this.diseases) : null;

@@ -743,8 +743,10 @@ const asPage = {
     });
   },
   // on the way in and out, the next drawing sets the baseline: no flash for changes made elsewhere
-  enter() { fresh = true; freeLive(); },
+  enter() { fresh = true; freeLive(); MESH.start(); MESH_SAX.start(); },
   leave() { fresh = true; freeLive(); },
+  // the heart model and the aortic valve's targets load at idle, before the chapter opens (main.js warms every chapter)
+  warm() { MESH.start(); MESH_SAX.start(); },
   pulse: () => beat.pulse(),
   anim(dt, s, set) {
     playSeverity(dt, s, set, KEY, BANDS);
