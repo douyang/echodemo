@@ -61,6 +61,19 @@ export const MESH = {
 export const PHENO_MESH_KEYS = Object.keys(MESH);
 
 // ---------------------------------------------------------------- small helpers
+/**
+ * A pause for the page every ms of work: the builds below run for a second or more (several on
+ * a phone), and the page keeps answering while they run. Call it often; it returns at once
+ * until ms have passed.
+ */
+function slicer(ms = 12) {
+  let t0 = performance.now();
+  return async () => {
+    if (performance.now() - t0 < ms) return;
+    await new Promise((r) => setTimeout(r, 0));
+    t0 = performance.now();
+  };
+}
 // a cell's three indices packed in one number (each under 1024 in size): a Map lookup by number
 // costs far less than one by a built string, and nearest() makes hundreds per query
 const cellKey = (cx, cy, cz) => ((cx + 1024) * 2048 + (cy + 1024)) * 2048 + (cz + 1024);
@@ -311,7 +324,8 @@ const targetOf = (mesh, name) => {
  * (normal landmarks via raw()); turn: the angle that puts the model's apical planes on the
  * standard walls (aha.js).
  */
-export function preparePhenotypes(meshes, anat, turn, VESSELS) {
+export async function preparePhenotypes(meshes, anat, turn, VESSELS) {
+  const tick = slicer();
   const F = frameOf(meshes, anat, turn);
   const myo = meshes.Myocardium.geometry;
   const mpos = myo.attributes.position.array, mcol = myo.attributes.color, nMyo = mpos.length / 3;
@@ -322,6 +336,7 @@ export function preparePhenotypes(meshes, anat, turn, VESSELS) {
   const lvMask = new Float32Array(nMyo), laNear = new Float32Array(nMyo), aoNear = new Float32Array(nMyo);
   const GLA = grid(mpos, (i) => REG[i] === 3, 0.8), GAO = grid(mpos, (i) => REG[i] === 5, 0.8);
   for (let i = 0; i < nMyo; i++) {
+    if ((i & 127) === 0) await tick();
     const x = mpos[3 * i], y = mpos[3 * i + 1], z = mpos[3 * i + 2];
     const nb = nearest(G, x, y, z, 24, 0.7);
     lvMask[i] = nb.length ? nb.filter(([j]) => REG[j] === 1).length / nb.length : REG[i] === 1 ? 1 : 0;
@@ -348,114 +363,9 @@ export function preparePhenotypes(meshes, anat, turn, VESSELS) {
  * Add phenotype key's targets to every mesh (ctx from preparePhenotypes). Returns its systolic
  * scale at a point, sys(x, y, z), and its landmarks, landmark(name, s) (cm).
  */
-export function buildPhenotype(ctx, key) {
-  const { meshes, anat, F, REG, lvMask, laNear, aoNear, aoLine, desc, mpos, nMyo } = ctx;
-  const out = {};
-  {
-    const P = MESH[key];
-    const T = TARGETS(key);
-    // systolic scale of the LV wall by segment, and the other walls
-    let lvScale;
-    if (P.sys.lad !== undefined) {
-      const lad = new Set(TERRITORY.lad);
-      lvScale = segGrid((s) => (s === 17 ? P.sys.apex : lad.has(s) ? P.sys.lad : P.sys.remote));
-    } else lvScale = () => P.sys.lv;
-    const ladGrid = P.lvAmy && P.lvAmy.lad ? segGrid((s) => (TERRITORY.lad.includes(s) ? 1 : 0)) : null;
-    const scaleAt = (x, y, z) => {
-      const c = lvCoords(F, x, y, z);
-      const w = (1 - smooth((c.r - F.Rref(c.u) - 0.9) / 0.8)) * (1 - smooth((c.u - 1.02) / 0.12));
-      const sc = segCoords(F, x, y, z);
-      return P.sys.other + (lvScale(sc.hs, sc.th) - P.sys.other) * w;
-    };
-    const amyAt = (i, x, y, z) => {
-      if (!P.lvAmy) return 0;
-      if (P.lvAmy.lv) return P.lvAmy.lv * lvMask[i];
-      const sc = segCoords(F, x, y, z);
-      return P.lvAmy.lad * ladGrid(sc.hs, sc.th) * lvMask[i];
-    };
-    // ---- myocardium
-    const myoMesh = meshes.Myocardium;
-    const sysT = targetOf(myoMesh, 'systole'), amyT = targetOf(myoMesh, 'amyloid'), amySysT = targetOf(myoMesh, 'amyloid_systole');
-    const ed = new Float32Array(mpos.length), sy = new Float32Array(mpos.length), scaleMyo = new Float32Array(nMyo);
-    const d = [0, 0, 0];
-    for (let i = 0; i < nMyo; i++) {
-      const x = mpos[3 * i], y = mpos[3 * i + 1], z = mpos[3 * i + 2];
-      d[0] = d[1] = d[2] = 0;
-      lvField(F, P, x, y, z, d);
-      annulusField(F, P, x, y, z, d);
-      laField(F, P, x, y, z, d, laNear[i]);
-      aortaField(F, P, x, y, z, d, aoNear[i], aoLine);
-      if (P.la && (REG[i] === 3 || REG[i] === 7)) descGuard(desc, x, y, z, d);
-      const aw = amyAt(i, x, y, z);
-      for (let k = 0; k < 3; k++) ed[3 * i + k] = d[k] + aw * amyT[3 * i + k];
-      const sc = scaleAt(x, y, z);
-      scaleMyo[i] = sc;
-      for (let k = 0; k < 3; k++) sy[3 * i + k] = (sc - 1) * sysT[3 * i + k] + aw * amySysT[3 * i + k];
-    }
-    addTarget(myoMesh, T.ed, ed);
-    addTarget(myoMesh, T.sys, sy);
-    // ---- the pericardium and the coronary arteries go with the wall under them
-    const GW = grid(mpos, null, 1.0);
-    for (const name of ['Pericardium', 'Coronaries']) {
-      const mesh = meshes[name];
-      if (!mesh) continue;
-      const p = mesh.geometry.attributes.position.array, n = p.length / 3;
-      const st = targetOf(mesh, 'systole');
-      const e2 = new Float32Array(p.length), s2 = new Float32Array(p.length);
-      for (let j = 0; j < n; j++) {
-        const x = p[3 * j], y = p[3 * j + 1], z = p[3 * j + 2];
-        const nb = nearest(GW, x, y, z, 6, 2.5);
-        let wsum = 0, sc = 0;
-        const acc = [0, 0, 0];
-        for (const [i, d2] of nb) {
-          const w = 1 / (d2 + 0.02);
-          wsum += w;
-          sc += w * scaleMyo[i];
-          for (let k = 0; k < 3; k++) acc[k] += w * ed[3 * i + k];
-        }
-        if (wsum > 0) {
-          for (let k = 0; k < 3; k++) e2[3 * j + k] = acc[k] / wsum;
-          sc /= wsum;
-        } else {
-          d[0] = d[1] = d[2] = 0;
-          lvField(F, P, x, y, z, d);
-          for (let k = 0; k < 3; k++) e2[3 * j + k] = d[k];
-          sc = scaleAt(x, y, z);
-        }
-        for (let k = 0; k < 3; k++) s2[3 * j + k] = (sc - 1) * st[3 * j + k];
-      }
-      addTarget(mesh, T.ed, e2);
-      addTarget(mesh, T.sys, s2);
-    }
-    // ---- papillary muscles, valves and chordae: the fields where they are
-    for (const name of ['Papillary', 'MitralValve', 'TricuspidValve', 'AorticValve', 'PulmonaryValve', 'MitralChordae', 'TricuspidChordae']) {
-      const mesh = meshes[name];
-      if (!mesh) continue;
-      const g = mesh.geometry, p = g.attributes.position.array, n = p.length / 3;
-      const st = targetOf(mesh, 'systole'), at = targetOf(mesh, 'amyloid'), ast = targetOf(mesh, 'amyloid_systole');
-      const e2 = new Float32Array(p.length), s2 = new Float32Array(p.length);
-      const aw = name === 'Papillary' && P.lvAmy && P.lvAmy.lv ? P.lvAmy.lv : 0;
-      for (let j = 0; j < n; j++) {
-        const x = p[3 * j], y = p[3 * j + 1], z = p[3 * j + 2];
-        d[0] = d[1] = d[2] = 0;
-        lvField(F, P, x, y, z, d);
-        annulusField(F, P, x, y, z, d);
-        const sc = scaleAt(x, y, z);
-        for (let k = 0; k < 3; k++) {
-          e2[3 * j + k] = d[k] + aw * at[3 * j + k];
-          s2[3 * j + k] = (sc - 1) * st[3 * j + k] + aw * ast[3 * j + k];
-        }
-      }
-      const extra = valveShapes(F, P, key, name, mesh, e2);
-      if (extra.ed) for (let i = 0; i < e2.length; i++) e2[i] += extra.ed[i];
-      addTarget(mesh, T.ed, e2);
-      addTarget(mesh, T.sys, s2);
-      if (extra.mid) addTarget(mesh, T.mid, extra.mid);
-      if (extra.far) addTarget(mesh, T.far, extra.far);
-    }
-    out.sys = scaleAt;
-  }
-
+export async function buildPhenotype(ctx, key) {
+  const { anat, F } = ctx;
+  const out = await buildTargets(ctx, MESH[key], TARGETS(key));
   /** A landmark of this phenotype at systole s, from its normal corners (cm). */
   out.landmark = (name, s) => {
     const P = MESH[key];
@@ -478,12 +388,149 @@ export function buildPhenotype(ctx, key) {
   return out;
 }
 
+// ---------------------------------------------------------------- a chapter's disease
+// A chapter's disease on whatever heart the page shows (the LA of raised filling pressure, say):
+// targets dx_<key> on every mesh, built by the phenotypes' fields and weighted 0 to 1 by the
+// chapter (echo.js setDisease). Weight 1 is the change below; a target is linear in its weight.
+export const DISEASE = {
+  // the left atrium scaled about the mitral valve: by 2 at weight 1, so weight w scales it by 1 + w
+  la: { la: 2 },
+};
+/** Add disease key's target to every mesh (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
+export async function buildDisease(ctx, key) {
+  const P = DISEASE[key], { anat, F } = ctx;
+  const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
+  /** The move of landmark name at weight 1 and end-diastole (cm). */
+  out.shift = (name) => {
+    const e0 = anat.raw(name, 0, 0), d = [0, 0, 0];
+    lvField(F, P, e0.x, e0.y, e0.z, d);
+    annulusField(F, P, e0.x, e0.y, e0.z, d);
+    if (name === 'la_c' || name === 'la_r') laField(F, P, e0.x, e0.y, e0.z, d, 1);
+    return V3(d[0], d[1], d[2]);
+  };
+  return out;
+}
+
+/**
+ * The targets of shape P (a MESH or DISEASE entry) on every mesh, under the names T: ed (the
+ * end-diastolic change, weight 1), sys (the change to the systolic motion; null for none), mid
+ * and far (a valve's shapes along its swing). Returns the systolic scale at a point, sys(x, y, z).
+ */
+async function buildTargets(ctx, P, T) {
+  const { meshes, F, REG, lvMask, laNear, aoNear, aoLine, desc, mpos, nMyo } = ctx;
+  const tick = slicer();
+  const S = P.sys || { lv: 1, other: 1 };
+  // systolic scale of the LV wall by segment, and the other walls
+  let lvScale;
+  if (S.lad !== undefined) {
+    const lad = new Set(TERRITORY.lad);
+    lvScale = segGrid((s) => (s === 17 ? S.apex : lad.has(s) ? S.lad : S.remote));
+  } else lvScale = () => S.lv;
+  const ladGrid = P.lvAmy && P.lvAmy.lad ? segGrid((s) => (TERRITORY.lad.includes(s) ? 1 : 0)) : null;
+  const scaleAt = (x, y, z) => {
+    const c = lvCoords(F, x, y, z);
+    const w = (1 - smooth((c.r - F.Rref(c.u) - 0.9) / 0.8)) * (1 - smooth((c.u - 1.02) / 0.12));
+    const sc = segCoords(F, x, y, z);
+    return S.other + (lvScale(sc.hs, sc.th) - S.other) * w;
+  };
+  const amyAt = (i, x, y, z) => {
+    if (!P.lvAmy) return 0;
+    if (P.lvAmy.lv) return P.lvAmy.lv * lvMask[i];
+    const sc = segCoords(F, x, y, z);
+    return P.lvAmy.lad * ladGrid(sc.hs, sc.th) * lvMask[i];
+  };
+  // ---- myocardium
+  const myoMesh = meshes.Myocardium;
+  const sysT = targetOf(myoMesh, 'systole'), amyT = targetOf(myoMesh, 'amyloid'), amySysT = targetOf(myoMesh, 'amyloid_systole');
+  const ed = new Float32Array(mpos.length), sy = new Float32Array(mpos.length), scaleMyo = new Float32Array(nMyo);
+  const d = [0, 0, 0];
+  for (let i = 0; i < nMyo; i++) {
+    if ((i & 255) === 0) await tick();
+    const x = mpos[3 * i], y = mpos[3 * i + 1], z = mpos[3 * i + 2];
+    d[0] = d[1] = d[2] = 0;
+    lvField(F, P, x, y, z, d);
+    annulusField(F, P, x, y, z, d);
+    laField(F, P, x, y, z, d, laNear[i]);
+    aortaField(F, P, x, y, z, d, aoNear[i], aoLine);
+    if (P.la && (REG[i] === 3 || REG[i] === 7)) descGuard(desc, x, y, z, d);
+    const aw = amyAt(i, x, y, z);
+    for (let k = 0; k < 3; k++) ed[3 * i + k] = d[k] + aw * amyT[3 * i + k];
+    const sc = scaleAt(x, y, z);
+    scaleMyo[i] = sc;
+    for (let k = 0; k < 3; k++) sy[3 * i + k] = (sc - 1) * sysT[3 * i + k] + aw * amySysT[3 * i + k];
+  }
+  addTarget(myoMesh, T.ed, ed);
+  if (T.sys) addTarget(myoMesh, T.sys, sy);
+  // ---- the pericardium and the coronary arteries go with the wall under them
+  const GW = grid(mpos, null, 1.0);
+  for (const name of ['Pericardium', 'Coronaries']) {
+    const mesh = meshes[name];
+    if (!mesh) continue;
+    const p = mesh.geometry.attributes.position.array, n = p.length / 3;
+    const st = targetOf(mesh, 'systole');
+    const e2 = new Float32Array(p.length), s2 = new Float32Array(p.length);
+    for (let j = 0; j < n; j++) {
+      if ((j & 127) === 0) await tick();
+      const x = p[3 * j], y = p[3 * j + 1], z = p[3 * j + 2];
+      const nb = nearest(GW, x, y, z, 6, 2.5);
+      let wsum = 0, sc = 0;
+      const acc = [0, 0, 0];
+      for (const [i, d2] of nb) {
+        const w = 1 / (d2 + 0.02);
+        wsum += w;
+        sc += w * scaleMyo[i];
+        for (let k = 0; k < 3; k++) acc[k] += w * ed[3 * i + k];
+      }
+      if (wsum > 0) {
+        for (let k = 0; k < 3; k++) e2[3 * j + k] = acc[k] / wsum;
+        sc /= wsum;
+      } else {
+        d[0] = d[1] = d[2] = 0;
+        lvField(F, P, x, y, z, d);
+        for (let k = 0; k < 3; k++) e2[3 * j + k] = d[k];
+        sc = scaleAt(x, y, z);
+      }
+      for (let k = 0; k < 3; k++) s2[3 * j + k] = (sc - 1) * st[3 * j + k];
+    }
+    addTarget(mesh, T.ed, e2);
+    if (T.sys) addTarget(mesh, T.sys, s2);
+  }
+  // ---- papillary muscles, valves and chordae: the fields where they are
+  for (const name of ['Papillary', 'MitralValve', 'TricuspidValve', 'AorticValve', 'PulmonaryValve', 'MitralChordae', 'TricuspidChordae']) {
+    const mesh = meshes[name];
+    if (!mesh) continue;
+    const g = mesh.geometry, p = g.attributes.position.array, n = p.length / 3;
+    const st = targetOf(mesh, 'systole'), at = targetOf(mesh, 'amyloid'), ast = targetOf(mesh, 'amyloid_systole');
+    const e2 = new Float32Array(p.length), s2 = new Float32Array(p.length);
+    const aw = name === 'Papillary' && P.lvAmy && P.lvAmy.lv ? P.lvAmy.lv : 0;
+    for (let j = 0; j < n; j++) {
+      if ((j & 255) === 0) await tick();
+      const x = p[3 * j], y = p[3 * j + 1], z = p[3 * j + 2];
+      d[0] = d[1] = d[2] = 0;
+      lvField(F, P, x, y, z, d);
+      annulusField(F, P, x, y, z, d);
+      const sc = scaleAt(x, y, z);
+      for (let k = 0; k < 3; k++) {
+        e2[3 * j + k] = d[k] + aw * at[3 * j + k];
+        s2[3 * j + k] = (sc - 1) * st[3 * j + k] + aw * ast[3 * j + k];
+      }
+    }
+    const extra = valveShapes(F, P, name, mesh, e2);
+    if (extra.ed) for (let i = 0; i < e2.length; i++) e2[i] += extra.ed[i];
+    addTarget(mesh, T.ed, e2);
+    if (T.sys) addTarget(mesh, T.sys, s2);
+    if (extra.mid) addTarget(mesh, T.mid, extra.mid);
+    if (extra.far) addTarget(mesh, T.far, extra.far);
+  }
+  return { sys: scaleAt };
+}
+
 /**
  * Valve shapes for a phenotype, beyond the fields: thicker leaflets, billowing, tenting, and the
  * fused bicuspid valve. e0: the field's end-diastolic change already found for this mesh.
  * Returns { ed, mid, far } (Float32Arrays or null).
  */
-function valveShapes(F, P, key, name, mesh, e0) {
+function valveShapes(F, P, name, mesh, e0) {
   const g = mesh.geometry, base = g.attributes.position.array, n = base.length / 3, idx = g.index.array;
   const res = { ed: null, mid: null, far: null };
   const mid = targetOf(mesh, 'leaflets_mid'), far = targetOf(mesh, 'leaflets');

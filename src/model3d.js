@@ -78,20 +78,42 @@ async function take(m) {
   for (const fn of listeners) fn(m);
 }
 
+/** What every built shape needs (phenomesh.js preparePhenotypes), found once: a disease heart and a chapter's disease may ask together. */
+let fieldsP = null;
+function fieldsOf(m, PM, E, apicalTurn, VESSELS) {
+  if (!fieldsP) {
+    const A = m.anat.normal();
+    const geoms = Object.fromEntries(['a4c', 'a2c', 'a3c'].map((k) => [k, E.viewGeometry(A, k)]));
+    fieldsP = PM.preparePhenotypes(m.heart.meshes, m.anat, apicalTurn(A, geoms), VESSELS);
+  }
+  return fieldsP;
+}
 /** A disease heart's targets on every mesh (phenomesh.js), built the first time it is shown. */
-let fields = null;
 async function buildShape(m, mesh) {
   const [PM, E, { apicalTurn }, { VESSELS }] = await Promise.all([import('./gl/phenomesh.js'), import('./echo.js'), import('./aha.js'), import('./views.js')]);
   // let the page draw the busy Heart menu before the long computation below
   await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
-  if (!fields) {
-    const A = m.anat.normal();
-    const geoms = Object.fromEntries(['a4c', 'a2c', 'a3c'].map((k) => [k, E.viewGeometry(A, k)]));
-    fields = PM.preparePhenotypes(m.heart.meshes, m.anat, apicalTurn(A, geoms), VESSELS);
-  }
-  const shape = PM.buildPhenotype(fields, mesh);
+  const shape = await PM.buildPhenotype(await fieldsOf(m, PM, E, apicalTurn, VESSELS), mesh);
   shape.sizes = { ...normalGeo(m.doc), ...(PM.MESH[mesh].sizes || {}) };
   return shape;
+}
+
+/**
+ * A chapter's disease targets (phenomesh.js DISEASE), built on every mesh the first time a
+ * chapter asks for them; the echo views weight them (echo.js setDisease). Resolves to
+ * { key: { shift(name) } }, the move of each landmark at weight 1. The chapter's panel shows the
+ * wait; the Heart menu does not, as its heart does not change.
+ */
+const diseases = {};
+export async function diseaseTargets(keys) {
+  const m = await loadModel();
+  for (const k of keys) if (!diseases[k]) diseases[k] = buildDisease(m, k);
+  const built = await Promise.all(keys.map((k) => diseases[k]));
+  return Object.fromEntries(keys.map((k, i) => [k, built[i]]));
+}
+async function buildDisease(m, key) {
+  const [PM, E, { apicalTurn }, { VESSELS }] = await Promise.all([import('./gl/phenomesh.js'), import('./echo.js'), import('./aha.js'), import('./views.js')]);
+  return PM.buildDisease(await fieldsOf(m, PM, E, apicalTurn, VESSELS), key);
 }
 
 /** Normal-heart wall and cavity sizes measured on the mesh (mm), for label anchors. */
