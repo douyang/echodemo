@@ -427,12 +427,20 @@ export const DISEASE = {
   // valve, the pericardium and the coronaries move with the wall next to them.
   rvGrow: { grow: 'rv' },
   raGrow: { grow: 'ra' },
+  // Rheumatic mitral stenosis (chapter 14). msValve: open, each leaflet point loses a share of
+  // its swing that grows toward the tips (all of it at the tips at weight 1), so the tips hold
+  // a small orifice and the bodies bow into the LV; shut, the valve is the heart's own. mvThick:
+  // the leaflets thicker, by 1 mm at the tips and 0.5 mm at the base per unit of weight. The
+  // chordae next to the leaflets move with them.
+  msValve: { valve: 'ms' },
+  mvThick: { valve: 'thick' },
 };
 /** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {
   const P = DISEASE[key], { anat, F } = ctx;
   if (P.move) return buildMove(ctx, key, P.move);
   if (P.grow) return buildGrow(ctx, key, P.grow);
+  if (P.valve) return buildValve(ctx, key, P.valve);
   const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
   /** The move of landmark name at weight 1 and end-diastole (cm). */
   out.shift = (name) => {
@@ -649,6 +657,100 @@ async function buildGrow(ctx, key, kind) {
       return V3(out[0], out[1], out[2]);
     },
   };
+}
+
+/**
+ * A mitral valve target (msValve, mvThick): the leaflets' change in each of their shapes, open
+ * (dx_key), middle (dx_key_mid) and shut (dx_key_far). echo.js weighs the last two by the
+ * leaflets' own weights, so the change of the open valve fades as the valve shuts. The chordae
+ * take the change of the leaflet point next to them, fading over 1 cm.
+ */
+async function buildValve(ctx, key, kind) {
+  const { meshes, F } = ctx;
+  const tick = slicer();
+  const mesh = meshes.MitralValve, g = mesh.geometry, base = g.attributes.position.array, idx = g.index.array, n = base.length / 3;
+  const mid = targetOf(mesh, 'leaflets_mid'), far = targetOf(mesh, 'leaflets');
+  const leaf = (i) => F.mvPart[i] !== F.mvRing;
+  // how far down its leaflet a point lies: its depth below the annulus when open, against the deepest
+  const depth = new Float32Array(n);
+  let H = 1e-6;
+  for (let i = 0; i < n; i++) {
+    if (!leaf(i)) continue;
+    const d = -((base[3 * i] - F.mvC.x) * F.mvN.x + (base[3 * i + 1] - F.mvC.y) * F.mvN.y + (base[3 * i + 2] - F.mvC.z) * F.mvN.z);
+    depth[i] = Math.max(0, d);
+    H = Math.max(H, depth[i]);
+  }
+  const ed = new Float32Array(base.length), em = new Float32Array(base.length), ef = new Float32Array(base.length);
+  if (kind === 'ms') {
+    // the move toward a shape, split along the annulus normal (N, into the LA) and across it: the
+    // tips close in across the axis (95% of the way at weight 1) more than along it (45%), so they
+    // hang in the LV as a funnel; the body bows into the LV by up to 0.45 cm
+    const N = F.mvN, d = [0, 0, 0];
+    const held = (t, i, hr, hh, out) => {
+      const tx = t[3 * i], ty = t[3 * i + 1], tz = t[3 * i + 2], a = tx * N.x + ty * N.y + tz * N.z;
+      out[0] = hr * (tx - a * N.x) + hh * a * N.x;
+      out[1] = hr * (ty - a * N.y) + hh * a * N.y;
+      out[2] = hr * (tz - a * N.z) + hh * a * N.z;
+    };
+    const gap = new Float32Array(base.length);
+    for (let j = 0; j < gap.length; j++) gap[j] = far[j] - mid[j];
+    const dm = [0, 0, 0];
+    for (let i = 0; i < n; i++) {
+      if (!leaf(i)) continue;
+      const f = depth[i] / H, g = f ** 1.2, dome = 0.45 * 4 * f * (1 - f);
+      // open: hold of the way to shut; middle: hold of the way from the middle shape to shut
+      held(far, i, 0.95 * g, 0.45 * g, d);
+      held(gap, i, 0.95 * g, 0.45 * g, dm);
+      for (let k = 0; k < 3; k++) {
+        const j = 3 * i + k, nk = N.getComponent(k);
+        ed[j] = d[k] - dome * nk;
+        em[j] = dm[k] - 0.5 * dome * nk - ed[j];
+        ef[j] = -ed[j];
+      }
+    }
+  } else {
+    const shape = (t) => { const o = new Float32Array(base.length); for (let i = 0; i < o.length; i++) o[i] = base[i] + (t ? t[i] : 0); return o; };
+    const n0 = normals(shape(null), idx), nm = normals(shape(mid), idx), nf = normals(shape(far), idx);
+    for (let i = 0; i < n; i++) {
+      if (!leaf(i)) continue;
+      // each face out along its normal: the leaflet 1 mm thicker at the tips per unit of weight
+      const t = 0.05 * (0.5 + 0.5 * depth[i] / H);
+      for (let k = 0; k < 3; k++) {
+        const j = 3 * i + k;
+        ed[j] = t * n0[j];
+        em[j] = t * (nm[j] - n0[j]);
+        ef[j] = t * (nf[j] - n0[j]);
+      }
+    }
+  }
+  addTarget(mesh, `dx_${key}`, ed);
+  addTarget(mesh, `dx_${key}_mid`, em);
+  addTarget(mesh, `dx_${key}_far`, ef);
+  const ch = meshes.MitralChordae;
+  if (ch) {
+    const lv = [];
+    for (let i = 0; i < n; i++) if (leaf(i)) lv.push(i);
+    const pts = new Float32Array(lv.length * 3);
+    lv.forEach((i, k) => { pts[3 * k] = base[3 * i]; pts[3 * k + 1] = base[3 * i + 1]; pts[3 * k + 2] = base[3 * i + 2]; });
+    const G = grid(pts, null, 0.6);
+    const cp = ch.geometry.attributes.position.array, cn = cp.length / 3;
+    const cd = new Float32Array(cp.length), cm = new Float32Array(cp.length), cf = new Float32Array(cp.length);
+    for (let j = 0; j < cn; j++) {
+      if ((j & 127) === 0) await tick();
+      const q = nearest(G, cp[3 * j], cp[3 * j + 1], cp[3 * j + 2], 1, 1.2);
+      if (!q.length) continue;
+      const i = lv[q[0][0]], fade = 1 - smooth((Math.sqrt(q[0][1]) - 0.2) / 0.8);
+      for (let k = 0; k < 3; k++) {
+        cd[3 * j + k] = fade * ed[3 * i + k];
+        cm[3 * j + k] = fade * em[3 * i + k];
+        cf[3 * j + k] = fade * ef[3 * i + k];
+      }
+    }
+    addTarget(ch, `dx_${key}`, cd);
+    addTarget(ch, `dx_${key}_mid`, cm);
+    addTarget(ch, `dx_${key}_far`, cf);
+  }
+  return { shift: () => V3(0, 0, 0) };
 }
 
 /**

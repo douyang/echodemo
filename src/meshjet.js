@@ -172,6 +172,98 @@ export function closureOf(ev, valve, M, dir) {
   return best;
 }
 
+// each valve mesh's annulus ring (the smaller connected part of the valve model), found once
+const RINGS = new WeakMap();
+function ringOf(mesh) {
+  if (RINGS.has(mesh)) return RINGS.get(mesh);
+  const g = mesh.geometry, idx = g.index.array, n = g.attributes.position.count;
+  const par = new Int32Array(n).map((_, i) => i);
+  const find = (x) => { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; };
+  for (let f = 0; f < idx.length; f += 3) { const a = find(idx[f]); par[find(idx[f + 1])] = a; par[find(idx[f + 2])] = a; }
+  const cnt = new Map();
+  for (let i = 0; i < n; i++) { const r = find(i); cnt.set(r, (cnt.get(r) || 0) + 1); }
+  const root = [...cnt.entries()].sort((a, b) => a[1] - b[1])[0][0];
+  const ring = new Uint8Array(n);
+  for (let i = 0; i < n; i++) ring[i] = find(i) === root ? 1 : 0;
+  RINGS.set(mesh, ring);
+  return ring;
+}
+
+/**
+ * A valve's orifice seen along its axis (14), as the frame now shapes it: the open area inside
+ * the leaflets, the area that planimetry at the tips traces. Round the point of the orifice
+ * farthest from every leaflet point, the nearest leaflet point in each of 180 directions bounds
+ * it. Returns A (cm², en face) and P, the trace on the view's plane (cm): that edge, smoothed,
+ * in a plane square to the axis at the tips' mean depth. Null when the leaflets do not ring it.
+ */
+export function enFaceOrifice(ev, valve) {
+  const vd = ev.valves.find((v) => v.mesh.name === valve);
+  if (!vd) return null;
+  const p = vd.pos, ring = ringOf(vd.mesh), m = p.length / 3;
+  let cx = 0, cy = 0, cz = 0, k = 0;
+  for (let i = 0; i < m; i++) if (ring[i]) { cx += p[3 * i]; cy += p[3 * i + 1]; cz += p[3 * i + 2]; k++; }
+  if (!k) return null;
+  cx /= k; cy /= k; cz /= k;
+  // the ring's least axis: power iteration on (trace I - covariance)
+  let xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
+  for (let i = 0; i < m; i++) if (ring[i]) { const x = p[3 * i] - cx, y = p[3 * i + 1] - cy, z = p[3 * i + 2] - cz; xx += x * x; xy += x * y; xz += x * z; yy += y * y; yz += y * z; zz += z * z; }
+  const tr = xx + yy + zz;
+  let N = [1, 1, 1];
+  for (let it = 0; it < 60; it++) {
+    const v = [(tr - xx) * N[0] - xy * N[1] - xz * N[2], -xy * N[0] + (tr - yy) * N[1] - yz * N[2], -xz * N[0] - yz * N[1] + (tr - zz) * N[2]];
+    const l = Math.hypot(v[0], v[1], v[2]) || 1; N = [v[0] / l, v[1] / l, v[2] / l];
+  }
+  let e1 = Math.abs(N[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+  const dd = e1[0] * N[0] + e1[1] * N[1] + e1[2] * N[2];
+  e1 = [e1[0] - dd * N[0], e1[1] - dd * N[1], e1[2] - dd * N[2]];
+  const l1 = Math.hypot(e1[0], e1[1], e1[2]); e1 = [e1[0] / l1, e1[1] / l1, e1[2] / l1];
+  const e2 = [N[1] * e1[2] - N[2] * e1[1], N[2] * e1[0] - N[0] * e1[2], N[0] * e1[1] - N[1] * e1[0]];
+  const U = [], I = [];
+  for (let i = 0; i < m; i++) {
+    if (ring[i]) continue;
+    const x = p[3 * i] - cx, y = p[3 * i + 1] - cy, z = p[3 * i + 2] - cz;
+    U.push(x * e1[0] + y * e1[1] + z * e1[2], x * e2[0] + y * e2[1] + z * e2[2]);
+    I.push(i);
+  }
+  let best = [0, 0], room = -1;
+  for (let a = -5; a <= 5; a++) for (let b = -5; b <= 5; b++) {
+    const u = a * 0.12, v = b * 0.12;
+    let r = Infinity;
+    for (let j = 0; j < U.length; j += 2) { const d = (U[j] - u) ** 2 + (U[j + 1] - v) ** 2; if (d < r) r = d; }
+    if (r > room) { room = r; best = [u, v]; }
+  }
+  const K = 180, R = new Float64Array(K).fill(Infinity), who = new Int32Array(K).fill(-1);
+  for (let j = 0; j < U.length; j += 2) {
+    const du = U[j] - best[0], dv = U[j + 1] - best[1], r = Math.hypot(du, dv);
+    const s = Math.floor((((Math.atan2(dv, du) + 2 * Math.PI) % (2 * Math.PI)) / (2 * Math.PI)) * K) % K;
+    if (r < R[s]) { R[s] = r; who[s] = I[j / 2]; }
+  }
+  let A = 0, h = 0, nh = 0;
+  for (let s = 0; s < K; s++) {
+    if (!Number.isFinite(R[s])) continue;
+    A += 0.5 * R[s] * R[s] * ((2 * Math.PI) / K);
+    const i = who[s];
+    h += (p[3 * i] - cx) * N[0] + (p[3 * i + 1] - cy) * N[1] + (p[3 * i + 2] - cz) * N[2];
+    nh++;
+  }
+  if (nh < K / 2) return null;
+  h /= nh;
+  // the trace: the edge smoothed over 5 directions, in one plane square to the axis at the tips'
+  // mean depth, mapped onto the view's plane as echo.js toPlane maps it
+  const P = [], g = ev.g;
+  for (let s = 0; s < K; s++) {
+    let r = 0, w = 0;
+    for (let k = -2; k <= 2; k++) { const q = R[(s + k + K) % K]; if (Number.isFinite(q)) { r += q; w++; } }
+    if (!w) continue;
+    r /= w;
+    const a = ((s + 0.5) * 2 * Math.PI) / K, u = best[0] + r * Math.cos(a), v = best[1] + r * Math.sin(a);
+    const x = cx + u * e1[0] + v * e2[0] + h * N[0], y = cy + u * e1[1] + v * e2[1] + h * N[1], z = cz + u * e1[2] + v * e2[2] + h * N[2];
+    const qx = x - g.O.x, qy = y - g.O.y, qz = z - g.O.z;
+    P.push([qx * g.r.x + qy * g.r.y + qz * g.r.z, qx * g.d.x + qy * g.d.y + qz * g.d.z]);
+  }
+  return { A, P };
+}
+
 /**
  * The parasternal LV calipers, measured as echo.js drawCalipers measures them: along the beam
  * through the point 30% of the way from the LV's middle to the mitral valve (the heart's anchors
