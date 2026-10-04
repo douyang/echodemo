@@ -400,6 +400,10 @@ a:hover { text-decoration-color: var(--accent); }
 @media (min-width: 561px) and (max-width: 820px) {
   #ch-windows .readouts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+/* chapter 19: a value with its unit wraps in a narrow box (a phone, a tablet's panel); the unit
+   goes to the next line whole */
+#ch-stress .readout dd { white-space: normal; }
+#ch-stress .readout dd small { display: inline-block; white-space: nowrap; }
 
 .live {
   margin: 0 0 16px;
@@ -828,6 +832,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
      them, in a taller figure */
   .split.views3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 46% 54%; grid-template-areas: "planes planes" "section echo"; }
   html[data-ch="windows"] .stage { height: min(64vh, 560px); }
+  /* Stress echocardiography: the quad screen, with the bull's-eye and the protocol under it */
+  html[data-ch="stress"] .stage { height: min(64vh, 560px); }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }
   .split.wide .pane-2d { display: none; }
   /* with the free plane on, its echo shows under the 3D view */

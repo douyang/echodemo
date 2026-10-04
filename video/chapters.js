@@ -254,6 +254,19 @@ export const VIDEOS = {
         line: 'The IVC has a thin wall, lies in the liver, receives the hepatic veins and narrows on a sniff. The aorta has a thick wall, lies outside the liver, gives off the celiac trunk and the SMA, and pulsates with no change on a sniff.', move: 3, hold: 7 },
     ],
   },
+  // 19: the seven cases of the chapter's tour, each on the view that shows its territory best
+  stress: {
+    pane: 'Dobutamine stress',
+    steps: [
+      { set: { sxCase: 'normal', sxView: 'a4c' }, track: 'Normal', pick: [0], hold: 6 },
+      { set: { sxCase: 'lad', sxView: 'a2c' }, track: 'LAD', pick: [1], hold: 7 },
+      { set: { sxCase: 'rca', sxView: 'a2c' }, track: 'RCA', pick: [1], hold: 7 },
+      { set: { sxCase: 'lcx', sxView: 'a4c' }, track: 'Circumflex', pick: [1], hold: 7 },
+      { set: { sxCase: 'multi', sxView: 'a2c' }, track: 'Two vessels', pick: [1, 2], hold: 7 },
+      { set: { sxCase: 'scar', sxView: 'a2c' }, track: 'Scar', pick: [0, 1], hold: 7 },
+      { set: { sxCase: 'viable', sxView: 'a2c' }, track: 'Viable', pick: [1, 2, 3], hold: 8 },
+    ],
+  },
 };
 
 /** The video's chapter keys. */

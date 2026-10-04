@@ -109,6 +109,16 @@ export function lvWeights(heart, edv, esv, wallMm) {
   return { size, wall, k: LV_K[n - 1], esSize: Math.min(size, invert(LV_SZ, col, esv)) };
 }
 
+/**
+ * The dx_lvSize weight that gives heart key's LV the fraction ratio of its own EDV, with its own
+ * wall (chapter 19: the smaller cavity with dobutamine).
+ */
+export function lvSizeFor(heart, ratio) {
+  const T = LV[heart] || LV.normal, own = LV_WL.indexOf(0);
+  const col = T.ed.map((row) => row[own]);
+  return invert(LV_SZ, col, ratio * col[LV_SZ.indexOf(0)]);
+}
+
 // The LV diameters in the parasternal long axis (chapters 13 and 15), measured as chapter 18's
 // calipers measure them (echo.js drawCalipers): along the beam through the point 30% of the
 // way from the LV's middle to the mitral valve, from the septum to the posterior wall. d: LVIDd

@@ -41,6 +41,8 @@ const PRESETS = {
     side: 'lv', edv: 222, ef: 25, wall: 8, tapse: 16, sPrime: 9.5, fac: 34,
     culprit: 'lad', wm: 3, segs: segs(LAD, 3),
     fstate: 2.2, caseId: 'icm',
+    // stress echocardiography: a viability study, as the LAD territory is akinetic at rest
+    sxCase: 'viable',
   },
   barlow: {
     pv: 'mr', sv: 55, trV: 3.0,

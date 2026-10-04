@@ -510,11 +510,13 @@ export class EchoView {
 
   /**
    * Regional wall motion: a scale on each myocardial vertex's systolic motion, or null; and one
-   * for the pericardium, so that it moves with the wall under it.
+   * for the pericardium, so that it moves with the wall under it. The scale takes the amyloid
+   * heart's own systolic change (amyloid_systole) too: without it, an akinetic segment of that
+   * heart still moves.
    */
   setRegional(scale, periScale = null) {
-    this.myo.scale = scale ? { systole: scale } : null;
-    if (this.peri) this.peri.scale = periScale ? { systole: periScale } : null;
+    this.myo.scale = scale ? { systole: scale, amyloid_systole: scale } : null;
+    if (this.peri) this.peri.scale = periScale ? { systole: periScale, amyloid_systole: periScale } : null;
   }
 
   /** The heart this view shows: its own (setBurden), or the page's (model3d.js). */
