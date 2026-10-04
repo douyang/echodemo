@@ -474,6 +474,10 @@ export class EchoView {
     this.ownAnat = null;
     this.disease = {};    // a chapter's disease on the heart shown: weights of the dx_ targets (setDisease)
     this.fill = false;    // true: the sector fills the canvas height and its sides may be cut (a chapter's panel)
+    this.motion = {};     // a change within the beat: weights of dx_ targets that the rest shape leaves out (setMotion)
+    this.periStill = 0;   // 0 to 1: how far the sac keeps still while the heart contracts (fluid in it)
+    this.standoff = 0;    // cm the probe sits back along the beam (fluid in front of the heart; setStandoff)
+    this.sac = false;     // true: lung and fat outside the sac, so fluid in it shows as a dark band
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -543,6 +547,22 @@ export class EchoView {
     this.disease = next;
     this.dShifts = shifts;
     this.dVer = (this.dVer || 0) + 1;
+    this.pv = -2;
+  }
+
+  /**
+   * A change within the beat (phenomesh.js DISEASE moves: the RA and RV walls, the septum, a
+   * swinging heart): w, weights by key. The next frame shows it; the rest shape, and so the
+   * speckle's place, stays.
+   */
+  setMotion(w = {}) {
+    this.motion = Object.fromEntries(Object.entries(w).filter(([, v]) => v).map(([k, v]) => [`dx_${k}`, v]));
+  }
+
+  /** The probe set back along the beam by cm, past fluid in front of the heart: the plane moves, the heart stays. */
+  setStandoff(cm = 0) {
+    if (Math.abs(cm - this.standoff) < 1e-4) return;
+    this.standoff = cm;
     this.pv = -2;
   }
 
@@ -907,7 +927,12 @@ export class EchoView {
     const free = this.geoms.free;
     this.geoms = {};
     // a view with its own heart plans only its own plane (setView plans another when asked)
-    for (const k of this.own ? [this.view] : Object.keys(VIEWS)) { const g = viewGeometry(this.anat, k); if (g) this.geoms[k] = g; }
+    for (const k of this.own ? [this.view] : Object.keys(VIEWS)) {
+      const g = viewGeometry(this.anat, k);
+      if (!g) continue;
+      if (this.standoff) g.O.addScaledVector(g.d, -this.standoff);
+      this.geoms[k] = g;
+    }
     if (free) this.geoms.free = free;
     if (this.liver3d && this.geoms.sc4c) this.liver3d.setPlane4c(this.geoms.sc4c, VIEWS.sc4c);
     if (first) return;
@@ -924,7 +949,7 @@ export class EchoView {
     const g = this.g;
     if (!g) { this.drawEmpty(); return; }
     const a = P ? P.a : 0, s = state.s;
-    const weights = (md, lw = null) => ({ amyloid: a, systole: s, amyloid_systole: a * s, ...(lw || {}), ...phenoWeights(Object.keys(md.dict), P, s, lw, this.noSys), ...this.disease });
+    const weights = (md, lw = null) => ({ amyloid: a, systole: s, amyloid_systole: a * s, ...(lw || {}), ...phenoWeights(Object.keys(md.dict), P, s, lw, this.noSys), ...this.disease, ...this.motion });
     this.myo.morph(weights(this.myo));
     const tissue = this.myo.section(g, true);
     const lw = (md) => (md.dict.leaflets_mid !== undefined ? leafletWeights(md.mesh.name, state.v, state.drive, a, s) : { leaflets: state.v });
@@ -947,7 +972,10 @@ export class EchoView {
     }
     let peri = [];
     if (this.peri) {
-      this.peri.morph(weights(this.peri));
+      const w = weights(this.peri);
+      // with fluid in it, the sac keeps still while the heart inside it contracts
+      if (this.periStill) for (const k of Object.keys(w)) if (k === 'systole' || k === 'amyloid_systole' || k.endsWith('_sys')) w[k] *= 1 - this.periStill;
+      this.peri.morph(w);
       peri = this.peri.section(g, true);
     }
     let cor = [];
@@ -1146,6 +1174,17 @@ export class EchoView {
       }
     }
     this.periDrawn = periPts;          // the pericardium line as drawn, plane coordinates
+    // fluid in the sac (this.sac): grey lung and fat in a band outside it, so that the fluid shows
+    // as a dark band between the sac and the heart; the cavities and lumens stay dark
+    const sacItems = [];
+    const sacRings = this.sac ? peri.filter(closed).map((L) => L.pts) : [];
+    if (sacRings.length) {
+      sacItems.push(
+        { lines: sacRings, closed: true, e: -11, w: 3.2 },
+        { polys: [...sacRings, ...outer.map((L) => L.pts)], rule: 'evenodd', e: DB.blood, blood: true },
+        { polys: loops.filter((L) => !outer.includes(L)).map((L) => L.pts), e: DB.blood, blood: true },
+      );
+    }
     const items = [
       { polys: liver, e: DB.liver },
       { borders: liver, e: 6, spec: 9, w: 0.12, closed: true, all: true },
@@ -1155,6 +1194,7 @@ export class EchoView {
       { borders: walls(veins), e: DB.fibrous - 3, spec: 6, w: 0.16, all: true },
       { borders: walls(arteries), e: DB.fibrous + 2, spec: 7, w: 0.28, all: true },
       { polys: [...veins, ...arteries], e: DB.blood, blood: true },
+      ...sacItems,
       { polys: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, rule: 'evenodd' },
       { polys: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo },
       { borders: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, spec: 8, closed: true },

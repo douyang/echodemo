@@ -7,7 +7,8 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { tracks, bands, paintBands, playSeverity, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, shown } from '../sev.js';
-import { drawA4C, drawPLAX, drawIVC } from '../echo2d.js';
+import { drawIVC } from '../echo2d.js';
+import { MeshPanel } from '../meshpanel.js';
 import { rapEstimate } from '../norms.js';
 import { reducedMotion } from '../state.js';
 
@@ -97,26 +98,47 @@ function dynamics(m) {
   return { ra: clamp(ra, 0, 1), rv: clamp(rv, 0, 1), sep, swing: [m.swing * Math.sin(p), 0.35 * m.swing * Math.cos(p)] };
 }
 
+// The four-chamber and long-axis views cut from the heart mesh (meshpanel.js), with the fluid and
+// the signs of tamponade as targets on it (phenomesh.js DISEASE): the heart the page shows.
+const MOVES = ['eff', 'effAnt', 'under', 'raIn', 'rvIn', 'sep', 'swing', 'bob'];
+const redraw = () => { if (sheet) sheet.dirty = true; };
+const echoA4C = new MeshPanel('a4c', { diseases: MOVES, redraw });
+const echoPLAX = new MeshPanel('plax', { diseases: MOVES, redraw });
+const smooth = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
+
+/**
+ * The sac's targets (cm) from the effusion as printed. With no fluid the mesh's sac already lies
+ * 1.7 mm from the heart, and the underfilled chambers of tamponade (under) widen the space by
+ * 3.7 mm more, so the largest space at end-diastole is the printed one. Fluid in front of the
+ * heart (effAnt) comes only in a larger effusion.
+ */
+function sacOf(m) {
+  const e = m.eff / 10;
+  return { eff: Math.max(0, e - 0.17 - 0.37 * m.tamp), effAnt: Math.max(0, e - 0.6) * 0.75, under: m.tamp };
+}
+/** The moves within the beat (cm): the RA and RV walls fold in, the septum shifts, the heart swings. */
+function movesOf(m) {
+  const d = dynamics(m);
+  return { raIn: 1.2 * d.ra, rvIn: 0.8 * d.rv, sep: d.sep, swing: d.swing[0], bob: d.swing[1] };
+}
+
 function a4c(ctx, box, m) {
-  const k = m.tamp, sq = 1 - 0.12 * k;                 // tamponade: small, underfilled chambers
-  const g = {
-    lvL: [8.4, 7.3], lvW: [4.6 * sq, 3.0 * sq], lvWall: [0.9, 1.35], ivs: [0.9, 1.35],
-    rvW: [3.3 * (1 - 0.18 * k), 2.7 * (1 - 0.18 * k)], rvWall: 0.4, laW: [3.3, 3.9], laL: [4.1, 4.8],
-    raW: [3.1 * (1 - 0.1 * k), 3.6 * (1 - 0.1 * k)], raL: [3.8, 4.4], ma: 3.1, ta: 3.0,
-    effusion: (m.eff / 10) * 0.85,
-  };
-  const t = clock.beats % 1 * RR0;
-  drawA4C(ctx, box, g, {
-    t, depth: 16 + 0.5 * (m.eff / 10), dyn: dynamics(m),
-    title: fit(box.w, `APICAL FOUR-CHAMBER · HR ${Math.round(m.hr)}`, 'A4C'),
+  const S = sacOf(m);
+  echoA4C.draw(ctx, box, fit(box.w, `APICAL FOUR-CHAMBER · HR ${Math.round(m.hr)}`, 'A4C'), {
+    tms: (clock.beats % 1) * RR0, disease: S, motion: movesOf(m),
+    // the probe sits on the chest wall, so fluid round the apex sets the heart back
+    standoff: S.eff, deeper: S.eff, sac: true, still: smooth(S.eff / 0.5),
+    names: [['lv', 'LV'], ['rv', 'RV'], ['la', 'LA'], ['ra', 'RA']],
   });
 }
 
 function plax(ctx, box, m) {
-  const e = m.eff / 10;
-  const g = { ivs: [0.9, 1.35], lvid: [4.7 * (1 - 0.1 * m.tamp), 3.0], pw: [0.9, 1.35], la: [3.1, 3.5], root: 3.1, lvot: 2.1,
-    effusion: e, effusionAnt: Math.max(0, e - 0.6) * 0.75 };
-  drawPLAX(ctx, box, g, { t: clock.beats % 1 * RR0, depth: 16, title: fit(box.w, 'PARASTERNAL LONG AXIS', 'PLAX') });
+  const S = sacOf(m), { raIn, ...mv } = movesOf(m);
+  echoPLAX.draw(ctx, box, fit(box.w, 'PARASTERNAL LONG AXIS', 'PLAX'), {
+    tms: (clock.beats % 1) * RR0, disease: S, motion: mv,
+    standoff: S.effAnt, deeper: S.effAnt, sac: true, still: smooth(S.eff / 0.5),
+    names: [['rv', 'RV'], ['lv', 'LV'], ['ao', 'Ao'], ['la', 'LA']],
+  });
 }
 
 /** Mitral or tricuspid inflow over a breath and a half: E and A for each beat. */
@@ -271,6 +293,9 @@ export default {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
     return sheet;
   },
+  // the heart model and the targets load at idle, before the chapter opens (main.js warms every chapter)
+  enter() { echoA4C.start(); echoPLAX.start(); },
+  warm() { echoA4C.start(); echoPLAX.start(); },
   init({ state }) {
     st = state;
     BANDS = bands((s) => gradeOf(s));

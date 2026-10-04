@@ -50,9 +50,12 @@ export class MeshPanel {
 
   /**
    * Draw the panel P (canvas px) with title. o.tms: the time in the cycle (ms); o.disease:
-   * weights by disease key, or a function of the heart shown that gives them; o.lines: the
-   * measurement box (echo2d.js measures); o.names: chamber names, [[anchor, text], ...], kept
-   * clear of the box. Returns F, or null while the model loads.
+   * weights by disease key, or a function of the heart shown that gives them; o.motion: weights
+   * of the moves within the beat (echo.js setMotion); o.standoff: cm of fluid between the probe
+   * and the heart, and o.deeper: cm added to the view's depth; o.sac: lung and fat outside the
+   * sac, and o.still (0 to 1): the sac keeps still in systole; o.lines: the measurement box
+   * (echo2d.js measures); o.names: chamber names, [[anchor, text], ...], kept clear of the box.
+   * Returns F, or null while the model loads.
    */
   draw(ctx, P, title, o = {}) {
     panel(ctx, P.x, P.y, P.w, P.h, title);
@@ -69,8 +72,14 @@ export class MeshPanel {
     if (ev.w !== w || ev.h !== h) ev.setSize(w, h);
     const disease = (typeof o.disease === 'function' ? o.disease(ev.model.pheno.key) : o.disease) || {};
     ev.setDisease(disease, this.shifts);
+    ev.setMotion(o.motion || {});
+    ev.setStandoff(o.standoff || 0);
+    ev.depth = undefined;
+    if (o.deeper) ev.depth = ev.specOf(this.view).depth + o.deeper;
+    ev.sac = !!o.sac;
+    ev.periStill = o.still || 0;
     const tms = o.tms ?? 0;
-    const key = `${tms}|${w}x${h}|${JSON.stringify(disease)}|${ev.model.pheno.version}`;
+    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, ev.model.pheno.version].join('|');
     if (key !== this.last) {
       const c = cycleAt(tms);
       ev.frame({ s: c.s, v: c.v, drive: c.drive, phase: c.phase, t: c.t });
