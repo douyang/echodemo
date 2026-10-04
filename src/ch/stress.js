@@ -10,6 +10,7 @@ import { Sheet, MONO, SANS } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { cycleAt, EV } from '../cyclemodel.js';
 import { MeshPanel } from '../meshpanel.js';
+import { VIEWS } from '../views.js';
 import { loadModel } from '../model3d.js';
 import { meshTrace, biplane } from '../meshtrace.js';
 import { lvSizeFor } from '../meshcal.js';
@@ -19,7 +20,8 @@ import { segmentMap, segmentLabels, periScale, SEG_NAMES } from './segments.js';
 // ---------------------------------------------------------------- the protocol
 // 3-minute stages of 5, 10, 20, 30 and 40 µg/kg/min, and atropine when the heart rate falls short
 // of the target, 85% of the age-predicted maximum (Pellikka 2020, Figure 7); the maximum taken as
-// 220 − age (Tanaka 2001). The patient is 60 years old.
+// 220 − age, as is common (Tanaka 2001 found 208 − 0.7 × age better in older adults; the text
+// gives both). The patient is 60 years old.
 const DOSES = [5, 10, 20, 30, 40];
 const AGE = 60, MAXHR = 220 - AGE, TARGET = Math.round(0.85 * MAXHR);
 
@@ -447,6 +449,20 @@ function legend(sh, t, x, y, w, cats) {
   return cy;
 }
 
+/** Text with a band of paper round its letters: a label that the heart rate line may cross. */
+function haloText(sh, t, str, x, y, o) {
+  const ctx = sh.ctx;
+  ctx.save();
+  ctx.font = `${o.weight} ${o.size}px ${o.family}`;
+  ctx.textAlign = o.align || 'left';
+  ctx.strokeStyle = t.paper;
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(str, x, y);
+  ctx.restore();
+  sh.text(str, x, y, o);
+}
+
 /** The protocol: the dose in steps, the heart rate against its target, and the four moments. */
 function protocol(sh, t, box, C, run) {
   const ctx = sh.ctx, small = box.w < 330;
@@ -487,7 +503,7 @@ function protocol(sh, t, box, C, run) {
   run.atropine.forEach(([m], j) => {
     const x = X(m), y = Yh(interp(run.hr, m)) + 8;
     ctx.save(); ctx.fillStyle = t.ink2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 4, y + 6); ctx.lineTo(x + 4, y + 6); ctx.closePath(); ctx.fill(); ctx.restore();
-    if (j === 0) sh.text(small ? 'atr' : `atropine ${run.atropine.reduce((a, [, d]) => a + d, 0)} mg`, x - 6, y + 6, { family: MONO, weight: 500, size: small ? 8.5 : 9, align: 'right', color: t.ink2 });
+    if (j === 0) haloText(sh, t, small ? 'atr' : `atropine ${run.atropine.reduce((a, [, d]) => a + d, 0)} mg`, x - 6, y + 6, { family: MONO, weight: 500, size: small ? 8.5 : 9, align: 'right', color: t.ink2 });
   });
   ctx.save(); ctx.strokeStyle = t.ink2; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(run.stop), T - 4); ctx.lineTo(X(run.stop), B); ctx.stroke(); ctx.restore();
   // at the foot of its line, where the infusion has ended: the peak's label takes its top
@@ -496,7 +512,7 @@ function protocol(sh, t, box, C, run) {
   if (C.onset !== undefined) {
     const x = X(C.onset), y = Yh(interp(run.hr, C.onset));
     ctx.save(); ctx.fillStyle = t.flag; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    if (!small) sh.text('WMA', x - 7, y - 4, { family: MONO, weight: 600, size: 9.5, align: 'right', color: t.flag });
+    if (!small) haloText(sh, t, 'WMA', x - 7, y - 4, { family: MONO, weight: 600, size: 9.5, align: 'right', color: t.flag });
   }
   // the four moments of the quad screen
   for (const S of STAGES) {
@@ -513,10 +529,17 @@ function draw(sh, t) {
   const W = sh.w, H = sh.h, narrow = W < 700;
   const C = caseOf(st.sxCase), run = RUNS[C.run], cats = responses(st.sxCase);
   syncLabels();
-  // the view buttons sit over the top of the figure
+  const pad = narrow ? 6 : 14, gap = narrow ? 6 : 12;
+  // the view buttons sit over the top of the figure; a page without them (a video) names the view there
   const bar = sh.canvas.closest('figure')?.querySelector('.occl');
-  const ob = bar && bar.offsetParent ? (bar.getBoundingClientRect().bottom - sh.canvas.getBoundingClientRect().top) / (sh.z || 1) : 0;
-  const top = Math.max(narrow ? 44 : 58, Math.ceil(ob) + 8), pad = narrow ? 6 : 14, gap = narrow ? 6 : 12;
+  let top;
+  if (bar) {
+    const ob = bar.offsetParent ? (bar.getBoundingClientRect().bottom - sh.canvas.getBoundingClientRect().top) / (sh.z || 1) : 0;
+    top = Math.max(narrow ? 44 : 58, Math.ceil(ob) + 8);
+  } else {
+    sh.text(`${VIEWS[st.sxView].name.replace(/\s*\(.*\)$/, '')} view`, pad, pad + 13, { family: SANS, weight: 600, size: 13, color: t.ink2 });
+    top = pad + 26;
+  }
   let quad, side = null;
   if (!narrow) {
     // the quad screen on the left, as square as the height allows; the bull's-eye and the protocol beside it
@@ -582,7 +605,7 @@ function textOf(s, cite) {
   const volLine = v0 && v1 ? `${change('the end-systolic volume', v0.esv, v1.esv, ' mL')}, and ${change('the LVEF', v0.ef, v1.ef, '%')}` : '';
   let live;
   if (key === 'normal') {
-    live = `<b>Normal response.</b> Every segment is normal at rest and becomes hyperkinetic with dobutamine, and the LV cavity becomes smaller${volLine ? `: ${volLine}` : ''}${cite('pellikka2020')}. ${hrLine} (target ${TARGET}/min), so the stress is adequate${cite('pellikka2020,tanaka2001')}.`;
+    live = `<b>Normal response.</b> Every segment is normal at rest and becomes hyperkinetic with dobutamine, and the LV cavity becomes smaller${volLine ? `: ${volLine}` : ''}${cite('pellikka2020')}. ${hrLine} (target ${TARGET}/min), so the stress is adequate${cite('pellikka2020')}.`;
   } else if (key === 'multi') {
     // the abnormal segments at peak, by territory: '6 of 7 in the LAD territory (3 akinetic)'
     const by = C.art.map((a) => {

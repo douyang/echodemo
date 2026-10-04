@@ -1,4 +1,4 @@
-// The intro: one clip from each of eight chapters, between a title card and the end card. The
+// The intro: one clip from each of nine chapters, between a title card and the end card. The
 // cuts fall on the bar lines of one score. No DOM. The pages, the render tool and the score read it.
 //  - video/chapter.html?reel=k draws a chapter clip. video/index.html?reel=k draws the clip of Views.
 //  - tools/render-video.mjs --reel renders the clips and joins them in order.
@@ -14,6 +14,7 @@
 //  - Systolic function, Diastolic function: dense panels. LV function shows in the segments and
 //    amyloid clips.
 //  - AR, MS, TR: the layout of AS and MR.
+// Stress echocardiography, added with its chapter, is the last clip: the quad screen of a stress test.
 //
 // A clip has ch (the chapter's key) and bars (its length in bars of the score). A chapter clip has
 // a video in the shape of video/chapters.js. The clip of Views has a cut of the views video
@@ -33,7 +34,7 @@ const TWO = { hold0: 0.75, move: 1, hold1: 1.25 };
 export const REEL = {
   key: 'intro',
   // the title card: the site's name and the start of its description (index.html, meta description)
-  title: { eye: '18 chapters', name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive guide to echocardiography.' },
+  title: { eye: '19 chapters', name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive guide to echocardiography.' },
   intro: 2,
   outro: 3,
   clips: [
@@ -71,6 +72,14 @@ export const REEL = {
     { ch: 'amyloid', bars: 3, video: { pane: 'Echocardiographic signs', side: false, quant: { amyS: 0.0025 }, steps: [
       { set: { amyS: 0 }, pick: [2], hold: TWO.hold0 },
       { set: { amyS: 0.9 }, name: 'Relative apical sparing', line: 'The septum measures {IVSd} mm. {s2}', move: TWO.move, hold: TWO.hold1 },
+    ] } },
+    // Stress echocardiography: the quad screen of a dobutamine test in one view, from a normal response
+    // to ischemia in the LAD territory: the segments turn abnormal at peak. The line is from the chapter's
+    // dek. Four bars, so that the score's whole four-bar phrases end on the end card at 105 BPM.
+    { ch: 'stress', bars: 4, video: { pane: 'Dobutamine stress', steps: [
+      { set: { sxCase: 'normal', sxView: 'a2c' }, name: 'Normal response', line: '', hold: 1 },
+      { set: { sxCase: 'lad', sxView: 'a2c' }, name: 'Ischemia in the LAD territory',
+        line: 'A segment that is normal at rest and becomes abnormal with stress indicates ischemia in the territory of its coronary artery.', move: 1, hold: 2 },
     ] } },
   ],
 };
