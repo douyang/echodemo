@@ -460,6 +460,82 @@ export function arIntegrated(v) {
   return integrated({ mild: met(AR_MILD, v), severe: met(AR_SEVERE, v), q, lvd: v.ef <= 55 || v.lvesd > 50 || v.lvesdi > 25, none: v.vc <= 0 && v.jet <= 0 && v.rvol <= 0 });
 }
 
+// Chronic tricuspid regurgitation, Zoghbi 2017 Figure 31 and Table 14; beyond severe, the EACVI
+// grades for transcatheter repair (Lancellotti 2022 Table 16). The grades of each measure: 1
+// mild, 2 moderate, 3 severe, 4 massive, 5 torrential; the lower limits of grades 2 to 5.
+export const TR_QUANT = {
+  vc: [0.3, 0.7, 1.4, 2.1],     // cm, at a Nyquist limit of 50–70 cm/s
+  eroa: [0.2, 0.4, 0.6, 0.8],   // cm², 2D PISA at a baseline shift to 28 cm/s
+  rvol: [30, 45, 60, 75],       // mL
+};
+/** The bands of each measure as Table 14 (mild to severe) and Table 16 (severe to torrential) print them. */
+export const TR_QUANT_LABEL = {
+  vc: ['<0.3', '0.3–0.69', '0.7–1.3', '1.4–2.0', '≥2.1'],
+  eroa: ['<0.20', '0.20–0.39', '0.40–0.59', '0.60–0.79', '≥0.80'],
+  rvol: ['<30', '30–44', '45–59', '60–74', '≥75'],
+};
+/** The grade (1 to 5) of measure k at value x. */
+export const trQuant = (k, x) => 1 + TR_QUANT[k].filter((c) => x >= c).length;
+/**
+ * The specific criteria of Figure 31: [key, criterion, the rule this site applies, test]. The
+ * figure gives no number for a small jet, a normal RV and RA, a dilated annulus, a preserved RV
+ * function or the CW jet. Here a small jet is <20% of the RA; a normal RV has a basal diameter
+ * <4.1 cm and a normal RA a volume index <30 mL/m² (Mukherjee 2025); a dilated annulus is
+ * >4.0 cm (Otto 2020); preserved RV function is a TAPSE >17 mm (Mukherjee 2025); and the CW jet
+ * is faint where the CW panel draws it faint, at a regurgitant volume <30 mL. The figure gives
+ * the PISA radius at a Nyquist limit of 30–40 cm/s; this site measures it at a baseline shift to
+ * 28 cm/s and uses the radii that Table 14 gives there (≤0.5 cm, >0.9 cm). For the vena
+ * contracta of severe TR it uses Table 14 (≥0.7 cm; the figure: >0.7 cm).
+ * v: jet (% of RA), vc (cm), r (cm), rvol (mL), hvS, hvD (forward flow, m/s; S <0: reversed),
+ * E, A (m/s), rvb (cm), ravi (mL/m²), ta (cm), tapse (mm), leaf ('coapt' | 'gap' | 'flail'),
+ * cw ('parabolic' | 'triangular').
+ */
+export const TR_MILD = [
+  ['jet', 'Thin, small central jet', '<20% of RA', (v) => v.jet < 20],
+  ['vc', 'Vena contracta', '<0.3 cm', (v) => v.vc < 0.3],
+  ['pisa', 'PISA radius', '≤0.5 cm', (v) => v.r <= 0.5],
+  ['cw', 'Incomplete or faint CW jet', 'faint: RVol <30 mL', (v) => v.rvol < 30],
+  ['hv', 'Systolic-dominant hepatic vein flow', 'S >D', (v) => v.hvS > v.hvD],
+  ['adom', 'A-wave dominant tricuspid inflow', 'A >E', (v) => v.A > v.E],
+  ['size', 'Normal RV and RA', 'RV <4.1 cm, RAVI <30', (v) => v.rvb < 4.1 && v.ravi < 30],
+];
+export const TR_SEVERE = [
+  ['leaf', 'Dilated annulus with no coaptation, or flail leaflet', 'annulus >4.0 cm', (v) => v.leaf === 'flail' || (v.leaf === 'gap' && v.ta > 4.0)],
+  ['jet', 'Large central jet', '>50% of RA', (v) => v.jet > 50],
+  ['vc', 'Vena contracta', '≥0.7 cm', (v) => v.vc >= 0.7],
+  ['pisa', 'PISA radius', '>0.9 cm', (v) => v.r > 0.9],
+  ['cw', 'Dense, triangular CW jet', 'triangular, RVol ≥30 mL', (v) => v.cw === 'triangular' && v.rvol >= 30],
+  ['hv', 'Hepatic vein systolic flow reversal', 'S <0', (v) => v.hvS < 0],
+  ['rv', 'Dilated RV with preserved function', 'RV ≥4.1 cm, TAPSE >17 mm', (v) => v.rvb >= 4.1 && v.tapse > 17],
+];
+/**
+ * Chronic TR by Figure 31. Most specific criteria: the text asks for "a majority of specific
+ * signs", so four of the seven. Four or more for mild TR give mild, and four or more for severe
+ * TR give severe; if both sets reach four, the findings disagree, and the grade is
+ * indeterminate. Otherwise the TR is "probably moderate", and the vena contracta, the EROA and
+ * the regurgitant volume decide. The figure gives no rule when they fall in different grades;
+ * this site takes the middle grade. Severe TR is then massive or torrential by the middle grade
+ * of the same three measures (Table 16). No vena contracta, jet or flow convergence is no
+ * regurgitation. v: as TR_MILD, and eroa (cm²).
+ */
+export function trIntegrated(v) {
+  const mild = met(TR_MILD, v), severe = met(TR_SEVERE, v);
+  const nMild = Object.values(mild).filter(Boolean).length, nSevere = Object.values(severe).filter(Boolean).length;
+  const q = { vc: trQuant('vc', v.vc), eroa: trQuant('eroa', v.eroa), rvol: trQuant('rvol', v.rvol) };
+  const q5 = Object.values(q).sort((a, b) => a - b)[1], qg = Math.min(q5, 3);
+  let path;
+  if (v.vc <= 0 && v.jet <= 0 && v.r <= 0) path = 'none';
+  else if (nMild >= 4 && nSevere >= 4) path = 'both';
+  else if (nMild >= 4) path = 'mild';
+  else if (nSevere >= 4) path = 'severe';
+  else path = `q${qg}`;
+  const base = { none: 'none', both: 'indeterminate', mild: 'mild', severe: 'severe', q1: 'mild', q2: 'moderate', q3: 'severe' }[path];
+  // beyond severe: 3 severe, 4 massive, 5 torrential; 0 for a grade below severe
+  const beyond = base === 'severe' ? Math.max(3, q5) : 0;
+  const grade = beyond ? ['severe', 'massive', 'torrential'][beyond - 3] : base;
+  return { mild, severe, nMild, nSevere, q, q5, qg, path, beyond, grade };
+}
+
 // Lang 2015 ranges by sex for the report: [normal lo, normal hi, mild hi, moderate hi]; above
 // moderate hi is severe. Supplemental Table 3 and Table 4 (EF, LA volume).
 export const LANG = {
