@@ -352,7 +352,15 @@ function draw(sh, t) {
   }
   const ty = H - textH + (narrow ? 12 : 16);
   sh.text('V = π/4 × Σ aᵢ × bᵢ × L / 20', x0, ty, { family: MONO, weight: 500, size: narrow ? 11 : 13 });
-  sh.text(`EDV ${v.edvm} mL · ESV ${v.esvm} mL · EF ${v.ef}%${L.f > 0.02 ? `  (true EDV ${L.edv.toFixed(0)} mL)` : ''}`, x0, ty + (narrow ? 17 : 22), { family: MONO, weight: 400, size: narrow ? 11 : 12.5, color: L.f > 0.02 ? t.flag : t.ink2 });
+  // the volumes and the EF, in a shorter form where the long one runs past the figure's edge
+  const fs = narrow ? 11 : 12.5, trueEdv = L.f > 0.02 ? L.edv.toFixed(0) : null;
+  const volL = `EDV ${v.edvm} mL · ESV ${v.esvm} mL · EF ${v.ef}%${trueEdv ? `  (true EDV ${trueEdv} mL)` : ''}`;
+  const volS = `EDV ${v.edvm} · ESV ${v.esvm} mL · EF ${v.ef}%${trueEdv ? ` (true EDV ${trueEdv})` : ''}`;
+  sh.ctx.save();
+  sh.ctx.font = `400 ${fs}px ${MONO}`;
+  const vol = sh.ctx.measureText(volL).width <= W - x0 - 6 ? volL : volS;
+  sh.ctx.restore();
+  sh.text(vol, x0, ty + (narrow ? 17 : 22), { family: MONO, weight: 400, size: fs, color: trueEdv ? t.flag : t.ink2 });
   if (!narrow) sh.text('a: diameter in A4C · b: diameter in A2C · L: the longer length · 20 disks', x0, ty + 43, { family: SANS, weight: 400, size: 11, color: t.ink3 });
 }
 
