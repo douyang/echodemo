@@ -137,7 +137,7 @@ function plax(ctx, box, m) {
   echoPLAX.draw(ctx, box, fit(box.w, 'PARASTERNAL LONG AXIS', 'PLAX'), {
     tms: (clock.beats % 1) * RR0, disease: S, motion: mv,
     standoff: S.effAnt, deeper: S.effAnt, sac: true, still: smooth(S.eff / 0.5),
-    names: [['rv', 'RV'], ['lv', 'LV'], ['ao', 'Ao'], ['la', 'LA']],
+    names: [['rvant', 'RV'], ['plv', 'LV'], ['ao', 'Ao'], ['la', 'LA']],
   });
 }
 

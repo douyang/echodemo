@@ -266,7 +266,7 @@ function plaxView(ctx, P, m) {
   const lines = bx.w < 250 || bx.h < 220 ? [`IVSd ${M.ivs.toFixed(1)} mm`, `PWd ${M.pw.toFixed(1)} mm`]
     : [`IVSd ${M.ivs.toFixed(1)} mm`, `LVIDd ${M.lvid.toFixed(1)} mm`, `PWd ${M.pw.toFixed(1)} mm`, `RWT ${((M.ivs + M.pw) / M.lvid).toFixed(2)}`];
   const box = corner(ctx, bx, lines);
-  tags(ctx, bx, v.ev, [['rvant', 'RV'], ['lv', 'LV'], ['la', 'LA'], ['ao', 'Ao']], 0, box);
+  tags(ctx, bx, v.ev, [['rvant', 'RV'], ['plv', 'LV'], ['la', 'LA'], ['ao', 'Ao']], 0, box);
 }
 
 /** A measurement box in the image's top-left corner, which the sector leaves empty; returns it. */
