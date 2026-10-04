@@ -299,6 +299,7 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 - Rendered again on October 4, 2026, after the move to the one heart (#45 to #51): 09, 11, 12, 13, 14, 15, 16 and 17, whose views are now cut from the mesh. The steps, the lengths and the scores did not change.
 - Checked on October 4, 2026, after #52: the nine videos last rendered at #37 (01, 02, 03, 05, 06, 07, 08, 10 and 18) were rendered again from main and compared frame by frame with the videos in use. 18 Cardiac amyloidosis changed, and the new render replaces it: the relative apical LS is now the ratio of the printed segment values (#44), so the first step reads 0.61 for 0.60, and the four-chamber view changed with the mesh code of #45 to #51. 01, 02, 03, 05, 06, 08 and 10 have byte-identical video streams. In 07, from 45.5 s to the end, pixels at the edges of the caption's letters differ (at most 26 of 255 levels, in at most 0.14% of a frame's samples); the text is the same, so the video in use stays.
 - Added on October 4, 2026, with its chapter: 19 Stress echocardiography. Its figure names the view above the quad screen, where the site has the view buttons. The page builds the captions after the chapter's `ready()`, which waits for the volumes of every case, so each caption has its LVEF.
+- Rendered again on October 4, 2026, with the new parasternal long axis (the plane through the aortic root): 02, 13, 17 and 18, each with the frames its layout gives. 12 and 15 were not rendered again: the new LV diameter tables move their LV by at most 0.2 mm in the normal heart, less than a pixel.
 
 | Chapter | Steps | Length |
 |---|---|---|
@@ -363,6 +364,7 @@ How it is built:
 - The captions are the chapters' own text: the live sentence at the step's state, a readout, or a sentence from the chapter's page.
 - Rendered again, all nine clips, on October 4, 2026, with chapter 19: the progress line names nine chapters, so every clip changed. The stress clip has 4 bars (the others 3, Image 2 and Views 6). With 32 bars to the end card, the score's whole four-bar phrases end on it at 105 BPM, as the 28 bars before did; a clip of 3 bars gives 31 bars, and the score went to 108.4 BPM, off the clips' bar lines. The intro of 18 chapters, its score and its clips are kept in `video/out/old/2026-10-04-pre-stress/`.
 - Rendered again, all eight clips, on October 4, 2026, after the move to the one heart (#45 to #51): the clips of 12, 15 and 17 show the views cut from the mesh. Against the intro of #37, the clips of 02, 04, 05 and 10 are byte-identical, and those of 12, 15, 17 and 18 changed.
+- Rendered again on October 4, 2026, with the new parasternal long axis: the clips of 02, 04, 17 and 18 (0, 1, 6 and 7). Against the intro before, the other five clips are unchanged (no pixel moves by more than 32 levels); in the clip of 04 the long axis's plane changed among the nine planes as well as in its own views.
 
 ```
 python3 tools/score/pulse.py intro video/out/intro.wav
