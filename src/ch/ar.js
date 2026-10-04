@@ -281,13 +281,15 @@ function plax(ctx, box, v, t) {
     MESH.draw(ctx, box, title, {
       tms: t, disease: { lvSize: W8.size + (W8.esSize - W8.size) * sy }, lvK: W8.k,
       deeper: Math.max(0, W8.size),
-      names: [['rv', 'RV'], ['lv', 'LV'], ['ao', 'Ao'], ['la', 'LA']],
+      names: [['prv', 'RV'], ['plv', 'LV'], ['ao', 'Ao'], ['la', 'LA']],
       over: (c, F, ev) => {
-        // the septum, the LV and the posterior wall, where chapter 18's calipers measure them
+        // the septum, the LV and the posterior wall, where chapter 18's calipers measure them;
+        // the LV's caliper 1 mm beside the walls' toward the base
         const K = plaxCalipers(ev, sy);
         if (K) {
+          const side = [K.dir[1] * 0.1, -K.dir[0] * 0.1];
           cal(c, F, K.ivs[0], K.ivs[1], '');
-          cal(c, F, add(K.lv[0], [0.1, 0]), add(K.lv[1], [0.1, 0]), '');
+          cal(c, F, add(K.lv[0], side), add(K.lv[1], side), '');
           cal(c, F, K.pw[0], K.pw[1], '');
         }
         if (!v.leak) return;

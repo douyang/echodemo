@@ -32,7 +32,7 @@ const ED = 31;   // ms: end-diastole of the cycle model, where the LV is largest
 // ---------------------------------------------------------------- the model patient
 // PLAX calipers at end-diastole, measured on the mesh at burdens 0 to 1 (mm); each is a
 // straight line in the burden to within 0.05 mm
-const ivsOf = (a) => 8.95 + 7.85 * a, lvidOf = (a) => 46.78 - 6.94 * a, pwOf = (a) => 8.91 + 6.09 * a;
+const ivsOf = (a) => 8.8 + 7.53 * a, lvidOf = (a) => 46.8 - 6.89 * a, pwOf = (a) => 8.98 + 6.63 * a;
 // the mesh's normal and amyloid corners (assets/anatomy.json)
 const lin = (a0, a1) => (a) => a0 + (a1 - a0) * a;
 const EDV = lin(111.86, 71.65), ESV = lin(38.75, 32.7), LAMAX = lin(49.78, 115.16);
@@ -266,7 +266,7 @@ function plaxView(ctx, P, m) {
   const lines = bx.w < 250 || bx.h < 220 ? [`IVSd ${M.ivs.toFixed(1)} mm`, `PWd ${M.pw.toFixed(1)} mm`]
     : [`IVSd ${M.ivs.toFixed(1)} mm`, `LVIDd ${M.lvid.toFixed(1)} mm`, `PWd ${M.pw.toFixed(1)} mm`, `RWT ${((M.ivs + M.pw) / M.lvid).toFixed(2)}`];
   const box = corner(ctx, bx, lines);
-  tags(ctx, bx, v.ev, [['rvant', 'RV'], ['lv', 'LV'], ['la', 'LA'], ['ao', 'Ao']], 0, box);
+  tags(ctx, bx, v.ev, [['prv', 'RV'], ['plv', 'LV'], ['la', 'LA'], ['ao', 'Ao']], 0, box);
 }
 
 /** A measurement box in the image's top-left corner, which the sector leaves empty; returns it. */
