@@ -81,10 +81,18 @@ export function viewGeometry(anat, key) {
       break;
     }
     case 'plax': {
+      // the long-axis plane: through the apex and the centres of the mitral and aortic valves,
+      // the plane of the apical long-axis view, so the aortic root opens into the ascending
+      // aorta past the valve: the ascending-aorta view tilted down onto the LV. (The plane of
+      // the LV's axis and the parasternal beam, turned 19 degrees about that axis from this one,
+      // passed 0.9 cm from the valve's centre, and the root closed just past the valve.) The
+      // probe stays at the left sternal border, the parasternal beam turned into the plane
       const { u, level } = plaxBase();
-      O = level.clone().addScaledVector(u, 8.2);
-      d = u.clone().negate().addScaledVector(Z, 0.12).normalize();
-      r = perp(Z, d);
+      const n0 = new THREE.Vector3().subVectors(mv, apex).cross(new THREE.Vector3().subVectors(av, apex)).normalize();
+      const uIn = perp(u, n0), zIn = perp(Z, n0);
+      O = onPlane(level, av, n0).addScaledVector(uIn, 8.2);
+      d = uIn.clone().negate().addScaledVector(zIn, 0.12).normalize();
+      r = perp(zIn, d);
       break;
     }
     case 'plax_asc': {
@@ -450,7 +458,7 @@ const FULL = {
 };
 // short names for a narrow cross-section pane, where the full ones meet (A3C at 320 px)
 const SHORT = { anteroseptal: 'Ant-sept', inferolateral: 'Inf-lat' };
-const ROOMY = new Set(['la', 'ra', 'lv', 'rv', 'rvant', 'rvot', 'mpa', 'ao', 'asc', 'arch', 'desc', 'ivc', 'ivcl', 'rpa', 'lpa', 'svc', 'abdao']);
+const ROOMY = new Set(['la', 'ra', 'lv', 'plv', 'rv', 'prv', 'rvant', 'rvot', 'mpa', 'ao', 'asc', 'arch', 'desc', 'ivc', 'ivcl', 'rpa', 'lpa', 'svc', 'abdao']);
 
 export class EchoView {
   /**
@@ -1441,6 +1449,23 @@ export class EchoView {
     an.mpa = V3(...VESSELS.paMid);
     an.rpa = V3(...VESSELS.rpaMid);
     an.lpa = V3(...VESSELS.lpaMid);
+    // the parasternal long axis: the septum and the inferolateral wall named where the calipers
+    // cross them (30% of the way from the LV's middle to the mitral valve), across the LV in that
+    // plane, the septum toward the probe; the cavity 1.2 cm toward the apex from there and the
+    // RV 1 cm in front of the septum (prv, the chapters' panels); the RV outflow in front of the
+    // LVOT (rvant, the tag RVOT)
+    const gp = this.geoms.plax;
+    if (gp) {
+      const zIn = A.axis.clone().addScaledVector(gp.n, -A.axis.dot(gp.n)).normalize();
+      const w = new THREE.Vector3().crossVectors(gp.n, zIn).normalize();
+      if (w.dot(gp.d) > 0) w.negate();
+      const c = an.lv.clone().lerp(an.mv, 0.3);
+      an.plv = c.clone().addScaledVector(zIn, -1.2);
+      an.asw = c.clone().addScaledVector(w, lvid / 2 + this.geo.ivs * mm / 2);
+      an.ilw = c.clone().addScaledVector(w, -(lvid / 2 + wall / 2));
+      an.prv = c.clone().addScaledVector(w, lvid / 2 + this.geo.ivs * mm + 1.0);
+      an.rvant = an.lvot.clone().addScaledVector(w, 2.4);
+    } else { an.plv = an.lv; an.prv = an.rv; }
     return an;
   }
 
@@ -1517,29 +1542,41 @@ export class EchoView {
     for (let i = 0; i + 1 < h.length; i += 2) out.push([h[i], h[i + 1]]);
     return out;
   }
-  drawCalipers(tissue, X, Y) {
-    const g = this.g;
-    const an = this.anchors(0);
+  /**
+   * The PLAX calipers' line on the plane (cm): through the point 30% of the way from the LV's
+   * middle to the mitral valve, square to the LV's long axis as the plane cuts it (ASE 2015:
+   * linear measurements perpendicular to the long axis), running from the septum's side to
+   * the posterior wall's. { P0, dir }: the line starts 9 cm before that point.
+   */
+  caliperLine(s = 0) {
+    const g = this.g, an = this.anchors(s), Z = this.anat.axis;
     const c = this.toPlane(an.lv.clone().lerp(an.mv, 0.3), g);
-    const dir = [0, 1];
-    const P0 = [c[0], c[1] - 9];
+    const ax = g.r.dot(Z), ay = g.d.dot(Z), k = Math.hypot(ax, ay);
+    const dir = ax > 0 ? [-ay / k, ax / k] : [ay / k, -ax / k];   // deeper along it: toward the posterior wall
+    return { P0: [c[0] - 9 * dir[0], c[1] - 9 * dir[1]], dir };
+  }
+  drawCalipers(tissue, X, Y) {
+    const { P0, dir } = this.caliperLine(0);
     const iv = this.intervals(tissue, P0, dir, 18);
     const before = iv.filter((q) => q[1] < 9), after = iv.filter((q) => q[0] > 9);
     if (!before.length || !after.length) { this.measure = {}; return; }
     const s1 = before[before.length - 1], s2 = after[0];
     const ctx = this.ctx;
+    const at = (t) => [X(P0[0] + t * dir[0]), Y(P0[1] + t * dir[1])];
     const seg = (t0, t1) => {
-      const x = X(P0[0]), y0 = Y(P0[1] + t0), y1 = Y(P0[1] + t1);
+      const [x0, y0] = at(t0), [x1, y1] = at(t1);
+      const L = Math.hypot(x1 - x0, y1 - y0) || 1, tx = (-(y1 - y0) / L) * 4, ty = ((x1 - x0) / L) * 4;
       ctx.save();
       ctx.strokeStyle = '#ffe89a';
       ctx.lineWidth = 1.2;
       ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
       ctx.setLineDash([]);
-      for (const y of [y0, y1]) { ctx.beginPath(); ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.stroke(); }
+      for (const [x, y] of [[x0, y0], [x1, y1]]) { ctx.beginPath(); ctx.moveTo(x - tx, y - ty); ctx.lineTo(x + tx, y + ty); ctx.stroke(); }
       ctx.restore();
     };
     seg(s1[0], s1[1]); seg(s1[1], s2[0]); seg(s2[0], s2[1]);
-    this.measure = { ivs: (s1[1] - s1[0]) * 10, lvid: (s2[0] - s1[1]) * 10, pw: (s2[1] - s2[0]) * 10, x: X(P0[0]), y: Y(P0[1] + s2[1]) };
+    const [x, y] = at(s2[1]);
+    this.measure = { ivs: (s1[1] - s1[0]) * 10, lvid: (s2[0] - s1[1]) * 10, pw: (s2[1] - s2[0]) * 10, x, y };
   }
 }

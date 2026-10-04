@@ -18,15 +18,15 @@ const V = (o) => ({ angle: 80, near: 1.2, ...o });
 export const VIEWS = {
   // ---- parasternal long axis
   plax: V({ win: 'plax', short: 'PLAX', name: 'Parasternal long axis', lab: 'PLAX_IVS_LVPW_LVIDD', plane: 'plax', depth: 16,
-    labels: [['rvant', 'RVOT'], ['asw', 'IVS'], ['lv', 'LV'], ['ilw', 'inferolateral wall'], ['la', 'LA'], ['ao', 'Ao'], ['mv', 'MV'], ['desc', 'desc Ao']] }),
+    labels: [['rvant', 'RVOT'], ['asw', 'IVS'], ['plv', 'LV'], ['ilw', 'inferolateral wall'], ['la', 'LA'], ['ao', 'Ao'], ['mv', 'MV']] }),
   plax_deep: V({ win: 'plax', short: 'PLAX', name: 'Parasternal long axis, increased depth', lab: 'PLAX_Zoom_out', plane: 'plax', depth: 24,
-    labels: [['rvant', 'RVOT'], ['lv', 'LV'], ['la', 'LA'], ['ao', 'Ao'], ['desc', 'desc Ao']] }),
+    labels: [['rvant', 'RVOT'], ['plv', 'LV'], ['la', 'LA'], ['ao', 'Ao']] }),
   plax_avmv: V({ win: 'plax', short: 'PLAX', name: 'Parasternal long axis, aortic and mitral valves', lab: 'PLAX_AV_MV', plane: 'plax', depth: 16, zoom: { at: 'avmv', w: 9 },
     labels: [['av', 'AV'], ['mv', 'MV'], ['la', 'LA'], ['ao', 'Ao'], ['lvot', 'LVOT']] }),
   plax_av: V({ win: 'plax', short: 'PLAX', name: 'Parasternal long axis, zoomed aortic valve', lab: 'PLAX_zoomed_AV', plane: 'plax', depth: 16, zoom: { at: 'av', w: 5.5 },
     labels: [['av', 'AV'], ['ao', 'Ao'], ['lvot', 'LVOT']] }),
   plax_mv: V({ win: 'plax', short: 'PLAX', name: 'Parasternal long axis, zoomed mitral valve', lab: 'PLAX_zoomed_MV', plane: 'plax', depth: 16, zoom: { at: 'mv', w: 6 },
-    labels: [['mv', 'MV'], ['la', 'LA'], ['lv', 'LV']] }),
+    labels: [['mv', 'MV'], ['la', 'LA'], ['plv', 'LV']] }),
   plax_asc: V({ win: 'plax', short: 'PLAX', name: 'Parasternal long axis, proximal ascending aorta', lab: 'PLAX_Proximal_Ascending_Aorta', plane: 'plax_asc', depth: 16,
     labels: [['asc', 'ascending Ao'], ['av', 'AV'], ['lv', 'LV'], ['la', 'LA']] }),
   rv_in: V({ win: 'plax', short: 'RVIT', name: 'RV inflow', lab: 'PLAX_RV_inflow', plane: 'rv_in', depth: 16,

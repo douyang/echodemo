@@ -283,19 +283,18 @@ export function enFaceOrifice(ev, valve, frame = null) {
 }
 
 /**
- * The parasternal LV calipers, measured as echo.js drawCalipers measures them: along the beam
- * through the point 30% of the way from the LV's middle to the mitral valve (the heart's anchors
- * at systolic weight s), the septum's last crossing and the posterior wall's first. Returns
- * { ivs, lv, pw } as [from, to] in cm, or null.
+ * The parasternal LV calipers, measured as echo.js drawCalipers measures them: square to the LV's
+ * long axis through the point 30% of the way from the LV's middle to the mitral valve (the
+ * heart's anchors at systolic weight s; echo.js caliperLine), the septum's last crossing and the
+ * posterior wall's first. Returns { ivs, lv, pw } as [from, to] in cm and dir, the line's
+ * direction, or null.
  */
 export function plaxCalipers(ev, s) {
-  const an = ev.anchors(s);
-  const p = onPlane(ev, an.lv.clone().lerp(an.mv, 0.3));
-  const P0 = [p[0], p[1] - 9];
-  const iv = ev.intervals(ev.last.tissue, P0, [0, 1], 18);
+  const { P0, dir } = ev.caliperLine(s);
+  const iv = ev.intervals(ev.last.tissue, P0, dir, 18);
   const before = iv.filter((q) => q[1] < 9), after = iv.filter((q) => q[0] > 9);
   if (!before.length || !after.length) return null;
   const s1 = before[before.length - 1], s2 = after[0];
-  const at = (t) => [P0[0], P0[1] + t];
-  return { ivs: [at(s1[0]), at(s1[1])], lv: [at(s1[1]), at(s2[0])], pw: [at(s2[0]), at(s2[1])] };
+  const at = (t) => [P0[0] + t * dir[0], P0[1] + t * dir[1]];
+  return { ivs: [at(s1[0]), at(s1[1])], lv: [at(s1[1]), at(s2[0])], pw: [at(s2[0]), at(s2[1])], dir };
 }

@@ -48,7 +48,7 @@ export const CUTS = {
 
 /** Structures in each view: its labels (VIEWS[].labels), named as the cross-section names them. */
 const SHOWS = {
-  plax: 'RV outflow tract · ventricular septum · left ventricle · inferolateral wall · left atrium · aorta · mitral valve · descending aorta',
+  plax: 'RV outflow tract · ventricular septum · left ventricle · inferolateral wall · left atrium · aorta · mitral valve',
   plax_asc: 'Ascending aorta · aortic valve · left ventricle · left atrium',
   rv_in: 'Right ventricle · tricuspid valve · right atrium · inferior vena cava',
   rv_out: 'RV outflow tract · pulmonic valve · main pulmonary artery',
