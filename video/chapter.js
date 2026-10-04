@@ -18,6 +18,8 @@ import { RR } from '../src/cyclemodel.js';
 import { ecg } from '../src/scope.js';
 import { scanner } from '../src/scanner.js';
 import { setHeart } from '../src/echo2d.js';
+import { setPheno, loadModel } from '../src/model3d.js';
+import { meshPanelsReady } from '../src/meshpanel.js';
 
 // The figure is laid out for a smaller box and drawn larger, so its lines and lettering have the
 // weight they have on the site: while it draws, the page reports a device pixel ratio equal to
@@ -527,6 +529,22 @@ async function settle() {
   // a 3D chapter: its stage running with the chapter's own frame (its ready())
   for (let k = 0; C.ready && !C.ready() && k < 400; k++) await new Promise((r) => setTimeout(r, 50));
   if (C.ready && !C.ready()) throw new Error(`chapter ${KEY}: the 3D view did not start`);
+  // each disease heart a step shows, built now (a few seconds, once), so that the step's first
+  // frame shows it; then the heart shown before
+  const hearts = [...new Set(V.steps.map((s) => s.set?.pheno).filter((k) => k && k !== 'normal'))];
+  if (hearts.length) {
+    const m = await loadModel(), was = state.pheno || 'normal';
+    const until = async (k) => {
+      for (let i = 0; m.pheno.key !== k && i < 1200; i++) await new Promise((r) => setTimeout(r, 50));
+      if (m.pheno.key !== k) throw new Error(`chapter ${KEY}: the ${k} heart did not build`);
+    };
+    for (const k of hearts) { setPheno(k); await until(k); }
+    setPheno(was);
+    await until(was);
+  }
+  // the echo views cut from the mesh (src/meshpanel.js): their model and disease targets
+  for (let k = 0; !meshPanelsReady() && k < 1200; k++) await new Promise((r) => setTimeout(r, 50));
+  if (!meshPanelsReady()) throw new Error(`chapter ${KEY}: the mesh views did not load`);
   await new Promise((r) => setTimeout(r, 600));
 }
 
@@ -534,8 +552,9 @@ async function init() {
   await applyTheme();
   for (const c of CHAPTERS) if (c.defaults) declare(c.defaults);
   declare({ pheno: 'normal' });
-  // the heart a step shows (its pheno): the 2D views draw its valves, as the site's menu sets them (src/main.js)
-  subscribe((s, changed) => { if ('pheno' in changed) setHeart(s.pheno); });
+  // the heart a step shows (its pheno), as the site's menu sets it (src/main.js): the mesh takes
+  // it, and the 2D views draw its valves
+  subscribe((s, changed) => { if ('pheno' in changed) { setPheno(s.pheno); setHeart(s.pheno); } });
   set({ chapter: IDX, playing: true, anim: false });
   const src = await loadSource();
   SUB = V.sub || (plain($('.dek', src.art)?.innerHTML || '').match(/^.*?[.!?](?=\s|$)/) || [''])[0];

@@ -806,8 +806,10 @@ const arPage = {
     });
   },
   // on the way in and out, the next drawing sets the baseline: no flash for changes made elsewhere
-  enter() { fresh = true; freeLive(); },
+  enter() { fresh = true; freeLive(); MESH.start(); },
   leave() { fresh = true; freeLive(); },
+  // the heart model and the LV target load at idle, before the chapter opens (main.js warms every chapter)
+  warm() { MESH.start(); },
   pulse: () => beat.pulse(),
   anim(dt, s, set) {
     playSeverity(dt, s, set, KEY, BANDS);
