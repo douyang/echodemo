@@ -64,6 +64,8 @@ The **Heart** menu in the header sets the heart for the whole page, and the page
 - **The report** (hidden) has a case for each heart, with its button next to the four standard cases.
 - **Sizes.** The LV volumes come from 50 short-axis slices of each shape. The slices read 6% over the model's own normal volumes (118 and 42 mL against 112 and 39), so each heart's values are scaled by 0.945.
 - **Limits.** The severity pages keep their own LV models, so a page can show values that differ from the heart's (the MR page gives an EF of 64% under the Barlow heart, the mesh 67%).
+- **What the chapters share.** One heart mesh, one set of view planes (`viewGeometry` in `src/echo.js`), one echo renderer and one beat at 70 per minute (`src/cyclemodel.js`) serve every chapter, so a change there reaches all of them. The Heart menu is the one patient: every chapter shows its heart and opens at its values. Each chapter's sliders, buttons and Play change only that chapter's own keys in the store (`src/state.js`), and the chapter keeps them while the page is open; no other chapter reads them. The exception is the heart rate: Doppler hemodynamics (08) and Mitral stenosis (14) both set it, with one slider in each. `SHARED` in `src/state.js` names the keys that several chapters use, and `node tools/check-state.mjs` fails when a chapter reads or writes another chapter's key that `SHARED` does not name.
+- **Why the chapters do not share their settings.** Each disease page is a one-slider model. Along the slider, every number that the page prints stays in its guideline grade, and the guidelines grade one lesion at a time. No model in the site computes two lesions together. For example, severe MR lowers the forward stroke volume and with it the aortic gradient: an aortic stenosis page that took the MR of another chapter would print a gradient that no model computed. A shared setting would also make each page depend on the reader's path through the other chapters, while the text, the quizzes, the videos and the checks describe each chapter from its own start. The five hearts are the shared patients: each one is a set of values for every chapter, made and measured together.
 
 | | | |
 | --- | --- | --- |
@@ -187,6 +189,7 @@ A static site with no build step: ES modules, a canvas sketch layer (`src/sketch
 ```
 index.html          page, chapter text, dialogs
 src/main.js         chapter engine: controls, readouts, citations, the tour and each chapter's own sequence, keyboard
+src/state.js        the one store: each chapter's own keys, and the keys that several chapters share (SHARED)
 src/ch/*.js         one module per chapter
 src/order.js        the chapter order, the two hidden chapters, and each chapter's number (numOf)
 src/sev.js          severity pages: keyframe tracks, grade bands, Play, measurement strip
@@ -215,7 +218,7 @@ src/edits.js        the ▲▼ buttons of the diagrams: one step of a value, the
 src/refs.js         references
 assets/             heart mesh (JSON), anatomy landmarks, poster image, favicon (SVG; PNGs for Safari and the iPhone home screen)
 video/              the views video, the chapter videos and the intro: pages, cuts, chapter steps, intro clips, timing, fonts
-tools/              video tools: render, storyboard
+tools/              video tools: render, storyboard; check-state.mjs, the check that each chapter keeps to its own state keys
 tools/score/        the video soundtracks: Bright pulse (pulse.py) on the InVision sound engine (synth.py); the first brand scores (score.py), kept (Python)
 ```
 
@@ -236,7 +239,7 @@ Keys: ← → change chapter, space plays or pauses the tour, [ and ] step the v
 - The tour plays when the page opens, from the chapter in the address (01 when the address names none). With reduced motion, it does not.
 - A click on *Play all chapters* (or the space bar) pauses the tour. Any input in the chapter also pauses it: a pointer or the wheel on the figure or the text, a click there, a control, or a key of the chapter.
 - The next click continues in the open chapter from the step that it shows. It never starts at 01 and never runs `tourEnter`, which resets the chapter. After a control or a new heart, or in a chapter that did not play, the tour starts at the time that matches the chapter's state (`tourAt`): the frequency in 01, the view in 04 (one of the 14 views of the tour), the preset in 06, the IVC values in 07, the occluded artery in 10 and the slider in 11 to 18. A chapter without `tourAt` starts from its first step.
-- After the end of 18, the tour stops. The next click starts it again at 01.
+- After the end of the last chapter (19), the tour stops. The next click starts it again at 01.
 - The dot on the chapter bar shows the time of the tour in the chapter. It holds while the tour is paused.
 
 With the tour paused by a click, the open chapter plays its own sequence:
