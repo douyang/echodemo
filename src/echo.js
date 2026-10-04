@@ -478,6 +478,7 @@ export class EchoView {
     this.periStill = 0;   // 0 to 1: how far the sac keeps still while the heart contracts (fluid in it)
     this.standoff = 0;    // cm the probe sits back along the beam (fluid in front of the heart; setStandoff)
     this.sac = false;     // true: lung and fat outside the sac, so fluid in it shows as a dark band
+    this.fore = 0;        // cm the probe sits off the view's plane, aimed at the same point: a foreshortened view (setFore)
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -557,6 +558,38 @@ export class EchoView {
    */
   setMotion(w = {}) {
     this.motion = Object.fromEntries(Object.entries(w).filter(([, v]) => v).map(([k, v]) => [`dx_${k}`, v]));
+  }
+
+  /**
+   * The LV's own contraction by k (1 the heart's own, 0 none; chapter 09 sets it from the EF):
+   * every systolic target of the LV wall and the papillary muscles scales by k, through mask,
+   * each wall vertex's share of LV (model3d.js lvMask). The RV and the atria keep theirs.
+   */
+  setLvSys(k = 1, mask = null) {
+    if (k === this.lvK && mask === this.lvMaskArr) return;
+    this.lvK = k;
+    this.lvMaskArr = mask;
+    if (!mask || k === 1) {
+      this.myo.scale = null;
+      if (this.pap) this.pap.scale = null;
+      return;
+    }
+    const S = new Float32Array(this.myo.count);
+    for (let i = 0; i < S.length; i++) S[i] = 1 + (k - 1) * mask[i];
+    const all = (md, sc) => Object.fromEntries(Object.keys(md.dict).filter((n) => n === 'systole' || n === 'amyloid_systole' || n.endsWith('_sys')).map((n) => [n, sc]));
+    this.myo.scale = all(this.myo, S);
+    if (this.pap) this.pap.scale = all(this.pap, new Float32Array(this.pap.count).fill(k));
+  }
+
+  /**
+   * A foreshortened view: the probe moved cm off the view's plane, square to it, and aimed at the
+   * same point 10.5 cm deep (about the mitral valve in the apical views). The plane tilts about
+   * that point and misses the true apex, so the traced LV is shorter.
+   */
+  setFore(cm = 0) {
+    if (Math.abs(cm - this.fore) < 1e-4) return;
+    this.fore = cm;
+    this.pv = -2;
   }
 
   /** The probe set back along the beam by cm, past fluid in front of the heart: the plane moves, the heart stays. */
@@ -931,6 +964,12 @@ export class EchoView {
       const g = viewGeometry(this.anat, k);
       if (!g) continue;
       if (this.standoff) g.O.addScaledVector(g.d, -this.standoff);
+      if (this.fore) {
+        const T = g.O.clone().addScaledVector(g.d, 10.5), O = g.O.clone().addScaledVector(g.n, this.fore);
+        const d = T.sub(O).normalize(), r = g.r.clone().addScaledVector(d, -g.r.dot(d)).normalize();
+        const n = new THREE.Vector3().crossVectors(r, d).normalize();
+        Object.assign(g, { O, d, r, n });
+      }
       this.geoms[k] = g;
     }
     if (free) this.geoms.free = free;

@@ -414,6 +414,12 @@ export const DISEASE = {
   // tamponade's underfilled chambers, weight 0 to 1: the LV walls 2.8 mm in, the RV free wall
   // 6 mm, the RA free wall 3 mm
   under: { move: 'under' },
+  // The LV of chapter 09. lvSize: at weight 1 the LV wall 1 cm out at its middle (less toward the
+  // apex and the base) and the apex 0.8 cm farther from the base; a negative weight makes the LV
+  // smaller. lvWall: the amyloid heart's own thickening on the LV wall alone (weight 1: the amyloid
+  // wall), negative to thin it.
+  lvSize: { dilate: [[-0.3, 0.55], [0, 0.6], [0.2, 0.85], [0.5, 1.0], [0.8, 0.85], [1.0, 0.35], [1.2, 0]], stretch: 0.8 },
+  lvWall: { lvAmy: { lv: 1 } },
 };
 /** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {

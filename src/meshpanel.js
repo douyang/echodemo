@@ -10,17 +10,20 @@ import { panel, SC, sectorPath } from './scope.js';
 import { note } from './sev.js';
 import { cycleAt } from './cyclemodel.js';
 import { scanner } from './scanner.js';
-import { diseaseTargets } from './model3d.js';
+import { diseaseTargets, lvMask } from './model3d.js';
 import { measures } from './echo2d.js';
 
 export class MeshPanel {
   /**
    * view: a view key of views.js (a4c, plax...). o.diseases: the disease keys the chapter
-   * weights (phenomesh.js DISEASE); o.redraw: called when the model or the targets arrive.
+   * weights (phenomesh.js DISEASE); o.lv: the chapter scales the LV's own contraction (draw's
+   * o.lvK); o.redraw: called when the model or the targets arrive.
    */
   constructor(view, o = {}) {
     this.view = view;
     this.diseases = o.diseases || [];
+    this.lv = !!o.lv;
+    this.mask = null;
     this.redraw = o.redraw || (() => {});
     this.ev = null;
     this.shifts = null;
@@ -35,6 +38,7 @@ export class MeshPanel {
     (async () => {
       const S = await scanner();
       const shifts = this.diseases.length ? await diseaseTargets(this.diseases) : null;
+      if (this.lv) this.mask = await lvMask();
       const ev = S.make(300, 240, this.view, { fill: true });
       ev.setView(this.view, { animate: false });
       this.ev = ev;
@@ -53,8 +57,10 @@ export class MeshPanel {
    * weights by disease key, or a function of the heart shown that gives them; o.motion: weights
    * of the moves within the beat (echo.js setMotion); o.standoff: cm of fluid between the probe
    * and the heart, and o.deeper: cm added to the view's depth; o.sac: lung and fat outside the
-   * sac, and o.still (0 to 1): the sac keeps still in systole; o.lines: the measurement box
-   * (echo2d.js measures); o.names: chamber names, [[anchor, text], ...], kept clear of the box.
+   * sac, and o.still (0 to 1): the sac keeps still in systole; o.lvK: the LV's own contraction
+   * (echo.js setLvSys); o.fore: cm the probe sits off the plane (echo.js setFore); o.lines: the
+   * measurement box (echo2d.js measures); o.names: chamber names, [[anchor, text], ...], kept
+   * clear of the box.
    * Returns F, or null while the model loads.
    */
   draw(ctx, P, title, o = {}) {
@@ -78,8 +84,10 @@ export class MeshPanel {
     if (o.deeper) ev.depth = ev.specOf(this.view).depth + o.deeper;
     ev.sac = !!o.sac;
     ev.periStill = o.still || 0;
+    ev.setLvSys(o.lvK ?? 1, this.mask);
+    ev.setFore(o.fore || 0);
     const tms = o.tms ?? 0;
-    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, ev.model.pheno.version].join('|');
+    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, o.lvK ?? 1, o.fore || 0, ev.model.pheno.version].join('|');
     if (key !== this.last) {
       const c = cycleAt(tms);
       ev.frame({ s: c.s, v: c.v, drive: c.drive, phase: c.phase, t: c.t });
