@@ -325,6 +325,33 @@ export function msGrade(mva) {
   if (mva <= 2.5) return 'progressive, moderate';
   return 'progressive, mild';
 }
+/**
+ * The bands of Table 1 (Pandian 2023) for each measure, mild first: [label, test]. The mean
+ * gradient's bands hold at a heart rate of 60–80/min.
+ */
+export const MS_BANDS = {
+  mva: [['>2.5', (x) => x > 2.5], ['2.5–1.6', (x) => x > 1.5], ['≤1.5', () => true]],
+  pht: [['<100', (x) => x < 100], ['100–149', (x) => x < 150], ['≥150', () => true]],
+  mg: [['<5', (x) => x < 5], ['5–9', (x) => x < 10], ['≥10', () => true]],
+  pasp: [['<30', (x) => x < 30], ['30–49', (x) => x < 50], ['≥50', () => true]],
+};
+/** The band (1 mild, 2 moderate, 3 severe) of measure k at value x. */
+export const msBand = (k, x) => 1 + MS_BANDS[k].findIndex(([, t]) => t(x));
+/**
+ * Rheumatic mitral stenosis by Table 1 (Pandian 2023). Planimetry is the preferred method for the
+ * valve area, and the area gives the grade; the pressure half-time, the mean gradient (only at a
+ * heart rate of 60–80/min) and the PA systolic pressure support it. An area ≥4.0 cm² is normal
+ * (4.0–5.0 cm², Baumgartner 2009). v: mva (cm², planimetry), pht (ms), mg (mmHg), pasp (mmHg),
+ * hr (/min).
+ */
+export function msIntegrated(v) {
+  const g = { mva: msBand('mva', v.mva), pht: msBand('pht', v.pht), mg: msBand('mg', v.mg), pasp: msBand('pasp', v.pasp) };
+  const hrOk = v.hr >= 60 && v.hr <= 80;
+  const none = v.mva >= 4.0;
+  const support = ['pht', ...(hrOk ? ['mg'] : []), 'pasp'];
+  const disagree = none ? [] : support.filter((k) => g[k] !== g.mva);
+  return { g, hrOk, none, support, disagree, grade: none ? 'none' : ['', 'mild', 'moderate', 'severe'][g.mva] };
+}
 // Regurgitation grade by EROA (Zoghbi 2017 Tables 8, 11, 14).
 export function regGrade(valve, eroa) {
   const cut = { mr: [0.2, 0.4], ar: [0.1, 0.3], tr: [0.2, 0.4] }[valve];
