@@ -65,7 +65,8 @@ export class MeshPanel {
    * to anchor toward; a function (ev, s) -> [u, v] (cm on the plane, or null) in place of the
    * anchor puts it there. o.drive(drive, t): the valves' drive at time t (ms) for this view, from
    * the cycle model's (cyclemodel.js), for a valve that moves otherwise. o.shift: cm the plane
-   * moves along its normal (echo.js setShift).
+   * moves along its normal (echo.js setShift). o.calc: calcified valves, level by valve mesh
+   * name (echo.js setCalc).
    * Returns F, or null while the model loads.
    */
   draw(ctx, P, title, o = {}) {
@@ -92,10 +93,11 @@ export class MeshPanel {
     ev.setLvSys(o.lvK ?? 1, this.mask);
     ev.setFore(o.fore || 0);
     ev.setShift(o.shift || 0);
+    ev.setCalc(o.calc || {});
     const tms = o.tms ?? 0;
     const c = cycleAt(tms);
     const drive = o.drive ? o.drive(c.drive, c.t) : c.drive;
-    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, o.lvK ?? 1, o.fore || 0, o.shift || 0, ev.model.pheno.version, JSON.stringify(drive)].join('|');
+    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, o.lvK ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), ev.model.pheno.version, JSON.stringify(drive)].join('|');
     if (key !== this.last) {
       ev.frame({ s: c.s, v: c.v, drive, phase: c.phase, t: c.t });
       this.last = key;

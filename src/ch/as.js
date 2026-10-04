@@ -9,11 +9,14 @@
 // them. A move of the slider, Play, the tour or a heart's preset clears ax, and the values
 // follow the slider again.
 import { Sheet, clamp, mix, MONO } from '../sketch.js';
-import { panel, spectral, vscale, caliper, tagBox } from '../scope.js';
-import { RR, EV } from '../cyclemodel.js';
+import { panel, spectral, vscale, caliper, tagBox, SC } from '../scope.js';
+import { RR, EV, cycleAt } from '../cyclemodel.js';
 import { asGrade, asCriteria, AS_BANDS } from '../norms.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
-import { drawA5C, drawPSAXav, measures, cal, heartShown } from '../echo2d.js';
+import { drawA5C, drawPSAXav, measures, cal, heartShown, jet, barFor } from '../echo2d.js';
+import { MeshPanel } from '../meshpanel.js';
+import { laWeight, lvSizeOf, lvByEf, lvWallOf, asWeights } from '../meshcal.js';
+import { onPlane, closureOf, blood, cavity, enFaceOrifice, middle, sub, add, mul, unit, perp } from '../meshjet.js';
 import { reducedMotion } from '../state.js';
 import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash, FLASH } from '../edits.js';
 import { cue } from '../music.js';
@@ -178,8 +181,96 @@ let sheet = null, st = null, setState = null;
 const beat = new Beat(RR);
 
 // ---------------------------------------------------------------- the figure
-/** The A5C at the values on screen: walls and LV size from the model, the LVOT, the valve and the LV's contraction from the measurements. */
+// The apical three-chamber view and the short axis at the aortic valve cut from the heart mesh
+// (meshpanel.js). In the mesh's five-chamber plane the aortic root runs out of the plane, so the
+// jet up the ascending aorta is drawn in the three-chamber (apical long-axis) view, which holds
+// the LVOT, the valve and about 6 cm of ascending aorta. The heart is the one the page shows:
+// its LA at the printed LA volume index (la, meshcal.js laWeight), its LV at the model's
+// diastolic diameter and the printed LVEF (lvSize, lvSizeOf, lvByEf) with walls at the printed
+// septal thickness (lvWall, lvWallOf), and its aortic valve at the printed area and the model's
+// cusp thickness (avSten and avThick, asWeights), the cusps calcified with the grade (echo.js
+// setCalc). The short axis moves to the cusp tips, where the area is traced. The scanner format
+// (jets.js) keeps the parametric views.
+const redraw = () => { if (sheet) sheet.dirty = true; };
+const MESH = new MeshPanel('a3c', { diseases: ['la', 'lvSize', 'lvWall', 'avSten', 'avThick'], lv: true, redraw });
+const MESH_SAX = new MeshPanel('psax_av', { diseases: ['avSten', 'avThick'], redraw });
+/** The mesh's settings for the values on screen at time t, on the heart the page shows. */
+function meshOf(v, t) {
+  const heart = st.pheno || 'normal';
+  const W = asWeights(heart, v.ava, v.cusp * 10), L8 = lvByEf(heart, lvSizeOf(heart, v.lvidd * 10), v.ef);
+  const sy = cycleAt(t).s;
+  return {
+    W, lvK: L8.k, calc: { AorticValve: v.calc },
+    disease: { la: laWeight(v.lavi, heart), lvSize: L8.size + (L8.esSize - L8.size) * sy, lvWall: lvWallOf(heart, v.wall * 10), avSten: W.as, avThick: W.thick },
+  };
+}
+/**
+ * The jet on the mesh view at systolic weight s: from where the cusp tips come nearest each
+ * other, up the aorta that the plane shows (toward the middle of its blood), which clips it; its
+ * flow convergence keeps to the LVOT.
+ */
+function asJet(ev, s) {
+  const an = ev.anchors(s), av = onPlane(ev, an.av), up = unit(sub(onPlane(ev, an.ao), av));
+  const O = closureOf(ev, 'AorticValve', av, up) || av, side = perp(up);
+  const cut = [[add(O, side), sub(O, side)]];
+  const AO = cavity(ev, blood(ev, add(O, mul(up, 1.2)), 0.5), cut);
+  if (AO.length < 12) return null;
+  const dir = unit(sub(middle(AO), O));
+  const LVOT = cavity(ev, blood(ev, sub(O, mul(dir, 0.8)), 0.4), [[add(O, perp(dir)), sub(O, perp(dir))]]);
+  return { O, dir, clip: AO, pclip: LVOT.length >= 12 ? LVOT : null };
+}
+
+/** The width (cm) of polygon P across the line through Q square to dir: its extreme crossings. */
+function across(P, Q, dir) {
+  const side = perp(dir);
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const a = P[j], b = P[i], da = dot2(sub(a, Q), dir), db = dot2(sub(b, Q), dir);
+    if ((da > 0) === (db > 0)) continue;
+    const x = add(a, mul(sub(b, a), da / (da - db))), u = dot2(sub(x, Q), side);
+    lo = Math.min(lo, u); hi = Math.max(hi, u);
+  }
+  return Number.isFinite(lo) ? hi - lo : null;
+}
+const dot2 = (a, b) => a[0] * b[0] + a[1] * b[1];
+/** The largest ascending-aorta width seen on each heart (cm), for the box. */
+const ASC = {};
+
+/**
+ * The apical view at the values on screen: on the mesh, the three-chamber view (above); in the
+ * scanner format, the parametric A5C, with walls and LV size from the model, and the LVOT, the
+ * valve and the LV's contraction from the measurements.
+ */
 function a5c(ctx, box, v, t) {
+  if (JETS === 'plume') {
+    const m = meshOf(v, t);
+    const a = shape(v.qA, v.pA)((t - EV.avo) / (v.et * 1000));
+    const jl = 2 + v.vmax * 0.6, jw = 1.4 + v.vmax * 0.18;
+    MESH.draw(ctx, box, fit(box.w, 'APICAL THREE-CHAMBER · COLOR 60 cm/s', 'A3C · COLOR 60'), {
+      tms: t, disease: m.disease, lvK: m.lvK, calc: m.calc,
+      // the aorta's name down its channel, off the valve
+      names: [['lv', 'LV', 'apex', 0.45], ['la', 'LA'], [(ev, s) => { const J = asJet(ev, s); return J ? add(J.O, mul(J.dir, 4.2)) : null; }, 'Ao']],
+      over: (c, F, ev) => {
+        const J = asJet(ev, cycleAt(t).s);
+        if (J && v.vmax > 2.2 && a > 0.02) {
+          jet(c, F, { q: v.sv / v.et, va: 60, vc: Math.sqrt(v.ava), jl, jw, a, O: J.O, dir: J.dir, clip: J.clip, pclip: J.pclip });
+          barFor(c, F, -60, 60);
+        }
+        // no CW line here: in the mesh A3C the aortic root runs 42.5-43.9° off the beam from the
+        // probe through the valve, and a line that far off the jet would contradict the CW trace
+        // beside it
+        // under the bicuspid heart, its ascending aorta as the mesh has it: the aorta's widest
+        // section on this plane from 2 to 4.5 cm above the valve (3.55-3.63 cm through the beat);
+        // the box keeps the largest seen, so the number holds still
+        let asc = null;
+        const heart = heartShown();
+        if (heart === 'bav' && J) for (let d = 2; d <= 4.5; d += 0.25) { const w = across(J.clip, add(J.O, mul(J.dir, d)), J.dir); if (w && (!asc || w > asc)) asc = w; }
+        if (asc) asc = ASC[heart] = Math.max(ASC[heart] || 0, asc);
+        measures(c, F, [`LVOT ${v.lvotD.toFixed(1)} cm`, ...(asc ? [[`Ascending aorta ${asc.toFixed(1)} cm`, `Asc Ao ${asc.toFixed(1)} cm`]] : [])]);
+      },
+    });
+    return;
+  }
   const ef = v.ef / 100;
   const lvids = v.lvidd * Math.sqrt(Math.max(0.2, 1 - ef) / 0.38) * 0.625;
   const sysW = v.wall * (1 + 1.1 * (ef - 0.15));   // 50% thicker in systole at an LVEF of 60%
@@ -293,6 +384,41 @@ function meterItems(v) {
   ];
 }
 
+/**
+ * The short axis at the aortic valve: on the mesh, moved to the cusp tips, with the orifice
+ * traced in mid-systole as planimetry traces it; else the parametric view.
+ */
+function sax(ctx, P, v, t, title) {
+  if (JETS !== 'plume') {
+    drawPSAXav(ctx, P, psaxOf(v), { t, title });
+    return;
+  }
+  const m = meshOf(v, t);
+  const open = cycleAt(t).drive.av > 0.6;
+  MESH_SAX.draw(ctx, P, title, {
+    tms: t, disease: { avSten: m.W.as, avThick: m.W.thick }, calc: m.calc, shift: m.W.shift,
+    names: [['la', 'LA'], ['ra', 'RA'], ['rvot', 'RVOT']],
+    over: (c, F, ev) => {
+      if (!open) return;
+      // the trace: the cusp tips that bound the orifice seen along the root's axis
+      const s = cycleAt(t).s, o = enFaceOrifice(ev, 'AorticValve', { c: ev.anchors(s).av, n: ev.anat.aorticRoot });
+      if (!o || o.P.length < 12) return;
+      c.save();
+      c.beginPath();
+      c.rect(F.view.box.x, F.view.box.y, F.view.box.w, F.view.box.h);
+      c.clip();
+      c.strokeStyle = SC.cal;
+      c.lineWidth = 1;
+      c.setLineDash([3, 3]);
+      c.beginPath();
+      o.P.forEach((p, i) => { const q = F.P(p); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); });
+      c.closePath();
+      c.stroke();
+      c.restore();
+    },
+  });
+}
+
 function draw(sh, t) {
   const W = sh.w, H = sh.h, ctx = sh.ctx;
   const v = shown(st);
@@ -302,7 +428,7 @@ function draw(sh, t) {
     a5c(ctx, a, v, tt);
     const [p1, p2] = rows(b, [1.2, 1], 8);
     cursor(ctx, avCW(ctx, p1, v), beat.sweep);
-    drawPSAXav(ctx, p2, psaxOf(v), { t: tt, title: 'PSAX · AV' });
+    sax(ctx, p2, v, tt, 'PSAX · AV');
     return;
   }
   const colL = { x: 16, y: 36, w: W * 0.45 - 16, h: H - 48 };
@@ -312,7 +438,7 @@ function draw(sh, t) {
   meters(sh, t, { x: colL.x, y: colL.y + vh + 16, w: colL.w, h: colL.h - vh - 16 }, meterItems(v));
   const [p1, p2] = rows(colR, [1, 1.1], 10);
   cursor(ctx, avCW(ctx, p1, v), beat.sweep);
-  drawPSAXav(ctx, p2, psaxOf(v), { t: tt, title: fit(p2.w, `PSAX · AORTIC VALVE · AVA ${v.ava.toFixed(2)} cm²`, `PSAX · AVA ${v.ava.toFixed(2)} cm²`) });
+  sax(ctx, p2, v, tt, fit(p2.w, `PSAX · AORTIC VALVE · AVA ${v.ava.toFixed(2)} cm²`, `PSAX · AVA ${v.ava.toFixed(2)} cm²`));
 }
 
 // ---------------------------------------------------------------- the calculations in the text

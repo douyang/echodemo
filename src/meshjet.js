@@ -182,9 +182,12 @@ function ringOf(mesh) {
   for (let f = 0; f < idx.length; f += 3) { const a = find(idx[f]); par[find(idx[f + 1])] = a; par[find(idx[f + 2])] = a; }
   const cnt = new Map();
   for (let i = 0; i < n; i++) { const r = find(i); cnt.set(r, (cnt.get(r) || 0) + 1); }
-  const root = [...cnt.entries()].sort((a, b) => a[1] - b[1])[0][0];
+  // a valve model of one part (the aortic valve's cusps) has no ring
   const ring = new Uint8Array(n);
-  for (let i = 0; i < n; i++) ring[i] = find(i) === root ? 1 : 0;
+  if (cnt.size > 1) {
+    const root = [...cnt.entries()].sort((a, b) => a[1] - b[1])[0][0];
+    for (let i = 0; i < n; i++) ring[i] = find(i) === root ? 1 : 0;
+  }
   RINGS.set(mesh, ring);
   return ring;
 }
@@ -194,24 +197,32 @@ function ringOf(mesh) {
  * the leaflets, the area that planimetry at the tips traces. Round the point of the orifice
  * farthest from every leaflet point, the nearest leaflet point in each of 180 directions bounds
  * it. Returns A (cm², en face) and P, the trace on the view's plane (cm): that edge, smoothed,
- * in a plane square to the axis at the tips' mean depth. Null when the leaflets do not ring it.
+ * in a plane square to the axis at the tips' mean depth, scaled about its middle to area A.
+ * Null when the leaflets do not ring it.
+ * frame: { c, n } (world), the valve's centre and axis, for a valve model with no ring.
  */
-export function enFaceOrifice(ev, valve) {
+export function enFaceOrifice(ev, valve, frame = null) {
   const vd = ev.valves.find((v) => v.mesh.name === valve);
   if (!vd) return null;
   const p = vd.pos, ring = ringOf(vd.mesh), m = p.length / 3;
-  let cx = 0, cy = 0, cz = 0, k = 0;
-  for (let i = 0; i < m; i++) if (ring[i]) { cx += p[3 * i]; cy += p[3 * i + 1]; cz += p[3 * i + 2]; k++; }
-  if (!k) return null;
-  cx /= k; cy /= k; cz /= k;
-  // the ring's least axis: power iteration on (trace I - covariance)
-  let xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
-  for (let i = 0; i < m; i++) if (ring[i]) { const x = p[3 * i] - cx, y = p[3 * i + 1] - cy, z = p[3 * i + 2] - cz; xx += x * x; xy += x * y; xz += x * z; yy += y * y; yz += y * z; zz += z * z; }
-  const tr = xx + yy + zz;
-  let N = [1, 1, 1];
-  for (let it = 0; it < 60; it++) {
-    const v = [(tr - xx) * N[0] - xy * N[1] - xz * N[2], -xy * N[0] + (tr - yy) * N[1] - yz * N[2], -xz * N[0] - yz * N[1] + (tr - zz) * N[2]];
-    const l = Math.hypot(v[0], v[1], v[2]) || 1; N = [v[0] / l, v[1] / l, v[2] / l];
+  let cx = 0, cy = 0, cz = 0, N = [1, 1, 1];
+  if (frame) {
+    // the valve's centre and axis given (the aortic valve: its centre and the root's axis)
+    [cx, cy, cz] = [frame.c.x, frame.c.y, frame.c.z];
+    N = [frame.n.x, frame.n.y, frame.n.z];
+  } else {
+    let k = 0;
+    for (let i = 0; i < m; i++) if (ring[i]) { cx += p[3 * i]; cy += p[3 * i + 1]; cz += p[3 * i + 2]; k++; }
+    if (!k) return null;
+    cx /= k; cy /= k; cz /= k;
+    // the ring's least axis: power iteration on (trace I - covariance)
+    let xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
+    for (let i = 0; i < m; i++) if (ring[i]) { const x = p[3 * i] - cx, y = p[3 * i + 1] - cy, z = p[3 * i + 2] - cz; xx += x * x; xy += x * y; xz += x * z; yy += y * y; yz += y * z; zz += z * z; }
+    const tr = xx + yy + zz;
+    for (let it = 0; it < 60; it++) {
+      const v = [(tr - xx) * N[0] - xy * N[1] - xz * N[2], -xy * N[0] + (tr - yy) * N[1] - yz * N[2], -xz * N[0] - yz * N[1] + (tr - zz) * N[2]];
+      const l = Math.hypot(v[0], v[1], v[2]) || 1; N = [v[0] / l, v[1] / l, v[2] / l];
+    }
   }
   let e1 = Math.abs(N[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
   const dd = e1[0] * N[0] + e1[1] * N[1] + e1[2] * N[2];
@@ -260,6 +271,13 @@ export function enFaceOrifice(ev, valve) {
     const x = cx + u * e1[0] + v * e2[0] + h * N[0], y = cy + u * e1[1] + v * e2[1] + h * N[1], z = cz + u * e1[2] + v * e2[2] + h * N[2];
     const qx = x - g.O.x, qy = y - g.O.y, qz = z - g.O.z;
     P.push([qx * g.r.x + qy * g.r.y + qz * g.r.z, qx * g.d.x + qy * g.d.y + qz * g.d.z]);
+  }
+  // the trace keeps the area seen along the axis: the plane's tilt to the axis shrinks the
+  // projection (by 13 to 22% at the aortic valve, and 2 to 5% at the normal heart's mitral valve)
+  const Ap = area(P);
+  if (Ap > 1e-6) {
+    const M = middle(P), k = Math.sqrt(A / Ap);
+    for (let i = 0; i < P.length; i++) P[i] = add(M, mul(sub(P[i], M), k));
   }
   return { A, P };
 }
