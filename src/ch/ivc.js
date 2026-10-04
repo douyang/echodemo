@@ -6,11 +6,15 @@
 // it changes, and one line names the cause and the effect (as Diastolic function does).
 import { Sheet, clamp } from '../sketch.js';
 import { reducedMotion } from '../state.js';
+import { stepOf, steady as holdPlace, flash } from '../edits.js';
 import { cine, meters, rows, cols } from '../sev.js';
 import { numOf } from '../order.js';
 import { drawSubcostal, drawMmode, drawHV, drawPair, dAt, respAt, SEQ, RR, HV, hvRatios } from '../ivc2d.js';
 import { rapEstimate, RAP_RANGE } from '../norms.js';
 import { cue } from '../music.js';
+
+/** A ▲▼ edit renders again and keeps its button under the pointer (edits.js). */
+const steady = (btn, fn) => holdPlace('#ch-ivc .live', btn, fn);
 
 const DEF = { ivcD: 1.8, ivcSniff: 60, ivcQuiet: 30, ivcBreath: 'sniff', ivcSec: 'unclear', ivcTR: 'none' };
 // the two measurements with ▲▼ buttons: their steps and limits
@@ -147,30 +151,7 @@ function buildDiagram(host) {
   });
 }
 
-/** One step up or down from x, on the step's grid, within the limits. */
-function stepOf(x, I, dir) {
-  const n = dir > 0 ? Math.floor(x / I.step + 1e-6) + 1 : Math.ceil(x / I.step - 1e-6) - 1;
-  return Number(clamp(n * I.step, I.min, I.max).toFixed(I.dp));
-}
-
 const freeLive = () => { const live = document.querySelector('#ch-ivc .live'); if (live?.style.minHeight) live.style.minHeight = ''; };
-/** The box that scrolls the text: the panel beside the figure, or the page on a phone. */
-const scroller = (el) => { const p = el.closest('.panel'); return p && p.scrollHeight > p.clientHeight + 1 && getComputedStyle(p).overflowY !== 'visible' ? p : null; };
-/**
- * Keep a clicked button under the pointer while the text above it changes: the live sentence
- * keeps its height while the buttons are in use, and growth above the button scrolls away.
- */
-function steady(btn, fn) {
-  const live = document.querySelector('#ch-ivc .live');
-  if (live) live.style.minHeight = `${Math.max(live.offsetHeight, parseFloat(live.style.minHeight) || 0)}px`;
-  const y0 = btn?.getBoundingClientRect().top;
-  fn();
-  if (!btn || !btn.isConnected) return;
-  const dy = btn.getBoundingClientRect().top - y0;
-  if (Math.abs(dy) < 0.5) return;
-  const p = scroller(btn);
-  if (p) p.scrollTop += dy; else window.scrollBy(0, dy);
-}
 
 /** A ▲▼ click: one step of the IVC diameter or of the collapse; Play and the tour stop. */
 function edit(k, dir, btn = null) {
@@ -291,19 +272,6 @@ function changeLine(P, M, cause) {
   // the hepatic vein pattern follows the result and the TR: an effect, after the result
   const hv = P.hv === M.hv ? '' : ` Hepatic vein flow: ${HV_NAME[P.hv]} → ${HV_NAME[M.hv]}.`;
   return `${heads.join('; ') || 'Values'}: ${fx.length ? fx.join(', ') : 'no cut-off crossed'}. ${res}.${hv}`;
-}
-
-const timers = new WeakMap();
-/** A short flash on an element (none with reduced motion): the class goes after 1.4 s. */
-function flash(el, cls = 'is-flash') {
-  if (!el || reducedMotion) return;
-  el.classList.remove(cls);
-  void el.offsetWidth;   // restart the animation
-  el.classList.add(cls);
-  const all = timers.get(el) || {};
-  clearTimeout(all[cls]);
-  all[cls] = setTimeout(() => el.classList.remove(cls), 1400);
-  timers.set(el, all);
 }
 
 function flashChanges(P, M, cause) {
