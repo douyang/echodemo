@@ -390,15 +390,35 @@ export async function buildPhenotype(ctx, key) {
 
 // ---------------------------------------------------------------- a chapter's disease
 // A chapter's disease on whatever heart the page shows (the LA of raised filling pressure, say):
-// targets dx_<key> on every mesh, built by the phenotypes' fields and weighted 0 to 1 by the
-// chapter (echo.js setDisease). Weight 1 is the change below; a target is linear in its weight.
+// targets dx_<key>, linear in their weight, weighted by the chapter (echo.js setDisease, or
+// setMotion for a change within the beat). An entry is either a shape built by the phenotypes'
+// fields, on every mesh, or a move: a function of the point on the meshes it names (moveField).
 export const DISEASE = {
   // the left atrium scaled about the mitral valve: by 2 at weight 1, so weight w scales it by 1 + w
   la: { la: 2 },
+  // Pericardial effusion and tamponade (chapter 17). Weights in cm unless noted.
+  // eff, effAnt: the sac out from the heart, 1 cm over the free walls and round the apex, less
+  // toward the atrioventricular grooves and none over the atria. eff is where fluid collects
+  // first, behind and beside the heart; effAnt is in front of it, filled in a larger effusion.
+  eff: { move: 'sac' },
+  effAnt: { move: 'sacFront' },
+  // within the beat: the RA free wall folds in (1 cm at its middle), the RV free wall moves in
+  // (1 cm), the septum moves toward the LV (1 cm; a negative weight moves it toward the RV)
+  raIn: { move: 'raFold' },
+  rvIn: { move: 'rvFold' },
+  sep: { move: 'septum' },
+  // the heart swings inside a sac that stays: about the middle of the atrioventricular plane,
+  // the apex 1 cm across the four-chamber plane (swing); 1 cm along the LV axis (bob)
+  swing: { move: 'swing' },
+  bob: { move: 'bob' },
+  // tamponade's underfilled chambers, weight 0 to 1: the LV walls 2.8 mm in, the RV free wall
+  // 6 mm, the RA free wall 3 mm
+  under: { move: 'under' },
 };
-/** Add disease key's target to every mesh (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
+/** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {
   const P = DISEASE[key], { anat, F } = ctx;
+  if (P.move) return buildMove(ctx, key, P.move);
   const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
   /** The move of landmark name at weight 1 and end-diastole (cm). */
   out.shift = (name) => {
@@ -409,6 +429,115 @@ export async function buildDisease(ctx, key) {
     return V3(d[0], d[1], d[2]);
   };
   return out;
+}
+
+/** A move target: field kind on the meshes it names. The landmarks stay (shift is zero). */
+async function buildMove(ctx, key, kind) {
+  const { meshes } = ctx;
+  const tick = slicer();
+  const M = moveFrame(ctx);
+  const d = [0, 0, 0];
+  for (const [name, mesh] of Object.entries(meshes)) {
+    if (!M.on(kind, name)) continue;
+    const p = mesh.geometry.attributes.position.array, n = p.length / 3;
+    const t = new Float32Array(p.length);
+    let any = false;
+    for (let i = 0; i < n; i++) {
+      if ((i & 255) === 0) await tick();
+      d[0] = d[1] = d[2] = 0;
+      M.field(kind, name, i, p[3 * i], p[3 * i + 1], p[3 * i + 2], d);
+      if (d[0] || d[1] || d[2]) { any = true; t[3 * i] = d[0]; t[3 * i + 1] = d[1]; t[3 * i + 2] = d[2]; }
+    }
+    if (any) addTarget(mesh, `dx_${key}`, t);
+  }
+  return { shift: () => V3(), pivot: M.pivot.clone(), apexArm: M.Lp };
+}
+
+/**
+ * What the move fields need, found once: the heart's frame, the RV's span of angle round the LV
+ * axis, the RA's middle and height, the four-chamber plane's normal and the swing's pivot.
+ */
+function moveFrame(ctx) {
+  if (ctx.moves) return ctx.moves;
+  const { anat, F, REG, mpos, nMyo } = ctx;
+  const { Z, X, Y } = F;
+  const tv = anat.raw('tv', 0, 0), ra = anat.raw('ra_c', 0, 0);
+  const pivot = F.mvC.clone().lerp(tv, 0.5);
+  const N = new THREE.Vector3().crossVectors(Z, F.mvC.clone().sub(tv)).normalize();
+  const Lp = F.apex.distanceTo(pivot);
+  // angle round the LV axis from the patient's right (0), anterior positive
+  const phiOf = (c) => Math.atan2(c.rx * Y.x + c.ry * Y.y + c.rz * Y.z, -(c.rx * X.x + c.ry * X.y + c.rz * X.z));
+  const rvPhi = [], raU = [];
+  for (let i = 0; i < nMyo; i++) {
+    const x = mpos[3 * i], y = mpos[3 * i + 1], z = mpos[3 * i + 2];
+    if (REG[i] === 2) rvPhi.push(phiOf(lvCoords(F, x, y, z)));
+    else if (REG[i] === 4) raU.push(lvCoords(F, x, y, z).u);
+  }
+  const pct = (a, q) => { const b = a.slice().sort((u, v) => u - v); return b[Math.floor(q * (b.length - 1))]; };
+  const phi0 = pct(rvPhi, 0.03), phi1 = pct(rvPhi, 0.97), raU0 = pct(raU, 0.05), raU1 = pct(raU, 0.95);
+  // across the RV's span: 0 at the septal insertions, 1 in the middle
+  const across = (c) => { const t = (phiOf(c) - phi0) / (phi1 - phi0); return t <= 0 || t >= 1 ? 0 : Math.pow(Math.sin(Math.PI * t), 0.7); };
+  // along the LV axis: 0 at the apex and at the base
+  const along = (u, a, b) => { const t = (u - a) / (b - a); return t <= 0 || t >= 1 ? 0 : Math.pow(Math.sin(Math.PI * t), 0.7); };
+  const unit = (c) => { const r = c.r || 1; return [c.rx / r, c.ry / r, c.rz / r]; };
+  const MESHES = {
+    sac: ['Pericardium'], sacFront: ['Pericardium'], raFold: ['Myocardium'], rvFold: ['Myocardium'], septum: ['Myocardium'],
+    swing: null, bob: null, under: ['Myocardium', 'Papillary'],
+  };
+  // the swing and the bob move every mesh but the sac
+  const on = (kind, name) => (MESHES[kind] ? MESHES[kind].includes(name) : name !== 'Pericardium');
+  const sac = (x, y, z, out, front) => {
+    const c = lvCoords(F, x, y, z), [ux, uy, uz] = unit(c);
+    const lev = c.u < 0.8 ? 1 : c.u < 1 ? 1 - 0.8 * smooth((c.u - 0.8) / 0.2) : 0.2 * (1 - smooth((c.u - 1) / 0.15));
+    const ant = smooth((ux * Y.x + uy * Y.y + uz * Y.z - 0.15) / 0.5) * smooth((c.u - 0.25) / 0.25);
+    const w = lev * (front ? ant : 1 - ant);
+    out[0] += ux * w; out[1] += uy * w; out[2] += uz * w;
+  };
+  // the RA free wall, against the septum: faces the patient's right and front
+  const raFree = (x, y, z) => {
+    const vx = x - ra.x, vy = y - ra.y, vz = z - ra.z, l = Math.hypot(vx, vy, vz) || 1;
+    const right = -(vx * X.x + vy * X.y + vz * X.z) / l, front = (vx * Y.x + vy * Y.y + vz * Y.z) / l;
+    return [smooth((right + 0.4 * front - 0.05) / 0.55), vx / l, vy / l, vz / l];
+  };
+  const field = (kind, name, i, x, y, z, out) => {
+    if (kind === 'sac' || kind === 'sacFront') return sac(x, y, z, out, kind === 'sacFront');
+    if (kind === 'swing') {
+      const px = x - pivot.x, py = y - pivot.y, pz = z - pivot.z;
+      out[0] += (N.y * pz - N.z * py) / Lp; out[1] += (N.z * px - N.x * pz) / Lp; out[2] += (N.x * py - N.y * px) / Lp;
+      return;
+    }
+    if (kind === 'bob') { out[0] += Z.x; out[1] += Z.y; out[2] += Z.z; return; }
+    const R = name === 'Myocardium' ? REG[i] : 0;
+    const c = lvCoords(F, x, y, z);
+    if (kind === 'raFold' || (kind === 'under' && R === 4)) {
+      if (R !== 4) return;
+      const [fw, ux, uy, uz] = raFree(x, y, z);
+      const k = (kind === 'raFold' ? along(c.u, raU0, raU1) : 0.3) * fw;
+      out[0] -= ux * k; out[1] -= uy * k; out[2] -= uz * k;
+      return;
+    }
+    const [ux, uy, uz] = unit(c);
+    if (kind === 'rvFold' || (kind === 'under' && R === 2)) {
+      if (R !== 2) return;
+      // the free wall, not the septum's face or the moderator band's septal end
+      const free = smooth((c.r - F.Rref(c.u) - 1.3) / 1.4);
+      const k = (kind === 'rvFold' ? 1 : 0.6) * across(c) * along(c.u, 0.08, 0.98) * free;
+      out[0] -= ux * k; out[1] -= uy * k; out[2] -= uz * k;
+      return;
+    }
+    if (kind === 'septum') {
+      if (R !== 1 || c.r > F.Rref(c.u) + 1.6) return;
+      const k = across(c) * along(c.u, 0.1, 0.95);
+      out[0] -= ux * k; out[1] -= uy * k; out[2] -= uz * k;
+      return;
+    }
+    if (kind === 'under' && (R === 1 || name === 'Papillary')) {
+      const k = 0.28 * along(c.u, 0.05, 1.0);
+      out[0] -= ux * k; out[1] -= uy * k; out[2] -= uz * k;
+    }
+  };
+  ctx.moves = { on, field, pivot, Lp };
+  return ctx.moves;
 }
 
 /**
