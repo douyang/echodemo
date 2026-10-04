@@ -32,7 +32,7 @@ const ED = 31;   // ms: end-diastole of the cycle model, where the LV is largest
 // ---------------------------------------------------------------- the model patient
 // PLAX calipers at end-diastole, measured on the mesh at burdens 0 to 1 (mm); each is a
 // straight line in the burden to within 0.05 mm
-const ivsOf = (a) => 8.95 + 7.85 * a, lvidOf = (a) => 46.78 - 6.94 * a, pwOf = (a) => 8.91 + 6.09 * a;
+const ivsOf = (a) => 8.8 + 7.53 * a, lvidOf = (a) => 46.8 - 6.89 * a, pwOf = (a) => 8.98 + 6.63 * a;
 // the mesh's normal and amyloid corners (assets/anatomy.json)
 const lin = (a0, a1) => (a) => a0 + (a1 - a0) * a;
 const EDV = lin(111.86, 71.65), ESV = lin(38.75, 32.7), LAMAX = lin(49.78, 115.16);

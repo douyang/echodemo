@@ -19,7 +19,7 @@ import { reducedMotion } from '../state.js';
 
 // What each view shows and what is measured there (ASE 2019, Tables 2.1-2.27 and Section IV).
 const INFO = {
-  plax: { shows: 'LA, mitral valve, LV, LVOT, aortic valve, septum, RV', acquire: 'Septum, LV diameter and inferolateral wall at end-diastole; LV diameter at end-systole; proximal RVOT; LA diameter' },
+  plax: { shows: 'LA, mitral valve, LV, LVOT, aortic valve, aortic root, septum, RV', acquire: 'Septum, LV diameter and inferolateral wall at end-diastole; LV diameter at end-systole; proximal RVOT; LA diameter' },
   plax_deep: { shows: 'Pericardial and pleural spaces behind the heart', acquire: 'Screening for pericardial and pleural effusion' },
   plax_avmv: { shows: 'Two aortic cusps and both mitral leaflets', acquire: 'Leaflet motion of both valves' },
   plax_av: { shows: 'Aortic valve, LVOT, proximal ascending aorta', acquire: 'Annulus and LVOT diameters in mid-systole; color Doppler of the aortic valve' },
