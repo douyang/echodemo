@@ -115,6 +115,12 @@ async function buildDisease(m, key) {
   const [PM, E, { apicalTurn }, { VESSELS }] = await Promise.all([import('./gl/phenomesh.js'), import('./echo.js'), import('./aha.js'), import('./views.js')]);
   return PM.buildDisease(await fieldsOf(m, PM, E, apicalTurn, VESSELS), key);
 }
+/** Each myocardium vertex's share of LV wall, 0 to 1 (phenomesh.js preparePhenotypes): the LV's own motion scales by it. */
+export async function lvMask() {
+  const m = await loadModel();
+  const [PM, E, { apicalTurn }, { VESSELS }] = await Promise.all([import('./gl/phenomesh.js'), import('./echo.js'), import('./aha.js'), import('./views.js')]);
+  return (await fieldsOf(m, PM, E, apicalTurn, VESSELS)).lvMask;
+}
 
 /** Normal-heart wall and cavity sizes measured on the mesh (mm), for label anchors. */
 export function normalGeo(doc) { return cornerGeo(doc, 'normal'); }

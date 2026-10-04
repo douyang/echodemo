@@ -15,7 +15,10 @@ import { reducedMotion } from '../state.js';
 import { panel, spectral, vscale, SC, caliper, tagBox } from '../scope.js';
 import { cycleAt, RR, EV } from '../cyclemodel.js';
 import { lvefBand, hfCategory, tapseGrade, sPrimeGrade, facGrade, langGrade, LANG, LVEF_RANGE, RV_BANDS } from '../norms.js';
-import { drawA4C, drawA2C, lvTrace, lvWidth, phase, measures } from '../echo2d.js';
+import { phase, measures } from '../echo2d.js';
+import { MeshPanel } from '../meshpanel.js';
+import { meshTrace } from '../meshtrace.js';
+import { lvWeights, foreOffset } from '../meshcal.js';
 import { cine, fit } from '../sev.js';
 import { round, stepOf, steady as holdPlace, flash } from '../edits.js';
 import { cue } from '../music.js';
@@ -26,33 +29,9 @@ import { BSA } from './pressure.js';
 const steady = (btn, fn) => holdPlace('#ch-eject .live', btn, fn);
 
 const DISKS = 20;               // the method of disks (modified Simpson's rule)
-const ELL = 3.5;                // LV length / widest radius at end-diastole (model)
-const OVAL = Math.sqrt(0.94);   // the cross-section is an ellipse: A2C diameter / A4C diameter = 0.94,
-                                // with the area of the circle that volume() integrates
 const EF_MIN = 10, EF_MAX = 80; // %, the ejection fraction slider
 const FAC_MIN = 10, FAC_MAX = 60; // %, the FAC slider
 const RV_EDA = 20;              // cm², the RV end-diastolic area at the start (Mukherjee 2025 Table 1: normal <25)
-
-/**
- * The model LV: widest radius R, mitral annulus radius a, length L (cm). Its radius at level z
- * (0 base .. 1 apex) is half the echo views' width profile (lvWidth), so the echo views and
- * the disk drawing show one LV.
- */
-const radius = (z, S) => lvWidth(z, S.R, S.a);
-/** Volume (mL): the integral of π r² along the length, exact for this profile. */
-function volume(S) {
-  const d = S.R - S.a;   // smoothstep moments over the basal 22%: 1/2 and 13/35
-  return Math.PI * S.L * (0.22 * (S.a * S.a + S.a * d + (13 / 35) * d * d) + 0.78 * (2.3 / 3.3) * S.R * S.R);
-}
-/** The shape of volume V (mL) in a family R -> {R, a, L} whose volume rises with R. */
-function solve(V, family) {
-  let lo = 0.1, hi = 8;
-  for (let i = 0; i < 48; i++) { const m = (lo + hi) / 2; if (volume(family(m)) < V) lo = m; else hi = m; }
-  return family((lo + hi) / 2);
-}
-/** End-diastole: 3.1 cm across the annulus at R 2.5 cm; the annulus dilates less than the LV. */
-const edFamily = (R) => ({ R, a: 1.55 * Math.sqrt(R / 2.5), L: ELL * R });
-const BIG = solve(320, edFamily);   // the largest LV on the page sets the drawing's scale
 
 /** Wall thickness (cm) at end-systole: the muscle keeps its volume, as a shell round a sphere of the cavity's volume. */
 function wallEs(edv, esv, w) {
@@ -60,19 +39,15 @@ function wallEs(edv, esv, w) {
   return Math.cbrt(r(esv) ** 3 + (r(edv) + w) ** 3 - r(edv) ** 3) - r(esv);
 }
 
+/** The model LV: its true volumes, its wall at end-diastole and end-systole (cm), and what the trace measures. */
 export function lvState(s) {
-  const edv = s.edv, esv = s.edv * (1 - s.ef / 100), e = s.ef / 100;
-  const ed = solve(edv, edFamily);
-  // in systole the long axis shortens less than the short axis (15% at an EF of 60%), and the
-  // annulus narrows a little
-  const aEs = ed.a * (1 - 0.2 * e), lEs = ed.L * (1 - 0.25 * e);
-  const es = solve(esv, (R) => ({ R, a: aEs, L: lEs }));
+  const edv = s.edv, esv = s.edv * (1 - s.ef / 100);
   const wall = [s.wall / 10, wallEs(edv, esv, s.wall / 10)];
   const f = s.fore / 100;
   // A foreshortened view misses the true apex: the traced length, and with it each disk
   // volume, falls by the same fraction at end-diastole and end-systole.
   const EDm = edv * (1 - f), ESm = esv * (1 - f);
-  return { edv, esv, ed, es, wall, EDm, ESm, svm: EDm - ESm, ef: (EDm - ESm) / EDm, f };
+  return { edv, esv, wall, EDm, ESm, svm: EDm - ESm, ef: (EDm - ESm) / EDm, f };
 }
 
 // ---------------------------------------------------------------- the values on screen
@@ -115,7 +90,6 @@ function rvShown(s) {
 
 // ---------------------------------------------------------------- the figure
 /** The shape at contraction c (0 end-diastole .. 1 end-systole), as the echo views interpolate it. */
-const at = (L, c) => ({ R: mix(L.ed.R, L.es.R, c), a: mix(L.ed.a, L.es.a, c), L: mix(L.ed.L, L.es.L, c), w: mix(L.wall[0], L.wall[1], c) });
 
 let sheet = null, st = null, setState = null, clock = 0;
 
@@ -127,19 +101,29 @@ function frameNow() {
   return { t, ph: phase(t) };
 }
 
-/** The echo geometry (see drawA4C) of the model LV in one view; the rest of the heart is normal. */
-export function echoG(L, view) {
-  const k = view === 'a2c' ? OVAL : 1 / OVAL, f = 1 - L.f;
-  const ma = [2 * L.ed.a * k, 2 * L.es.a * k];
-  return {
-    lvL: [L.ed.L * f, L.es.L * f], lvW: [2 * L.ed.R * k, 2 * L.es.R * k], ma, lvWall: L.wall, ivs: L.wall,
-    mvK: Math.max(1, ma[0] / 3.1), rvW: [3.3, 2.7], laW: [3.4, 4.1], laL: [4.1, 4.9], raW: [3.2, 3.8], raL: [3.9, 4.5], ta: 3.0,
-  };
+// The four- and two-chamber views cut from the heart mesh (meshpanel.js): the heart the page
+// shows, its LV sized, walled and contracting to the volumes, the wall and the EF on the sliders
+// (meshcal.js lvWeights), and foreshortened by a probe off the plane (meshcal.js foreOffset).
+const redraw = () => { if (sheet) sheet.dirty = true; };
+const ECHO = {
+  a4c: new MeshPanel('a4c', { diseases: ['lvSize', 'lvWall'], lv: true, redraw }),
+  a2c: new MeshPanel('a2c', { diseases: ['lvSize', 'lvWall'], lv: true, redraw }),
+};
+// the largest LV on the page (320 mL) sets the scale of the disk drawings: traced length and width (cm)
+const BIG_L = 11.4, BIG_D = 7.2;
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1];
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
+
+/** The traced LV (meshtrace.js) of a mesh view after its frame, at systole s. */
+function traceOf(panel, s) {
+  const ev = panel.ev;
+  if (!ev || !ev.last || !ev.g) return null;
+  const q = ev.toPlane(ev.anchors(s).apex, ev.g);
+  return meshTrace(ev, [q[0], q[1]], DISKS);
 }
 
 /** The traced border, its long axis and disks on an echo view, and the length in the corner. */
-function traceOn(ctx, F, geo) {
-  const T = lvTrace(geo, DISKS);
+function traceOn(ctx, F, T) {
   const P = F.P;
   const path = (pts, close) => { ctx.beginPath(); pts.forEach((p, i) => { const q = P(p); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); if (close) ctx.closePath(); ctx.stroke(); };
   ctx.save();
@@ -158,79 +142,82 @@ function traceOn(ctx, F, geo) {
   measures(ctx, F, [`L ${T.L.toFixed(1)} cm`]);
 }
 
-/** The disk model of one view at contraction c: hatched wall, disks, long axis; the true apex when foreshortened. */
-function drawLV(sh, t, box, L, which, label, c) {
+/**
+ * The disk model of one view: the LV traced on the echo view above, turned apex up and drawn at
+ * one scale for every volume, with its wall (the slider's, at contraction c), the disks and the
+ * long axis; and when the view is foreshortened, the true LV's length, which the trace misses.
+ */
+function drawLV(sh, t, box, L, which, label, T, c) {
   const ctx = sh.ctx;
   const { x, y, w, h } = box;
-  const k = which === 'a2c' ? OVAL : 1 / OVAL;
-  // echo convention: the true apex at the top. One scale for every volume, so a dilated LV
-  // looks larger; room above the apex for the wall.
-  const s1 = Math.min(w / (2 * BIG.R / OVAL + 6), (h - 12) / (BIG.L + 1.8));
-  const cx = x + w / 2, top = y + 6 + 1.8 * s1;
-  const S = at(L, c);
-  const Ltrue = S.L, Lf = Ltrue * (1 - L.f);
-  const y0 = top + (Ltrue - Lf) * s1;   // the traced apex: a foreshortened view misses the true one
-  const wall = S.w * s1;
-  const pts = (Lx, shrink = 0, from = y0) => {
-    const out = [];
-    for (let i = 0; i <= 60; i++) { const z = i / 60; out.push([cx + (radius(z, S) * k * s1 + shrink), from + (1 - z) * Lx * s1]); }
-    for (let i = 60; i >= 0; i--) { const z = i / 60; out.push([cx - (radius(z, S) * k * s1 + shrink), from + (1 - z) * Lx * s1]); }
-    return out;
-  };
-  // myocardium
-  const outer = pts(Lf + S.w * 0.6, wall);
-  const inner = pts(Lf);
+  const small = w < 250;
+  sh.text(label, x + 4, y + 18, { size: small ? 16 : 19 });
+  if (!T) return;
+  const s1 = Math.min(w / (BIG_D + 3), (h - 12) / (BIG_L + 1.8));
+  const Lf = T.L, Ltrue = Lf / (1 - L.f);
+  const cx = x + w / 2, top = y + 6 + 1.8 * s1, base = top + Ltrue * s1;
+  // the trace's own frame: u from the middle of the annulus line to the apex, q across it
+  const u = [(T.A[0] - T.M[0]) / Lf, (T.A[1] - T.M[1]) / Lf], q = [-u[1], u[0]];
+  const at = (p, k = 1) => { const d = sub(p, T.M); return [cx + dot(d, q) * s1, base - dot(d, u) * k * s1]; };
+  const wall = mix(L.wall[0], L.wall[1], c);
+  // the wall: the border pushed out by its thickness, square to it (the border is convex)
+  const B = T.border.slice(0, -1), n = B.length;
+  const outer = B.map((p, i) => {
+    const a = B[(i + n - 1) % n], b = B[(i + 1) % n], e = sub(b, a), l = Math.hypot(e[0], e[1]) || 1;
+    let nx = e[1] / l, ny = -e[0] / l;
+    const C = B.reduce((acc, r) => [acc[0] + r[0] / n, acc[1] + r[1] / n], [0, 0]);
+    if (nx * (p[0] - C[0]) + ny * (p[1] - C[1]) < 0) { nx = -nx; ny = -ny; }
+    return [p[0] + nx * wall, p[1] + ny * wall];
+  });
   const myo = new Path2D();
-  outer.forEach(([px, py], i) => (i ? myo.lineTo(px, py - wall * 0.6) : myo.moveTo(px, py - wall * 0.6)));
+  outer.forEach((p, i) => { const [px, py] = at(p); i ? myo.lineTo(px, py) : myo.moveTo(px, py); });
   myo.closePath();
-  inner.forEach(([px, py], i) => (i ? myo.lineTo(px, py) : myo.moveTo(px, py)));
+  B.forEach((p, i) => { const [px, py] = at(p); i ? myo.lineTo(px, py) : myo.moveTo(px, py); });
   myo.closePath();
   ctx.save();
   ctx.clip(myo, 'evenodd');
   sh.hatch(new Path2D(`M0 0H${sh.w}V${sh.h}H0Z`), 0.6, 4.2, t.ink2, 0.8, which === 'a2c' ? 71 : 70, 0.55);
   ctx.restore();
-  sh.poly(inner, { width: 1.6, rough: 0.5, seed: which === 'a2c' ? 72 : 73, stroke: t.ink });
+  sh.poly(T.border.map((p) => at(p)), { width: 1.6, rough: 0.5, seed: which === 'a2c' ? 72 : 73, stroke: t.ink });
   // disks
   ctx.save();
   ctx.strokeStyle = t.accent;
   ctx.lineWidth = 1;
   ctx.globalAlpha = 0.85;
-  for (let i = 0; i < DISKS; i++) {
-    const z = (i + 0.5) / DISKS;
-    const yy = y0 + (1 - z) * Lf * s1;
-    const r = radius(z, S) * k * s1;
+  for (const [a, b] of T.disks) {
+    const [ax, ay] = at(a), [bx, by] = at(b);
     ctx.beginPath();
-    ctx.moveTo(cx - r, yy);
-    ctx.lineTo(cx + r, yy);
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
     ctx.stroke();
   }
   ctx.restore();
   // long axis
-  const small = w < 250;
-  sh.line(cx, y0, cx, y0 + Lf * s1, { width: 1, rough: 0.2, seed: 74, stroke: t.flag, dash: [4, 3] });
+  const [mx, my] = at(T.M), [axp, ayp] = at(T.A);
+  sh.line(mx, my, axp, ayp, { width: 1, rough: 0.2, seed: 74, stroke: t.flag, dash: [4, 3] });
   // the length beside the drawing, clear of the wall and inside the column
   const lab = `L ${Lf.toFixed(1)} cm`, size = small ? 10 : 11;
+  const right = Math.max(...outer.map((p) => at(p)[0]));
   ctx.save();
   ctx.font = `500 ${size}px ${MONO}`;
-  const xr = Math.min(cx + (S.R / OVAL + S.w) * s1 + 6, x + w - ctx.measureText(lab).width - 2);
+  const xr = Math.min(right + 6, x + w - ctx.measureText(lab).width - 2);
   ctx.restore();
-  sh.text(lab, xr, y0 + Lf * s1 * 0.4, { family: MONO, weight: 500, size, color: t.flag });
-  // the true apex, lost when foreshortened
+  sh.text(lab, xr, base - Lf * s1 * 0.6, { family: MONO, weight: 500, size, color: t.flag });
+  // the true LV, its apex beyond the traced one, when foreshortened: the trace drawn to the true length
   if (L.f > 0.02) {
     ctx.save();
     ctx.setLineDash([3, 4]);
     ctx.strokeStyle = t.ink3;
-    const tr = pts(Ltrue, 0, top);
     ctx.beginPath();
-    tr.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+    B.forEach((p, i) => { const [px, py] = at(p, 1 / (1 - L.f)); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+    ctx.closePath();
     ctx.stroke();
     ctx.restore();
     sh.text('true apex', cx + 10, top + 4, { size: small ? 13 : 15, color: t.ink3 });
   }
-  sh.text(label, x + 4, y + 18, { size: small ? 16 : 19 });
   // the mitral annulus line
-  const ra = radius(0, S) * k * s1;
-  sh.line(cx - ra - 4, y0 + Lf * s1, cx + ra + 4, y0 + Lf * s1, { width: 2, rough: 0.3, seed: 75 });
+  const [h1x, h1y] = at(T.hinges[0]), [h2x, h2y] = at(T.hinges[1]);
+  sh.line(h1x - 4 * Math.sign(h2x - h1x), h1y, h2x + 4 * Math.sign(h2x - h1x), h2y, { width: 2, rough: 0.3, seed: 75 });
 }
 
 function drawRV(sh, t, W, H, narrow) {
@@ -340,15 +327,18 @@ function draw(sh, t) {
   const eh = Math.round(rows * (narrow ? 0.6 : 0.57)), dh = rows - eh - (narrow ? 4 : 10);
   const colW = Math.min((W - 2 * pad - gap) / 2, eh * 1.35);
   const x0 = (W - 2 * colW - gap) / 2;
-  // LV focused: the depth takes the LV, the mitral valve and part of the LA
-  const depth = clamp(Math.ceil((1.9 + 0.65 * L.wall[0] + L.ed.L + 3.5) * 2) / 2, 12, 22);
+  // the LV the sliders set, on the heart the page shows
+  const W8 = lvWeights(st.pheno || 'normal', L.edv, L.esv, st.wall);
+  const sy = cycleAt(tt).s;
   for (const [i, view] of [[0, 'a4c'], [1, 'a2c']]) {
     const x = x0 + i * (colW + gap);
     const box = { x, y: pad, w: colW, h: eh };
-    const o = { t: tt, ph, depth, after: traceOn };
-    if (view === 'a4c') drawA4C(sh.ctx, box, echoG(L, view), { ...o, title: fit(colW, 'APICAL FOUR-CHAMBER', 'A4C'), labels: colW < 250 ? ['RV', 'LA'] : ['RV', 'LA', 'RA'] });
-    else drawA2C(sh.ctx, box, echoG(L, view), { ...o, title: fit(colW, 'APICAL TWO-CHAMBER', 'A2C'), labels: ['LA'] });
-    drawLV(sh, t, { x, y: pad + eh + (narrow ? 4 : 10), w: colW, h: dh }, L, view, view === 'a2c' ? 'A2C' : 'A4C', ph.c);
+    const title = view === 'a4c' ? fit(colW, 'APICAL FOUR-CHAMBER', 'A4C') : fit(colW, 'APICAL TWO-CHAMBER', 'A2C');
+    const names = view === 'a4c' ? (colW < 250 ? [['rv', 'RV'], ['la', 'LA']] : [['rv', 'RV'], ['la', 'LA'], ['ra', 'RA']]) : [['la', 'LA']];
+    const F = ECHO[view].draw(sh.ctx, box, title, { tms: tt, disease: { lvSize: W8.size + (W8.esSize - W8.size) * sy, lvWall: W8.wall }, lvK: W8.k, fore: foreOffset(view, L.f, W8.size), names });
+    const T = F ? traceOf(ECHO[view], sy) : null;
+    if (T) traceOn(sh.ctx, F, T);
+    drawLV(sh, t, { x, y: pad + eh + (narrow ? 4 : 10), w: colW, h: dh }, L, view, view === 'a2c' ? 'A2C' : 'A4C', T, ph.c);
   }
   const ty = H - textH + (narrow ? 12 : 16);
   sh.text('V = π/4 × Σ aᵢ × bᵢ × L / 20', x0, ty, { family: MONO, weight: 500, size: narrow ? 11 : 13 });
@@ -758,7 +748,9 @@ export default {
     buildDiagram(document.getElementById('eject-calc'));
   },
   // on the way in and out, the next drawing sets the baseline: no flash for changes made elsewhere
-  enter() { fresh.lv = fresh.rv = true; freeLive(); },
+  enter() { fresh.lv = fresh.rv = true; freeLive(); ECHO.a4c.start(); ECHO.a2c.start(); },
+  // the heart model and the LV targets load at idle, before the chapter opens (main.js warms every chapter)
+  warm() { ECHO.a4c.start(); ECHO.a2c.start(); },
   leave() { fresh.lv = fresh.rv = true; freeLive(); },
   anim(dt, s) {
     if (reducedMotion || s.frame8 !== 'cine' || s.side !== 'lv') return;
