@@ -1052,11 +1052,11 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 @media (max-width: 820px) {
   .ase-head { top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px)); }
   /* clear of the sticky figure and result above, and of the chapter bar below */
-  .ase-b { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 110px); scroll-margin-bottom: 80px; }
+  .ase-b, .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 110px); scroll-margin-bottom: 80px; }
 }
 @media (max-width: 820px) and (max-height: 640px) {
   .ase-head { position: static; }
-  .ase-b { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 12px); }
+  .ase-b, .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 12px); }
 }
 
 /* ------------------------------------------------- Aortic stenosis: the calculations in the text
@@ -1121,6 +1121,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 }
 @media (max-width: 820px) and (max-height: 640px) {
   .asx-go { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 12px); }
+}
 /* ------------------------------------------------- Inferior vena cava: the RA pressure from the IVC
    Mukherjee 2025, Table 4 and Figure 3, in the classes of the diastolic function diagram (.ase-*): the
    diameter and the collapse with ▲▼ buttons, the secondary signs, the result. src/ch/ivc.js */
@@ -1145,9 +1146,25 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 @media (max-width: 820px) {
   html[data-ch="ivc"] .stage { height: min(60vh, 520px); }
   html[data-ch="ivc"] .ase-head { top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px)); }
-  html[data-ch="ivc"] .ase-b { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 110px); }
+  html[data-ch="ivc"] .ase-b, html[data-ch="ivc"] .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 110px); }
 }
 @media (max-width: 820px) and (max-height: 640px) {
   html[data-ch="ivc"] .ase-head { position: static; }
-  html[data-ch="ivc"] .ase-b { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 12px); }
+  html[data-ch="ivc"] .ase-b, html[data-ch="ivc"] .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 12px); }
 }
+/* ------------------------------------------------- Mitral regurgitation: Figure 18 (Zoghbi 2017)
+   The classes of the aortic stenosis diagram (.asx), with the specific criteria in two sets and a
+   switch for a flail leaflet. src/ch/mr.js */
+.mrx-set { margin-top: 5px; }
+.mrx-set + .mrx-set { margin-top: 7px; padding-top: 5px; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); }
+.mrx-sh { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 1px !important; font: 500 0.75rem/1.25 var(--sans); color: var(--ink-2); }
+.mrx-set.is-on .mrx-sh { color: var(--ink); }
+.mrx-set[data-set="mild"].is-on .ase-count, .mrx-set[data-set="mild"] .asx-q.is-on .asx-qs { color: var(--accent); }
+.mrx-set[data-set="mild"] .asx-q.is-on .ase-mk { border-color: var(--accent); background: var(--accent); }
+.mrx-set[data-set="severe"].is-on .ase-count { color: var(--flag); }
+.mrx-qg { margin-top: 2px !important; }
+.asx-q[data-q="lvd"] { margin-top: 7px !important; padding-top: 5px; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); }
+.mrx-qg.is-on .asx-qs { color: var(--flag); }
+/* the flail switch: buttons as tall as the ▲▼ buttons, and clear of the sticky result when focused */
+.mrx-tg button { min-height: 32px; padding: 0 14px; scroll-margin-top: 110px; scroll-margin-bottom: 12px; }
+@media (pointer: coarse) { .mrx-tg button { min-height: 40px; padding: 0 16px; } }

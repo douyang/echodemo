@@ -334,6 +334,76 @@ export function regGrade(valve, eroa) {
   return 'severe';
 }
 
+// Chronic primary mitral regurgitation, Zoghbi 2017 Figure 18 and Table 8. The quantitative
+// grades I to IV of each measure: the lower limits of grades II, III and IV.
+export const MR_QUANT = {
+  eroa: [0.2, 0.3, 0.4],   // cm², 2D PISA
+  rvol: [30, 45, 60],      // mL
+  rf: [30, 40, 50],        // %
+};
+/** The bands of each measure as Figure 18 prints them, grade I first. */
+export const MR_QUANT_LABEL = {
+  eroa: ['<0.20', '0.20–0.29', '0.30–0.39', '≥0.40'],
+  rvol: ['<30', '30–44', '45–59', '≥60'],
+  rf: ['<30', '30–39', '40–49', '≥50'],
+};
+/** The quantitative grade (1 to 4, for I to IV) of measure k at value x. */
+export const mrQuant = (k, x) => 1 + MR_QUANT[k].filter((c) => x >= c).length;
+/**
+ * The specific criteria of Figure 18: [key, criterion, the rule this site applies, test]. The
+ * figure gives no number for a small jet, a normal LV and LA, a normal LV function or a soft CW
+ * jet. Here a small jet is <20% of the LA; a normal LV has an end-diastolic diameter ≤58 mm,
+ * and a normal LA a volume index ≤34 mL/m² (Lang 2015, men); a normal LV function in MR is an
+ * LVEF >60% (Otto 2020: an LVEF ≤60% is LV dysfunction); and the CW jet is soft where the CW
+ * panel draws it faint, at a regurgitant volume <30 mL.
+ * v: r (PISA radius, cm), vc (cm), jet (% of LA), E, A (m/s), rvol (mL), lvedd (mm), lavi
+ * (mL/m²), ef (%), pvS (m/s), flail (true or false).
+ */
+export const MR_MILD = [
+  ['jet', 'Small, narrow central jet', '<20% of LA', (v) => v.jet < 20],
+  ['vc', 'Vena contracta', '≤0.3 cm', (v) => v.vc <= 0.3],
+  ['pisa', 'PISA radius', 'absent or ≤0.3 cm', (v) => v.r <= 0.3],
+  ['adom', 'A-wave dominant inflow', 'A >E', (v) => v.A > v.E],
+  ['cw', 'Soft or incomplete CW jet', 'faint: RVol <30 mL', (v) => v.rvol < 30],
+  ['size', 'Normal LV and LA size', 'LVEDD ≤58 mm, LAVi ≤34', (v) => v.lvedd <= 58 && v.lavi <= 34],
+];
+export const MR_SEVERE = [
+  ['flail', 'Flail leaflet', '', (v) => !!v.flail],
+  ['vc', 'Vena contracta', '≥0.7 cm', (v) => v.vc >= 0.7],
+  ['pisa', 'PISA radius', '≥1.0 cm', (v) => v.r >= 1.0],
+  ['jet', 'Central large jet', '>50% of LA', (v) => v.jet > 50],
+  ['pv', 'Pulmonary vein systolic flow reversal', 'S <0', (v) => v.pvS < 0],
+  ['lv', 'Enlarged LV with normal function', 'LVEDD >58 mm, LVEF >60%', (v) => v.lvedd > 58 && v.ef > 60],
+];
+/**
+ * The grade of chronic primary MR by Figure 18 (Zoghbi 2017). Four or more specific criteria for
+ * mild MR give mild, and four or more for severe MR give severe. If both sets reach four, the
+ * findings disagree, and the grade is indeterminate. Otherwise the quantitative grade decides: I
+ * mild; II moderate; III moderate, or severe with three specific criteria for severe MR; IV
+ * severe. Figure 18 gives no rule when the EROA, the regurgitant volume and the regurgitant
+ * fraction fall in different grades; this site takes the middle grade of the three. Severe MR
+ * with an LVEF ≤60% or an LV end-systolic diameter ≥40 mm is ACC/AHA stage C2 (Otto 2020).
+ * No color signal (no flow convergence, vena contracta or jet) is no regurgitation.
+ * v: as MR_MILD, and eroa (cm²), rf (%), lvesd (mm).
+ */
+export function mrIntegrated(v) {
+  const mild = Object.fromEntries(MR_MILD.map(([k, , , t]) => [k, t(v)]));
+  const severe = Object.fromEntries(MR_SEVERE.map(([k, , , t]) => [k, t(v)]));
+  const nMild = Object.values(mild).filter(Boolean).length, nSevere = Object.values(severe).filter(Boolean).length;
+  const q = { eroa: mrQuant('eroa', v.eroa), rvol: mrQuant('rvol', v.rvol), rf: mrQuant('rf', v.rf) };
+  const qg = [q.eroa, q.rvol, q.rf].sort((a, b) => a - b)[1];
+  const lvd = v.ef <= 60 || v.lvesd >= 40;
+  let path;
+  if (v.r <= 0 && v.vc <= 0 && v.jet <= 0) path = 'none';
+  else if (nMild >= 4 && nSevere >= 4) path = 'both';
+  else if (nMild >= 4) path = 'mild';
+  else if (nSevere >= 4) path = 'severe';
+  else path = qg === 3 && nSevere >= 3 ? 'q3s' : `q${qg}`;
+  const base = { none: 'none', both: 'indeterminate', mild: 'mild', severe: 'severe', q1: 'mild', q2: 'moderate', q3: 'moderate', q3s: 'severe', q4: 'severe' }[path];
+  const grade = base === 'severe' && lvd ? 'severe, LV dysfunction' : base;
+  return { mild, severe, nMild, nSevere, q, qg, lvd, path, grade };
+}
+
 // Lang 2015 ranges by sex for the report: [normal lo, normal hi, mild hi, moderate hi]; above
 // moderate hi is severe. Supplemental Table 3 and Table 4 (EF, LA volume).
 export const LANG = {

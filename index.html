@@ -1092,7 +1092,8 @@
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <div class="table-wrap"><table class="vt grade" id="mr-table"></table></div>
+      <!-- the calculations, with buttons on thirteen measurements and the flail switch (Zoghbi 2017 Figure 18): src/ch/mr.js -->
+      <section class="ase asx" id="mr-calc" aria-label="Mitral regurgitation: measurements, calculations, criteria and result"></section>
       <div class="prose" data-part="prose">
         <h3>Echocardiographic findings by grade and stage</h3>
         <ol class="steps">
@@ -1101,6 +1102,8 @@
         <li>In <b>severe</b> regurgitation, the EROA is ≥0.40 cm², the regurgitant volume ≥60 mL, the regurgitant fraction ≥50% and the vena contracta ≥0.7 cm<span class="cite" data-ref="zoghbi2017"></span>. The LV and LA are dilated, the CW Doppler signal is dense and triangular, systolic flow in the pulmonary veins is absent or reversed, and the mitral E velocity exceeds 1.2 m/s<span class="cite" data-ref="zoghbi2017"></span>.</li>
         <li>In the ACC/AHA classification, stage C1 is defined by an LVEF &gt;60% and an LV end-systolic diameter &lt;40 mm, and stage C2, with <b>LV dysfunction</b>, by an LVEF ≤60% or an LV end-systolic diameter ≥40 mm<span class="cite" data-ref="otto2020"></span>.</li>
         </ol>
+        <h3>Integrated grading</h3>
+        <p>The ASE algorithm first counts the specific criteria. Four or more specific criteria for mild MR define mild regurgitation, and four or more for severe MR define severe regurgitation<span class="cite" data-ref="zoghbi2017"></span>. Otherwise, the EROA, the regurgitant volume and the regurgitant fraction assign a grade from I to IV. Grade I is mild, grades II and III are moderate, and grade IV is severe<span class="cite" data-ref="zoghbi2017"></span>. Grade III with three specific criteria for severe MR, or with an elliptical orifice, also indicates severe regurgitation<span class="cite" data-ref="zoghbi2017"></span>. If the findings are inconsistent, the grade is indeterminate, and TEE or CMR can quantify the regurgitation<span class="cite" data-ref="zoghbi2017"></span>. The algorithm gives no rule for discordant quantitative measures; the diagram uses the middle grade of the three.</p>
         <h3>PISA method</h3>
         <p class="eq">flow = 2π r² × Va &nbsp;·&nbsp; EROA = flow ÷ peak velocity &nbsp;·&nbsp; RVol = EROA × VTI</p>
         <p>Blood accelerates as it converges on the regurgitant orifice; at the aliasing velocity (Va), the color changes, and the isovelocity surface at Va is a hemisphere of radius r<span class="cite" data-ref="zoghbi2017"></span>. The color baseline should be shifted toward the jet to lower Va to about 30 to 40 cm/s, and the radius should be measured at the time of the peak jet velocity<span class="cite" data-ref="zoghbi2017"></span>. At this setting, a radius of 1.0 cm or more is specific for severe MR<span class="cite" data-ref="zoghbi2017"></span>. The method applies the principle of <a href="#pressure" data-go="pressure">chapter 08</a>: the flow rate through a surface equals its area × the velocity.</p>
@@ -1125,6 +1128,7 @@
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
+        <li>Four or more specific criteria for mild or for severe MR define the grade; otherwise, the EROA, the regurgitant volume and the regurgitant fraction decide.</li>
         <li>Mitral regurgitation is severe when the EROA is ≥0.40 cm², the regurgitant volume is ≥60 mL and the regurgitant fraction is ≥50%.</li>
         <li>A mitral E velocity &gt;1.2 m/s and systolic flow reversal in the pulmonary veins support a severe grade.</li>
         <li>An LVEF ≤60% or an LV end-systolic diameter ≥40 mm indicates ACC/AHA stage C2.</li>
