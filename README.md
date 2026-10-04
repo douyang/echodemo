@@ -220,7 +220,7 @@ While a chapter moves, in its own sequence or in the tour, its readouts and live
 
 ## The views video
 
-`video/index.html` plays the standard views of chapter 07 as a video, drawn by the site's own code. Three panes show the probe on the body and on the heart, the cross-section, and the echo image. The plane moves smoothly from view to view in all three. A caption names each view, the probe position and the structures it shows. The zoomed and depth-focused views are left out.
+`video/index.html` plays the standard views of chapter 04 as a video, drawn by the site's own code. Three panes show the probe on the body and on the heart, the cross-section, and the echo image. The plane moves smoothly from view to view in all three. A caption names each view, the probe position and the structures it shows. The zoomed and depth-focused views are left out.
 
 Cut B also draws the planes of the nine standard views in its Probe and body pane, as chapter 07 did in PR #20 (the site now draws them in a pane of their own; the video was not rendered again): each in its window color, the current plane in ink with the lines where it crosses the others, and the view at either end of a move lit as the plane leaves the one and reaches the other. The camera frames each view as before, and the pencil probe and the body key stay. Cut P, the three-pane video of PR #19, is archived: its definition stays in `video/cuts.js`, and it is not part of the set.
 
@@ -239,7 +239,7 @@ Cut B also draws the planes of the nine standard views in its Probe and body pan
 | D, Vertical | 1080 × 1920 | dark | 12 | 1:06 |
 | P, Views and planes (archived) | 1920 × 1080 | dark | 12 | 1:20 |
 
-Cuts A, C and D are as rendered on October 1, 2026. Cut B is rendered again with the nine planes; it is the video of chapter 07 in the series.
+Cuts A, C and D are as rendered on October 1, 2026. Cut B is rendered again with the nine planes and, on October 4, 2026, with the rebuilt heart; it is the video of chapter 04 in the series.
 
 To render a cut (Node 22, Playwright with Chromium, ffmpeg), serve the repository root on port 8790, then:
 
@@ -253,35 +253,35 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 
 ## The chapter videos
 
-`video/chapter.html?ch=as` plays one chapter as a video, in the frame of the views video's dark cuts. Every chapter has one except 07, whose video is cut B of the views video above. The chapter's figure is the site's own (`src/ch/*.js`), on paper and drawn 1.3 times larger than its layout. It steps through the chapter's states on the heartbeat (`video/chapters.js`): the steps follow the chapter's tour (the Play button), slowed, with a hold on each step. Numbers ease from one step to the next; the severity pages move their slider from the middle of one grade band to the middle of the next.
+`video/chapter.html?ch=as` plays one chapter as a video, in the frame of the views video's dark cuts. Every chapter has one except 04 Views, whose video is cut B of the views video above. The chapter's figure is the site's own (`src/ch/*.js`), on paper and drawn 1.3 times larger than its layout. It steps through the chapter's states on the heartbeat (`video/chapters.js`): the steps follow the chapter's tour (the Play button), slowed, with a hold on each step. Numbers ease from one step to the next; the severity pages move their slider from the middle of one grade band to the middle of the next.
 
 - The caption names each step. By default its name and line are the chapter's live sentence at that step, with its numbers; a step can name its own sentences or quote a readout. The video leaves out the citations, so a step leaves out a sentence that names a table without its source. The progress line names the steps. Where the figure has no measurement strip of its own, a pane beside it lists the chapter's readouts as they change.
 - The page runs on a clock of its own (`video/chapter.html`): `performance.now()` reads the time of the frame being drawn, and the chapter's motion (its `anim()`) runs in steps of 1/30 s from the start. A frame therefore depends on the frames before it: a chapter video renders in order in one job, and `--jobs` renders that many chapters at once.
-- The soundtrack is *Bright pulse* (`tools/score/pulse.py`), as on the views video: the chapter's steps are its windows, so the bass joins at the second step and the pluck and the pad brighten step by step. Seed 93 and the chapter's number from the time 08 Planes was in the list, so the scores rebuild as they were; 18 takes 9319, the next number after that list. The last hold takes up to six more beats (two at most in these videos), so that the end card falls on a bar line after whole four-bar phrases near 109 BPM.
-- A step can set the heart (`pheno`): the last step of 11 shows the bicuspid heart. A key named in `discrete` switches at the middle of a move instead of easing: the RA pressure of 04 takes 3, 8 or 15 mmHg and no value between.
+- The soundtrack is *Bright pulse* (`tools/score/pulse.py`), as on the views video: the chapter's steps are its windows, so the bass joins at the second step and the pluck and the pad brighten step by step. Seed 93 and the chapter's number from the time 08 Planes was in the list, so the scores rebuild as they were; the IVC chapter (then 18) takes 9319, the next number after that list. The last hold takes up to six more beats (two at most in these videos), so that the end card falls on a bar line after whole four-bar phrases near 109 BPM.
+- A step can set the heart (`pheno`): the last step of 12 Aortic stenosis shows the bicuspid heart. A key named in `discrete` switches at the middle of a move instead of easing: the RA pressure of 08 Doppler hemodynamics takes 3, 8 or 15 mmHg and no value between.
 - Title card: the chapter's number, part and title, and the first sentence of its summary. End card as on the views video.
-- Rendered again after #22, #26 and #27: 04 (the RA pressure in place of the IVC), 10 (the path through the 2025 ASE algorithm) and 11 (the new figure and a bicuspid step); 18 is new. One frame late in each hold of the other 13 videos was drawn again from the current code and compared with the shipped video: all within encoding noise, except the captions of 15 that give the RA pressure: on the site that sentence now names chapter 18. That video was not rendered again for it.
+- Rendered again, all 17, on October 4, 2026, after the review changes (#30 to #36): the new chapter order, numbers and titles (#32), the text (#30, #31, #34) and the rebuilt heart (#33, #35, #36). Before the render, the 17 scores were built again; each is byte-identical to the score in use.
 
 | Chapter | Steps | Length |
 |---|---|---|
 | 01 Pulse | Transmit frequency 2, 3.5, 5 and 7 MHz; time gain compensation | 0:48 |
 | 02 Image | Imaging depth 16 and 24 cm; reverberation, acoustic shadow, mirror image, side-lobe artifact | 0:49 |
-| 03 Shift | Beam at 0° and 60° to the flow; aliasing above the Nyquist limit; continuous-wave Doppler; color Doppler, then aliasing on color Doppler | 0:49 |
-| 04 Pressure | Stroke volume; an LVOT diameter error of 2 mm; RV systolic pressure at a peak TR velocity of 2.4, 3.0 and 3.5 m/s, with an RA pressure of 3, 8 and 15 mmHg | 0:48 |
+| 03 Doppler | Beam at 0° and 60° to the flow; aliasing above the Nyquist limit; continuous-wave Doppler; color Doppler, then aliasing on color Doppler | 0:49 |
+| 04 Views | Cut B of the views video: the 12 core views, with the nine planes in Probe and body | 1:09 |
 | 05 Cycle | The seven phases of the cardiac cycle, the cursor running through each | 0:50 |
 | 06 Loop | Normal, HFrEF, HFpEF, pressure load, volume load | 0:48 |
-| 07 Views | Cut B of the views video: the 12 core views, with the nine planes in Probe and body | 1:09 |
-| 08 Eject | Normal LV systolic function; dilated LV with an LVEF of 30%; foreshortened apical views; normal RV systolic function; RV systolic dysfunction | 0:48 |
-| 09 Segments | Normal wall motion; LAD, RCA and circumflex occlusion | 0:48 |
-| 10 Fill | Normal diastolic function; grades 1, 2 and 3, each with its path through the 2025 ASE algorithm | 0:48 |
-| 11 Aortic stenosis | The eight grade bands, none to classical low-flow, low-gradient stenosis; then the bicuspid heart with severe stenosis | 1:06 |
-| 12 Aortic regurgitation | None to severe with LV dysfunction | 0:48 |
-| 13 Mitral stenosis | None to severe; severe at a heart rate of 110/min | 0:48 |
-| 14 Mitral regurgitation | None to severe with LV dysfunction | 0:48 |
-| 15 Tricuspid regurgitation | None to torrential | 0:48 |
-| 16 Pericardium | No pericardial effusion to tamponade | 0:48 |
-| 17 Cardiac amyloidosis | A normal wall to relative apical sparing | 0:48 |
-| 18 Inferior vena cava | RA pressure 3 mmHg; indeterminate, 8 mmHg; 15 mmHg; severe TR (20 mmHg can be considered); positive-pressure ventilation; IVC or aorta | 0:57 |
+| 07 Inferior vena cava | RA pressure 3 mmHg; indeterminate, 8 mmHg; 15 mmHg; severe TR (20 mmHg can be considered); positive-pressure ventilation; IVC or aorta | 0:57 |
+| 08 Doppler hemodynamics | Stroke volume; an LVOT diameter error of 2 mm; RV systolic pressure at a peak TR velocity of 2.4, 3.0 and 3.5 m/s, with an RA pressure of 3, 8 and 15 mmHg | 0:48 |
+| 09 Systolic function | Normal LV systolic function; dilated LV with an LVEF of 30%; foreshortened apical views; normal RV systolic function; RV systolic dysfunction | 0:48 |
+| 10 Regional wall motion | Normal wall motion; LAD, RCA and circumflex occlusion | 0:48 |
+| 11 Diastolic function | Normal diastolic function; grades 1, 2 and 3, each with its path through the 2025 ASE algorithm | 0:48 |
+| 12 Aortic stenosis | The eight grade bands, none to classical low-flow, low-gradient stenosis; then the bicuspid heart with severe stenosis | 1:06 |
+| 13 Aortic regurgitation | None to severe with LV dysfunction | 0:48 |
+| 14 Mitral stenosis | None to severe; severe at a heart rate of 110/min | 0:48 |
+| 15 Mitral regurgitation | None to severe with LV dysfunction | 0:48 |
+| 16 Tricuspid regurgitation | None to torrential | 0:48 |
+| 17 Pericardial effusion | No pericardial effusion to tamponade | 0:48 |
+| 18 Cardiac amyloidosis | A normal wall to relative apical sparing | 0:48 |
 
 ```
 python3 tools/score/pulse.py as video/out/chapter-as.wav
@@ -292,31 +292,31 @@ node tools/storyboard.mjs --ch=as                              # one frame of ea
 
 ## The intro
 
-`video/out/intro.mp4` introduces the series in 71 seconds: a title card, one clip from each of eight chapters, and the end card. A review of the chapter videos and the views video picked the clips. Each clip is the most striking and most useful moment of its part of the site. No two clips teach the same lesson or show the same layout. Chapter 08 Planes is archived since the review: the clip of 07 takes the time of both clips, with the nine planes of 08 in its Probe and body pane. Since #26 and #27 the title card reads 18 chapters and the clip of 11 shows its new figure: those two clips were rendered again, and the other six are as before.
+`video/out/intro.mp4` introduces the series in 71 seconds: a title card, one clip from each of eight chapters, and the end card. A review of the chapter videos and the views video picked the clips. Each clip is the most striking and most useful moment of its part of the site. No two clips teach the same lesson or show the same layout. Planes is archived since the review: the clip of Views takes the time of both clips, with the nine planes in its Probe and body pane. The clips follow the chapter order, so since the reorder (#32) the clip of Views comes before the clip of Cycle. All eight clips were rendered again on October 4, 2026, for the new chapter numbers and the rebuilt heart.
 
 | Start (s) | Chapter | Clip |
 |---|---|---|
 | 0.0 | | Title card: the site's name and the start of its description |
 | 4.6 | 02 Image | The sweep acquires a frame scan line by scan line |
-| 9.1 | 05 Cycle | The cursor runs through one cardiac cycle, and the four-chamber view follows it |
-| 16.0 | 07 Views | The probe turns 90° at the left sternal border, from the long axis to the short axis, tilts to the mitral valve level, then crosses the chest to the apex; the nine planes show in Probe and body |
-| 29.7 | 09 Segments | Normal wall motion, then an LAD occlusion |
-| 36.6 | 11 Aortic stenosis | No stenosis, then severe |
-| 43.4 | 14 Mitral regurgitation | No regurgitation, then severe with LV dysfunction |
-| 50.3 | 16 Pericardium | No pericardial effusion, then tamponade |
-| 57.1 | 17 Cardiac amyloidosis | A normal wall, then relative apical sparing |
+| 9.1 | 04 Views | The probe turns 90° at the left sternal border, from the long axis to the short axis, tilts to the mitral valve level, then crosses the chest to the apex; the nine planes show in Probe and body |
+| 22.9 | 05 Cycle | The cursor runs through one cardiac cycle, and the four-chamber view follows it |
+| 29.7 | 10 Regional wall motion | Normal wall motion, then an LAD occlusion |
+| 36.6 | 12 Aortic stenosis | No stenosis, then severe |
+| 43.4 | 15 Mitral regurgitation | No regurgitation, then severe with LV dysfunction |
+| 50.3 | 17 Pericardial effusion | No pericardial effusion, then tamponade |
+| 57.1 | 18 Cardiac amyloidosis | A normal wall, then relative apical sparing |
 | 64.0 | | End card |
 
 Left out, with the reason:
-- 01, 03, 04: diagrams. The valve clips show Doppler in use.
+- 01, 03, 08: diagrams. The valve clips show Doppler in use.
 - 06: the cycle clip and the valve clips show its loads.
-- 08, 10: dense panels. LV function shows in the segments and amyloid clips.
-- 12, 13, 15: the layout of 11 and 14.
-- 18: added after the review.
+- 09, 11: dense panels. LV function shows in the segments and amyloid clips.
+- 13, 14, 16: the layout of 12 and 15.
+- 07: added after the review.
 
 How it is built:
-- `video/reel.js` holds the clips. A chapter clip is a chapter video script with its holds and moves in bars. The clip of 07 is a cut of the views video with the nine planes in Probe and body, as in cut B.
-- Each clip renders on its own page: `video/chapter.html?reel=k`, or `video/index.html?reel=k` for 07. The page draws the progress line of the intro, which names the eight chapters and runs on the time of the whole.
+- `video/reel.js` holds the clips. A chapter clip is a chapter video script with its holds and moves in bars. The clip of Views is a cut of the views video with the nine planes in Probe and body, as in cut B.
+- Each clip renders on its own page: `video/chapter.html?reel=k`, or `video/index.html?reel=k` for Views. The page draws the progress line of the intro, which names the eight chapters and runs on the time of the whole.
 - The score is *Bright pulse* at 105 BPM (`tools/score/pulse.py intro`, seed 9300). A bar is 8/3 heartbeats, so a clip of 3 bars is 8 heartbeats. Each cut falls on a bar line.
 - The clips are the windows of the score. The bass starts at the second clip, and the pluck and the pad brighten clip by clip.
 - At each cut the panes and the caption dip to the frame for 0.4 s. The progress line stays.
