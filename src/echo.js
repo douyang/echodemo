@@ -473,6 +473,7 @@ export class EchoView {
     this.own = null;      // a heart of this view's own (setBurden), in place of the page's
     this.ownAnat = null;
     this.disease = {};    // a chapter's disease on the heart shown: weights of the dx_ targets (setDisease)
+    this.fill = false;    // true: the sector fills the canvas height and its sides may be cut (a chapter's panel)
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -982,7 +983,8 @@ export class EchoView {
     // the depth labels (draw(): 10 px mono, 12 px right of the sector edge) stay inside a narrow canvas
     const d5 = Math.ceil(spec.depth / 5 - 1) * 5, room = W / 2 - 16 - 6.5 * String(d5).length;
     const label = off || d5 <= 0 || room <= 0 ? Infinity : room / (d5 * Math.sin(half));
-    const scale = Math.min((H - top - ecgH - (off ? 6 : 40)) / spec.depth, (W - (off ? 6 : 36)) / (2 * spec.depth * Math.sin(half)), label);
+    const fitH = (H - top - ecgH - (off ? 6 : 40)) / spec.depth;
+    const scale = this.fill ? fitH : Math.min(fitH, (W - (off ? 6 : 36)) / (2 * spec.depth * Math.sin(half)), label);
     const cx = W / 2;
     return { X: (u) => cx + u * scale, Y: (v) => top + v * scale, scale, cx, top, half, ecgH, spec };
   }

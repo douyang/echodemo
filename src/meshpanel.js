@@ -5,7 +5,7 @@
 // and returns a frame F in the shape of echo2d.js frame(), so that the overlays of the parametric
 // views (measurement boxes, calipers, jets) draw on the mesh view unchanged. The heart is the one
 // the page shows (the header's choice), with the chapter's disease on it.
-import { MONO } from './sketch.js';
+import { MONO, clamp } from './sketch.js';
 import { panel, SC, sectorPath } from './scope.js';
 import { note } from './sev.js';
 import { cycleAt } from './cyclemodel.js';
@@ -35,7 +35,7 @@ export class MeshPanel {
     (async () => {
       const S = await scanner();
       const shifts = this.diseases.length ? await diseaseTargets(this.diseases) : null;
-      const ev = S.make(300, 240, this.view);
+      const ev = S.make(300, 240, this.view, { fill: true });
       ev.setView(this.view, { animate: false });
       this.ev = ev;
       this.shifts = shifts;
@@ -56,7 +56,9 @@ export class MeshPanel {
    */
   draw(ctx, P, title, o = {}) {
     panel(ctx, P.x, P.y, P.w, P.h, title);
-    const bx = { x: P.x + 4, y: P.y + 22, w: P.w - 8, h: P.h - 26 };
+    // the image fills the panel's height, as the parametric views do: its sides may be cut; the
+    // depth marks take a strip at the right
+    const bx = { x: P.x + 4, y: P.y + 22, w: P.w - 30, h: P.h - 26 };
     if (this.state !== 'ready') {
       this.start();
       note(ctx, bx, this.state === 'failed' ? 'no heart model' : 'loading the heart model', 'top');
@@ -99,29 +101,33 @@ export class MeshPanel {
     };
   }
 
-  /** Depth marks on the right edge of the image, every centimetre, numbered every five. */
+  /** Depth marks in the strip right of the image, as echo2d.js finish() draws them. */
   depthMarks(ctx, bx) {
     const mp = this.ev.map, depth = this.ev.specOf(this.view).depth;
     if (!mp) return;
     ctx.save();
     ctx.strokeStyle = SC.dim;
     ctx.fillStyle = SC.dim;
-    ctx.font = `400 9px ${MONO}`;
-    ctx.textAlign = 'right';
-    const x = bx.x + bx.w - 2;
-    for (let d = 1; d <= depth; d++) {
+    ctx.font = `500 10px ${MONO}`;
+    ctx.lineWidth = 1;
+    const x = bx.x + bx.w + 2;
+    for (let d = 1; d < depth; d++) {
       const y = bx.y + mp.Y(d);
-      if (y > bx.y + bx.h - 3) break;
+      if (y > bx.y + bx.h - 6) break;
+      const l = d % 5 === 0 ? 6 : 3;
       ctx.beginPath();
-      ctx.moveTo(x - (d % 5 ? 3 : 6), y);
-      ctx.lineTo(x, y);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + l, y);
       ctx.stroke();
-      if (d % 5 === 0) ctx.fillText(String(d), x - 8, y + 3);
+      if (d % 5 === 0) ctx.fillText(String(d), x + 8, y + 3.5);
     }
     ctx.restore();
   }
 
-  /** Chamber names from the heart's anchors on the plane; none inside the box avoid. */
+  /**
+   * Chamber names from the heart's anchors on the plane, kept inside the image when a chamber
+   * runs past its edge (as echo2d.js tag() does); none inside the box avoid.
+   */
   tags(ctx, F, list, s, avoid = null) {
     const ev = this.ev, g = ev.g, bx = F.view.box;
     if (!g) return;
@@ -135,9 +141,9 @@ export class MeshPanel {
     ctx.fillStyle = 'rgba(214,222,226,0.92)';
     for (const [k, name] of list) {
       if (!an[k]) continue;
-      const [x, y] = F.P(F.cm(an[k]));
-      if (x < bx.x + 12 || x > bx.x + bx.w - 12 || y < bx.y + 10 || y > bx.y + bx.h - 10) continue;
       const hw = ctx.measureText(name).width / 2 + 3;
+      const [x0, y0] = F.P(F.cm(an[k]));
+      const x = clamp(x0, bx.x + hw + 2, bx.x + bx.w - hw - 2), y = clamp(y0, bx.y + 10, bx.y + bx.h - 10);
       if (avoid && x + hw > avoid.x && x - hw < avoid.x + avoid.w && y + 9 > avoid.y && y - 9 < avoid.y + avoid.h) continue;
       ctx.strokeText(name, x, y);
       ctx.fillText(name, x, y);
