@@ -1547,9 +1547,14 @@ export function drawA5C(ctx, box, g, o = {}) {
 }
 
 // ---------------------------------------------------------------- parasternal long axis
-/** Every PLAX structure in the heart's own frame (x toward the aorta, y depth), cm. */
+/**
+ * Every PLAX structure in the heart's own frame (x toward the aorta, y depth), cm. The sizes and
+ * places follow the PLAX that chapter 04 cuts from the heart mesh (echo.js): an RV outflow tract
+ * of 1.75 cm in front of the septum at the mitral tips, which narrows to a thin channel in front
+ * of the aortic root.
+ */
 function plaxShape(g, c, ph) {
-  const ivs = at(g.ivs, c), lvid = at(g.lvid, c), pw = at(g.pw, c), rvd = at(g.rvd ?? 2.6, c);
+  const ivs = at(g.ivs, c), lvid = at(g.lvid, c), pw = at(g.pw, c), rvd = at(g.rvd ?? 1.75, c);
   const la = at(g.la, c), root = g.root ?? 3.1, lvot = g.lvot ?? 2.1;
   const effA = g.effusionAnt ?? 0;                  // fluid in front of the RV free wall (cm)
   const y0 = 1.75 + effA;                           // RV free wall
@@ -1569,22 +1574,38 @@ function plaxShape(g, c, ph) {
   const sepLV = [...xs(xL, xAnn - 0.35).map((x) => [x, yLv + 0.12 * lvid * cv(x)]), [xAnn + 0.05, aoTop + 0.02]];
   const sepRV = [...xs(xL, xAnn - 0.35).map((x) => [x, yLv + 0.12 * lvid * cv(x) - sepTh(x)]), [xAnn + 0.15, aoTop - 0.3]];
   const ivsRib = ribbon(sepLV, sepRV);
-  // RV free wall across the top, over the outflow tract to the right
-  const rvEndo = xs(xL, xAnn + 5.5).map((x) => [x, yRv + 0.22 * rvd * cv(x) - (x > xAnn ? 0.05 * (x - xAnn) : 0)]);
-  const rvEpi = rvEndo.map((p) => [p[0], p[1] - 0.4]);
-  const rvEndoT = trabeculate(rvEndo, (u) => 0.1 * (1 - smooth(u / 0.35)), [xL + 2, yIvs], 0.4);
-  const rvRib = ribbon(rvEndoT, rvEpi);
   // posterior (inferolateral) wall, rising to the AV groove
   const lag = hingeP[1] - (yPw - 0.1);   // how far the groove stays behind the contracting wall
   const pwEndo = xs(xL, hingeP[0]).map((x) => [x, yPw - 0.22 * lvid * cv(x) - 0.1 * smooth((x + 1.2) / (hingeP[0] + 1.2)) + lag * smooth((x + 2) / (hingeP[0] + 2))]);
   const pwTh = (x) => pw * (x > -0.8 ? mix(1, 0.75, smooth((x + 0.8) / (hingeP[0] + 0.8))) : 1);
   const pwEpi = pwEndo.map((p) => [p[0], p[1] + pwTh(p[0])]);
   const pwRib = ribbon(pwEndo, pwEpi);
-  // aortic root: sinuses, then the ascending aorta
-  const sinus = (sgn) => spline([[xAnn, sgn < 0 ? aoTop : aoBot], [xAnn + 1.0, aoMid + sgn * root / 2], [xAnn + 2.3, aoMid + sgn * (root * 0.47)], [xAnn + 3.2, aoMid + sgn * root * 0.43], [xAnn + 7, aoMid + sgn * root * 0.42 - 0.5]], 8);
+  // aortic root: sinuses, then the ascending aorta, which rises toward the chest wall
+  const sinus = (sgn) => spline([[xAnn, sgn < 0 ? aoTop : aoBot], [xAnn + 1.0, aoMid + sgn * root / 2 - 0.2], [xAnn + 2.3, aoMid + sgn * (root * 0.47) - 0.45], [xAnn + 3.2, aoMid + sgn * root * 0.43 - 0.55], [xAnn + 7, aoMid + sgn * root * 0.42 - 1.0]], 8);
   const aoAnt = sinus(-1), aoPost = sinus(1);
   const aoAntWall = ribbon(aoAnt, aoAnt.map((p) => [p[0], p[1] - 0.28]));
   const aoPostWall = ribbon(aoPost, aoPost.map((p) => [p[0], p[1] + 0.28]));
+  // RV free wall across the top. Past the septum it comes down in front of the aortic root, so the
+  // outflow tract there is a channel of 0.6 cm (less when fluid in front presses on it).
+  const yAt = (poly, x) => {
+    for (let i = 0; i < poly.length - 1; i++) {
+      const [ax_, ay] = poly[i], [bx, by] = poly[i + 1];
+      if ((ax_ - x) * (bx - x) <= 0 && ax_ !== bx) return ay + ((by - ay) * (x - ax_)) / (bx - ax_);
+    }
+    return x < poly[0][0] ? poly[0][1] : poly[poly.length - 1][1];
+  };
+  const wall = (x) => 1.75 + 0.22 * rvd * cv(x);            // the epicardium, with no fluid in front
+  const overAo = (x) => smooth((x - (xAnn - 0.6)) / 1.7);
+  const rvEndoAt = (x) => {
+    const free = wall(x) + effA + 0.4;
+    if (x <= xAnn - 0.6) return free;
+    const front = yAt(aoAnt, x) - 0.28;                     // the front of the aortic wall
+    return Math.min(mix(free, Math.max(free, front - 0.6), overAo(x)), front - 0.25);
+  };
+  const rvEndo = xs(xL, xAnn + 5.5).map((x) => [x, rvEndoAt(x)]);
+  const rvEpi = rvEndo.map((p) => [p[0], p[1] - 0.4]);
+  const rvEndoT = trabeculate(rvEndo, (u) => 0.1 * (1 - smooth(u / 0.35)), [xL + 2, yIvs], 0.4);
+  const rvRib = ribbon(rvEndoT, rvEpi);
   // LA behind the aortic root
   const laTop = aoBot + 0.33;
   const laPts = [[xAnn + 0.4, laTop], [xAnn + 2.4, laTop + 0.05], [xAnn + 3.9, laTop + la * 0.4], [xAnn + 3.5, laTop + la * 0.95], [xAnn + 1.6, laTop + la + 0.05], [hingeP[0] + 0.25, Math.max(laTop + la * 0.75, hingeP[1] + 0.2)], hingeP];
@@ -1592,7 +1613,7 @@ function plaxShape(g, c, ph) {
   const laRib = ribbon(laCav, offsetAway(laCav, 0.22, centroid(laCav)));
   // coronary sinus in the AV groove; descending aorta behind the LA
   const csC = [hingeP[0] - 0.35, hingeP[1] + pw * 0.75 + 0.45];
-  const daoC = [xAnn + 1.75, laTop + la + 1.85];
+  const daoC = [xAnn + 0.1, laTop + la + 3.0];
   // pericardium behind the posterior wall, round the coronary sinus in the AV groove and on
   // behind the LA, in front of the descending aorta (a pleural effusion runs on behind the
   // aorta). At each x it lies a margin below the deepest wall it wraps, so it never cuts one.
@@ -1620,7 +1641,7 @@ function plaxShape(g, c, ph) {
   });
   const post = [...peri, [xAnn + 9, laTop + la], [xAnn + 9, 30], [xL - 2, 30], [xL - 2, peri[0][1]]];
   // with fluid in front, the parietal pericardium stays under the chest wall as the heart drops
-  const periA = effA > 0.02 ? xs(xL, xAnn + 5.5).map((x) => [x, 1.62 + 0.22 * rvd * cv(x) - (x > xAnn ? 0.05 * (x - xAnn) : 0)]) : null;
+  const periA = effA > 0.02 ? xs(xL, xAnn + 5.5).map((x) => [x, wall(x) - 0.13]) : null;
   // aortic valve: right (front) and non-coronary (back) cusps from the annulus. Shut, they meet
   // in the middle of the root and sag toward the LV; open, they lie along the sinus walls. A
   // stiff valve opens only to open (cm) and the cusps dome into the aorta.
@@ -1673,7 +1694,7 @@ function plaxShape(g, c, ph) {
   return {
     ivs, lvid, pw, la, yIvs, yLv, yPw, yEpi, laTop, aoTop, aoBot, aoMid, xAnn, lvot, hingeP, hingeA,
     ivsRib, sepLV, sepRV, rvRib, rvEndoT, pwRib, pwEndo, aoAnt, aoPost, aoAntWall, aoPostWall, laCav, laRib,
-    csRing: ring(csC, 0.32, 0.46, 20, 0.9), csLumen: ellipse(csC, 0.32, 0.29, 20), daoRing: ring(daoC, 1.02, 1.25, 28, 0.92), daoLumen: ellipse(daoC, 1.02, 0.94, 28),
+    csRing: ring(csC, 0.32, 0.46, 20, 0.9), csLumen: ellipse(csC, 0.32, 0.29, 20), daoRing: ring(daoC, 1.25, 1.5, 28, 0.86), daoLumen: ellipse(daoC, 1.25, 1.075, 28),
     peri, post, periA, cuspA, cuspP, cuspA0, cuspP0, cuspAo, cuspPo, aml, pml, amlO, pmlO, tipA, tipP, pm, chords, lvCav,
   };
 }
@@ -1686,14 +1707,17 @@ function plaxShape(g, c, ph) {
  *    jet()), title, labels, after
  */
 export function drawPLAX(ctx, box, g, o = {}) {
-  const F = frame(ctx, box, o.depth ?? 15, o.title ?? 'PARASTERNAL LONG AXIS', { deg: 88, near: 1.4 });
+  // the sector and chest wall of chapter 04's PLAX (views.js: 80°, 1.2 cm)
+  const F = frame(ctx, box, o.depth ?? 16, o.title ?? 'PARASTERNAL LONG AXIS', { deg: 80, near: 1.2 });
   const ph = phase(o.t ?? 150);
   const c = ph.c;
-  // the heart is tilted so the apex (left) lies deeper
-  const th = -0.14, pivot = [0, 7];
+  // the heart where chapter 04's mesh PLAX shows it (echo.js): the LV minor axis at the mitral
+  // tips 1.7 cm left of the centre line, its centre 7.6 cm deep, and the LV long axis rising 5°
+  // toward the apex
+  const th = 0.087, pivot = [-2.3, 7.15], move = [0.63, 0.43];
   const R = (p) => {
     const d = sub(p, pivot), cs = Math.cos(th), sn = Math.sin(th);
-    return [pivot[0] + d[0] * cs - d[1] * sn - 1.0, pivot[1] + d[0] * sn + d[1] * cs];
+    return [pivot[0] + d[0] * cs - d[1] * sn + move[0], pivot[1] + d[0] * sn + d[1] * cs + move[1]];
   };
   const RP = (poly) => poly.map(R);
   const S = plaxShape(g, c, ph), Sr = plaxShape(g, 0, { ...ph, mvShut: 1, avOpen: 0 });
@@ -1772,6 +1796,20 @@ export function plaxLV(ctx, geo) {
 }
 
 // ---------------------------------------------------------------- short-axis insets
+/** The distance from c to the closed polygon poly along the angle a (radians, y down): its first crossing. */
+function hitDist(poly, c, a) {
+  const d = [Math.cos(a), Math.sin(a)];
+  let best = Infinity;
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i], q = poly[(i + 1) % poly.length], e = sub(q, p);
+    const den = d[0] * e[1] - d[1] * e[0];
+    if (Math.abs(den) < 1e-12) continue;
+    const w = sub(p, c), t = (w[0] * e[1] - w[1] * e[0]) / den, u = (w[0] * d[1] - w[1] * d[0]) / den;
+    if (t > 0 && u >= 0 && u <= 1) best = Math.min(best, t);
+  }
+  return Number.isFinite(best) ? best : 0;
+}
+
 /**
  * Parasternal short axis at the aortic valve: three cusps, or two when the valve is bicuspid
  * (g.bicuspid, or the bicuspid heart); the orifice drawn to its area (cm²).
@@ -1878,15 +1916,19 @@ export function drawPSAXav(ctx, box, g, o = {}) {
 
 /** Parasternal short axis at the mitral valve: the orifice drawn to its area (cm²). */
 export function drawPSAXmv(ctx, box, g, o = {}) {
-  const F = frame(ctx, box, o.depth ?? 12, o.title ?? 'PSAX · MITRAL VALVE', { deg: 72, near: 1.4 });
+  // the sector, depth and LV centre of chapter 04's mesh PSAX at the mitral level (views.js, echo.js)
+  const F = frame(ctx, box, o.depth ?? 14, o.title ?? 'PSAX · MITRAL VALVE', { deg: 80, near: 1.2 });
   const ph = phase(o.t ?? 600);
   const shape = (c) => {
-    const C = [0, 6.6];
+    const C = [0, 7.6];
     const ri = (at(g.lvid, c) ?? 4.6) / 2, wall = at(g.wall ?? 0.9, c);
     const endo = ellipse(C, ri, ri, 56), epi = ellipse(C, ri + wall, ri + wall, 56);
-    // RV crescent in front and to the left
-    const rvI = arc(C, ri + wall, Math.PI * 1.02, Math.PI * 1.78, 24);
-    const rvO = rvI.map((p, i) => { const u = i / (rvI.length - 1); return add(p, mul(unit(sub(p, [C[0] + 0.6, C[1] + 0.4])), 0.25 + 1.45 * Math.sin(Math.PI * u) ** 0.8)); });
+    // RV crescent round the left side and the front of the LV, as the mesh shows it: from its
+    // inferior junction at 163° on screen to 318°, about 3 cm deep from 180° to 260°
+    const a0 = 163, a1 = 318;
+    const rvI = arc(C, ri + wall, (a0 * Math.PI) / 180, (a1 * Math.PI) / 180, 32);
+    const deepAt = (deg) => 0.2 + 2.8 * smooth((deg - a0) / 22) * smooth((a1 - deg) / 65);
+    const rvO = rvI.map((p, i) => add(p, mul(unit(sub(p, C)), deepAt(a0 + ((a1 - a0) * i) / (rvI.length - 1)))));
     const rvW = offsetAway(rvO, 0.35, C);
     return { C, ri, wall, endo, epi, rvO, rvW, lv: ribbon([...endo, endo[0]], [...epi, epi[0]]), rv: ribbon(rvO, rvW) };
   };
@@ -1932,10 +1974,11 @@ export function drawPSAXmv(ctx, box, g, o = {}) {
 
 /** Parasternal short axis at the papillary muscles: septal flattening (eccentricity index). */
 export function drawPSAXpm(ctx, box, g, o = {}) {
-  const F = frame(ctx, box, o.depth ?? 13, o.title ?? 'PSAX · PAPILLARY MUSCLES', { deg: 76, near: 1.4 });
+  // the sector, depth and LV centre of chapter 04's mesh PSAX at the papillary muscles
+  const F = frame(ctx, box, o.depth ?? 14, o.title ?? 'PSAX · PAPILLARY MUSCLES', { deg: 80, near: 1.2 });
   const ph = phase(o.t ?? 150);
   const shape = (c) => {
-    const C = [0.8, 6.8];
+    const C = [-0.1, 7.7];
     const lvid = at(g.lvid, c), wall = at(g.wall ?? 0.9, c);
     const ei = at(g.ei ?? 1, c);                      // D1 / D2: >1 when the septum flattens
     const rx = lvid / 2, ry = lvid / 2 / ei;
@@ -1950,17 +1993,26 @@ export function drawPSAXpm(ctx, box, g, o = {}) {
     }
     const lvC = [...lv, lv[0]];
     const lvOut = offsetAway(lvC, wall, C);
-    const rvW = at(g.rvw ?? 2.2, c);
-    // RV free wall: a crescent from the anterior to the inferior septal junction, bulging left
-    const top = [C[0] - rx * 0.35, C[1] - lvid / 2 - wall * 0.6], bot = [C[0] - rx * 0.35, C[1] + lvid / 2 + wall * 0.6];
-    const far = [C[0] - rx * (0.2 + 2 / ei - 1) - wall - rvW, C[1]];
-    const rv = spline([top, [far[0] + rvW * 0.35, C[1] - lvid * 0.62], far, [far[0] + rvW * 0.35, C[1] + lvid * 0.62], bot], 8);
-    const rvOut = offsetAway(rv, 0.35, [C[0] - rx, C[1]]);
+    const rvW = at(g.rvw ?? 2.9, c);
+    // RV free wall: a crescent over the septal and anterior side of the LV, as chapter 04's mesh
+    // shows it: from 172° to 300° on screen, deepest (rvW) at 236°, upper left. Its ends sit on
+    // the LV wall, flattened or not.
+    const A0 = (236 * Math.PI) / 180, h0 = (64 * Math.PI) / 180;
+    const rOut = (a) => hitDist(lvOut, C, a);
+    const P = (a, r) => [C[0] + r * Math.cos(a), C[1] + r * Math.sin(a)];
+    const rv = spline([P(A0 - h0, rOut(A0 - h0)), P(A0 - h0 * 0.55, rOut(A0 - h0 * 0.55) + rvW * 0.72), P(A0, rOut(A0) + rvW),
+      P(A0 + h0 * 0.55, rOut(A0 + h0 * 0.55) + rvW * 0.72), P(A0 + h0, rOut(A0 + h0))], 8);
+    const rvOut = offsetAway(rv, 0.35, C);
+    const rvMid = P(A0, rOut(A0) + rvW * 0.5);
+    // places for the RV label along the middle of the crescent, from its deepest point toward the
+    // beam: a dilated RV runs out of the sector at the upper left
+    const rvLabs = Array.from({ length: 12 }, (_, i) => { const a = A0 + h0 * 0.07 * i; return P(a, rOut(a) + rvW * 0.5); });
     // coarse trabeculae on the free wall, the most at the middle of the crescent
-    const rvT = trabeculate(rv, (u) => 0.15 * Math.sin(Math.PI * u), [C[0] - rx - wall - rvW * 0.5, C[1]], 0.9);
-    // papillary muscles: anterolateral at 4 o'clock, posteromedial at 8 o'clock
-    const pms = [0.62, 2.3].map((a) => ellipse([C[0] + (rx - 0.45) * Math.cos(a), C[1] + (ry * ei - 0.45) * Math.sin(a)], 0.5, 0.4, 18));
-    return { C, rx, ry, ei, lv: lvC, lvOut, rv, rvOut, pms, wall, rvW, lvRib: ribbon(lvC, lvOut), rvRib: ribbon(rvT, rvOut), rvT };
+    const rvT = trabeculate(rv, (u) => 0.15 * Math.sin(Math.PI * u), rvMid, 0.9);
+    // papillary muscles: anterolateral and posteromedial, a little below 3 and 9 o'clock, where
+    // chapter 04's mesh has them at this level
+    const pms = [0.26, 2.88].map((a) => ellipse([C[0] + (rx - 0.45) * Math.cos(a), C[1] + (ry * ei - 0.45) * Math.sin(a)], 0.5, 0.4, 18));
+    return { C, rx, ry, ei, lv: lvC, lvOut, rv, rvOut, pms, wall, rvW, rvMid, rvLabs, lvRib: ribbon(lvC, lvOut), rvRib: ribbon(rvT, rvOut), rvT };
   };
   const S = shape(ph.c), Sr = shape(0);
   const items = [
@@ -1970,8 +2022,12 @@ export function drawPSAXpm(ctx, box, g, o = {}) {
     { borders: [S.lv, S.lvOut, S.rvT], refs: [Sr.lv, Sr.lvOut, Sr.rvT], e: DB.myo, spec: 7 },
   ];
   scan(ctx, F, items, { t: o.t });
-  const { C, rx, ry, ei, wall, rvW } = S;
-  if (o.labels !== false) { tag(ctx, F, 'LV', C); tag(ctx, F, 'RV', [C[0] - rx - wall - rvW * 0.55, C[1] - 0.3]); }
+  const { C, rx, ry, ei } = S;
+  if (o.labels !== false) {
+    const inside = (p) => p[1] > 2.2 && Math.abs(p[0]) < (p[1] - 1.4) * Math.tan(F.view.half);
+    tag(ctx, F, 'LV', C);
+    tag(ctx, F, 'RV', S.rvLabs.find(inside) ?? S.rvLabs[S.rvLabs.length - 1]);
+  }
   finish(ctx, F);
   return { F, C, rx, ry: ry * ei };
 }
