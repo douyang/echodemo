@@ -237,7 +237,7 @@ function tagsOf(v) {
 
 function plax(ctx, box, v, t) {
   const g = {
-    ivs: [v.wall, v.wall * 1.5], pw: [v.wall, v.wall * 1.5], lvid: [v.lvedd / 10, v.lvesd / 10], rvd: 2.6,
+    ivs: [v.wall, v.wall * 1.5], pw: [v.wall, v.wall * 1.5], lvid: [v.lvedd / 10, v.lvesd / 10],
     la: [v.la * 0.88, v.la], root: 3.3, lvot: v.lvotD, av: { thick: 0.12, open: v.lvotD - 0.1, gap: v.leak ? Math.min(0.3, v.vc * 0.45) : 0 },
   };
   const u = diaFrac(t);
@@ -258,11 +258,11 @@ function plax(ctx, box, v, t) {
   };
   const title = fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 60 cm/s', 'PLAX · COLOR 60');
   if (JETS === 'plume') {
-    drawPLAX(ctx, box, g, { t, depth: 15 + 1.6 * v.s, title, jets: v.leak ? { ar: { q, va: 60, vc: v.vc, jl, jw, a, pisa } } : {}, after });
+    drawPLAX(ctx, box, g, { t, depth: 16 + 1.6 * v.s, title, jets: v.leak ? { ar: { q, va: 60, vc: v.vc, jl, jw, a, pisa } } : {}, after });
     return;
   }
   drawPLAX(ctx, box, g, {
-    t, depth: 15 + 1.6 * v.s, title,
+    t, depth: 16 + 1.6 * v.s, title,
     color: {
       roi: 'lvot', lo: -60, hi: 60, variance: true,
       ar: v.leak ? { q: (q * u0) / (v.v0 * 100), u0, vc: v.vc, jl, jw, a, pk: clamp(0.8 / jl, 0.1, 0.4), open: 0.45, fit: 'width' } : null,

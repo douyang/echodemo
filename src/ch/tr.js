@@ -410,7 +410,7 @@ function draw(sh, t) {
   const bxs = [trCW(ctx, p1, v), hvPW(ctx, p2, v)];
   const [c1, c2] = cols(p3, [1.3, 1], 10);
   drawIVC(ctx, c1, { d: v.ivc, collapse: v.coll / 100 }, { title: `IVC · M-MODE · RAP ${v.rap} mmHg` });
-  drawPSAXpm(ctx, c2, { lvid: [4.6 - 0.3 * v.s, 3.0], wall: [0.9, 1.35], ei: [v.ei, 1 + (v.ei - 1) * 0.4], rvw: [v.rvb * 0.62, v.rvb * 0.55] }, { t: tt, title: `PSAX · EI ${v.ei.toFixed(1)}` });
+  drawPSAXpm(ctx, c2, { lvid: [4.6 - 0.3 * v.s, 3.0], wall: [0.9, 1.35], ei: [v.ei, 1 + (v.ei - 1) * 0.4], rvw: [v.rvb * 0.84, v.rvb * 0.75] }, { t: tt, title: `PSAX · EI ${v.ei.toFixed(1)}` });
   for (const bx of bxs) cursor(ctx, bx, beat.sweep);
 }
 
