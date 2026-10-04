@@ -459,6 +459,8 @@ a:hover { text-decoration-color: var(--accent); }
 .grades i[data-l="4"] { background: var(--flag); }
 .grades i[data-l="5"] { background: color-mix(in srgb, var(--flag) 65%, var(--ink)); }
 .grades span { position: absolute; top: 10px; left: calc(9px + (100% - 18px) * var(--a)); width: calc((100% - 18px) * var(--w)); text-align: center; font: 400 0.6875rem/1.1 var(--sans); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* while a chapter's values are edited, its bands are the model's results, not those of the values on screen (Cardiac amyloidosis) */
+.grades.is-ed { opacity: 0.4; }
 .vt.grade { font-size: 0.78rem; }
 .vt.grade td { vertical-align: top; padding: 5px 4px; }
 .vt.grade td:first-child { color: var(--ink-2); }
@@ -1173,3 +1175,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .asx .ase-row.rgx-row3 { grid-template-columns: minmax(0, 1fr); row-gap: 4px; padding-block: 4px; }
   .rgx-row3 .rgx-tg { justify-self: end; }
 }
+/* ------------------------------------------------- Cardiac amyloidosis: the ESC 2021 criteria
+   The classes of the regurgitation diagrams: the walls from the slider as values without buttons,
+   then the findings and the score in two sets. src/ch/amyloid.js */
+#amy-calc .ase-row.is-calc { min-height: 26px; }
+.amy-set.is-on .ase-count { color: var(--flag); }

@@ -4,17 +4,29 @@
 // strain and filling follow an illustrative trajectory set inside the cited ranges (ASE 2025,
 // ESC 2021, Phelan 2012). The ESC 2021 echo criteria and the multiparametric score run on the
 // values. Not patient data.
+// The text holds the criteria as a diagram, with ▲▼ buttons on the Doppler velocities, TAPSE and
+// the longitudinal strain of each level. An edit stores these values in amx, with the burden at
+// which the edits started (base). The walls, which the mesh shows, stay at that burden, and so
+// does the slider: its label says that the values are edited, and its bands dim. A move of the
+// slider, Play, the tour or a heart's preset clears amx, and the values follow the slider again.
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { panel, spectral, vscale, SC, tagBox } from '../scope.js';
 import { cycleAt, RR, EV } from '../cyclemodel.js';
-import { tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, shown } from '../sev.js';
+import { tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
 import { glsBand } from '../norms.js';
 import { loadModel } from '../model3d.js';
+import { round, stepOf, steady as holdPlace, flash } from '../edits.js';
+import { cue } from '../music.js';
+import { numOf } from '../order.js';
 import { lapAlgorithm } from './fill.js';
 import { BSA } from './pressure.js';
 
+/** A ▲▼ edit renders again and keeps its button under the pointer (edits.js). */
+const steady = (btn, fn) => holdPlace('#ch-amyloid .live', btn, fn);
+
 const KEY = 'amyS';
+const EDITS = 'amx';
 const ED = 31;   // ms: end-diastole of the cycle model, where the LV is largest
 
 // ---------------------------------------------------------------- the model patient
@@ -37,29 +49,75 @@ const JIT = [0.6, -0.8, -0.4, 0.5, 0.3, -0.2, 0.4, -0.5, 0.2, 0.6, -0.3, -0.4, 0
 const mean = (l) => l.reduce((s, v) => s + v, 0) / l.length;
 /** A number with a true minus sign. */
 const sgn = (v, d = 0) => `${v < 0 ? '−' : ''}${Math.abs(v).toFixed(d)}`;
+/** The segments of each level: basal 1–6, mid 7–12, apical 13–16 (the apex cap, 17, moves with the apical level). */
+const LEVELS = [[0, 6], [6, 12], [12, 16]];
+/** Each segment's offset from the mean of its level at burden a: the jitter, larger as the disease advances. */
+function offsets(a) {
+  const k = 0.5 + 0.5 * a, out = [];
+  for (const [i0, i1] of LEVELS) {
+    const mj = mean(JIT.slice(i0, i1));
+    for (let i = i0; i < i1; i++) out.push((JIT[i] - mj) * k);
+  }
+  return out;
+}
 
-export function model(a) {
+/** The model's values at burden a, before rounding: the walls from the mesh, the rest from the tracks. */
+function modelAt(a) {
   const m = TRK(a);
   m.a = a;
-  // values as printed, each derived value from the printed ones: the grade, the criteria and the
-  // score read these numbers, so a value on screen never contradicts its mark
-  for (const [k, d] of [['E', 2], ['A', 2], ['DT', 0], ['sep', 1], ['lat', 1], ['sSep', 1], ['aSep', 1], ['tr', 1], ['sd', 2], ['lars', 0]]) m[k] = shown(m[k], d);
-  m.ivs = shown(ivsOf(a), 1); m.pw = shown(pwOf(a), 1); m.lvid = shown(lvidOf(a), 1); m.wall = Math.max(m.ivs, m.pw);
-  m.edv = EDV(a); m.esv = ESV(a); m.ef = shown((100 * (m.edv - m.esv)) / m.edv);
-  m.lavi = shown(LAMAX(a) / BSA);
-  m.tapse = shown(TAPSE(a)); m.rvWall = RVW(a); m.ias = IAS(a); m.valve = VALVE(a); m.eff = EFF(a);
-  m.rwt = shown((m.ivs + m.pw) / m.lvid, 2);
-  m.avg = shown((m.sep + m.lat) / 2, 1);
-  m.ea = shown(m.E / m.A, 2);
-  m.eeSep = shown((m.E * 100) / m.sep, 1); m.eeLat = shown((m.E * 100) / m.lat, 1); m.eeAvg = shown((m.E * 200) / (m.sep + m.lat), 1);
+  m.ivs = ivsOf(a); m.pw = pwOf(a); m.lvid = lvidOf(a);
+  m.edv = EDV(a); m.esv = ESV(a); m.lavi = LAMAX(a) / BSA;
+  m.tapse = TAPSE(a); m.rvWall = RVW(a); m.ias = IAS(a); m.valve = VALVE(a); m.eff = EFF(a);
+  // the mean longitudinal strain of each level; the apex cap keeps its distance from the apical level
+  const k = 0.5 + 0.5 * a;
+  const lev = (v, i0, i1) => v + mean(JIT.slice(i0, i1)) * k;
+  m.lsB = lev(m.base, 0, 6); m.lsM = lev(m.mid, 6, 12); m.lsA = lev(m.apex, 12, 16);
+  m.capOff = m.cap + JIT[16] * k - m.lsA;
+  return m;
+}
+
+/** The measurements with ▲▼ buttons: decimals as reported, and the step and limits of their buttons. */
+const INPUTS = {
+  tapse: { d: 0, step: 1, min: 5, max: 30 },
+  E: { d: 2, step: 0.05, min: 0.3, max: 1.6 },
+  A: { d: 2, step: 0.05, min: 0.2, max: 1.2 },
+  sep: { d: 1, step: 0.5, min: 2, max: 16 },
+  lat: { d: 1, step: 0.5, min: 3, max: 20 },
+  sSep: { d: 1, step: 0.5, min: 2, max: 12 },
+  aSep: { d: 1, step: 0.5, min: 2, max: 12 },
+  tr: { d: 1, step: 0.1, min: 1.5, max: 4.5 },
+  lsB: { d: 1, step: 1, min: -30, max: -2 },
+  lsM: { d: 1, step: 1, min: -30, max: -2 },
+  lsA: { d: 1, step: 1, min: -30, max: -2 },
+};
+const IN = Object.keys(INPUTS);
+
+/**
+ * Values as reported: the measurements at their decimals, and each value from the rounded ones
+ * before it. The diastolic grade, the criteria and the score read these numbers, so a value on
+ * screen never contradicts its mark.
+ */
+function measure(raw) {
+  const m = { ...raw };
+  for (const k of IN) m[k] = round(raw[k], INPUTS[k].d);
+  for (const [k, d] of [['DT', 0], ['sd', 2], ['lars', 0], ['ivs', 1], ['pw', 1], ['lvid', 1], ['lavi', 0]]) m[k] = round(raw[k], d);
+  m.wall = Math.max(m.ivs, m.pw);
+  m.ef = round((100 * (raw.edv - raw.esv)) / raw.edv, 0);
+  m.rwt = round((m.ivs + m.pw) / m.lvid, 2);
+  m.avg = round((m.sep + m.lat) / 2, 1);
+  m.ea = round(m.E / m.A, 2);
+  m.eeSep = round((m.E * 100) / m.sep, 1); m.eeLat = round((m.E * 100) / m.lat, 1); m.eeAvg = round((m.E * 200) / (m.sep + m.lat), 1);
   m.dd = lapAlgorithm(m);
-  m.segs = [...Array(6).fill(m.base), ...Array(6).fill(m.mid), ...Array(4).fill(m.apex), m.cap].map((v, i) => v + JIT[i] * (0.5 + 0.5 * a));
-  m.lsBase = mean(m.segs.slice(0, 6)); m.lsMid = mean(m.segs.slice(6, 12)); m.lsApex = mean(m.segs.slice(12, 16));
-  m.gls = shown(mean(m.segs), 1);
-  m.relaps = shown(Math.abs(m.lsApex) / (Math.abs(m.lsBase) + Math.abs(m.lsMid)), 2);
-  // apical to basal septal strain: the apical septal segment over the two basal septal segments
-  m.sab = shown(Math.abs(m.segs[13]) / Math.abs((m.segs[1] + m.segs[2]) / 2), 1);
-  m.efGls = shown(m.ef / Math.abs(m.gls), 1);
+  // the segments: the mean of each level as printed, and each segment's offset from it
+  const lv = [m.lsB, m.lsM, m.lsA];
+  m.segs = [...offsets(raw.a).map((o, i) => lv[i < 6 ? 0 : i < 12 ? 1 : 2] + o), m.lsA + raw.capOff];
+  m.gls = round(mean(m.segs), 1);
+  m.relaps = round(Math.abs(m.lsA) / (Math.abs(m.lsB) + Math.abs(m.lsM)), 2);
+  // apical to basal septal strain: the apical septal segment (14) over the mean of the two basal
+  // septal segments (2 and 3), each to a tenth
+  m.sabA = round(Math.abs(m.segs[13]), 1); m.sabB = round(Math.abs((m.segs[1] + m.segs[2]) / 2), 1);
+  m.sab = round(m.sabA / m.sabB, 1);
+  m.efGls = round(m.ef / Math.abs(m.gls), 1);
   // ESC 2021: an unexplained wall of 12 mm or more, and two of three findings or 8 points
   m.thick = m.wall >= 12;
   m.find = { dd: (m.dd.grade ?? 0) >= 2, tdi: m.sSep < 5 && m.sep < 5 && m.aSep < 5, gls: Math.abs(m.gls) < 15 };
@@ -70,15 +128,36 @@ export function model(a) {
   m.grade = m.met ? 'criteria met' : m.thick ? 'wall ≥12 mm' : 'wall <12 mm';
   return m;
 }
+/** The model's values at burden a, as reported. */
+export const model = (a) => measure(modelAt(a));
 export const gradeOf = (a) => model(a).grade;
 const LEV = { ...LEVEL, 'wall <12 mm': 0, 'wall ≥12 mm': 2, 'criteria met': 3 };
 let BANDS = [];
 
-let sheet = null, st = null;
-const beat = new Beat(RR);
 // the page works in steps of 2% burden (0.16 mm of septum): the mesh views are cut again at
 // each step, not at every frame of Play
 const q = (a) => Math.round(a * 50) / 50;
+
+/** The values on screen: the edited measurements (amx) at the burden where the edits started, or the model's at the slider. */
+function shownOf(s) {
+  const ed = s[EDITS];
+  if (!ed) return model(q(s[KEY]));
+  const raw = modelAt(ed.base);
+  for (const k of IN) raw[k] = ed[k];
+  return measure(raw);
+}
+let lastEd = null, lastS = null, lastShown = null;
+/** shownOf, kept for the last state: the figure asks every frame. */
+function shown(s) {
+  if (s[EDITS] !== lastEd || (!s[EDITS] && s[KEY] !== lastS) || !lastShown) {
+    lastEd = s[EDITS]; lastS = s[KEY];
+    lastShown = shownOf(s);
+  }
+  return lastShown;
+}
+
+let sheet = null, st = null, setState = null;
+const beat = new Beat(RR);
 
 // ---------------------------------------------------------------- echo views cut from the mesh
 // PLAX: a still frame at end-diastole with the calipers; A4C: the beating heart. Both show the
@@ -375,7 +454,7 @@ function meterItems(m) {
 // ---------------------------------------------------------------- the figure
 function draw(sh, t) {
   const W = sh.w, H = sh.h, ctx = sh.ctx;
-  const m = model(q(st[KEY]));
+  const m = shown(st);
   const tt = beat.at(true, ED);
   if (W < 700) {
     // two rows of two: the long axis and the four chambers, then strain and tissue Doppler
@@ -401,53 +480,343 @@ function draw(sh, t) {
   meters(sh, t, { x: c2.x, y: c2.y + 4, w: c2.w, h: c2.h - 4 }, items.slice(0, fits), { row: 34 });
 }
 
-// ---------------------------------------------------------------- tables
+// ---------------------------------------------------------------- the diagram in the text
+// The ESC 2021 criteria top to bottom: the measurements, with ▲▼ buttons on eleven of them; the
+// calculations from them; the wall, the three findings and the score of Boldrini 2020; the result.
+// A part whose state changes flashes, and the change line gives its cause and effect (edits.js).
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 const GRADE = { 0: 'normal', 1: 'grade 1', 2: 'grade 2', 3: 'grade 3' };
-function table(host, cap, head, body) {
-  if (!host) return;
-  host.innerHTML = `<caption>${cap}</caption>
-    <thead><tr>${head.map((h, i) => `<th${i ? ' class="num"' : ''}>${h}</th>`).join('')}</tr></thead>
-    <tbody>${body.map(([cells, hit]) => `<tr${hit ? ' class="hit"' : ''}>${cells.map((c, i) => `<td${i ? ' class="num"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
+const NAME = {
+  ivs: 'IVSd', pw: 'PWd', lvid: 'LVIDd', tapse: 'TAPSE',
+  E: 'E velocity', A: 'A velocity', sep: 'Septal e′', lat: 'Lateral e′', sSep: 'Septal s′', aSep: 'Septal a′', tr: 'Peak TR velocity',
+  lsB: 'Basal LS', lsM: 'Mid LS', lsA: 'Apical LS',
+  rwt: '(IVS + PW) ÷ LVIDd', ea: 'E/A', eeAvg: 'E/e′ average', dd: 'Diastolic function', gls: 'GLS', relaps: 'Relative apical LS', sab: 'Apical ÷ basal septal LS',
+};
+const UNIT = { ivs: 'mm', pw: 'mm', lvid: 'mm', tapse: 'mm', E: 'm/s', A: 'm/s', sep: 'cm/s', lat: 'cm/s', sSep: 'cm/s', aSep: 'cm/s', tr: 'm/s', lsB: '%', lsM: '%', lsA: '%', gls: '%' };
+const ARIA = {
+  tapse: 'TAPSE', E: 'the mitral E velocity', A: 'the mitral A velocity', sep: 'the septal e′ velocity', lat: 'the lateral e′ velocity',
+  sSep: 'the septal s′ velocity', aSep: 'the septal a′ velocity', tr: 'the peak TR velocity',
+  lsB: 'the basal longitudinal strain', lsM: 'the mid longitudinal strain', lsA: 'the apical longitudinal strain',
+};
+/** The walls, which the image shows, come from the slider: values without buttons. */
+const RO = ['ivs', 'pw', 'lvid'];
+const GROUPS = [
+  ['twod', '2D and M-mode', 'the walls at end-diastole in the parasternal long axis; TAPSE by M-mode', ['ivs', 'pw', 'lvid', 'tapse']],
+  ['dop', 'Doppler', 'PW of the mitral inflow, tissue Doppler at the mitral annulus, CW of the TR jet', ['E', 'A', 'sep', 'lat', 'sSep', 'aSep', 'tr']],
+  ['strain', 'Strain', 'speckle tracking: the mean peak longitudinal strain of each level', ['lsB', 'lsM', 'lsA']],
+];
+/** Each calculation, and its numbers: text, and the keys whose values show. */
+const FORMULA = {
+  rwt: ['(IVS + PW) ÷ LVIDd', ['(', { k: 'ivs' }, ' + ', { k: 'pw' }, ') ÷ ', { k: 'lvid' }]],
+  ea: ['E ÷ A', [{ k: 'E' }, ' ÷ ', { k: 'A' }]],
+  eeAvg: ['E ÷ the mean of septal and lateral e′, in cm/s', [{ k: 'Ecm' }, ' ÷ ', { k: 'eMean' }]],
+  relaps: ['apical ÷ (basal + mid), without the signs', [{ k: 'aA' }, ' ÷ (', { k: 'aB' }, ' + ', { k: 'aM' }, ')']],
+  sab: ['segment 14 ÷ the mean of segments 2 and 3, without the signs', [{ k: 'sabA' }, ' ÷ ', { k: 'sabB' }]],
+};
+const MEASURED = { gls: 'the mean of the 17 segments' };
+/** The widest each number gets (characters), so a formula keeps its place as values change. */
+const WIDE = { ivs: 4, pw: 4, lvid: 4, E: 4, A: 4, Ecm: 3, eMean: 4, aA: 4, aB: 4, aM: 4, sabA: 4, sabB: 4 };
+const CALC = ['rwt', 'ea', 'eeAvg', 'dd', 'gls', 'relaps', 'sab'];
+const DEC = { ivs: 1, pw: 1, lvid: 1, rwt: 2, ea: 2, eeAvg: 1, relaps: 2, sab: 1, ...Object.fromEntries(IN.map((k) => [k, INPUTS[k].d])) };
+/** The three findings and the five items of the score: key, name, cut-off (and points). */
+const FINDINGS = [['dd', 'Diastolic dysfunction', 'grade 2 or worse'], ['tdi', 'Septal s′, e′ and a′', 'each <5 cm/s'], ['gls', 'GLS, absolute', '<15%']];
+const POINTS = [['rwt', '(IVS + PW) ÷ LVIDd', '>0.6', 3], ['ee', 'E/e′ average', '>11', 1], ['tapse', 'TAPSE', '≤19 mm', 2], ['gls', 'GLS, absolute', '≤13%', 1], ['sab', 'Apical ÷ basal septal LS', '>2.9', 3]];
+const OUTS = [['wall <12 mm', 'wall <12 mm'], ['wall ≥12 mm', 'criteria not met'], ['criteria met', 'criteria met']];
+const HEAD = { 'wall <12 mm': 'Wall below 12 mm', 'wall ≥12 mm': 'Criteria not met', 'criteria met': 'Criteria met' };
+const OUT_LINE = Object.fromEntries(OUTS);
+/** The names in the change line: the calculations that each measurement changes, and the cut-offs crossed. */
+const EFFECTS = { tapse: [], E: ['ea', 'eeAvg'], A: ['ea'], sep: ['eeAvg'], lat: ['eeAvg'], sSep: [], aSep: [], tr: [], lsB: ['gls'], lsM: ['gls'], lsA: ['gls'] };
+const EFFECT = { ea: 'E/A', eeAvg: 'E/e′ average', gls: 'GLS' };
+const FIND_LINE = { tdi: ['s′, e′ and a′ not all <5 cm/s', 's′, e′ and a′ all <5 cm/s'], gls: ['absolute GLS ≥15%', 'absolute GLS <15%'] };
+const POINT_LINE = {
+  rwt: ['(IVS + PW) ÷ LVIDd ≤0.6', '(IVS + PW) ÷ LVIDd >0.6'], ee: ['E/e′ average ≤11', 'E/e′ average >11'], tapse: ['TAPSE >19 mm', 'TAPSE ≤19 mm'],
+  gls: ['absolute GLS >13%', 'absolute GLS ≤13%'], sab: ['apical ÷ basal septal LS ≤2.9', 'apical ÷ basal septal LS >2.9'],
+};
+const WALL_NOTE = 'The walls follow the slider. While values are edited, the walls and the slider stay at the burden where the edits started; a move of the slider clears the edits.';
+const CALC_NOTE = `The diastolic grade comes from the 2025 ASE algorithm of chapter ${numOf('fill')}; the LA volume index, LA strain and the pulmonary vein S/D that it also reads follow the slider<span class="cite" data-ref="nagueh2025"></span>.`;
+const CRIT_NOTE = 'The criteria need an unexplained LV wall thickness of 12 mm or more, and either two of the three findings or a score of 8 or more<span class="cite" data-ref="esc2021"></span>.';
+const RES_NOTE = 'The criteria raise the suspicion of cardiac amyloidosis. In the ESC diagnostic pathways, they are used together with other tests<span class="cite" data-ref="esc2021"></span>.';
+const UP = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.2 7.2 5 2.6l3.8 4.6z" fill="currentColor"/></svg>';
+const DOWN = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.2 2.8 5 7.4l3.8-4.6z" fill="currentColor"/></svg>';
+/** A slider's crossing stays in the change line this long (ms) while the moves after it cross nothing. */
+const HOLD = 2500;
+const isLS = (k) => k === 'lsB' || k === 'lsM' || k === 'lsA';
+const num = (k, x) => (isLS(k) ? sgn(x, 1) : x.toFixed(DEC[k]));
+const withUnit = (k, s) => (UNIT[k] ? `${s}${UNIT[k] === '%' ? '' : ' '}${UNIT[k]}` : s);
+const listOf = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`);
+const pct = (a) => `${Math.round(a * 100)}%`;
+const ddName = (dd) => (dd.grade === null ? 'not graded' : GRADE[dd.grade]);
+/** A calculation as the diagram prints it. */
+const calcText = (k, v) => (k === 'dd' ? ddName(v.dd) : k === 'gls' ? sgn(v.gls, 1) : v[k].toFixed(DEC[k]));
+/** A number in a formula. */
+function xnum(x, v) {
+  if (x === 'Ecm') return String(Math.round(v.E * 100));
+  if (x === 'eMean') { const e = (v.sep + v.lat) / 2; return e.toFixed(Math.abs(e * 10 - Math.round(e * 10)) < 1e-6 ? 1 : 2); }
+  if (x === 'aA' || x === 'aB' || x === 'aM') return Math.abs(v[`ls${x[1]}`]).toFixed(1);
+  if (x === 'sabA' || x === 'sabB') return v[x].toFixed(1);
+  return v[x].toFixed(DEC[x]);
 }
-function criteriaTable(art, m) {
-  const yes = (b) => (b ? 'yes' : 'no');
-  table(art.querySelector('#amy-table'), 'ESC 2021 echocardiographic criteria', ['Finding', 'Cut-off', 'Value', 'Present'], [
-    [['LV wall at end-diastole, no other cause', '≥12 mm', `${fmt(m.wall, 1)} mm`, yes(m.thick)], m.thick],
-    [['Diastolic dysfunction', 'grade 2 or worse', m.dd.grade === null ? 'not graded' : GRADE[m.dd.grade], yes(m.find.dd)], m.find.dd],
-    [['Septal s′, e′ and a′', 'all <5 cm/s', `${fmt(m.sSep, 1)} · ${fmt(m.sep, 1)} · ${fmt(m.aSep, 1)}`, yes(m.find.tdi)], m.find.tdi],
-    [['GLS, absolute', '<15%', `${fmt(Math.abs(m.gls), 1)}%`, yes(m.find.gls)], m.find.gls],
-  ]);
-  table(art.querySelector('#amy-table2'), 'Multiparametric score (Boldrini 2020)', ['Item', 'Cut-off', 'Value', 'Points'], [
-    [['(IVS + PW) ÷ LVIDd', '>0.6', fmt(m.rwt, 2), `${m.pts.rwt} of 3`], m.pts.rwt > 0],
-    [['E/e′ average', '>11', fmt(m.eeAvg, 1), `${m.pts.ee} of 1`], m.pts.ee > 0],
-    [['TAPSE', '≤19 mm', `${fmt(m.tapse)} mm`, `${m.pts.tapse} of 2`], m.pts.tapse > 0],
-    [['GLS, absolute', '≤13%', `${fmt(Math.abs(m.gls), 1)}%`, `${m.pts.gls} of 1`], m.pts.gls > 0],
-    [['Apical ÷ basal septal strain', '>2.9', fmt(m.sab, 1), `${m.pts.sab} of 3`], m.pts.sab > 0],
-    [['Total', '≥8', '', `${m.score} of 10`], m.score >= 8],
-  ]);
+/** The path through the diastolic algorithm, in one line. */
+const STEP1 = { eRed: 'e′ reduced', eeUp: 'E/e′ raised', trUp: 'TR velocity ≥2.8 m/s' };
+const STEP3 = { lavi: 'LAVi >34 mL/m²', lars: 'LA strain ≤18%', sd: 'S/D ≤0.67' };
+function ddLine(v) {
+  const r = v.dd, ab = Object.keys(STEP1).filter((k) => r.step1[k]).map((k) => STEP1[k]);
+  if (r.grade === 0) return 'e′, E/e′ and TR velocity normal';
+  if (r.grade === 1) return 'e′ reduced alone, with E/A ≤0.8';
+  if (r.grade === null) return `${listOf(ab)}; LAVi, LA strain and S/D normal`;
+  const s3 = r.step3 ? Object.keys(STEP3).filter((k) => r.step3[k]).map((k) => STEP3[k]) : [];
+  return `${listOf(ab)}${s3.length ? `; ${listOf(s3)}` : ''}; E/A ${fmt(v.ea, 2)}, ${v.ea >= 2 ? '≥2' : '<2'}`;
+}
+
+let dg = null;          // the diagram's elements
+let prev = null;        // what the diagram showed last
+let pending = null;     // the cause of the change being drawn: an edit or Reset (else the slider)
+let fresh = true;       // the next drawing sets the baseline: no change line, no flash
+let lastCross = -1e9, lineKind = '';
+
+function buildDiagram(host) {
+  if (!host) return;
+  const btn = (k, dir) => `<button type="button" class="ase-b" data-k="${k}" data-dir="${dir}" aria-label="${dir > 0 ? 'Increase' : 'Decrease'} ${ARIA[k]}${isLS(k) ? (dir > 0 ? ', toward zero' : ', more negative') : ''}">${dir > 0 ? UP : DOWN}</button>`;
+  const input = (k) => (RO.includes(k)
+    ? `<div class="ase-row asx-in is-calc" data-ro="${k}">
+      <span class="ase-nm">${NAME[k]}</span>
+      <span class="ase-ctl"><span></span><span class="ase-v"><b></b><small>${UNIT[k]}</small></span><span></span></span>
+    </div>`
+    : `<div class="ase-row asx-in" data-row="${k}" role="group" aria-label="${NAME[k]}">
+      <span class="ase-nm">${NAME[k]}</span>
+      <span class="ase-ctl">${btn(k, -1)}<span class="ase-v"><b></b><small>${UNIT[k]}</small></span>${btn(k, 1)}</span>
+    </div>`);
+  const group = ([s, name, sub, keys]) => `<div class="ase-step is-on asx-step" data-s="${s}">
+      <p class="ase-sh"><span class="ase-sn">${name}</span><span class="ase-sx">${sub}</span></p>
+      ${keys.map(input).join('')}${s === 'twod' ? `<p class="ase-note asx-note amy-wn">${WALL_NOTE}</p>` : ''}
+    </div>`;
+  const nums = (k) => FORMULA[k][1].map((p) => (typeof p === 'string' ? p : `<i data-x="${p.k}" style="--w:${WIDE[p.k]}ch"></i>`)).join('');
+  const eq = (k) => `<div class="asx-eq" data-eq="${k}" role="group" aria-label="${NAME[k]}">
+      <p class="asx-top"><span class="asx-nm">${NAME[k]}</span><span class="asx-v"><b></b>${UNIT[k] ? `<small>${UNIT[k]}</small>` : ''}</span></p>
+      <p class="asx-f">${FORMULA[k] ? `<span class="asx-fx">${FORMULA[k][0]}</span> = <span class="asx-n">${nums(k)}</span>` : k === 'dd' ? '<span class="asx-fx" data-dd></span>' : `<span class="asx-fx">${MEASURED[k]}</span>`}</p>
+    </div>`;
+  const crit = (set, k, name, rule) => `<p class="asx-q" data-c="${set}:${k}"><i class="ase-mk" aria-hidden="true"></i><span class="asx-qn">${name}</span><span class="asx-qr">${rule}</span><span class="asx-qs"></span></p>`;
+  host.innerHTML = `
+    <div class="ase-tbar"><h3 class="ase-title">Measurements and criteria</h3><button type="button" class="ase-reset is-off" aria-label="Reset the edited values">Reset</button></div>
+    <div class="ase-head">
+      <p class="ase-result" tabindex="-1"><b></b> · <span></span></p>
+      <p class="ase-change" aria-live="polite"></p>
+    </div>
+    ${GROUPS.map(group).join('')}
+    <div class="ase-step is-on asx-step" data-s="calc">
+      <p class="ase-sh"><span class="ase-sn">Calculations</span><span class="ase-sx">from the measurements as printed</span><a class="asx-go" href="#fill" data-go="fill" aria-label="The diastolic algorithm: chapter ${numOf('fill')}, Diastolic function">${numOf('fill')} Diastolic →</a></p>
+      ${CALC.map(eq).join('')}
+      <p class="ase-note asx-note">${CALC_NOTE}</p>
+    </div>
+    <div class="ase-step is-on asx-step" data-s="crit">
+      <p class="ase-sh"><span class="ase-sn">Criteria</span><span class="ase-sx">ESC echocardiographic criteria<span class="cite" data-ref="esc2021"></span></span></p>
+      <p class="asx-q" data-q="wall"><i class="ase-mk" aria-hidden="true"></i><span class="asx-qn">LV wall</span><span class="asx-qr">≥12 mm, with no other cause</span><span class="asx-qs"></span></p>
+      <div class="rgx-set amy-set" data-set="find"><p class="rgx-sh"><span>Two of three findings</span><span class="ase-count"></span></p>${FINDINGS.map(([k, n, r]) => crit('find', k, n, r)).join('')}</div>
+      <div class="rgx-set amy-set" data-set="score"><p class="rgx-sh"><span>Or a score of 8 or more<span class="cite" data-ref="boldrini2020"></span></span><span class="ase-count"></span></p>${POINTS.map(([k, n, r, p]) => crit('score', k, n, `${r}, ${p} point${p > 1 ? 's' : ''}`)).join('')}</div>
+      <p class="ase-note asx-note">${CRIT_NOTE}</p>
+    </div>
+    <div class="ase-step is-on ase-res asx-step" data-s="res">
+      <p class="ase-sh"><span class="ase-sn">Result</span><span class="ase-sx">the wall, and either path<span class="cite" data-ref="esc2021"></span></span></p>
+      <div class="asx-br is-on"><p class="asx-os">${OUTS.map(([o, lab]) => `<span class="ase-o" data-o="${o}"${o === 'criteria met' ? ' data-sev' : ''}>${lab}</span>`).join('')}</p></div>
+      <p class="ase-note asx-note">${RES_NOTE}</p>
+    </div>`;
+  const $ = (sel) => host.querySelector(sel);
+  dg = {
+    host, result: $('.ase-result'), head: $('.ase-result b'), sub: $('.ase-result span'), change: $('.ase-change'), reset: $('.ase-reset'),
+    rows: Object.fromEntries(IN.map((k) => {
+      const el = $(`[data-row="${k}"]`);
+      return [k, { el, v: el.querySelector('.ase-v b'), dn: el.querySelector('[data-dir="-1"]'), up: el.querySelector('[data-dir="1"]') }];
+    })),
+    ro: Object.fromEntries(RO.map((k) => [k, $(`[data-ro="${k}"] .ase-v b`)])),
+    eqs: Object.fromEntries([...host.querySelectorAll('.asx-eq')].map((el) => [el.dataset.eq, { el, v: el.querySelector('.asx-v b'), xs: [...el.querySelectorAll('[data-x]')] }])),
+    dd: $('[data-dd]'),
+    wall: { el: $('[data-q="wall"]'), st: $('[data-q="wall"] .asx-qs') },
+    sets: Object.fromEntries([...host.querySelectorAll('.amy-set')].map((el) => [el.dataset.set, { el, n: el.querySelector('.ase-count') }])),
+    crit: Object.fromEntries([...host.querySelectorAll('[data-c]')].map((el) => [el.dataset.c, { el, st: el.querySelector('.asx-qs') }])),
+    out: Object.fromEntries([...host.querySelectorAll('.ase-o')].map((el) => [el.dataset.o, el])),
+  };
+  host.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-k]');
+    if (b && !b.disabled) edit(b.dataset.k, Number(b.dataset.dir), b);
+    else if (e.target.closest('.ase-reset')) resetEdits();
+  });
+}
+
+/** The measurements of the values v, as amx stores them. */
+const valsOf = (v) => Object.fromEntries(IN.map((k) => [k, v[k]]));
+/** The keys of amx that differ from the model's values at the burden where the edits started. */
+function editedOf(ed) {
+  const m = model(ed.base);
+  return IN.filter((k) => Math.abs(ed[k] - m[k]) > 1e-9);
+}
+
+const freeLive = () => { const live = document.querySelector('#ch-amyloid .live'); if (live?.style.minHeight) live.style.minHeight = ''; };
+
+/** A ▲▼ click: the edited values, at the burden where the edits started; the slider stays, and Play and the tour stop. */
+function edit(k, dir, btn = null) {
+  const s = st;
+  const base = s[EDITS] ? s[EDITS].base : q(s[KEY]);
+  const cur = shown(s);
+  const vals = valsOf(cur);
+  const from = vals[k], to = stepOf(from, INPUTS[k], dir);
+  if (to === from) return;
+  vals[k] = to;
+  const ed = { ...vals, base };
+  const next = shownOf({ ...s, [EDITS]: ed });
+  pending = { kind: 'edit', k, from, to };
+  // back at the model's values, the edits clear
+  steady(btn, () => setState({ [EDITS]: editedOf(ed).length ? Object.freeze(ed) : null, anim: false, playing: false }));
+  pending = null;
+  if (next.grade !== cur.grade) cue('bell');
+}
+
+function resetEdits() {
+  pending = { kind: 'reset' };
+  setState({ [EDITS]: null, anim: false, playing: false });
+  pending = null;
+  dg?.result.focus({ preventScroll: true });
+}
+
+const txt = (el, s) => { if (el && el.textContent !== s) el.textContent = s; };
+
+/** The diagram at the values on screen: the measurements, the calculations, the criteria and the result; then what changed. */
+function renderDiagram(s, v) {
+  if (!dg) return;
+  const M = { ed: !!s[EDITS], v, out: v.grade, eds: s[EDITS] ? editedOf(s[EDITS]) : [] };
+  const P = fresh ? null : prev;
+  fresh = false;
+  prev = M;
+  // the measurements and their buttons
+  for (const k of IN) {
+    const R = dg.rows[k], L = INPUTS[k];
+    txt(R.v, num(k, v[k]));
+    R.el.classList.toggle('is-ed', M.eds.includes(k));
+    for (const [b, off, other] of [[R.dn, v[k] <= L.min + 1e-9, R.up], [R.up, v[k] >= L.max - 1e-9, R.dn]]) {
+      if (off && document.activeElement === b) other.focus();   // keep the focus in the row at a limit
+      b.disabled = off;
+    }
+  }
+  for (const k of RO) txt(dg.ro[k], num(k, v[k]));
+  // the calculations
+  for (const [k, E] of Object.entries(dg.eqs)) {
+    txt(E.v, calcText(k, v));
+    for (const el of E.xs) txt(el, xnum(el.dataset.x, v));
+  }
+  txt(dg.dd, ddLine(v));
+  // the criteria
+  dg.wall.el.classList.toggle('is-on', v.thick);
+  txt(dg.wall.st, `${fmt(v.wall, 1)} mm`);
+  const fst = { dd: ddName(v.dd), tdi: v.find.tdi ? 'yes' : 'no', gls: `${fmt(Math.abs(v.gls), 1)}%` };
+  for (const [k] of FINDINGS) { const C = dg.crit[`find:${k}`]; C.el.classList.toggle('is-on', v.find[k]); txt(C.st, fst[k]); }
+  for (const [k] of POINTS) { const C = dg.crit[`score:${k}`]; C.el.classList.toggle('is-on', v.pts[k] > 0); txt(C.st, String(v.pts[k])); }
+  txt(dg.sets.find.n, `${v.nFind} of 3`);
+  dg.sets.find.el.classList.toggle('is-on', v.nFind >= 2);
+  txt(dg.sets.score.n, `${v.score} of 10`);
+  dg.sets.score.el.classList.toggle('is-on', v.score >= 8);
+  // the result
+  for (const [o, el] of Object.entries(dg.out)) el.classList.toggle('is-on', o === M.out);
+  txt(dg.head, HEAD[M.out]);
+  txt(dg.sub, `wall ${fmt(v.wall, 1)} mm · ${v.nFind} of 3 findings · score ${v.score} of 10`);
+  dg.result.classList.toggle('is-raised', v.met);
+  dg.reset.classList.toggle('is-off', !M.ed);   // its room stays, so nothing moves when it shows
+  // the values follow the slider: the live sentence takes its own height again
+  if (!M.ed && !pending) freeLive();
+  // the slider: main.js writes its label when amyS changes, and an edit changes it alone; its
+  // bands are the model's results, so they dim while the values are edited
+  const o = document.querySelector('output[data-for="amyS"]');
+  if (o) txt(o, amyPage.format.amyS(s[KEY], s));
+  document.getElementById('amy-grades')?.classList.toggle('is-ed', M.ed);
+  if (!P) { txt(dg.change, ''); lineKind = ''; return; }
+  const moved = IN.some((k) => P.v[k] !== v[k]) || P.v.a !== v.a || P.out !== M.out || P.ed !== M.ed;
+  if (!moved) return;
+  const cause = pending || { kind: 'slider' };
+  // a screen reader reads the line after an edit or Reset, not at each step of Play
+  dg.change.setAttribute('aria-live', cause.kind === 'slider' ? 'off' : 'polite');
+  const line = changeLine(P, M, cause);
+  const now = performance.now();
+  if (cause.kind !== 'slider' || line.crossed) {
+    txt(dg.change, line.text);
+    lineKind = cause.kind;
+    if (cause.kind === 'slider') lastCross = now;
+  } else if (lineKind !== 'slider' || now - lastCross > HOLD) {
+    txt(dg.change, line.text);
+    lineKind = 'slider-quiet';
+  }
+  flashChanges(P, M, cause);
+}
+
+/** The cut-offs that a change crossed: the wall, the diastolic grade, the findings and the points. */
+function crossed(P, M) {
+  const a = P.v, b = M.v, out = [];
+  if (a.thick !== b.thick) out.push(b.thick ? 'wall ≥12 mm' : 'wall <12 mm');
+  if (a.dd.grade !== b.dd.grade) out.push(`diastolic function ${ddName(a.dd)} → ${ddName(b.dd)}`);
+  for (const k of ['tdi', 'gls']) if (a.find[k] !== b.find[k]) out.push(FIND_LINE[k][+b.find[k]]);
+  if (a.nFind !== b.nFind) out.push(`findings ${a.nFind} → ${b.nFind} of 3`);
+  for (const [k] of POINTS) if (a.pts[k] !== b.pts[k]) out.push(POINT_LINE[k][+(b.pts[k] > 0)]);
+  if (a.score !== b.score) out.push(`score ${a.score} → ${b.score}`);
+  return out;
+}
+
+/** The cause and effect of a change, as one line. crossed: a cut-off or the result changed. */
+function changeLine(P, M, cause) {
+  const head = cause.kind === 'edit' ? `${NAME[cause.k]} ${withUnit(cause.k, `${num(cause.k, cause.from)} → ${num(cause.k, cause.to)}`)}` : cause.kind === 'reset' ? 'Reset' : 'Amyloid burden';
+  const cut = crossed(P, M);
+  let what;
+  if (cause.kind === 'edit') {
+    const ch = EFFECTS[cause.k].filter((k) => P.v[k] !== M.v[k]);
+    what = [...ch.map((k) => `${EFFECT[k]} ${withUnit(k, `${calcText(k, P.v)} → ${calcText(k, M.v)}`)}`), ...cut].join(', ') || 'no finding or point changed';
+  } else what = [...(P.ed && !M.ed ? ['edits cleared'] : []), ...cut].join(', ') || 'no cut-off crossed';
+  const result = P.out === M.out ? `Result unchanged: ${OUT_LINE[M.out]}` : `Result: ${OUT_LINE[P.out]} → ${OUT_LINE[M.out]}`;
+  return { text: `${head}: ${what}. ${result}.`, crossed: cut.length > 0 || P.out !== M.out };
+}
+
+function flashChanges(P, M, cause) {
+  const a = P.v, b = M.v;
+  if (a.thick !== b.thick) flash(dg.wall.el);
+  for (const [k] of FINDINGS) if (a.find[k] !== b.find[k] || (k === 'dd' && a.dd.grade !== b.dd.grade)) flash(dg.crit[`find:${k}`].el);
+  for (const [k] of POINTS) if (a.pts[k] !== b.pts[k]) flash(dg.crit[`score:${k}`].el);
+  if (a.nFind !== b.nFind) flash(dg.sets.find.n);
+  if (a.score !== b.score) flash(dg.sets.score.n);
+  if (P.out !== M.out) { flash(dg.out[M.out]); flash(dg.result); }
+  // an edit: the numbers it changed pulse
+  if (cause.kind === 'edit') {
+    flash(dg.rows[cause.k].v.parentElement, 'is-tick');
+    for (const [k, E] of Object.entries(dg.eqs)) {
+      if (calcText(k, a) !== calcText(k, b)) flash(E.v.parentElement, 'is-tick');
+      for (const el of E.xs) if (xnum(el.dataset.x, a) !== xnum(el.dataset.x, b)) flash(el, 'is-tick');
+    }
+  }
 }
 
 // ---------------------------------------------------------------- the chapter
-export default {
+const amyPage = {
   key: 'amyloid',
   part: 'cardiomyopathy',
   title: 'Cardiac amyloidosis',
   nav: 'Amyloid',
   dwell: 18,
-  defaults: { amyS: 0.6 },
-  format: { amyS: (v) => `${Math.round(q(v) * 100)}%` },
-  watch: ['amyS'],
+  defaults: { amyS: 0.6, [EDITS]: null },
+  format: { amyS: (v, s) => `${pct(q(v))}${s?.[EDITS] ? ' · edited' : ''}` },
+  watch: ['amyS', EDITS],
   figure(fig) {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
     return sheet;
   },
-  init({ state }) {
+  init({ state, set, subscribe }) {
     st = state;
+    setState = set;
     BANDS = bands((s) => gradeOf(q(s)), 400);
     paintBands(document.getElementById('amy-grades'), BANDS, LEV, { 'wall <12 mm': '<12 mm', 'wall ≥12 mm': '≥12 mm', 'criteria met': 'met' });
+    buildDiagram(document.getElementById('amy-calc'));
+    // The slider, Play, the tour or a heart's preset: the values follow the slider again. A store
+    // listener, not onState, so that a heart chosen on another chapter clears the edits too.
+    subscribe?.((s, ch) => {
+      if (s[EDITS] && !(EDITS in ch) && (KEY in ch || 'pheno' in ch || ('anim' in ch && s.anim) || ('playing' in ch && s.playing))) set({ [EDITS]: null });
+    });
   },
-  enter() { startEcho(); },
+  // on the way in and out, the next drawing sets the baseline: no flash for changes made elsewhere
+  enter() { fresh = true; freeLive(); startEcho(); },
+  leave() { fresh = true; freeLive(); },
   warm() { startEcho(); },
   pulse: () => beat.pulse(),
   anim(dt, s, set) {
@@ -455,12 +824,12 @@ export default {
     if (beat.tick(dt, true) && sheet) sheet.dirty = true;
     if (reducedMotion && sheet && echo && echo.a4c && !echo.a4c.fresh) sheet.dirty = true;
   },
-  tourEnter(set) { set({ amyS: 0 }); },
+  tourEnter(set) { set({ amyS: 0, [EDITS]: null }); },
   tourTick(tt, set) { set({ amyS: Math.round(clamp((tt - 1) / 14, 0, 1) * 400) / 400 }); },
   // the time of the tour at which tourTick shows this state (its inverse): the tour continues from it
   tourAt(s) { return 1 + s.amyS * 14; },
   text(s, { cite }) {
-    const m = model(q(s[KEY]));
+    const m = shown(s);
     const dd = m.dd.grade === null ? 'a filling pattern that is not graded' : m.dd.grade === 0 ? 'normal diastolic function' : `${GRADE[m.dd.grade]} diastolic dysfunction`;
     const found = [m.find.dd && 'grade 2 or worse diastolic dysfunction', m.find.tdi && 'septal s′, e′ and a′ all below 5 cm/s', m.find.gls && 'GLS below 15% in absolute value'].filter(Boolean);
     const list = found.length ? `${['', 'one of the three findings', 'two of the three findings', 'all three findings'][found.length]} (${found.join('; ')})` : 'none of the three findings';
@@ -468,7 +837,8 @@ export default {
     if (m.met) head = `<b>ESC echocardiographic criteria met.</b> An LV wall thickness of ${fmt(m.wall, 1)} mm is accompanied by ${list}${m.score >= 8 ? `, and the score is ${m.score}` : ''}${cite('esc2021')}.`;
     else if (m.thick) head = `<b>LV wall thickness ${fmt(m.wall, 1)} mm, criteria not met.</b> ${list[0].toUpperCase()}${list.slice(1)} is present, and the score is ${m.score}; the criteria require two of the three findings or a score of 8 or more${cite('esc2021')}.`;
     else head = `<b>LV wall thickness ${fmt(m.wall, 1)} mm.</b> The ESC echocardiographic criteria require an unexplained LV wall thickness of 12 mm or more${cite('esc2021')}.`;
-    const live = `${head} The Doppler findings indicate ${dd}, with an E/A ratio of ${fmt(m.ea, 2)}, a deceleration time of ${fmt(m.DT)} ms and an average E/e′ of ${fmt(m.eeAvg, 1)}${cite('nagueh2025')}. GLS is ${sgn(m.gls, 1)}% and the relative apical LS is ${fmt(m.relaps, 2)}${m.relaps >= 1 ? ', which indicates relative apical sparing' : ''}${cite('phelan2012')}.`;
+    const ed = s[EDITS] ? editedOf(s[EDITS]) : [];
+    const live = `${head} The Doppler findings indicate ${dd}, with an E/A ratio of ${fmt(m.ea, 2)}, a deceleration time of ${fmt(m.DT)} ms and an average E/e′ of ${fmt(m.eeAvg, 1)}${cite('nagueh2025')}. GLS is ${sgn(m.gls, 1)}% and the relative apical LS is ${fmt(m.relaps, 2)}${m.relaps >= 1 ? ', which indicates relative apical sparing' : ''}${cite('phelan2012')}.${ed.length ? ` Edited values: ${ed.map((k) => NAME[k]).join(', ')}.` : ''}`;
     return {
       readouts: [
         { k: 'IVSd', v: fmt(m.ivs, 1), u: 'mm', flag: m.ivs >= 12 },
@@ -480,7 +850,8 @@ export default {
         { k: 'ESC criteria', v: m.met ? 'met' : 'not met', text: true, flag: m.met },
       ],
       live,
-      extra: (art) => criteriaTable(art, m),
+      extra: () => renderDiagram(s, m),
     };
   },
 };
+export default amyPage;
