@@ -10,10 +10,13 @@
 // preset clears trx, and the values follow the slider again.
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
-import { RR, EV, mitralV } from '../cyclemodel.js';
+import { RR, EV, mitralV, cycleAt } from '../cyclemodel.js';
 import { TR_MILD, TR_SEVERE, TR_QUANT_LABEL, trIntegrated, rapEstimate, trvGrade } from '../norms.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, waveLetter } from '../sev.js';
-import { drawA4C, drawIVC, drawPSAXpm, cal, measures } from '../echo2d.js';
+import { drawA4C, drawIVC, drawPSAXpm, cal, measures, jet, barFor } from '../echo2d.js';
+import { MeshPanel } from '../meshpanel.js';
+import { rvGrowOf, raWeight, sepOf } from '../meshcal.js';
+import { onPlane, hingesOf, closureOf, blood, cavity, area, middle, sub, add, mul, dot, unit, perp } from '../meshjet.js';
 import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
@@ -233,7 +236,110 @@ function tagsOf(v) {
   return [{ coapt: ['leaflets coapt', 'coapt'], gap: ['no coaptation', 'gap'], flail: ['flail leaflet', 'flail'] }[v.leaf]];
 }
 
+// The RV-focused four-chamber view and the short axis at the papillary muscles cut from the heart mesh
+// (meshpanel.js): the heart the page shows, its RV at the printed RV basal diameter (rvGrow,
+// meshcal.js rvGrowOf; the annulus widens with it), its RA at the printed RA volume index
+// (raGrow, raWeight), the septum flattened to the printed eccentricity index (sep, sepOf), and
+// the jet drawn on it as on the parametric view. The scanner format (jets.js) keeps the
+// parametric views.
+const redraw = () => { if (sheet) sheet.dirty = true; };
+// RV focused (ASE 2015: the RV basal diameter is measured there): in the standard four-chamber
+// sector a dilated RV's free wall falls outside the sector from an RV basal diameter of 4.5 cm
+const MESH = new MeshPanel('a4c_rv', { diseases: ['rvGrow', 'raGrow'], redraw });
+const MESH_PM = new MeshPanel('psax_pm', { diseases: ['rvGrow', 'sep'], redraw });
+
+/**
+ * The jet on the mesh view at systolic weight s: from where the tricuspid leaflets meet, into the
+ * RA, which clips it (its blood reaches up between the shut leaflets); its length and width from
+ * the jet area as a share of the RA's area on the plane, as the parametric view sizes them. ax:
+ * into the RV, for the PISA radius.
+ */
+function trJet(ev, v, s) {
+  const h = hingesOf(ev, 'TricuspidValve');
+  if (!h) return null;
+  // into the RV: toward the apex (the RV anchor, 1.3 cm off the septum at the LV equator, lies
+  // near the annulus in this view)
+  const an = ev.anchors(s), apex = onPlane(ev, an.apex), M = middle(h);
+  let nrm = perp(unit(sub(h[1], h[0])));
+  if (dot(sub(apex, M), nrm) < 0) nrm = mul(nrm, -1);
+  const O = closureOf(ev, 'TricuspidValve', M, nrm) || M, side = perp(nrm);
+  // leaflets tented into the RV: the RA is cut along them (hinge to where they meet), so that the
+  // RV's blood beside them, open to the gap between their tips, is not the RA's; else parallel to
+  // the hinge line through where they meet
+  const cuts = dot(sub(O, M), nrm) > 0.05 ? [[h[0], O], [O, h[1]]] : [[add(O, side), sub(O, side)]];
+  const RA = cavity(ev, blood(ev, onPlane(ev, an.ra)), cuts);
+  if (RA.length < 12) return null;
+  let lMax = 0, w0 = Infinity, w1 = -Infinity;
+  for (const p of RA) {
+    lMax = Math.max(lMax, -dot(sub(p, M), nrm));
+    const x = dot(sub(p, M), side);
+    w0 = Math.min(w0, x);
+    w1 = Math.max(w1, x);
+  }
+  const raArea = area(RA), jA = Math.min((v.jet / 100) * raArea, raArea * 0.8);
+  const jl = Math.min(lMax * 0.95, Math.sqrt((jA / 0.55) * 1.2));
+  const jw = jl > 0 ? Math.min((w1 - w0) * 0.95, jA / (0.55 * jl)) : 0;
+  const ax = nrm;
+  // into the RA against the RV's long axis, leaning toward the RA's middle
+  const dir = unit(add(mul(ax, -0.8), mul(unit(sub(middle(RA), O)), 0.2)));
+  // the flow convergence: in the RV's blood within 65 degrees of the RV's axis from where the
+  // leaflets meet (beside the orifice its flow runs along the leaflets, toward the probe on one
+  // side, and drew a streak across them)
+  const th = (65 * Math.PI) / 180, c = Math.cos(th), sn = Math.sin(th);
+  const cone = [[nrm[0] * c - nrm[1] * sn, nrm[0] * sn + nrm[1] * c], [nrm[0] * c + nrm[1] * sn, -nrm[0] * sn + nrm[1] * c]];
+  const RV = cavity(ev, blood(ev, add(O, mul(nrm, 0.8)), 0.4), cone.map((u) => [O, add(O, u)]));
+  return { O, dir, clip: RA, pclip: RV.length >= 12 ? RV : null, ax, jl, jw };
+}
+
+/** The longest of the titles that fits a panel w px wide (scope.js panel: 11 px, 10 px in from each side). */
+function titleOf(ctx, w, names) {
+  ctx.save();
+  ctx.font = `500 11px ${MONO}`;
+  const t = names.find((s) => ctx.measureText(s).width <= w - 20) || names[names.length - 1];
+  ctx.restore();
+  return t;
+}
+
+/** Where the RV's name goes: its open blood 2.5 cm from the tricuspid annulus into the RV. */
+function rvName(ev, s) {
+  const h = hingesOf(ev, 'TricuspidValve');
+  if (!h) return null;
+  const M = middle(h), apex = onPlane(ev, ev.anchors(s).apex);
+  let nrm = perp(unit(sub(h[1], h[0])));
+  if (dot(sub(apex, M), nrm) < 0) nrm = mul(nrm, -1);
+  return blood(ev, add(M, mul(nrm, 2.5)));
+}
+
 function a4c(ctx, box, v, t, mode) {
+  const sys = t >= EV.mvc && t <= EV.mvo + 10;
+  // the sine at the closing instant can round below zero, and a fractional power of that is NaN
+  const a = sys ? Math.pow(Math.max(0, Math.sin(Math.PI * (t - EV.mvc) / (EV.mvo + 10 - EV.mvc))), 0.3) : 0;
+  // with no flow convergence the jet is drawn from the flow through its vena contracta
+  const q = v.flow > 0 ? v.flow : Math.PI * (Math.max(v.vc, 0.2) / 2) ** 2 * v.vmax * 100;
+  const tags = tagsOf(v);
+  if (JETS === 'plume') {
+    // one view at the aliasing velocity: the flow convergence with its radius, and the jet
+    const heart = st.pheno || 'normal';
+    MESH.draw(ctx, box, titleOf(ctx, box.w, [`APICAL FOUR-CHAMBER, RV FOCUSED · COLOR ${VA} cm/s`, `A4C, RV FOCUSED · COLOR ${VA} cm/s`, `A4C RV · COLOR ${VA}`]), {
+      tms: t, disease: { rvGrow: rvGrowOf(heart, v.rvb), raGrow: raWeight(v.ravi, heart) },
+      // deeper as the RA grows (its length as the cube root of its volume, 5 cm at 25 mL/m²)
+      deeper: Math.max(0, 5 * (Math.cbrt(v.ravi / 25) - 1)),
+      names: [['lv', 'LV', 'apex', 0.45], [rvName, 'RV'], ['la', 'LA'], ['ra', 'RA']],
+      over: (c, F, ev) => {
+        if (!v.leak) return;
+        const J = trJet(ev, v, cycleAt(t).s);
+        if (!J) return;
+        jet(c, F, { q, va: VA, vc: v.vc, jl: J.jl, jw: J.jw, a, O: J.O, dir: J.dir, clip: J.clip, pclip: J.pclip });
+        barFor(c, F, -VA, VA);
+        // the PISA radius from the orifice into the RV
+        if (v.r > 0 && a > 0.5) cal(c, F, J.O, add(J.O, mul(J.ax, v.r)), '', { solid: true });
+      },
+      lines: [`RV base ${v.rvb.toFixed(1)} cm`, [`annulus ${v.ta.toFixed(1)} cm`, `TA ${v.ta.toFixed(1)} cm`], `VC ${v.vc.toFixed(1)} cm`, [`jet ${v.jet}% of RA`, `jet ${v.jet}%`], ...tags],
+    });
+    return;
+  }
+  // the scanner format: the parametric view, its chambers from the measurements and its walls
+  // from the model
   const raMax = v.ravi * BSA, raMin = raMax * 0.6;
   const dims = (vol, r) => { const L = Math.cbrt(vol / (0.524 * r * r)); return [r * L, L]; };
   const [rwMax, rlMax] = dims(raMax, 0.85 + 0.1 * v.s), [rwMin, rlMin] = dims(raMin, 0.85 + 0.1 * v.s);
@@ -244,33 +350,11 @@ function a4c(ctx, box, v, t, mode) {
     rvW: [v.rvb, v.rvb * (0.85 + 0.08 * v.s)], rvWall: 0.4, laW: [3.3, 4.0], laL: [4.1, 4.9], raW: [rwMin, rwMax], raL: [rlMin, rlMax],
     ma: 3.1, ta: v.ta, tv: { gap, thick: 0.1 },
   };
-  const sys = t >= EV.mvc && t <= EV.mvo + 10;
-  // the sine at the closing instant can round below zero, and a fractional power of that is NaN
-  const a = sys ? Math.pow(Math.max(0, Math.sin(Math.PI * (t - EV.mvc) / (EV.mvo + 10 - EV.mvc))), 0.3) : 0;
   // the jet: its share of the RA area, at the color scale where the criterion is defined
   const raArea = (Math.PI / 4) * rwMax * rlMax;
   const jA = Math.min((v.jet / 100) * raArea, raArea * 0.8);
   const jl = Math.min(rlMax * 0.95, Math.sqrt((jA / 0.55) * 1.2));
   const jw = jl > 0 ? Math.min(rwMax * 0.95, jA / (0.55 * jl)) : 0;
-  // with no flow convergence the jet is drawn from the flow through its vena contracta
-  const q = v.flow > 0 ? v.flow : Math.PI * (Math.max(v.vc, 0.2) / 2) ** 2 * v.vmax * 100;
-  const tags = tagsOf(v);
-  if (JETS === 'plume') {
-    // one view at the aliasing velocity: the flow convergence with its radius, and the jet
-    drawA4C(ctx, box, g, {
-      t, depth: 16 + 1.4 * v.s, title: fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${VA} cm/s`, `A4C · COLOR ${VA}`),
-      jets: v.leak ? { tr: { q, va: VA, vc: v.vc, jl, jw, a } } : {},
-      after: (c, F, geo) => {
-        if (v.r > 0 && a > 0.5) {
-          // from the orifice into the RV, toward its apex
-          const O = geo.tv.gapMid, ax = [geo.Ra[0] - O[0], geo.Ra[1] - O[1]], l = Math.hypot(ax[0], ax[1]) || 1;
-          cal(c, F, O, [O[0] + (ax[0] / l) * v.r, O[1] + (ax[1] / l) * v.r], '', { solid: true });
-        }
-        measures(c, F, [`RV base ${v.rvb.toFixed(1)} cm`, [`annulus ${v.ta.toFixed(1)} cm`, `TA ${v.ta.toFixed(1)} cm`], `VC ${v.vc.toFixed(1)} cm`, [`jet ${v.jet}% of RA`, `jet ${v.jet}%`], ...tags]);
-      },
-    });
-    return;
-  }
   // Jet: the standard scale. PISA: zoomed on the valve, the baseline shifted toward the jet
   // (down: TR runs away from the probe) until the flow aliases at VA; variance off. The
   // torrential jet is slow and laminar.
@@ -410,7 +494,15 @@ function draw(sh, t) {
   const bxs = [trCW(ctx, p1, v), hvPW(ctx, p2, v)];
   const [c1, c2] = cols(p3, [1.3, 1], 10);
   drawIVC(ctx, c1, { d: v.ivc, collapse: v.coll / 100 }, { title: `IVC · M-MODE · RAP ${v.rap} mmHg` });
-  drawPSAXpm(ctx, c2, { lvid: [4.6 - 0.3 * v.s, 3.0], wall: [0.9, 1.35], ei: [v.ei, 1 + (v.ei - 1) * 0.4], rvw: [v.rvb * 0.84, v.rvb * 0.75] }, { t: tt, title: `PSAX · EI ${v.ei.toFixed(1)}` });
+  if (JETS === 'plume') {
+    // the septum flattens most at end-diastole: the eccentricity index there is the printed one,
+    // and at end-systole it falls 60% of the way back to 1, as the parametric view draws it
+    const heart = st.pheno || 'normal', sy = cycleAt(tt).s;
+    const sep = sepOf(heart, v.ei) + (sepOf(heart, 1 + (v.ei - 1) * 0.4) - sepOf(heart, v.ei)) * sy;
+    MESH_PM.draw(ctx, c2, `PSAX · EI ${v.ei.toFixed(1)}`, { tms: tt, disease: { rvGrow: rvGrowOf(heart, v.rvb) }, motion: { sep }, names: [['rv', 'RV'], ['lv', 'LV']] });
+  } else {
+    drawPSAXpm(ctx, c2, { lvid: [4.6 - 0.3 * v.s, 3.0], wall: [0.9, 1.35], ei: [v.ei, 1 + (v.ei - 1) * 0.4], rvw: [v.rvb * 0.84, v.rvb * 0.75] }, { t: tt, title: `PSAX · EI ${v.ei.toFixed(1)}` });
+  }
   for (const bx of bxs) cursor(ctx, bx, beat.sweep);
 }
 

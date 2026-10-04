@@ -170,6 +170,59 @@ export function lvByEf(heart, size, ef) {
   return lvWeights(heart, edv, edv * (1 - ef / 100), T.wall[1]);
 }
 
+// ---------------------------------------------------------------- the right heart (chapter 16)
+// rvGrow (phenomesh.js DISEASE) on the four-chamber view at end-diastole: b, the RV basal
+// diameter (cm: the widest the RV cavity is in its basal third, parallel to the annulus), and ta,
+// the tricuspid annulus (cm, hinge to hinge), by weight. raGrow: the RA volume as a ratio to the
+// normal heart's RA at weight 0, from the spread of the RA wall's vertices at end-systole (as the
+// LA's above); the normal RA is 54.3 mL by the area-length method on the four-chamber view at
+// end-systole, 27.6 mL/m² at a BSA of 1.97 m². sep (a move within the beat): the eccentricity
+// index on the short axis at the papillary muscles at end-diastole, by weight; beyond 2.5 the
+// septum folds.
+const RV_W = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3];
+const RVG = {
+  normal: { b: [3.07, 3.31, 3.55, 3.79, 4.03, 4.27, 4.52, 4.76, 5.0, 5.25, 5.49, 5.95], ta: [2.49, 2.72, 2.96, 3.19, 3.43, 3.66, 3.9, 4.13, 4.36, 4.6, 4.82, 5.3] },
+  amyloid: { b: [3.01, 3.25, 3.49, 3.74, 3.98, 4.23, 4.47, 4.71, 4.91, 5.15, 5.4, 5.86], ta: [2.47, 2.7, 2.94, 3.18, 3.41, 3.65, 3.88, 4.12, 4.36, 4.58, 4.82, 5.29] },
+  icm: { b: [3.03, 3.27, 3.51, 3.75, 4.02, 4.25, 4.49, 4.73, 4.97, 5.18, 5.4, 5.87], ta: [2.5, 2.73, 2.96, 3.19, 3.43, 3.65, 3.9, 4.12, 4.35, 4.59, 4.81, 5.29] },
+  barlow: { b: [3.05, 3.3, 3.53, 3.78, 4.02, 4.26, 4.5, 4.74, 4.98, 5.23, 5.45, 5.91], ta: [2.43, 2.67, 2.9, 3.14, 3.37, 3.61, 3.84, 4.06, 4.31, 4.53, 4.77, 5.22] },
+  bav: { b: [2.81, 3.05, 3.29, 3.54, 3.78, 4.03, 4.27, 4.52, 4.79, 4.98, 5.25, 5.69], ta: [2.49, 2.72, 2.96, 3.19, 3.43, 3.66, 3.9, 4.13, 4.36, 4.6, 4.82, 5.3] },
+};
+const RA_W = [-0.3, -0.15, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1];
+const RA_RATIO = {
+  normal: [0.542, 0.741, 1, 1.21, 1.454, 1.732, 2.05, 2.408, 2.81, 3.758, 4.916],
+  amyloid: [1.462, 1.865, 2.354, 2.733, 3.156, 3.626, 4.147, 4.721, 5.35, 6.788, 8.485],
+  icm: [0.581, 0.793, 1.07, 1.293, 1.55, 1.844, 2.178, 2.553, 2.973, 3.958, 5.158],
+  barlow: [0.546, 0.728, 0.972, 1.173, 1.408, 1.678, 1.986, 2.335, 2.729, 3.658, 4.797],
+  bav: [0.533, 0.724, 0.976, 1.182, 1.42, 1.693, 2.005, 2.357, 2.754, 3.689, 4.833],
+};
+const RA_NORMAL = 27.6;
+const SEP_W = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5];
+const EI = {
+  normal: [0.999, 1.03, 1.069, 1.117, 1.174, 1.238, 1.308, 1.428, 1.519],
+  amyloid: [0.88, 1.033, 1.087, 1.148, 1.218, 1.294, 1.357, 1.447, 1.498],
+  icm: [1.018, 1.041, 1.069, 1.102, 1.14, 1.182, 1.229, 1.337, 1.44],
+  barlow: [0.999, 1.024, 1.053, 1.089, 1.131, 1.177, 1.229, 1.337, 1.433],
+  bav: [0.994, 1.031, 1.078, 1.133, 1.197, 1.269, 1.338, 1.444, 1.514],
+};
+
+/** The rvGrow weight whose RV basal diameter is rvb cm on heart key; held to the table. */
+export function rvGrowOf(heart, rvb) {
+  return invert(RV_W, (RVG[heart] || RVG.normal).b, rvb);
+}
+/** The tricuspid annulus (cm) that rvGrow weight w shows on heart key. */
+export function taAt(heart, w) {
+  const T = RVG[heart] || RVG.normal, [i, t] = cell(RV_W, w);
+  return lerp(T.ta[i], T.ta[i + 1], t);
+}
+/** The raGrow weight that shows an RA volume index of ravi mL/m² on heart key; held to the table. */
+export function raWeight(ravi, heart = 'normal') {
+  return invert(RA_W, RA_RATIO[heart] || RA_RATIO.normal, ravi / RA_NORMAL);
+}
+/** The sep weight whose eccentricity index at end-diastole is ei on heart key; held to the table. */
+export function sepOf(heart, ei) {
+  return invert(SEP_W, EI[heart] || EI.normal, ei);
+}
+
 // Foreshortening (chapter 09): the fraction of the traced length lost at end-diastole against the
 // probe's offset off the plane (cm, echo.js setFore), by LV size weight, on the normal heart.
 const FORE_SZ = [-0.6, 0, 0.5, 1, 1.5];

@@ -420,11 +420,19 @@ export const DISEASE = {
   // wall), negative to thin it.
   lvSize: { dilate: [[-0.3, 0.55], [0, 0.6], [0.2, 0.85], [0.5, 1.0], [0.8, 0.85], [1.0, 0.35], [1.2, 0]], stretch: 0.8 },
   lvWall: { lvAmy: { lv: 1 } },
+  // Tricuspid regurgitation (chapter 16). rvGrow: the RV free wall out from the LV axis, 1 cm at
+  // weight 1 across the middle of its span, from near the apex to the tricuspid annulus, which
+  // widens with it. raGrow: the RA scaled about the tricuspid valve, by 1 + w at weight w, as the
+  // LA target scales the LA about the mitral valve; the venae cavae next to it go with it. The
+  // valve, the pericardium and the coronaries move with the wall next to them.
+  rvGrow: { grow: 'rv' },
+  raGrow: { grow: 'ra' },
 };
 /** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {
   const P = DISEASE[key], { anat, F } = ctx;
   if (P.move) return buildMove(ctx, key, P.move);
+  if (P.grow) return buildGrow(ctx, key, P.grow);
   const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
   /** The move of landmark name at weight 1 and end-diastole (cm). */
   out.shift = (name) => {
@@ -542,8 +550,105 @@ function moveFrame(ctx) {
       out[0] -= ux * k; out[1] -= uy * k; out[2] -= uz * k;
     }
   };
-  ctx.moves = { on, field, pivot, Lp };
+  ctx.moves = { on, field, pivot, Lp, across };
   return ctx.moves;
+}
+
+/**
+ * What the grow targets need, found once: the tricuspid annulus (its centre, and its normal into
+ * the RA) from the valve model's ring, and how near each myocardial vertex lies to the RA (1 on
+ * the RA wall, fading over the venae cavae next to it).
+ */
+function growFrame(ctx) {
+  if (ctx.grows) return ctx.grows;
+  const { meshes, anat, REG, mpos, nMyo } = ctx;
+  const g = meshes.TricuspidValve.geometry, p = g.attributes.position.array;
+  const part = parts(p.length / 3, g.index.array);
+  const cnt = new Map();
+  for (let i = 0; i < part.length; i++) cnt.set(part[i], (cnt.get(part[i]) || 0) + 1);
+  const ringPart = [...cnt.entries()].sort((a, b) => a[1] - b[1])[0][0];
+  const ring = [];
+  for (let i = 0; i < part.length; i++) if (part[i] === ringPart) ring.push(V3(p[3 * i], p[3 * i + 1], p[3 * i + 2]));
+  const ax = leastAxis(ring);
+  if (ax.n.dot(anat.raw('ra_c', 0, 0).clone().sub(ax.c)) < 0) ax.n.negate();
+  const GRA = grid(mpos, (i) => REG[i] === 4, 0.8);
+  const raNear = new Float32Array(nMyo);
+  for (let i = 0; i < nMyo; i++) {
+    if (REG[i] === 4) { raNear[i] = 1; continue; }
+    if (REG[i] !== 7) continue;
+    const q = nearest(GRA, mpos[3 * i], mpos[3 * i + 1], mpos[3 * i + 2], 1, 2.0);
+    raNear[i] = q.length ? 1 - smooth((Math.sqrt(q[0][1]) - 0.5) / 1.2) : 0;
+  }
+  ctx.grows = { tvC: ax.c, tvN: ax.n, raNear, raC: anat.raw('ra_c', 0, 0) };
+  return ctx.grows;
+}
+
+/**
+ * A grow target (rvGrow, raGrow): kind's move of each myocardial vertex, at weight 1, and the
+ * meshes on the walls (the tricuspid valve and chordae, the pericardium, the coronaries) moved as
+ * the wall vertices next to them move. The RA's middle moves with raGrow, so its name follows.
+ */
+async function buildGrow(ctx, key, kind) {
+  const { meshes, anat, F, REG, mpos, nMyo } = ctx;
+  const tick = slicer();
+  const M = moveFrame(ctx), T = growFrame(ctx);
+  const raAt = (x, y, z, w, out) => {
+    const qx = x - T.tvC.x, qy = y - T.tvC.y, qz = z - T.tvC.z;
+    const k = smooth((qx * T.tvN.x + qy * T.tvN.y + qz * T.tvN.z) / 1.2) * w;
+    out[0] += qx * k; out[1] += qy * k; out[2] += qz * k;
+  };
+  // the atrial septum keeps its place: the RA wall that faces the LA (the patient's left) stays
+  const notSeptum = (x, y, z) => {
+    const vx = x - T.raC.x, vy = y - T.raC.y, vz = z - T.raC.z, l = Math.hypot(vx, vy, vz) || 1;
+    return 1 - smooth(((vx * F.X.x + vy * F.X.y + vz * F.X.z) / l - 0.2) / 0.4);
+  };
+  const field = (i, x, y, z, out) => {
+    if (kind === 'ra') { if (T.raNear[i]) raAt(x, y, z, T.raNear[i] * notSeptum(x, y, z), out); return; }
+    if (REG[i] !== 2 && REG[i] !== 4) return;
+    const c = lvCoords(F, x, y, z), r = c.r || 1;
+    // the free wall, not the septum's face; full from the middle of the RV to the annulus, and
+    // the RA wall next to the annulus with it, fading over 1.5 cm above the valve's plane
+    const free = smooth((c.r - F.Rref(c.u) - 1.3) / 1.4);
+    const h = (x - T.tvC.x) * T.tvN.x + (y - T.tvC.y) * T.tvN.y + (z - T.tvC.z) * T.tvN.z;
+    const lev = REG[i] === 2 ? smooth((c.u - 0.05) / 0.35) * (1 - smooth((c.u - 1.08) / 0.2)) : 1 - smooth(h / 1.5);
+    const k = M.across(c) * lev * free;
+    out[0] += (c.rx / r) * k; out[1] += (c.ry / r) * k; out[2] += (c.rz / r) * k;
+  };
+  const ed = new Float32Array(mpos.length), d = [0, 0, 0];
+  for (let i = 0; i < nMyo; i++) {
+    if ((i & 255) === 0) await tick();
+    d[0] = d[1] = d[2] = 0;
+    field(i, mpos[3 * i], mpos[3 * i + 1], mpos[3 * i + 2], d);
+    ed[3 * i] = d[0]; ed[3 * i + 1] = d[1]; ed[3 * i + 2] = d[2];
+  }
+  addTarget(meshes.Myocardium, `dx_${key}`, ed);
+  const G = grid(mpos, null, 1.0);
+  for (const name of ['TricuspidValve', 'TricuspidChordae', 'Pericardium', 'Coronaries']) {
+    const mesh = meshes[name];
+    if (!mesh) continue;
+    const p = mesh.geometry.attributes.position.array, n = p.length / 3;
+    const e2 = new Float32Array(p.length);
+    for (let j = 0; j < n; j++) {
+      if ((j & 127) === 0) await tick();
+      const nb = nearest(G, p[3 * j], p[3 * j + 1], p[3 * j + 2], 6, 2.5);
+      let wsum = 0;
+      const acc = [0, 0, 0];
+      for (const [i, d2] of nb) {
+        const w = 1 / (d2 + 0.02);
+        wsum += w;
+        for (let k = 0; k < 3; k++) acc[k] += w * ed[3 * i + k];
+      }
+      if (wsum > 0) for (let k = 0; k < 3; k++) e2[3 * j + k] = acc[k] / wsum;
+    }
+    addTarget(mesh, `dx_${key}`, e2);
+  }
+  return {
+    shift: (name) => {
+      const out = [0, 0, 0];
+      if (kind === 'ra' && name === 'ra_c') { const e0 = anat.raw(name, 0, 0); raAt(e0.x, e0.y, e0.z, 0.5, out); }
+      return V3(out[0], out[1], out[2]);
+    },
+  };
 }
 
 /**

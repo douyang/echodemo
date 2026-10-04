@@ -62,7 +62,8 @@ export class MeshPanel {
    * F, ev): drawn on the image before the box and the names (jets, calipers); o.lines: the
    * measurement box (echo2d.js measures); o.names: chamber names, [[anchor, text], ...], kept
    * clear of the box; [anchor, text, toward, f] puts the name fraction f of the way from anchor
-   * to anchor toward.
+   * to anchor toward; a function (ev, s) -> [u, v] (cm on the plane, or null) in place of the
+   * anchor puts it there.
    * Returns F, or null while the model loads.
    */
   draw(ctx, P, title, o = {}) {
@@ -163,10 +164,12 @@ export class MeshPanel {
     ctx.strokeStyle = 'rgba(8,10,12,0.85)';
     ctx.fillStyle = 'rgba(214,222,226,0.92)';
     for (const [k, name, toward, f] of list) {
-      if (!an[k]) continue;
+      let q = null;
+      if (typeof k === 'function') q = k(ev, s);
+      else if (an[k]) q = F.cm(toward && an[toward] ? an[k].clone().lerp(an[toward], f) : an[k]);
+      if (!q) continue;
       const hw = ctx.measureText(name).width / 2 + 3;
-      const at = toward && an[toward] ? an[k].clone().lerp(an[toward], f) : an[k];
-      const [x0, y0] = F.P(F.cm(at));
+      const [x0, y0] = F.P(q);
       const x = clamp(x0, bx.x + hw + 2, bx.x + bx.w - hw - 2), y = clamp(y0, bx.y + 10, bx.y + bx.h - 10);
       if (avoid && x + hw > avoid.x && x - hw < avoid.x + avoid.w && y + 9 > avoid.y && y - 9 < avoid.y + avoid.h) continue;
       ctx.strokeText(name, x, y);
