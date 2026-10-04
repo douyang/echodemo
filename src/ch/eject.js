@@ -381,6 +381,8 @@ const RV_GROUPS = [
   ['mmode', 'M-mode and tissue Doppler', 'lateral tricuspid annulus, RV-focused view', ['tapse', 'sPrime']],
   ['twod', '2D', 'RV area traced in the RV-focused four-chamber view', ['eda', 'esa']],
 ];
+/** The names in the change line, after its cause. */
+const EFFECT = { edvm: 'EDV', esvm: 'ESV', sv: 'stroke volume', ef: 'LVEF', edvi: 'EDV index', esvi: 'ESV index', tapse: 'TAPSE', sPrime: 'S′', eda: 'EDA', esa: 'ESA', fac: 'FAC' };
 /** What each measurement changes. */
 const EFFECTS = { edvm: ['sv', 'ef', 'edvi'], esvm: ['sv', 'ef', 'esvi'], eda: ['fac'], esa: ['fac'], tapse: [], sPrime: [] };
 const LV_SHOW = ['edvm', 'esvm', 'sv', 'ef', 'edvi', 'esvi'];
@@ -630,6 +632,8 @@ function renderDiagram(s) {
     d.result.classList.toggle('is-raised', v.out === 'reduced');
   }
   d.reset.classList.toggle('is-off', !M.edited);   // its room stays, so nothing moves when it shows
+  // the EF slider's label: main.js writes it when the EF changes, and the EDV can change it alone
+  if (side === 'lv') { const o = document.querySelector('output[data-for="ef"]'); if (o) txt(o, `${v.ef}%`); }
   if (!pending) freeLive();
   if (!P) { txt(d.change, ''); line[side].kind = ''; return; }
   const SHOW = side === 'lv' ? LV_SHOW : RV_SHOW;
@@ -662,7 +666,7 @@ const sliderText = (k, x) => (k === 'fore' ? `${Math.round(x)}%` : k === 'edv' ?
 function crossed(side, P, M) {
   const a = P.v, b = M.v;
   const out = (side === 'lv' ? LV_GRADED : RV_GRADED).filter((k) => a.g[k] !== b.g[k])
-    .map((k) => { const [nm, lab] = chipsOf(k, b.sex)[side === 'lv' ? b.g[k] : b.g[k] - 1]; return `${k === 'fac' ? 'FAC' : NAME[k]} ${nm} ${lab}${UNIT[k] === '%' ? '%' : ` ${UNIT[k]}`}`; });
+    .map((k) => { const [nm, lab] = chipsOf(k, b.sex)[side === 'lv' ? b.g[k] : b.g[k] - 1]; return `${EFFECT[k]} ${nm} ${lab}${UNIT[k] === '%' ? '%' : ` ${UNIT[k]}`}`; });
   if (side === 'lv' && a.hf !== b.hf) out.push(b.hf);
   return out;
 }
@@ -676,7 +680,7 @@ function changeLine(side, P, M, cause) {
   const SHOW = side === 'lv' ? LV_SHOW : RV_SHOW;
   const ks = cause.kind === 'edit' ? EFFECTS[cause.k] : cause.kind === 'sex' ? [] : SHOW;
   const ch = ks.filter((k) => P.v[k] !== M.v[k] && !(cause.kind === 'edit' && k === cause.k));
-  const what = [...ch.map((k) => `${k === 'fac' ? 'FAC' : NAME[k]} ${withUnit(k, `${num(k, P.v[k])} → ${num(k, M.v[k])}`)}`), ...cut].join(', ') || 'no band changed';
+  const what = [...ch.map((k) => `${EFFECT[k]} ${withUnit(k, `${num(k, P.v[k])} → ${num(k, M.v[k])}`)}`), ...cut].join(', ') || 'no band changed';
   const word = (o) => (side === 'lv' ? o : RV_OUT[o]);
   const result = P.out === M.out ? `Result unchanged: ${word(M.out)}` : `Result: ${word(P.out)} → ${word(M.out)}`;
   return { text: `${head}: ${what}. ${result}.`, crossed: cut.length > 0 || P.out !== M.out };
@@ -727,7 +731,8 @@ export default {
   defaults: { ...DEFAULTS },
   format: {
     edv: (v) => `${Math.round(v)} mL`,
-    ef: (v) => `${Math.round(v)}%`,
+    // the EF on screen: from the traced volumes as printed (it can differ by 1 from the model's)
+    ef: (v, s) => `${s ? lvShown(s).ef : Math.round(v)}%`,
     wall: (v) => `${v.toFixed(1)} mm`,
     fore: (v) => (v ? `${v}% short` : 'none'),
     tapse: (v) => `${v.toFixed(1)} mm`,
