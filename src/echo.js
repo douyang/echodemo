@@ -479,6 +479,7 @@ export class EchoView {
     this.standoff = 0;    // cm the probe sits back along the beam (fluid in front of the heart; setStandoff)
     this.sac = false;     // true: lung and fat outside the sac, so fluid in it shows as a dark band
     this.fore = 0;        // cm the probe sits off the view's plane, aimed at the same point: a foreshortened view (setFore)
+    this.shift = 0;       // cm the view's plane moves along its own normal (setShift)
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -589,6 +590,16 @@ export class EchoView {
   setFore(cm = 0) {
     if (Math.abs(cm - this.fore) < 1e-4) return;
     this.fore = cm;
+    this.pv = -2;
+  }
+
+  /**
+   * The view's plane moved cm along its normal, square to itself: a short axis a little nearer
+   * the apex or the base, as the sonographer scans for the smallest mitral orifice.
+   */
+  setShift(cm = 0) {
+    if (Math.abs(cm - this.shift) < 1e-4) return;
+    this.shift = cm;
     this.pv = -2;
   }
 
@@ -964,6 +975,7 @@ export class EchoView {
       const g = viewGeometry(this.anat, k);
       if (!g) continue;
       if (this.standoff) g.O.addScaledVector(g.d, -this.standoff);
+      if (this.shift) g.O.addScaledVector(g.n, this.shift);
       if (this.fore) {
         const T = g.O.clone().addScaledVector(g.d, 10.5), O = g.O.clone().addScaledVector(g.n, this.fore);
         const d = T.sub(O).normalize(), r = g.r.clone().addScaledVector(d, -g.r.dot(d)).normalize();
@@ -988,7 +1000,18 @@ export class EchoView {
     const g = this.g;
     if (!g) { this.drawEmpty(); return; }
     const a = P ? P.a : 0, s = state.s;
-    const weights = (md, lw = null) => ({ amyloid: a, systole: s, amyloid_systole: a * s, ...(lw || {}), ...phenoWeights(Object.keys(md.dict), P, s, lw, this.noSys), ...this.disease, ...this.motion });
+    // a valve's disease target has a shape for the middle and the shut leaflets too (phenomesh.js
+    // buildValve), weighed as the leaflets' own shapes are
+    const dxLeaf = (md, lw) => {
+      const o = {};
+      if (!lw) return o;
+      for (const [k, w] of Object.entries(this.disease)) {
+        if (md.dict[`${k}_mid`] !== undefined) o[`${k}_mid`] = w * (lw.leaflets_mid || 0);
+        if (md.dict[`${k}_far`] !== undefined) o[`${k}_far`] = w * (lw.leaflets || 0);
+      }
+      return o;
+    };
+    const weights = (md, lw = null) => ({ amyloid: a, systole: s, amyloid_systole: a * s, ...(lw || {}), ...phenoWeights(Object.keys(md.dict), P, s, lw, this.noSys), ...this.disease, ...dxLeaf(md, lw), ...this.motion });
     this.myo.morph(weights(this.myo));
     const tissue = this.myo.section(g, true);
     const lw = (md) => (md.dict.leaflets_mid !== undefined ? leafletWeights(md.mesh.name, state.v, state.drive, a, s) : { leaflets: state.v });

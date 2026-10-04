@@ -10,10 +10,13 @@
 // gradient follows it, with the cardiac output held unless the stroke volume was edited.
 import { Sheet, clamp } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
-import { RR, EV } from '../cyclemodel.js';
+import { RR, EV, cycleAt } from '../cyclemodel.js';
 import { MS_BANDS, msIntegrated } from '../norms.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, shown as shownAt } from '../sev.js';
-import { drawA4C, drawPSAXmv, measures, shownMitralThick } from '../echo2d.js';
+import { drawA4C, drawPSAXmv, measures, shownMitralThick, jet, barFor } from '../echo2d.js';
+import { MeshPanel } from '../meshpanel.js';
+import { laWeight, rvGrowOf, msWeights, mvOwnThick } from '../meshcal.js';
+import { onPlane, hingesOf, closureOf, blood, cavity, enFaceOrifice, middle, sub, add, mul, dot, unit, perp } from '../meshjet.js';
 import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
@@ -148,7 +151,76 @@ function laDims(vol, r) {
   return [r * L, L];
 }
 
+// The four-chamber view and the short axis at the mitral valve cut from the heart mesh
+// (meshpanel.js): the heart the page shows, its LA at the printed LA volume index (la, meshcal.js
+// laWeight), its RV at the printed RV basal diameter (rvGrow), and its mitral valve at the printed
+// area and leaflet thickness (msValve and mvThick, msWeights): the tips held, the bodies domed
+// into the LV, the leaflets thick. Through diastole the narrowed valve stays open, without the
+// closure of diastasis. The short axis moves to the tips, where the area is traced. The scanner
+// format (jets.js) keeps the parametric views.
+const redraw = () => { if (sheet) sheet.dirty = true; };
+const MESH = new MeshPanel('a4c', { diseases: ['la', 'rvGrow', 'msValve', 'mvThick'], redraw });
+const MESH_SAX = new MeshPanel('psax_mv', { diseases: ['rvGrow', 'msValve', 'mvThick'], redraw });
+// diastole from the opening to the atrial kick, where the normal valve drifts shut in diastasis
+const held = (t) => {
+  const u = (x, a, b) => clamp((x - a) / (b - a), 0, 1);
+  return u(t, EV.mvo + 22, EV.mvo + 40) * (1 - u(t, 810, 850));
+};
+/** The mesh's settings for the values on screen, on the heart the page shows. */
+function meshOf(v) {
+  const heart = st.pheno || 'normal';
+  const W = msWeights(heart, v.mva, v.thick * 10);
+  return {
+    W,
+    disease: { la: laWeight(v.lavi, heart), rvGrow: rvGrowOf(heart, v.rvb), msValve: W.ms, mvThick: W.thick },
+    // a stenotic valve stays open through diastole: its leaflets do not drift shut (M-mode: the E-F slope falls)
+    drive: (d, t) => ({ ...d, mv: d.mv * (1 - v.dome * held(t)) }),
+    // the leaflets as drawn: the printed thickness, or the heart's own where that is more
+    thickMm: Math.max(v.thick * 10, mvOwnThick(heart)),
+  };
+}
+
+/**
+ * The inflow jet on the mesh view at systolic weight s: from where the mitral leaflet tips come
+ * nearest each other, into the LV toward the apex; the LV below the tips clips it, and its flow
+ * convergence keeps to the LA and the funnel of the leaflets above them.
+ */
+function msJet(ev, s) {
+  const h = hingesOf(ev, 'MitralValve');
+  if (!h) return null;
+  const an = ev.anchors(s), apex = onPlane(ev, an.apex), M = middle(h);
+  let nrm = perp(unit(sub(h[1], h[0])));
+  if (dot(sub(apex, M), nrm) < 0) nrm = mul(nrm, -1);
+  const O = closureOf(ev, 'MitralValve', M, nrm) || M, side = perp(nrm);
+  const cut = [[add(O, side), sub(O, side)]];
+  const LV = cavity(ev, blood(ev, onPlane(ev, an.lv)), cut);
+  const LA = cavity(ev, blood(ev, sub(O, mul(nrm, 0.6)), 0.3), cut);
+  return { O, dir: nrm, clip: LV.length >= 12 ? LV : null, pclip: LA.length >= 12 ? LA : null };
+}
+
 function a4c(ctx, box, v, t) {
+  if (JETS === 'plume') {
+    const m = meshOf(v);
+    const t0 = EV.mvo, fill = RR - t0 + EV.mvc;
+    const since = t >= t0 ? t - t0 : t + RR - t0;
+    const narrow = !v.crit.none;
+    const a = since < fill && narrow ? Math.min(1, since / 40) * clamp(v.env((since / fill) * v.dfp), 0.3, 1) : 0;
+    const jl = 2.5 + 2.5 * v.s;
+    MESH.draw(ctx, box, fit(box.w, 'APICAL FOUR-CHAMBER · COLOR 40 cm/s', 'A4C · COLOR 40'), {
+      tms: t, disease: m.disease, drive: m.drive,
+      names: [['lv', 'LV', 'apex', 0.45], ['rv', 'RV'], ['la', 'LA'], ['ra', 'RA']],
+      over: (c, F, ev) => {
+        if (!narrow || !(a > 0.02)) return;
+        const J = msJet(ev, cycleAt(t).s);
+        if (!J) return;
+        jet(c, F, { q: (v.sv / (v.dfp / 1000)) * 1.1, va: 40, vc: v.tip * 0.6, jl, jw: 0.9 + v.tip * 0.4, a, O: J.O, dir: J.dir, clip: J.clip, pclip: J.pclip });
+        barFor(c, F, -40, 40);
+      },
+      lines: [[`LA volume index ${Math.round(v.lavi)} mL/m²`, `LAVi ${Math.round(v.lavi)} mL/m²`], `leaflets ${m.thickMm.toFixed(0)} mm`],
+    });
+    return;
+  }
+  // the scanner format: the parametric view
   // the LA stays large through diastole: the narrow valve keeps it from emptying
   const laMax = v.lavi * BSA, laMin = laMax * (0.6 + 0.25 * v.s);
   const [wMax, lMax] = laDims(laMax, 0.8 + 0.1 * v.s), [wMin, lMin] = laDims(laMin, 0.8 + 0.1 * v.s);
@@ -165,18 +237,14 @@ function a4c(ctx, box, v, t) {
   const narrow = !v.crit.none;
   const a = since < fill && narrow ? Math.min(1, since / 40) * clamp(v.env((since / fill) * v.dfp), 0.3, 1) : 0;
   const jl = 2.5 + 2.5 * v.s;
-  const jet = narrow ? { q: (v.sv / (v.dfp / 1000)) * 1.1, vc: v.tip * 0.6, jl, jw: 0.9 + v.tip * 0.4, a } : null;
+  const inflow = narrow ? { q: (v.sv / (v.dfp / 1000)) * 1.1, vc: v.tip * 0.6, jl, jw: 0.9 + v.tip * 0.4, a } : null;
   drawA4C(ctx, box, g, {
     t, depth: 16 + v.s, title: fit(box.w, 'APICAL FOUR-CHAMBER · COLOR 40 cm/s', 'A4C · COLOR 40'),
-    ...(JETS === 'plume'
-      ? { jets: jet ? { ms: { ...jet, va: 40 } } : {} }
-      : {
-        color: {
-          roi: 'mvin', reach: 1.6 + jl, lo: -40, hi: 40, variance: true, pvS: 0.5, pvD: 0.4 - 0.15 * v.s,
-          // the flow converges on the domed leaflets from the LA (a funnel, not a flat valve)
-          ms: jet ? { ...jet, u0: v.v0 * 100, half: 0.9, soft: 0.35 } : null,
-        },
-      }),
+    color: {
+      roi: 'mvin', reach: 1.6 + jl, lo: -40, hi: 40, variance: true, pvS: 0.5, pvD: 0.4 - 0.15 * v.s,
+      // the flow converges on the domed leaflets from the LA (a funnel, not a flat valve)
+      ms: inflow ? { ...inflow, u0: v.v0 * 100, half: 0.9, soft: 0.35 } : null,
+    },
     after: (c, F) => measures(c, F, [[`LA volume index ${Math.round(v.lavi)} mL/m²`, `LAVi ${Math.round(v.lavi)} mL/m²`], `leaflets ${(shownMitralThick(v.thick) * 10).toFixed(0)} mm`]),
   });
 }
@@ -236,6 +304,42 @@ function meterItems(v) {
   ];
 }
 
+/**
+ * The short axis at the mitral valve: on the mesh, moved to the leaflet tips, with the orifice
+ * traced through diastole as planimetry traces it; else the parametric view.
+ */
+function sax(ctx, P, v, t, title) {
+  if (JETS !== 'plume') {
+    drawPSAXmv(ctx, P, { mva: v.mva, lvid: [v.lvid, v.lvid * 0.64], thick: v.thick }, { t, title });
+    return;
+  }
+  const m = meshOf(v);
+  const open = (t >= EV.mvo + 30 && t <= 800) && v.dome > 0;
+  MESH_SAX.draw(ctx, P, title, {
+    tms: t, disease: { rvGrow: m.disease.rvGrow, msValve: m.W.ms, mvThick: m.W.thick }, drive: m.drive, shift: m.W.shift,
+    // the LV's name off the orifice, toward the inferior wall
+    names: [['rv', 'RV'], ['lv', 'LV', 'infw', 0.8]],
+    over: (c, F, ev) => {
+      if (!open) return;
+      // the trace: the leaflet tips that bound the orifice seen along the valve's axis
+      const o = enFaceOrifice(ev, 'MitralValve');
+      if (!o || o.P.length < 12) return;
+      c.save();
+      c.beginPath();
+      c.rect(F.view.box.x, F.view.box.y, F.view.box.w, F.view.box.h);
+      c.clip();
+      c.strokeStyle = SC.cal;
+      c.lineWidth = 1;
+      c.setLineDash([3, 3]);
+      c.beginPath();
+      o.P.forEach((p, i) => { const q = F.P(p); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); });
+      c.closePath();
+      c.stroke();
+      c.restore();
+    },
+  });
+}
+
 function draw(sh, t) {
   const W = sh.w, H = sh.h, ctx = sh.ctx;
   const v = shown(st);
@@ -246,7 +350,7 @@ function draw(sh, t) {
     const [p1, p2] = rows(b, [1.2, 1], 8);
     const r = inflowCW(ctx, p1, v);
     cursor(ctx, r.bx, beat.sweep);
-    drawPSAXmv(ctx, p2, { mva: v.mva, lvid: [v.lvid, v.lvid * 0.64], thick: v.thick }, { t: tt, title: 'PSAX · MV' });
+    sax(ctx, p2, v, tt, 'PSAX · MV');
     return;
   }
   const colL = { x: 16, y: 36, w: W * 0.45 - 16, h: H - 48 };
@@ -257,7 +361,7 @@ function draw(sh, t) {
   const [p1, p2, p3] = rows(colR, [1.2, 0.9, 1.05], 10);
   const r = inflowCW(ctx, p1, v);
   const b2 = trCW(ctx, p2, v);
-  drawPSAXmv(ctx, p3, { mva: v.mva, lvid: [v.lvid, v.lvid * 0.64], thick: v.thick }, { t: tt, title: `PSAX · PLANIMETRY ${v.mva.toFixed(2)} cm²` });
+  sax(ctx, p3, v, tt, `PSAX · PLANIMETRY ${v.mva.toFixed(2)} cm²`);
   cursor(ctx, r.bx, beat.sweep);
   cursor(ctx, b2, beat.sweep);
 }
