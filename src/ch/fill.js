@@ -9,7 +9,8 @@ import { Sheet, clamp, mix, SANS } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { RR, EV } from '../cyclemodel.js';
 import { bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, note, LEVEL, fit } from '../sev.js';
-import { drawA4C, measures } from '../echo2d.js';
+import { MeshPanel } from '../meshpanel.js';
+import { laWeight } from '../meshcal.js';
 import { reducedMotion } from '../state.js';
 import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
 import { cue } from '../music.js';
@@ -22,10 +23,10 @@ const slideTo = (f, g) => slideOf(f, g, BANDS, 3, 100);
 
 // Illustrative values at four points of the slider (not patient data).
 const KEYS = [
-  { E: 0.75, A: 0.55, DT: 190, sep: 9.0, lat: 12.0, tr: 2.3, lavi: 26, lars: 38, sd: 1.3, ivrt: 85, pvD: 0.42, ar: 0.25, lact: 14, wall: 0.9 },
-  { E: 0.55, A: 0.80, DT: 260, sep: 5.0, lat: 6.5, tr: 2.4, lavi: 30, lars: 28, sd: 1.4, ivrt: 110, pvD: 0.34, ar: 0.3, lact: 14, wall: 1.05 },
-  { E: 0.95, A: 0.65, DT: 170, sep: 5.0, lat: 6.5, tr: 3.0, lavi: 42, lars: 16, sd: 0.6, ivrt: 65, pvD: 0.6, ar: 0.38, lact: 6, wall: 1.1 },
-  { E: 1.20, A: 0.40, DT: 130, sep: 4.0, lat: 5.0, tr: 3.3, lavi: 50, lars: 10, sd: 0.4, ivrt: 50, pvD: 0.68, ar: 0.4, lact: 2, wall: 1.1 },
+  { E: 0.75, A: 0.55, DT: 190, sep: 9.0, lat: 12.0, tr: 2.3, lavi: 26, lars: 38, sd: 1.3, ivrt: 85, pvD: 0.42, ar: 0.25, lact: 14 },
+  { E: 0.55, A: 0.80, DT: 260, sep: 5.0, lat: 6.5, tr: 2.4, lavi: 30, lars: 28, sd: 1.4, ivrt: 110, pvD: 0.34, ar: 0.3, lact: 14 },
+  { E: 0.95, A: 0.65, DT: 170, sep: 5.0, lat: 6.5, tr: 3.0, lavi: 42, lars: 16, sd: 0.6, ivrt: 65, pvD: 0.6, ar: 0.38, lact: 6 },
+  { E: 1.20, A: 0.40, DT: 130, sep: 4.0, lat: 5.0, tr: 3.3, lavi: 50, lars: 10, sd: 0.4, ivrt: 50, pvD: 0.68, ar: 0.4, lact: 2 },
 ];
 
 /** The model's values at slider position f (0 to 3), before rounding. */
@@ -303,17 +304,15 @@ function flowchart(sh, t, X, Y, Wd, Hd, v, r, now) {
 const beat = new Beat(RR);
 const q2 = (x) => Math.round(x * 50) / 50;
 
+// The four-chamber view cut from the heart mesh (meshpanel.js): the heart the page shows, with
+// its left atrium scaled to the LA volume index on screen (meshcal.js).
+const echo = new MeshPanel('a4c', { diseases: ['la'], redraw: () => { if (sheet) sheet.dirty = true; } });
 function a4c(ctx, box, v, tt) {
-  const laMax = v.lavi * BSA, laMin = laMax * (1 - 0.5 * v.lars / 38);
-  const dims = (vol, r) => { const L = Math.cbrt(vol / (0.524 * r * r)); return [r * L, L]; };
-  const [wMax, lMax] = dims(laMax, 0.8), [wMin, lMin] = dims(laMin, 0.8);
-  const g = {
-    lvL: [8.2, 7.0], lvW: [4.6, 2.95], lvWall: [v.wall, v.wall * 1.5], ivs: [v.wall, v.wall * 1.5],
-    rvW: [3.3, 2.7], laW: [wMin, wMax], laL: [lMin, lMax], raW: [3.2, 3.8], raL: [3.9, 4.5], ma: 3.1, ta: 3.0,
-  };
-  drawA4C(ctx, box, g, {
-    t: tt, depth: 16, title: fit(box.w, 'APICAL FOUR-CHAMBER', 'A4C'),
-    after: (c, F) => measures(c, F, [[`LA volume index ${Math.round(v.lavi)} mL/m²`, `LAVi ${Math.round(v.lavi)} mL/m²`]]),
+  echo.draw(ctx, box, fit(box.w, 'APICAL FOUR-CHAMBER', 'A4C'), {
+    tms: tt,
+    disease: (heart) => ({ la: laWeight(v.lavi, heart) }),
+    lines: [[`LA volume index ${Math.round(v.lavi)} mL/m²`, `LAVi ${Math.round(v.lavi)} mL/m²`]],
+    names: [['lv', 'LV'], ['rv', 'RV'], ['la', 'LA'], ['ra', 'RA']],
   });
 }
 
@@ -711,7 +710,9 @@ const fillPage = {
     });
   },
   // on the way in and out, the next drawing sets the baseline: no flash for changes made elsewhere
-  enter() { fresh = true; fcPrev = null; freeLive(); },
+  enter() { fresh = true; fcPrev = null; freeLive(); echo.start(); },
+  // the heart model and the LA target load at idle, before the chapter opens (main.js warms every chapter)
+  warm() { echo.start(); },
   leave() { fresh = true; fcPrev = null; freeLive(); },
   pulse: () => beat.pulse(),
   anim(dt, s, set) {

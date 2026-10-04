@@ -472,6 +472,8 @@ export class EchoView {
     this.noSys = false;   // true: the heart's own systolic change is off (Regional wall motion sets the motion)
     this.own = null;      // a heart of this view's own (setBurden), in place of the page's
     this.ownAnat = null;
+    this.disease = {};    // a chapter's disease on the heart shown: weights of the dx_ targets (setDisease)
+    this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
     this.tr = null;
@@ -509,8 +511,39 @@ export class EchoView {
 
   /** The heart this view shows: its own (setBurden), or the page's (model3d.js). */
   get heart() { return this.own || this.model.pheno; }
-  /** The landmarks of that heart. */
-  get anat() { return this.ownAnat || this.model.anat; }
+  /** The landmarks of that heart, moved by the chapter's disease (setDisease). */
+  get anat() {
+    const base = this.ownAnat || this.model.anat, w = this.disease, shifts = this.dShifts;
+    if (!shifts || !Object.keys(w).length) return base;
+    if (this.dAnat && this.dAnat.base === base && this.dAnat.ver === this.dVer) return this.dAnat.A;
+    const A = Object.create(base), moves = new Map();
+    const move = (name) => {
+      if (!moves.has(name)) {
+        const d = V3();
+        for (const [k, v] of Object.entries(w)) { const S = shifts[k.slice(3)]; if (S) d.addScaledVector(S.shift(name), v); }
+        moves.set(name, d);
+      }
+      return moves.get(name);
+    };
+    A.point = (name, a, s) => base.point(name, a, s).clone().add(move(name));
+    this.dAnat = { A, base, ver: this.dVer };
+    return A;
+  }
+
+  /**
+   * A chapter's disease on the heart shown: w, weights 0 to 1 by disease key (phenomesh.js
+   * DISEASE), and shifts, the landmark moves of those keys (model3d.js diseaseTargets). The next
+   * frame takes the heart again, so the speckle, the planes and the labels follow.
+   */
+  setDisease(w = {}, shifts = null) {
+    const next = Object.fromEntries(Object.entries(w).filter(([, v]) => v).map(([k, v]) => [`dx_${k}`, v]));
+    const cur = this.disease;
+    if (shifts === this.dShifts && Object.keys(next).length === Object.keys(cur).length && Object.entries(next).every(([k, v]) => cur[k] === v)) return;
+    this.disease = next;
+    this.dShifts = shifts;
+    this.dVer = (this.dVer || 0) + 1;
+    this.pv = -2;
+  }
 
   /**
    * Show the model's own amyloid heart at burden a (0 normal .. 1 the amyloid corner), whatever
@@ -865,7 +898,7 @@ export class EchoView {
   takePheno() {
     const m = this.model, P = this.heart, first = this.pv === -1;
     this.pv = P.version;
-    const rest = { amyloid: P.a };
+    const rest = { amyloid: P.a, ...this.disease };
     if (P.mesh) rest[`ph_${P.mesh}`] = 1;
     for (const md of [this.myo, ...this.valves, ...this.chords, this.pap, this.peri, this.cor]) if (md) md.setRest(rest);
     this.geo = this.own ? this.ownGeo : m.sizes;
@@ -890,7 +923,7 @@ export class EchoView {
     const g = this.g;
     if (!g) { this.drawEmpty(); return; }
     const a = P ? P.a : 0, s = state.s;
-    const weights = (md, lw = null) => ({ amyloid: a, systole: s, amyloid_systole: a * s, ...(lw || {}), ...phenoWeights(Object.keys(md.dict), P, s, lw, this.noSys) });
+    const weights = (md, lw = null) => ({ amyloid: a, systole: s, amyloid_systole: a * s, ...(lw || {}), ...phenoWeights(Object.keys(md.dict), P, s, lw, this.noSys), ...this.disease });
     this.myo.morph(weights(this.myo));
     const tissue = this.myo.section(g, true);
     const lw = (md) => (md.dict.leaflets_mid !== undefined ? leafletWeights(md.mesh.name, state.v, state.drive, a, s) : { leaflets: state.v });
