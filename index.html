@@ -1162,8 +1162,8 @@
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <div class="table-wrap"><table class="vt grade" id="tr-table"></table></div>
-      <div class="table-wrap"><table class="vt grade" id="tr-table2"></table></div>
+      <!-- the calculations, with buttons on fifteen measurements and two switches (Zoghbi 2017 Figure 31; Lancellotti 2022 Table 16): src/ch/tr.js -->
+      <section class="ase asx" id="tr-calc" aria-label="Tricuspid regurgitation: measurements, pressures, calculations, criteria and result"></section>
       <div class="prose" data-part="prose">
         <h3>Echocardiographic findings by grade</h3>
         <ol class="steps">
@@ -1172,16 +1172,19 @@
         <li>In <b>severe</b> regurgitation, the vena contracta is ≥0.7 cm, the EROA ≥0.40 cm², the regurgitant volume ≥45 mL, the PISA radius &gt;0.9 cm (with the color baseline shifted to an aliasing velocity of 28 cm/s) and the jet area &gt;10 cm²; hepatic vein flow shows systolic reversal, the tricuspid E velocity is &gt;1.0 m/s and the IVC diameter is &gt;2.5 cm<span class="cite" data-ref="zoghbi2017"></span>. The ACC/AHA criteria add a dilated RV and RA and an elevated RA pressure with a c-V wave<span class="cite" data-ref="otto2020"></span>.</li>
         <li>Two grades beyond severe are defined: <b>massive</b> regurgitation, with a vena contracta of 1.4–2.0 cm, an EROA of 0.60–0.79 cm² and a regurgitant volume of 60–74 mL, and <b>torrential</b> regurgitation, with a vena contracta ≥2.1 cm, an EROA ≥0.80 cm² and a regurgitant volume ≥75 mL<span class="cite" data-ref="lancellotti2022"></span>. An echocardiography report may describe massive and torrential TR as subgroups of severe TR<span class="cite" data-ref="taub2025"></span>.</li>
         </ol>
+        <h3>Integrated grading</h3>
+        <p>The ASE algorithm first asks whether most of the specific criteria for mild or for severe TR are present<span class="cite" data-ref="zoghbi2017"></span>. The guideline text asks for a majority of the specific signs, so the diagram counts four of the seven. If neither set has a majority, the TR is probably moderate, and the vena contracta, the EROA and the regurgitant volume decide between mild, moderate and severe<span class="cite" data-ref="zoghbi2017"></span>. Unlike MR and AR, TR has no validated quantitative grades I to IV, and clinical experience with its quantitation is limited<span class="cite" data-ref="zoghbi2017"></span>. If the findings are inconsistent, the grade is indeterminate, and TEE or CMR can quantify the regurgitation<span class="cite" data-ref="zoghbi2017"></span>. The algorithm gives no rule for discordant quantitative measures; the diagram uses the middle grade of the three. It uses the same rule for the EACVI grades beyond severe<span class="cite" data-ref="lancellotti2022"></span>.</p>
         <h3>Pitfalls</h3>
         <ul>
         <li>The peak TR velocity does not indicate the regurgitant volume. Very severe TR often has a low peak velocity, about 2 m/s, because the RV and RA pressures equalize<span class="cite" data-ref="zoghbi2017"></span>; the EACVI lists a peak velocity below 2 m/s for massive TR<span class="cite" data-ref="lancellotti2022"></span>. A triangular jet signal then underestimates the RV systolic pressure<span class="cite" data-ref="mukherjee2025"></span> (<a href="#pressure" data-go="pressure">chapter 08</a>).</li>
         <li>Systolic flow reversal in the hepatic veins is specific for severe TR once other causes (atrial fibrillation, pacing, heart block, respiration, preload, altered RA or RV compliance) have been excluded<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>The regurgitant volume threshold for severe TR (45 mL) is lower than that for severe MR (60 mL) at the same EROA, because the TR velocity is lower<span class="cite" data-ref="zoghbi2017"></span>.</li>
-        <li>The figure shows the flow convergence at an aliasing velocity of 28 cm/s. Its color jet area is the value at a scale of 50 to 70 cm/s, at which the jet area criterion is defined<span class="cite" data-ref="zoghbi2017"></span>. By the PISA method (<a href="#mr" data-go="mr">chapter 15</a>), the flow rate 2πr² × 28 cm/s equals the EROA × the peak TR velocity. Because the velocity falls as the regurgitation increases, the PISA radius stays at 0.9 cm or less up to an EROA of 0.80 cm².</li>
+        <li>The regurgitant volume threshold for severe TR (45 mL) is lower than that for severe MR (60 mL) at the same EROA, because the TR velocity is lower<span class="cite" data-ref="zoghbi2017"></span>. The regurgitant volume is the EROA × the VTI of the TR jet, and a slow jet has a short VTI. At a peak velocity of 2.2 m/s, an EROA of 0.80 cm² gives about 40 mL; in the figure, the vena contracta and the EROA reach the grades for massive and torrential TR before the regurgitant volume does<span class="cite" data-ref="lancellotti2022"></span>.</li>
+        <li>The figure shows the flow convergence at an aliasing velocity of 28 cm/s, and the jet as a share of the RA area at a scale of 50 to 70 cm/s, at which the jet criteria are defined<span class="cite" data-ref="zoghbi2017"></span>. By the PISA method (<a href="#mr" data-go="mr">chapter 15</a>), the flow rate 2πr² × 28 cm/s equals the EROA × the peak TR velocity. Beyond severe TR the velocity falls as the regurgitation increases, so the PISA radius stays at 1.0–1.1 cm while the EROA rises from 0.60 to 1.21 cm².</li>
         <li>At the time of left-sided valve surgery, tricuspid repair is reasonable when the tricuspid annulus measures more than 4.0 cm in diastole, even with less than severe TR<span class="cite" data-ref="otto2020"></span>.</li>
         </ul>
         <h3>Key points</h3>
         <ol class="steps">
+        <li>Four or more of the seven specific criteria for mild or for severe TR define the grade; otherwise, the vena contracta, the EROA and the regurgitant volume decide.</li>
         <li>Tricuspid regurgitation is severe when the vena contracta is ≥0.7 cm, the EROA is ≥0.40 cm² and the regurgitant volume is ≥45 mL.</li>
         <li>Systolic flow reversal in the hepatic veins is specific for severe tricuspid regurgitation.</li>
         <li>A low peak TR velocity does not exclude severe tricuspid regurgitation.</li>

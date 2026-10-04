@@ -202,11 +202,13 @@ export const VIDEOS = {
     quant: { trS: 0.005 },
     steps: [
       { set: { trS: 0, trCine: true, trColor: 'jet' }, name: 'No tricuspid regurgitation', track: 'None', line: '' },
-      { set: { trS: 0.1 }, name: 'Mild tricuspid regurgitation', track: 'Mild' },
-      { set: { trS: 0.3 }, name: 'Moderate tricuspid regurgitation', track: 'Moderate' },
-      { set: { trS: 0.5 }, name: 'Severe tricuspid regurgitation', track: 'Severe' },
-      { set: { trS: 0.7 }, name: 'Massive tricuspid regurgitation', track: 'Massive', pick: [0, 1, 3] },
-      { set: { trS: 0.9 }, name: 'Torrential tricuspid regurgitation', track: 'Torrential', pick: [0, 1, 3], hold: 6 },
+      // the numbers, the Figure 31 criteria, then the right heart (mild) or the pressure; beyond
+      // severe, the EACVI grade and the falling velocity
+      { set: { trS: 0.1 }, name: 'Mild tricuspid regurgitation', track: 'Mild', pick: [0, 1, 2] },
+      { set: { trS: 0.3 }, name: 'Moderate tricuspid regurgitation', track: 'Moderate', pick: [0, 1, 3] },
+      { set: { trS: 0.5 }, name: 'Severe tricuspid regurgitation', track: 'Severe', pick: [0, 1, 3] },
+      { set: { trS: 0.7 }, name: 'Massive tricuspid regurgitation', track: 'Massive', pick: [0, 3, 4] },
+      { set: { trS: 0.9 }, name: 'Torrential tricuspid regurgitation', track: 'Torrential', pick: [0, 3, 4], hold: 6 },
     ],
   },
   peri: {
