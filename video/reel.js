@@ -37,25 +37,25 @@ export const REEL = {
   intro: 2,
   outro: 3,
   clips: [
-    // 02: the sweep draws the frame, one scan line at a time
+    // Image: the sweep draws the frame, one scan line at a time
     { ch: 'image', bars: 2, video: { pane: 'Scan lines and frames', quant: { depth: 1 }, steps: [
       { set: { depth: 16, sector: 80, density: 1.2, focus: 10, artifact: 'none' }, name: 'Scan lines acquired in sequence', hold: 2 },
     ] } },
-    // 05: the cursor runs through one cardiac cycle, and the echo follows it. The line is from the chapter's dek.
+    // Views: the probe turns 90° at the left sternal border, from the long axis to the short axis, tilts
+    // to the mitral valve level, then crosses the chest to the apex; the nine planes in Probe and body
+    { ch: 'windows', bars: 6, cut: { views: ['plax', 'psax_av', 'psax_mv', 'a4c'], planes: true,
+      winHold: 1, winMove: 1, hold: 0.75, move: 0.5, lastHold: 0.75 } },
+    // Cycle: the cursor runs through one cardiac cycle, and the echo follows it. The line is from the chapter's dek.
     { ch: 'cycle', bars: 3, video: { pane: 'Cardiac cycle', side: false, steps: [
       { set: { tcycle: 0, crun: false }, drift: { tcycle: 856 }, name: 'The cardiac cycle',
         line: 'Mitral and aortic valve opening and closure divide the cycle into isovolumic contraction, ejection, isovolumic relaxation and filling.', hold: 3 },
     ] } },
-    // 07: the probe turns 90° at the left sternal border, from the long axis to the short axis, tilts
-    // to the mitral valve level, then crosses the chest to the apex; the nine planes in Probe and body
-    { ch: 'windows', bars: 6, cut: { views: ['plax', 'psax_av', 'psax_mv', 'a4c'], planes: true,
-      winHold: 1, winMove: 1, hold: 0.75, move: 0.5, lastHold: 0.75 } },
-    // 09: an LAD occlusion lights its territory on the bullseye and in the three apical views
+    // Regional wall motion: an LAD occlusion lights its territory on the bullseye and in the three apical views
     { ch: 'segments', bars: 3, video: { pane: '17-segment model', steps: [
       { set: { culprit: 'none', wm: 3 }, name: 'Normal wall motion', line: 'All 16 segments are scored 1 (normal), and the wall motion score index is 1.00.', hold: TWO.hold0 },
       { set: { culprit: 'lad' }, pick: [0], move: TWO.move, hold: TWO.hold1 },
     ] } },
-    // 11-17: a severity page from normal to its most telling grade
+    // AS, MR, pericardial effusion, amyloidosis: a page from normal to its most telling grade
     { ch: 'as', bars: 3, video: { pane: '2D and Doppler', side: false, quant: { asS: 0.005 }, steps: [
       { set: { asS: 0.05, asCine: true }, name: 'No aortic stenosis', pick: [0], hold: TWO.hold0 },
       { set: { asS: 0.55 }, name: 'Severe aortic stenosis', pick: [0], move: TWO.move, hold: TWO.hold1 },
