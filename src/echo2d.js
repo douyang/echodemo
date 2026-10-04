@@ -394,7 +394,7 @@ function tag(ctx, F, text, p, o = {}) {
  * A color bar at the image's right edge for the range lo..hi (cm/s); its legend ends above the
  * depth scale's first number.
  */
-function barFor(ctx, F, lo, hi) {
+export function barFor(ctx, F, lo, hi) {
   const { box, sect, k } = F;
   let yNum = sect.top + 5 * k;
   while (yNum < box.y + 24) yNum += 5 * k;
@@ -453,7 +453,8 @@ function plumeColor(v, nyq) {
  * 40 degrees to it; the CW panels carry the true velocity.
  * dir: unit vector of the jet (downstream); q: flow (mL/s); va: aliasing velocity (cm/s); vc:
  * vena contracta (cm); jl, jw: jet length and largest width (cm); clip: chamber polygon (cm) the
- * jet stays inside; a: 0..1 strength over the cycle; pisa: false for no convergence zone.
+ * jet stays inside; pclip: the polygon the convergence zone stays inside (none: it is not cut);
+ * a: 0..1 strength over the cycle; pisa: false for no convergence zone.
  */
 export function jet(ctx, F, j) {
   if (!j || !(j.a > 0.02) || !(j.q > 0)) return;   // a NaN strength draws nothing
@@ -477,8 +478,14 @@ export function jet(ctx, F, j) {
   if (JC.width < W || JC.height < H) { JC.width = Math.max(JC.width, W); JC.height = Math.max(JC.height, H); }
   const g = JC.getContext('2d', { willReadFrequently: true });
   const img = g.createImageData(W, H), px = img.data;
-  const clip = j.clip ? new Path2D() : null;
-  if (clip) { j.clip.forEach((p, i) => { const q = F.P(p); if (i) clip.lineTo(q[0], q[1]); else clip.moveTo(q[0], q[1]); }); clip.closePath(); }
+  const pathOf = (poly) => {
+    if (!poly) return null;
+    const path = new Path2D();
+    poly.forEach((p, i) => { const q = F.P(p); if (i) path.lineTo(q[0], q[1]); else path.moveTo(q[0], q[1]); });
+    path.closePath();
+    return path;
+  };
+  const clip = pathOf(j.clip), pclip = pathOf(j.pclip);
   const f = cine.live ? Math.floor(performance.now() / 45) : 0;
   for (let jj = 0; jj < H; jj++) {
     for (let ii = 0; ii < W; ii++) {
@@ -503,6 +510,7 @@ export function jet(ctx, F, j) {
         // flow convergence: v = q / (2 pi r^2) toward the orifice
         const r = len(rel);
         if (r > Rp || r < 0.04) continue;
+        if (pclip && !g.isPointInPath(pclip, X, Y)) continue;
         const v = (j.q / (2 * Math.PI * r * r)) * j.a;
         vb = v * dot(unit(sub(O, p)), toward);
         alpha = Math.min(1, j.a * 1.4) * smooth((Math.abs(vb) / va - 0.12) / 0.12);

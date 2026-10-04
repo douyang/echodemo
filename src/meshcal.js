@@ -109,6 +109,67 @@ export function lvWeights(heart, edv, esv, wallMm) {
   return { size, wall, k: LV_K[n - 1], esSize: Math.min(size, invert(LV_SZ, col, esv)) };
 }
 
+// The LV diameters in the parasternal long axis (chapters 13 and 15), measured as chapter 18's
+// calipers measure them (echo.js drawCalipers): along the beam through the point 30% of the
+// way from the LV's middle to the mitral valve, from the septum to the posterior wall. d: LVIDd
+// (mm) at end-diastole by size weight (LV_SZ); s: LVIDs (mm) at end-systole by size and
+// contraction k (LV_K).
+const LVD = {
+  normal: {
+    d: [33.2, 36.6, 40.0, 43.4, 46.8, 51, 55.2, 59.4, 63.6, 67.9, 72.1],
+    s: [[38.1, 35.7, 33.2, 29.9, 26.7, 23.4, 20.0, 16.6], [41.9, 39.4, 36.9, 33.6, 30.4, 27.1, 23.8, 20.3], [45.6, 43.1, 40.6, 37.3, 34.0, 30.7, 27.4, 24.1], [49.2, 46.8, 44.3, 41.0, 37.7, 34.4, 31.1, 27.7], [52.9, 50.4, 48.0, 44.6, 41.3, 38.0, 34.7, 31.3], [57.5, 55.0, 52.5, 49.2, 45.9, 42.5, 39.2, 35.8], [62.0, 59.5, 57.0, 53.7, 50.4, 47.0, 43.7, 40.3], [66.6, 64.1, 61.6, 58.2, 54.9, 51.5, 48.1, 44.8], [71.1, 68.6, 66.1, 62.7, 59.4, 56.0, 52.6, 49.2], [75.6, 73.1, 70.6, 67.2, 63.8, 60.5, 57.1, 53.7], [80.1, 77.6, 75.1, 71.7, 68.3, 64.9, 61.5, 58.1]],
+  },
+  amyloid: {
+    d: [26.5, 29.8, 33.2, 36.5, 39.8, 44, 48.2, 52.3, 56.5, 60.6, 64.8],
+    s: [[29.8, 28.2, 26.6, 24.5, 22.4, 20.2, 18.0, 15.7], [33.3, 31.7, 30.1, 28.0, 25.8, 23.7, 21.6, 19.3], [36.8, 35.2, 33.6, 31.4, 29.3, 27.2, 25.1, 22.9], [40.3, 38.7, 37.0, 34.9, 32.8, 30.6, 28.5, 26.4], [43.8, 42.1, 40.5, 38.4, 36.2, 34.1, 31.9, 29.8], [48.1, 46.5, 44.9, 42.7, 40.5, 38.4, 36.2, 34.1], [52.5, 50.8, 49.2, 47.0, 44.9, 42.7, 40.5, 38.4], [56.8, 55.1, 53.5, 51.3, 49.2, 47.0, 44.8, 42.7], [61.1, 59.5, 57.8, 55.6, 53.5, 51.3, 49.1, 46.9], [65.5, 63.8, 62.1, 59.9, 57.7, 55.5, 53.3, 51.1], [69.8, 68.1, 66.4, 64.2, 62, 59.8, 57.6, 55.4]],
+  },
+  icm: {
+    d: [48.3, 51.7, 55.1, 58.5, 61.8, 66.1, 70.3, 74.5, 78.7, 82.9, 87.1],
+    s: [[51.7, 50.5, 49.2, 47.6, 46.0, 44.3, 42.6, 40.9], [55.2, 54.0, 52.8, 51.1, 49.5, 47.8, 46.1, 44.5], [58.8, 57.5, 56.3, 54.6, 53.0, 51.3, 49.7, 48.0], [62.3, 61.1, 59.8, 58.2, 56.5, 54.8, 53.2, 51.5], [65.8, 64.6, 63.4, 61.7, 60.0, 58.4, 56.7, 55.0], [70.2, 69.0, 67.8, 66.1, 64.4, 62.8, 61.1, 59.4], [74.6, 73.4, 72.2, 70.5, 68.8, 67.2, 65.5, 63.8], [79.0, 77.8, 76.6, 74.9, 73.2, 71.5, 69.9, 68.2], [83.5, 82.2, 81.0, 79.3, 77.6, 75.9, 74.2, 72.6], [87.9, 86.6, 85.4, 83.7, 82.0, 80.3, 78.6, 76.9], [92.3, 91.0, 89.8, 88.1, 86.4, 84.7, 83.0, 81.3]],
+  },
+  barlow: {
+    d: [43.4, 46.8, 50.1, 53.5, 56.9, 61.1, 65.4, 69.6, 73.8, 78.0, 82.3],
+    s: [[49.6, 46.5, 43.4, 39.2, 35.0, 30.8, 26.5, 22.2], [53.4, 50.3, 47.2, 43.0, 38.8, 34.5, 30.3, 26.0], [57.2, 54.1, 50.9, 46.7, 42.5, 38.3, 34, 29.7], [61.0, 57.8, 54.7, 50.5, 46.2, 42.0, 37.7, 33.4], [64.7, 61.6, 58.4, 54.2, 50.0, 45.7, 41.4, 37.1], [69.4, 66.3, 63.1, 58.8, 54.6, 50.3, 46.0, 41.6], [74.1, 70.9, 67.7, 63.5, 59.2, 54.9, 50.5, 46.2], [78.7, 75.5, 72.3, 68.0, 63.8, 59.4, 55.1, 50.7], [83.3, 80.1, 76.9, 72.6, 68.3, 64.0, 59.6, 55.2], [87.9, 84.7, 81.5, 77.2, 72.9, 68.5, 64.2, 59.8], [92.5, 89.3, 86.0, 81.7, 77.4, 73.0, 68.7, 64.2]],
+  },
+  bav: {
+    d: [29.5, 32.9, 36.2, 39.6, 42.9, 47.1, 51.3, 55.5, 59.7, 63.8, 68.0],
+    s: [[33.5, 31.4, 29.3, 26.6, 23.9, 21.1, 18.2, 15.4], [37.1, 35.1, 33.0, 30.3, 27.5, 24.8, 22.0, 19.1], [40.8, 38.7, 36.7, 33.9, 31.2, 28.4, 25.7, 22.8], [44.4, 42.4, 40.3, 37.6, 34.8, 32.0, 29.3, 26.5], [48.0, 46, 43.9, 41.2, 38.4, 35.7, 32.9, 30.1], [52.6, 50.5, 48.5, 45.7, 43.0, 40.2, 37.4, 34.6], [57.1, 55.0, 53.0, 50.2, 47.5, 44.7, 41.9, 39.1], [61.6, 59.5, 57.5, 54.7, 51.9, 49.2, 46.4, 43.6], [66.1, 64.0, 62.0, 59.2, 56.4, 53.6, 50.8, 48.0], [70.6, 68.5, 66.4, 63.7, 60.9, 58.1, 55.3, 52.5], [75.1, 73, 70.9, 68.1, 65.3, 62.5, 59.7, 56.9]],
+  },
+};
+
+/** The size weight whose LVIDd (mm, parasternal long axis) is lvedd on heart key; held to the table. */
+export function lvSizeOf(heart, lvedd) {
+  return invert(LV_SZ, (LVD[heart] || LVD.normal).d, lvedd);
+}
+
+/**
+ * The weights that show LV diameters of lvedd and lvesd mm in the parasternal long axis on heart
+ * key: { size, k, esSize }, as lvWeights gives them for the volumes. The contraction stops at
+ * the heart's own; a smaller LVIDs makes the LV smaller at end-systole.
+ */
+export function lvDiamWeights(heart, lvedd, lvesd) {
+  const T = LVD[heart] || LVD.normal;
+  const size = invert(LV_SZ, T.d, lvedd);
+  const [is, ts] = cell(LV_SZ, size);
+  const s = LV_K.map((_, k) => lerp(T.s[is][k], T.s[is + 1][k], ts));
+  let n = 1;
+  while (n < s.length && s[n] < s[n - 1]) n++;
+  if (lvesd >= s[n - 1]) return { size, k: invert(LV_K.slice(0, n), s.slice(0, n), lvesd), esSize: size };
+  const col = LV_SZ.map((_, i) => T.s[i][n - 1]);
+  return { size, k: LV_K[n - 1], esSize: Math.min(size, invert(LV_SZ, col, lvesd)) };
+}
+
+/**
+ * The weights for an LV of size weight size that ejects ef %, by the traced volumes above at the
+ * heart's own wall: { size, wall, k, esSize }.
+ */
+export function lvByEf(heart, size, ef) {
+  const T = LV[heart] || LV.normal;
+  const [is, ts] = cell(LV_SZ, size);
+  const edv = lerp(T.ed[is][1], T.ed[is + 1][1], ts);
+  return lvWeights(heart, edv, edv * (1 - ef / 100), T.wall[1]);
+}
+
 // Foreshortening (chapter 09): the fraction of the traced length lost at end-diastole against the
 // probe's offset off the plane (cm, echo.js setFore), by LV size weight, on the normal heart.
 const FORE_SZ = [-0.6, 0, 0.5, 1, 1.5];

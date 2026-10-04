@@ -9,10 +9,13 @@
 // clears arx, and the values follow the slider again.
 import { Sheet, clamp } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
-import { RR, EV } from '../cyclemodel.js';
+import { RR, EV, cycleAt } from '../cyclemodel.js';
 import { AR_MILD, AR_SEVERE, AR_QUANT_LABEL, arIntegrated } from '../norms.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
-import { drawPLAX, plaxLV, cal, measures } from '../echo2d.js';
+import { drawPLAX, plaxLV, cal, measures, jet, barFor } from '../echo2d.js';
+import { MeshPanel } from '../meshpanel.js';
+import { lvDiamWeights } from '../meshcal.js';
+import { onPlane, hingesOf, leafletsOf, blood, cavity, middle, plaxCalipers, sub, add, mul, unit, perp } from '../meshjet.js';
 import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
@@ -235,32 +238,84 @@ function tagsOf(v) {
   return out;
 }
 
+// The long axis cut from the heart mesh (meshpanel.js): the heart the page shows, its LV at the
+// printed LVEDD and LVESD (meshcal.js lvDiamWeights), and the jet drawn on it as on the
+// parametric view. The page prints no LA size, so the LA is the heart's own. The scanner format
+// (jets.js) keeps the parametric view.
+const MESH = new MeshPanel('plax', { diseases: ['lvSize'], lv: true, redraw: () => { if (sheet) sheet.dirty = true; } });
+
+/**
+ * The jet on the mesh view at systolic weight s: from the middle of the shut aortic cusps into
+ * the LVOT and the LV, which clip it (the cusps' line and the mitral hinge line close them); the
+ * flow convergence stays in the aorta. P0 and n: where the caliper reads the jet's width, 0.7 cm
+ * below the cusps, and across it.
+ */
+function arJet(ev, s) {
+  const cusps = leafletsOf(ev, 'AorticValve');
+  if (!cusps.length) return null;
+  const an = ev.anchors(s), av = onPlane(ev, an.av), lvot = onPlane(ev, an.lvot), lv = onPlane(ev, an.lv);
+  const u = unit(sub(lvot, av));
+  const O = add(middle(cusps.flat()), mul(u, 0.1));
+  const dir = unit(add(mul(u, 0.6), mul(unit(sub(lv, O)), 0.4)));
+  const cuts = [[add(O, perp(u)), sub(O, perp(u))]];
+  const h = hingesOf(ev, 'MitralValve');
+  if (h) cuts.push(h);
+  const clip = cavity(ev, blood(ev, middle([lvot, lv])), cuts);
+  const aorta = cavity(ev, blood(ev, onPlane(ev, an.ao)), cuts.slice(0, 1));
+  return { O, dir, clip, aorta, P0: add(O, mul(dir, 0.7)), n: perp(dir) };
+}
+
 function plax(ctx, box, v, t) {
-  const g = {
-    ivs: [v.wall, v.wall * 1.5], pw: [v.wall, v.wall * 1.5], lvid: [v.lvedd / 10, v.lvesd / 10],
-    la: [v.la * 0.88, v.la], root: 3.3, lvot: v.lvotD, av: { thick: 0.12, open: v.lvotD - 0.1, gap: v.leak ? Math.min(0.3, v.vc * 0.45) : 0 },
-  };
   const u = diaFrac(t);
   const a = u > 0.02 && u < 0.98 ? Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05)), 0.25) : 0;
   // the jet slows through diastole as the CW trace does; it is widest where the jet/LVOT
   // caliper reads it, just below the valve
   const u0 = v.v0 * 100 * Math.pow(2, -(u * TD) / (2 * v.pht)), jl = 2.2 + 9 * v.eroa;
-  const jw = (v.jet / 100) * v.lvotD;
   // with no regurgitant volume the jet is drawn from the flow through its vena contracta
   const pisa = v.eroa > 0, q = pisa ? v.eroa * v.v0 * 100 : Math.PI * (Math.max(v.vc, 0.24) / 2) ** 2 * v.v0 * 100;
+  const lines = [`LVOT ${v.lvotD.toFixed(1)} cm`, `LVIDd ${v.lvedd} mm`, `LVIDs ${v.lvesd} mm`, `jet/LVOT ${v.jet}%`, ...tagsOf(v)];
+  const title = fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 60 cm/s', 'PLAX · COLOR 60');
+  if (JETS === 'plume') {
+    const heart = st.pheno || 'normal';
+    const W8 = lvDiamWeights(heart, v.lvedd, v.lvesd), sy = cycleAt(t).s;
+    MESH.draw(ctx, box, title, {
+      tms: t, disease: { lvSize: W8.size + (W8.esSize - W8.size) * sy }, lvK: W8.k,
+      deeper: Math.max(0, W8.size),
+      names: [['rv', 'RV'], ['lv', 'LV'], ['ao', 'Ao'], ['la', 'LA']],
+      over: (c, F, ev) => {
+        // the septum, the LV and the posterior wall, where chapter 18's calipers measure them
+        const K = plaxCalipers(ev, sy);
+        if (K) {
+          cal(c, F, K.ivs[0], K.ivs[1], '');
+          cal(c, F, add(K.lv[0], [0.1, 0]), add(K.lv[1], [0.1, 0]), '');
+          cal(c, F, K.pw[0], K.pw[1], '');
+        }
+        if (!v.leak) return;
+        const J = arJet(ev, sy);
+        if (!J) return;
+        const jw = (v.jet / 100) * v.lvotD;
+        jet(c, F, { q, va: 60, vc: v.vc, jl, jw, a, pisa, O: J.O, dir: J.dir, clip: J.clip, pclip: J.aorta });
+        barFor(c, F, -60, 60);
+        if (a > 0.4) cal(c, F, add(J.P0, mul(J.n, jw / 2)), add(J.P0, mul(J.n, -jw / 2)), '', { solid: true });
+      },
+      lines,
+    });
+    return;
+  }
+  // the scanner format: the parametric view, its LV and LA from the measurements
+  const g = {
+    ivs: [v.wall, v.wall * 1.5], pw: [v.wall, v.wall * 1.5], lvid: [v.lvedd / 10, v.lvesd / 10],
+    la: [v.la * 0.88, v.la], root: 3.3, lvot: v.lvotD, av: { thick: 0.12, open: v.lvotD - 0.1, gap: v.leak ? Math.min(0.3, v.vc * 0.45) : 0 },
+  };
+  const jw = (v.jet / 100) * v.lvotD;
   const after = (c, F, geo) => {
     plaxLV(c, geo);
     if (v.leak && a > 0.4) {
       const x = geo.xAnn - 0.7;
       cal(c, F, geo.R([x, geo.aoMid - jw / 2]), geo.R([x, geo.aoMid + jw / 2]), '', { solid: true });
     }
-    measures(c, F, [`LVOT ${v.lvotD.toFixed(1)} cm`, `LVIDd ${v.lvedd} mm`, `LVIDs ${v.lvesd} mm`, `jet/LVOT ${v.jet}%`, ...tagsOf(v)]);
+    measures(c, F, lines);
   };
-  const title = fit(box.w, 'PARASTERNAL LONG AXIS · COLOR 60 cm/s', 'PLAX · COLOR 60');
-  if (JETS === 'plume') {
-    drawPLAX(ctx, box, g, { t, depth: 16 + 1.6 * v.s, title, jets: v.leak ? { ar: { q, va: 60, vc: v.vc, jl, jw, a, pisa } } : {}, after });
-    return;
-  }
   drawPLAX(ctx, box, g, {
     t, depth: 16 + 1.6 * v.s, title,
     color: {
