@@ -376,25 +376,20 @@ export const MR_SEVERE = [
   ['lv', 'Enlarged LV with normal function', 'LVEDD >58 mm, LVEF >60%', (v) => v.lvedd > 58 && v.ef > 60],
 ];
 /**
- * The grade of chronic primary MR by Figure 18 (Zoghbi 2017). Four or more specific criteria for
- * mild MR give mild, and four or more for severe MR give severe. If both sets reach four, the
- * findings disagree, and the grade is indeterminate. Otherwise the quantitative grade decides: I
- * mild; II moderate; III moderate, or severe with three specific criteria for severe MR; IV
- * severe. Figure 18 gives no rule when the EROA, the regurgitant volume and the regurgitant
- * fraction fall in different grades; this site takes the middle grade of the three. Severe MR
- * with an LVEF ≤60% or an LV end-systolic diameter ≥40 mm is ACC/AHA stage C2 (Otto 2020).
- * No color signal (no flow convergence, vena contracta or jet) is no regurgitation.
- * v: as MR_MILD, and eroa (cm²), rf (%), lvesd (mm).
+ * The integrated grade of chronic regurgitation (Zoghbi 2017, Figures 18 and 25). Four or more
+ * specific criteria for mild regurgitation give mild, and four or more for severe give severe.
+ * If both sets reach four, the findings disagree, and the grade is indeterminate. Otherwise the
+ * quantitative grade decides: I mild; II moderate; III moderate, or severe with three specific
+ * criteria for severe regurgitation; IV severe. The figures give no rule when the quantitative
+ * measures fall in different grades; this site takes the middle grade. A severe grade with LV
+ * dysfunction (lvd) is ACC/AHA stage C2 (Otto 2020). none: no regurgitant signal.
+ * mild, severe: { criterion: met }; q: { measure: grade 1 to 4 }.
  */
-export function mrIntegrated(v) {
-  const mild = Object.fromEntries(MR_MILD.map(([k, , , t]) => [k, t(v)]));
-  const severe = Object.fromEntries(MR_SEVERE.map(([k, , , t]) => [k, t(v)]));
+function integrated({ mild, severe, q, lvd, none }) {
   const nMild = Object.values(mild).filter(Boolean).length, nSevere = Object.values(severe).filter(Boolean).length;
-  const q = { eroa: mrQuant('eroa', v.eroa), rvol: mrQuant('rvol', v.rvol), rf: mrQuant('rf', v.rf) };
-  const qg = [q.eroa, q.rvol, q.rf].sort((a, b) => a - b)[1];
-  const lvd = v.ef <= 60 || v.lvesd >= 40;
+  const qs = Object.values(q).sort((a, b) => a - b), qg = qs[Math.floor(qs.length / 2)];
   let path;
-  if (v.r <= 0 && v.vc <= 0 && v.jet <= 0) path = 'none';
+  if (none) path = 'none';
   else if (nMild >= 4 && nSevere >= 4) path = 'both';
   else if (nMild >= 4) path = 'mild';
   else if (nSevere >= 4) path = 'severe';
@@ -402,6 +397,67 @@ export function mrIntegrated(v) {
   const base = { none: 'none', both: 'indeterminate', mild: 'mild', severe: 'severe', q1: 'mild', q2: 'moderate', q3: 'moderate', q3s: 'severe', q4: 'severe' }[path];
   const grade = base === 'severe' && lvd ? 'severe, LV dysfunction' : base;
   return { mild, severe, nMild, nSevere, q, qg, lvd, path, grade };
+}
+const met = (list, v) => Object.fromEntries(list.map(([k, , , t]) => [k, t(v)]));
+/**
+ * Chronic primary MR by Figure 18. LV dysfunction: an LVEF ≤60% or an LV end-systolic diameter
+ * ≥40 mm. No color signal (no flow convergence, vena contracta or jet) is no regurgitation.
+ * v: as MR_MILD, and eroa (cm²), rf (%), lvesd (mm).
+ */
+export function mrIntegrated(v) {
+  const q = { eroa: mrQuant('eroa', v.eroa), rvol: mrQuant('rvol', v.rvol), rf: mrQuant('rf', v.rf) };
+  return integrated({ mild: met(MR_MILD, v), severe: met(MR_SEVERE, v), q, lvd: v.ef <= 60 || v.lvesd >= 40, none: v.r <= 0 && v.vc <= 0 && v.jet <= 0 });
+}
+
+// Chronic aortic regurgitation, Zoghbi 2017 Figure 25 and Table 11. The quantitative grades I to
+// IV of each measure: the lower limits of grades II, III and IV.
+export const AR_QUANT = {
+  rvol: [30, 45, 60],      // mL
+  rf: [30, 40, 50],        // %
+  eroa: [0.1, 0.2, 0.3],   // cm²
+};
+export const AR_QUANT_LABEL = {
+  rvol: ['<30', '30–44', '45–59', '≥60'],
+  rf: ['<30', '30–39', '40–49', '≥50'],
+  eroa: ['<0.10', '0.10–0.19', '0.20–0.29', '≥0.30'],
+};
+export const arQuant = (k, x) => 1 + AR_QUANT[k].filter((c) => x >= c).length;
+/**
+ * The specific criteria of Figure 25: [key, criterion, the rule this site applies, test]. The
+ * figure gives no number for the flow convergence, the CW jet, the LV size, the LV function or
+ * the diastolic flow reversal. Here the flow convergence is the observer's call (small,
+ * intermediate or large); the CW jet is soft where the CW panel draws it faint, at a regurgitant
+ * volume <30 mL; a normal LV has an end-diastolic diameter ≤58 mm (Lang 2015, men); normal LV
+ * function in AR is an LVEF >55% (Otto 2020: an LVEF ≤55% is LV dysfunction); and prominent
+ * holodiastolic reversal has an end-diastolic velocity ≥20 cm/s (EACVI, Lancellotti 2022).
+ * v: vc (cm), jet (% of LVOT), conv ('small' | 'intermediate' | 'large'), rvol (mL), pht (ms),
+ * edv (cm/s), lvedd (mm), ef (%), flail (true or false).
+ */
+export const AR_MILD = [
+  ['vc', 'Vena contracta', '<0.3 cm', (v) => v.vc < 0.3],
+  ['jet', 'Central jet width', '<25% of LVOT', (v) => v.jet < 25],
+  ['conv', 'Small or no flow convergence', '', (v) => v.conv === 'small'],
+  ['cw', 'Soft or incomplete CW jet', 'faint: RVol <30 mL', (v) => v.rvol < 30],
+  ['pht', 'Pressure half-time', '>500 ms', (v) => v.pht > 500],
+  ['size', 'Normal LV size', 'LVEDD ≤58 mm', (v) => v.lvedd <= 58],
+];
+export const AR_SEVERE = [
+  ['flail', 'Flail valve', '', (v) => !!v.flail],
+  ['vc', 'Vena contracta', '>0.6 cm', (v) => v.vc > 0.6],
+  ['jet', 'Central jet width', '≥65% of LVOT', (v) => v.jet >= 65],
+  ['conv', 'Large flow convergence', '', (v) => v.conv === 'large'],
+  ['pht', 'Pressure half-time', '<200 ms', (v) => v.pht < 200],
+  ['dao', 'Holodiastolic reversal in the descending aorta', 'end-diastolic ≥20 cm/s', (v) => v.edv >= 20],
+  ['lv', 'Enlarged LV with normal function', 'LVEDD >58 mm, LVEF >55%', (v) => v.lvedd > 58 && v.ef > 55],
+];
+/**
+ * Chronic AR by Figure 25. LV dysfunction: an LVEF ≤55%, or an LV end-systolic diameter >50 mm
+ * or >25 mm/m² (Otto 2020). No vena contracta, jet or regurgitant volume is no regurgitation.
+ * v: as AR_MILD, and eroa (cm²), rf (%), lvesd (mm), lvesdi (mm/m²).
+ */
+export function arIntegrated(v) {
+  const q = { rvol: arQuant('rvol', v.rvol), rf: arQuant('rf', v.rf), eroa: arQuant('eroa', v.eroa) };
+  return integrated({ mild: met(AR_MILD, v), severe: met(AR_SEVERE, v), q, lvd: v.ef <= 55 || v.lvesd > 50 || v.lvesdi > 25, none: v.vc <= 0 && v.jet <= 0 && v.rvol <= 0 });
 }
 
 // Lang 2015 ranges by sex for the report: [normal lo, normal hi, mild hi, moderate hi]; above

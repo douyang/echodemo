@@ -164,10 +164,11 @@ export const VIDEOS = {
     quant: { arS: 0.005 },
     steps: [
       { set: { arS: 0, arCine: true }, name: 'No aortic regurgitation', track: 'None', line: '', hold: 5 },
-      { set: { arS: 0.15 }, name: 'Mild aortic regurgitation', track: 'Mild', move: 4, hold: 6 },
-      { set: { arS: 0.41 }, name: 'Moderate aortic regurgitation', track: 'Moderate', move: 4, hold: 6 },
-      { set: { arS: 0.66 }, name: 'Severe aortic regurgitation', track: 'Severe', move: 4, hold: 6 },
-      { set: { arS: 0.9 }, name: 'Severe aortic regurgitation with LV dysfunction', track: 'LV dysfunction', pick: [0, 2], move: 4, hold: 7 },
+      // the numbers, the Figure 25 criteria, then the LV (mild, moderate) or the ACC/AHA stage (severe)
+      { set: { arS: 0.15 }, name: 'Mild aortic regurgitation', track: 'Mild', pick: [0, 1, 2], move: 4, hold: 6 },
+      { set: { arS: 0.41 }, name: 'Moderate aortic regurgitation', track: 'Moderate', pick: [0, 1, 2], move: 4, hold: 6 },
+      { set: { arS: 0.66 }, name: 'Severe aortic regurgitation', track: 'Severe', pick: [0, 1, 3], move: 4, hold: 6 },
+      { set: { arS: 0.9 }, name: 'Severe aortic regurgitation with LV dysfunction', track: 'LV dysfunction', pick: [0, 1, 3], move: 4, hold: 7 },
     ],
   },
   ms: {

@@ -476,7 +476,7 @@ function buildDiagram(host) {
   const input = (k) => (k === 'flail'
     ? `<div class="ase-row asx-in" data-row="flail" role="group" aria-label="${NAME.flail}">
       <span class="ase-nm">${NAME.flail}</span>
-      <span class="seg mrx-tg"><button type="button" data-k="flail" data-dir="-1" aria-pressed="true">No</button><button type="button" data-k="flail" data-dir="1" aria-pressed="false">Yes</button></span>
+      <span class="seg rgx-tg"><button type="button" data-k="flail" data-dir="-1" aria-pressed="true">No</button><button type="button" data-k="flail" data-dir="1" aria-pressed="false">Yes</button></span>
     </div>`
     : `<div class="ase-row asx-in" data-row="${k}" role="group" aria-label="${NAME[k]}">
       <span class="ase-nm">${NAME[k]}</span>
@@ -484,7 +484,7 @@ function buildDiagram(host) {
     </div>`);
   const group = ([s, name, sub, keys]) => `<div class="ase-step is-on asx-step" data-s="${s}">
       <p class="ase-sh"><span class="ase-sn">${name}</span><span class="ase-sx">${sub}</span></p>
-      ${keys.map(input).join('')}${s === 'spec' ? '<p class="ase-note asx-note mrx-dur"></p>' : ''}
+      ${keys.map(input).join('')}${s === 'spec' ? '<p class="ase-note asx-note rgx-dur"></p>' : ''}
     </div>`;
   const nums = (k) => FORMULA[k][1].map((p) => (typeof p === 'string' ? p : `<i data-x="${p.k}" style="--w:${WIDE[p.k]}ch"></i>`)).join('');
   const chips = (k) => `<span class="asx-chips" aria-hidden="true">${MR_QUANT_LABEL[k].map((lab, i) => `<span class="asx-c" data-i="${i + 1}" data-l="${QLEV[i + 1]}">${ROMAN[i + 1]} ${lab}</span>`).join('')}</span>`;
@@ -494,7 +494,7 @@ function buildDiagram(host) {
       ${QUANT.includes(k) ? chips(k) : ''}
     </div>`;
   const crit = (set) => ([k, name, rule]) => `<p class="asx-q" data-c="${set}:${k}"><i class="ase-mk" aria-hidden="true"></i><span class="asx-qn">${name}</span>${rule ? `<span class="asx-qr">${rule}</span>` : ''}<span class="asx-qs"></span></p>`;
-  const set = (s, name, list) => `<div class="mrx-set" data-set="${s}"><p class="mrx-sh"><span>${name}</span><span class="ase-count"></span></p>${list.map(crit(s)).join('')}</div>`;
+  const set = (s, name, list) => `<div class="rgx-set" data-set="${s}"><p class="rgx-sh"><span>${name}</span><span class="ase-count"></span></p>${list.map(crit(s)).join('')}</div>`;
   host.innerHTML = `
     <div class="ase-tbar"><h3 class="ase-title">Calculations and grades</h3><button type="button" class="ase-reset is-off" aria-label="Reset the edited values">Reset</button></div>
     <div class="ase-head">
@@ -505,7 +505,7 @@ function buildDiagram(host) {
     <div class="ase-step is-on asx-step" data-s="quant">
       <p class="ase-sh"><span class="ase-sn">Quantitation</span><span class="ase-sx">PISA method and the ASE grades I to IV<span class="cite" data-ref="zoghbi2017"></span></span><a class="asx-go" href="#pressure" data-go="pressure" aria-label="The flow rate: chapter ${numOf('pressure')}, Doppler hemodynamics">${numOf('pressure')} Pressure →</a></p>
       ${['flow', ...QUANT].map(eq).join('')}
-      <p class="asx-q mrx-qg"><span class="asx-qn">Quantitative grade</span><span class="asx-qr">the middle grade of the three</span><span class="asx-qs"></span></p>
+      <p class="asx-q rgx-qg"><span class="asx-qn">Quantitative grade</span><span class="asx-qr">the middle grade of the three</span><span class="asx-qs"></span></p>
       <p class="ase-note asx-note">${QUANT_NOTE}</p>
     </div>
     <div class="ase-step is-on asx-step" data-s="crit">
@@ -520,7 +520,7 @@ function buildDiagram(host) {
     </div>`;
   const q = (s) => host.querySelector(s);
   dg = {
-    host, result: q('.ase-result'), head: q('.ase-result b'), sub: q('.ase-result span'), change: q('.ase-change'), reset: q('.ase-reset'), dur: q('.mrx-dur'),
+    host, result: q('.ase-result'), head: q('.ase-result b'), sub: q('.ase-result span'), change: q('.ase-change'), reset: q('.ase-reset'), dur: q('.rgx-dur'),
     rows: Object.fromEntries(IN.map((k) => {
       const el = q(`[data-row="${k}"]`);
       return [k, { el, v: el.querySelector('.ase-v b'), dn: el.querySelector('[data-dir="-1"]'), up: el.querySelector('[data-dir="1"]') }];
@@ -530,8 +530,8 @@ function buildDiagram(host) {
       el, v: el.querySelector('.asx-v b'), st: el.querySelector('.asx-st'), chips: el.querySelector('.asx-chips'),
       cs: [...el.querySelectorAll('.asx-c')], xs: [...el.querySelectorAll('[data-x]')],
     }])),
-    qg: { el: q('.mrx-qg'), st: q('.mrx-qg .asx-qs') },
-    sets: Object.fromEntries([...host.querySelectorAll('.mrx-set')].map((el) => [el.dataset.set, { el, n: el.querySelector('.ase-count') }])),
+    qg: { el: q('.rgx-qg'), st: q('.rgx-qg .asx-qs') },
+    sets: Object.fromEntries([...host.querySelectorAll('.rgx-set')].map((el) => [el.dataset.set, { el, n: el.querySelector('.ase-count') }])),
     crit: Object.fromEntries([...host.querySelectorAll('[data-c]')].map((el) => [el.dataset.c, { el, st: el.querySelector('.asx-qs') }])),
     lvd: { el: q('[data-q="lvd"]'), st: q('[data-q="lvd"] .asx-qs') },
     br: Object.fromEntries([...host.querySelectorAll('.asx-br')].map((el) => [el.dataset.b, el])),
