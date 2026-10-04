@@ -281,7 +281,7 @@ function plax(ctx, box, v, t) {
     MESH.draw(ctx, box, title, {
       tms: t, disease: { lvSize: W8.size + (W8.esSize - W8.size) * sy }, lvK: W8.k,
       deeper: Math.max(0, W8.size),
-      names: [['rvant', 'RV'], ['plv', 'LV'], ['ao', 'Ao'], ['la', 'LA']],
+      names: [['prv', 'RV'], ['plv', 'LV'], ['ao', 'Ao'], ['la', 'LA']],
       over: (c, F, ev) => {
         // the septum, the LV and the posterior wall, where chapter 18's calipers measure them;
         // the LV's caliper 1 mm beside the walls' toward the base

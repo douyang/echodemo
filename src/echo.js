@@ -458,7 +458,7 @@ const FULL = {
 };
 // short names for a narrow cross-section pane, where the full ones meet (A3C at 320 px)
 const SHORT = { anteroseptal: 'Ant-sept', inferolateral: 'Inf-lat' };
-const ROOMY = new Set(['la', 'ra', 'lv', 'plv', 'rv', 'rvant', 'rvot', 'mpa', 'ao', 'asc', 'arch', 'desc', 'ivc', 'ivcl', 'rpa', 'lpa', 'svc', 'abdao']);
+const ROOMY = new Set(['la', 'ra', 'lv', 'plv', 'rv', 'prv', 'rvant', 'rvot', 'mpa', 'ao', 'asc', 'arch', 'desc', 'ivc', 'ivcl', 'rpa', 'lpa', 'svc', 'abdao']);
 
 export class EchoView {
   /**
@@ -1449,21 +1449,23 @@ export class EchoView {
     an.mpa = V3(...VESSELS.paMid);
     an.rpa = V3(...VESSELS.rpaMid);
     an.lpa = V3(...VESSELS.lpaMid);
-    // the parasternal long axis: the septum, the cavity and the inferolateral wall named where its
-    // sector shows them, 1 cm toward the base from the calipers' level (30% of the way from the
-    // LV's middle to the mitral valve), across the LV in that plane, the septum toward the probe;
-    // the RV outflow in front of the LVOT. The LV's middle lies outside the sector
+    // the parasternal long axis: the septum and the inferolateral wall named where the calipers
+    // cross them (30% of the way from the LV's middle to the mitral valve), across the LV in that
+    // plane, the septum toward the probe; the cavity 1.2 cm toward the apex from there and the
+    // RV 1 cm in front of the septum (prv, the chapters' panels); the RV outflow in front of the
+    // LVOT (rvant, the tag RVOT)
     const gp = this.geoms.plax;
     if (gp) {
       const zIn = A.axis.clone().addScaledVector(gp.n, -A.axis.dot(gp.n)).normalize();
       const w = new THREE.Vector3().crossVectors(gp.n, zIn).normalize();
       if (w.dot(gp.d) > 0) w.negate();
-      const b = an.lv.clone().lerp(an.mv, 0.3).addScaledVector(zIn, 1.0);
-      an.plv = b;
-      an.asw = b.clone().addScaledVector(w, lvid / 2 + this.geo.ivs * mm / 2);
-      an.ilw = b.clone().addScaledVector(w, -(lvid / 2 + wall / 2));
+      const c = an.lv.clone().lerp(an.mv, 0.3);
+      an.plv = c.clone().addScaledVector(zIn, -1.2);
+      an.asw = c.clone().addScaledVector(w, lvid / 2 + this.geo.ivs * mm / 2);
+      an.ilw = c.clone().addScaledVector(w, -(lvid / 2 + wall / 2));
+      an.prv = c.clone().addScaledVector(w, lvid / 2 + this.geo.ivs * mm + 1.0);
       an.rvant = an.lvot.clone().addScaledVector(w, 2.4);
-    } else an.plv = an.lv;
+    } else { an.plv = an.lv; an.prv = an.rv; }
     return an;
   }
 
