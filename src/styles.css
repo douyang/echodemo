@@ -1152,19 +1152,24 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="ivc"] .ase-head { position: static; }
   html[data-ch="ivc"] .ase-b, html[data-ch="ivc"] .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 12px); }
 }
-/* ------------------------------------------------- Mitral regurgitation: Figure 18 (Zoghbi 2017)
-   The classes of the aortic stenosis diagram (.asx), with the specific criteria in two sets and a
-   switch for a flail leaflet. src/ch/mr.js */
-.mrx-set { margin-top: 5px; }
-.mrx-set + .mrx-set { margin-top: 7px; padding-top: 5px; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); }
-.mrx-sh { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 1px !important; font: 500 0.75rem/1.25 var(--sans); color: var(--ink-2); }
-.mrx-set.is-on .mrx-sh { color: var(--ink); }
-.mrx-set[data-set="mild"].is-on .ase-count, .mrx-set[data-set="mild"] .asx-q.is-on .asx-qs { color: var(--accent); }
-.mrx-set[data-set="mild"] .asx-q.is-on .ase-mk { border-color: var(--accent); background: var(--accent); }
-.mrx-set[data-set="severe"].is-on .ase-count { color: var(--flag); }
-.mrx-qg { margin-top: 2px !important; }
+/* ------------------------------------------------- Regurgitation: Figures 18 and 25 (Zoghbi 2017)
+   The classes of the aortic stenosis diagram (.asx), with the specific criteria in two sets and
+   switches (a flail leaflet or valve; the AR flow convergence). src/ch/mr.js, src/ch/ar.js */
+.rgx-set { margin-top: 5px; }
+.rgx-set + .rgx-set { margin-top: 7px; padding-top: 5px; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); }
+.rgx-sh { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 1px !important; font: 500 0.75rem/1.25 var(--sans); color: var(--ink-2); }
+.rgx-set.is-on .rgx-sh { color: var(--ink); }
+.rgx-set[data-set="mild"].is-on .ase-count, .rgx-set[data-set="mild"] .asx-q.is-on .asx-qs { color: var(--accent); }
+.rgx-set[data-set="mild"] .asx-q.is-on .ase-mk { border-color: var(--accent); background: var(--accent); }
+.rgx-set[data-set="severe"].is-on .ase-count { color: var(--flag); }
+.rgx-qg { margin-top: 2px !important; }
 .asx-q[data-q="lvd"] { margin-top: 7px !important; padding-top: 5px; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); }
-.mrx-qg.is-on .asx-qs { color: var(--flag); }
+.rgx-qg.is-on .asx-qs { color: var(--flag); }
 /* the flail switch: buttons as tall as the ▲▼ buttons, and clear of the sticky result when focused */
-.mrx-tg button { min-height: 32px; padding: 0 14px; scroll-margin-top: 110px; scroll-margin-bottom: 12px; }
-@media (pointer: coarse) { .mrx-tg button { min-height: 40px; padding: 0 16px; } }
+.rgx-tg button { min-height: 32px; padding: 0 14px; scroll-margin-top: 110px; scroll-margin-bottom: 12px; }
+@media (pointer: coarse) { .rgx-tg button { min-height: 40px; padding: 0 16px; } }
+/* a switch of three: under its name in a narrow text */
+@container ase (max-width: 360px) {
+  .asx .ase-row.rgx-row3 { grid-template-columns: minmax(0, 1fr); row-gap: 4px; padding-block: 4px; }
+  .rgx-row3 .rgx-tg { justify-self: end; }
+}
