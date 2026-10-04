@@ -241,6 +241,29 @@ function laField(F, P, x, y, z, out, wRegion) {
   const k = (P.la - 1) * up * (1 - smooth((d - 3.2) / 2.5)) * wRegion;
   out[0] += qx * k; out[1] += qy * k; out[2] += qz * k;
 }
+/**
+ * The descending aorta stops the large atrium and its veins. A wall point that the fields take
+ * nearer the aorta's axis than DESC_R goes back out along the radius, by a smooth maximum, so the
+ * aorta leaves its mark on the atrium's back wall (as a large LA shows in the long axis) and no
+ * vein runs into it. desc: the axis (preparePhenotypes); out: the point's change, made smaller.
+ */
+function descGuard(desc, x, y, z, out) {
+  const [w, r, rx, ry, rz] = descAxis(desc, x + out[0], y + out[1], z + out[2]);
+  if (w <= 0 || r < 1e-3 || r > DESC_R + 8 * DESC_SOFT) return;
+  const k = (w * (DESC_R + DESC_SOFT * Math.log1p(Math.exp((r - DESC_R) / DESC_SOFT)) - r)) / r;
+  out[0] += rx * k; out[1] += ry * k; out[2] += rz * k;
+}
+/** A point against the descending aorta's axis: [weight along it (1 on its length), r, radius vector]. */
+function descAxis(desc, x, y, z) {
+  const { A, u, t0, t1 } = desc;
+  const px = x - A.x, py = y - A.y, pz = z - A.z;
+  const t = px * u.x + py * u.y + pz * u.z;
+  const rx = px - t * u.x, ry = py - t * u.y, rz = pz - t * u.z;
+  return [smooth((t - t0 + 0.8) / 0.8) * (1 - smooth((t - t1) / 0.6)), Math.hypot(rx, ry, rz), rx, ry, rz];
+}
+// The descending aorta's wall lies 1.35 to 1.44 cm from the axis from VESSELS.desc to descLow
+// (1.5 cm above desc to 7 cm below it, where the model ends it); the guard keeps 1 mm more.
+const DESC_R = 1.55, DESC_SOFT = 0.15;
 /** The ascending aorta widened (bicuspid aortopathy): out from its centre line. */
 function aortaField(F, P, x, y, z, out, wRegion, line) {
   if (!P.aorta || wRegion <= 0) return;
@@ -310,7 +333,15 @@ export function preparePhenotypes(meshes, anat, turn, VESSELS) {
     else { const q = nearest(GAO, x, y, z, 1, 2.0); aoNear[i] = q.length ? 1 - smooth((Math.sqrt(q[0][1]) - 0.4) / 1.0) : 0; }
   }
   const aoLine = [F.av, V3(...VESSELS.ascMid), V3(...VESSELS.archTop)];
-  return { meshes, anat, F, REG, lvMask, laNear, aoNear, aoLine, mpos, nMyo };
+  const dA = V3(...VESSELS.desc);
+  const desc = { A: dA, u: V3(...VESSELS.descLow).sub(dA).normalize(), t0: -1.5, t1: 6.8 };
+  // the descending aorta holds its place: the large atrium meets it (descGuard) and does not move it
+  for (let i = 0; i < nMyo; i++) {
+    if (REG[i] !== 5 || !laNear[i]) continue;
+    const [w, r] = descAxis(desc, mpos[3 * i], mpos[3 * i + 1], mpos[3 * i + 2]);
+    laNear[i] *= 1 - w * (1 - smooth((r - 1.5) / 0.5));
+  }
+  return { meshes, anat, F, REG, lvMask, laNear, aoNear, aoLine, desc, mpos, nMyo };
 }
 
 /**
@@ -318,7 +349,7 @@ export function preparePhenotypes(meshes, anat, turn, VESSELS) {
  * scale at a point, sys(x, y, z), and its landmarks, landmark(name, s) (cm).
  */
 export function buildPhenotype(ctx, key) {
-  const { meshes, anat, F, lvMask, laNear, aoNear, aoLine, mpos, nMyo } = ctx;
+  const { meshes, anat, F, REG, lvMask, laNear, aoNear, aoLine, desc, mpos, nMyo } = ctx;
   const out = {};
   {
     const P = MESH[key];
@@ -354,6 +385,7 @@ export function buildPhenotype(ctx, key) {
       annulusField(F, P, x, y, z, d);
       laField(F, P, x, y, z, d, laNear[i]);
       aortaField(F, P, x, y, z, d, aoNear[i], aoLine);
+      if (P.la && (REG[i] === 3 || REG[i] === 7)) descGuard(desc, x, y, z, d);
       const aw = amyAt(i, x, y, z);
       for (let k = 0; k < 3; k++) ed[3 * i + k] = d[k] + aw * amyT[3 * i + k];
       const sc = scaleAt(x, y, z);
