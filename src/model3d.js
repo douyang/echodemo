@@ -22,13 +22,13 @@ export function loadModel() {
       // and each coronary artery leaves its own sinus (ASE 2019, Table 2.9).
       // The model's pulmonary trunk rises steeply from its valve; re-shaped, it runs back round
       // the left side of the aorta, as in the great-vessel short axis (gl/pabend.js).
-      // The left pulmonary veins' shared mouth is pressed into the line of the atrial wall in the
-      // four-chamber plane (the mesh carries the veins' course), the papillary muscles stay inside
-      // the heart, and the RV gets its trabeculations (gl/rvdetail.js).
+      // The papillary muscles stay inside the heart, and the RV gets its trabeculations
+      // (gl/rvdetail.js). The left pulmonary veins need no change: the mesh brings the lower one
+      // into the back of the atrium, clear of the four-chamber planes, so RVD.seatLeftVeins is not
+      // called.
       const prepare = (meshes) => {
         if (meshes.AorticValve) turnValve(meshes.AorticValve, anat.point('av', 0, 0), anat.aorticRoot, 60);
         bendPA(meshes, anat.point('pv', 0, 0));
-        RVD.seatLeftVeins(meshes, anat, { bend: false });
         RVD.trabeculate(meshes, anat);
         RVD.holdPapillary(meshes);
       };

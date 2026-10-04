@@ -1,12 +1,11 @@
-// Three changes to the heart model when it loads (model3d.js), after the pulmonary artery's bend:
-//   seatLeftVeins  The left pulmonary veins' shared mouth crosses the apical four-chamber plane
-//                  beside the mitral annulus; it is pressed into the line of the atrial wall. The
-//                  heart mesh now carries the veins' course (heartmodel's anatomy.py: the upper one
-//                  left, back and up, the lower one back, left and a little down, in front of the
-//                  descending aorta), so model3d.js calls this with bend: false. The bend, kept for
-//                  the older mesh, turned each built vein over its first centimetre; its systolic
-//                  and amyloid displacements did not turn with it, so in systole the veins crossed
-//                  the atrial wall and the lower one ran into the descending aorta.
+// Changes to the heart model when it loads (model3d.js), after the pulmonary artery's bend:
+//   seatLeftVeins  Kept, not called. The older meshes' left pulmonary veins left the atrium's
+//                  lateral wall beside the mitral annulus, in the apical four-chamber planes; this
+//                  turned each vein over its first centimetre (bend) and pressed their shared mouth
+//                  into the line of the atrial wall. The press also pulled the amyloid atrium's
+//                  lateral wall back to that line, by up to 15 mm. The heart mesh now brings the
+//                  lower left vein into the back of the atrium (heartmodel's anatomy.py), clear of
+//                  the four-chamber planes.
 //   holdPapillary  An RV papillary muscle ran out through the RV free wall. Every papillary point
 //                  now stays at least 1.2 mm inside the heart's outer surface.
 //   trabeculate    The RV's trabeculations: the moderator band from the septum to the free wall,
