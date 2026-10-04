@@ -11,8 +11,14 @@ import { RR, EV } from '../cyclemodel.js';
 import { bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, note, LEVEL, fit } from '../sev.js';
 import { drawA4C, measures } from '../echo2d.js';
 import { reducedMotion } from '../state.js';
+import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
+
+/** A ▲▼ edit renders again and keeps its button under the pointer (edits.js). */
+const steady = (btn, fn) => holdPlace('#ch-fill .live', btn, fn);
+/** The slider for result g (edits.js): where it is if that is in a band of g, else the middle of the nearest band of g. */
+const slideTo = (f, g) => slideOf(f, g, BANDS, 3, 100);
 
 // Illustrative values at four points of the slider (not patient data).
 const KEYS = [
@@ -49,7 +55,6 @@ const INPUTS = {
   A: { d: 2, step: 0.05, min: 0.2, max: 1.2 },
 };
 const IN = Object.keys(INPUTS);
-const round = (x, d) => Math.round(x * 10 ** d + 1e-7) / 10 ** d;
 
 /**
  * Values as reported: the nine at their decimals, and the ratios from them at theirs. The
@@ -116,15 +121,6 @@ const STAGE = { normal: 'normal', g1: 'grade 1', ng: 'not graded', g2: 'grade 2'
 const PATTERN = { normal: 'normal', g1: 'slow relaxation', ng: 'normal LA pressure', g2: 'raised LA pressure', g3: 'restrictive' };
 const gradeLabel = (f) => STAGE[outOf(lapAlgorithm(measure(fillValues(f))))];
 let BANDS = [];
-
-/** The slider for outcome g: where it is if that is in a band of g, else the middle of the nearest band of g. */
-function slideTo(f, g) {
-  const x = f / 3, of = BANDS.filter((b) => b.g === g);
-  if (!of.length || of.some((b) => x >= b.a && (x < b.b || b.b === 1))) return f;
-  const dist = (b) => (x < b.a ? b.a - x : x - b.b);
-  const b = of.reduce((p, q) => (dist(q) < dist(p) ? q : p));
-  return Math.round(((b.a + b.b) / 2) * 300) / 100;
-}
 
 let sheet = null, st = null, setState = null;
 
@@ -547,12 +543,6 @@ function buildDiagram(host) {
   });
 }
 
-/** One step up or down from x, on the step's grid, within the limits. */
-function stepOf(x, I, dir) {
-  const n = dir > 0 ? Math.floor(x / I.step + 1e-6) + 1 : Math.ceil(x / I.step - 1e-6) - 1;
-  return round(clamp(n * I.step, I.min, I.max), I.d);
-}
-
 /** The keys of fx that differ from the model's values where the edits started. */
 function editedOf(fx) {
   const m = measure(fillValues(fx.base));
@@ -560,25 +550,6 @@ function editedOf(fx) {
 }
 
 const freeLive = () => { const live = document.querySelector('#ch-fill .live'); if (live?.style.minHeight) live.style.minHeight = ''; };
-/** The box that scrolls the text: the panel beside the figure, or the page on a phone. */
-const scroller = (el) => { const p = el.closest('.panel'); return p && p.scrollHeight > p.clientHeight + 1 && getComputedStyle(p).overflowY !== 'visible' ? p : null; };
-
-/**
- * Keep a clicked button under the pointer while the text above it changes: the live sentence
- * keeps its height until the values follow the slider again, and growth above the button
- * scrolls away.
- */
-function steady(btn, fn) {
-  const live = document.querySelector('#ch-fill .live');
-  if (live) live.style.minHeight = `${Math.max(live.offsetHeight, parseFloat(live.style.minHeight) || 0)}px`;
-  const y0 = btn?.getBoundingClientRect().top;
-  fn();
-  if (!btn || !btn.isConnected) return;
-  const dy = btn.getBoundingClientRect().top - y0;
-  if (Math.abs(dy) < 0.5) return;
-  const p = scroller(btn);
-  if (p) p.scrollTop += dy; else window.scrollBy(0, dy);
-}
 
 /** A ▲▼ click: the edited values and the slider at their grade, in one patch; Play and the tour stop. */
 function edit(k, dir, btn = null) {
@@ -694,19 +665,6 @@ function changeLine(P, M, cause) {
   if (cause.kind === 'edit' && cause.k === 'ivrt') parts.push(IVRT_LINE);
   parts.push(P.out === M.out ? `Result: ${STAGE[M.out]}, no change` : `Result: ${STAGE[P.out]} → ${STAGE[M.out]}`);
   return { text: `${head}: ${parts.join('. ')}.`, crossed };
-}
-
-const timers = new WeakMap();
-/** A short flash on an element (none with reduced motion): the class goes after 1.4 s. */
-function flash(el, cls = 'is-flash') {
-  if (!el || reducedMotion) return;
-  el.classList.remove(cls);
-  void el.offsetWidth;   // restart the animation
-  el.classList.add(cls);
-  const all = timers.get(el) || {};
-  clearTimeout(all[cls]);
-  all[cls] = setTimeout(() => el.classList.remove(cls), 1400);
-  timers.set(el, all);
 }
 
 function flashChanges(P, M, cause) {

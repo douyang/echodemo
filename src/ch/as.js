@@ -15,10 +15,16 @@ import { asGrade, asCriteria, AS_BANDS } from '../norms.js';
 import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
 import { drawA5C, drawPSAXav, measures, cal, heartShown } from '../echo2d.js';
 import { reducedMotion } from '../state.js';
+import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash, FLASH } from '../edits.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
 import { numOf } from '../order.js';
 import { JETS } from '../jets.js';
+
+/** A ▲▼ edit renders again and keeps its button under the pointer (edits.js). */
+const steady = (btn, fn) => holdPlace('#ch-as .live', btn, fn);
+/** The slider for result g (edits.js): where it is if that is in a band of g, else the middle of the nearest band of g. */
+const slideTo = (x, g) => slideOf(x, g, BANDS);
 
 const KEY = 'asS';
 const ET = 0.292;                    // s, the model's ejection time (Alhakak 2025 mean)
@@ -115,7 +121,6 @@ const INPUTS = {
 };
 const IN = Object.keys(INPUTS);
 const DEC = { csa: 2, sv: 0, svi: 0, ava: 2, avai: 2, dvi: 2, vr: 2, pg: 0, mg: 0, f2: 2, ...Object.fromEntries(IN.map((k) => [k, INPUTS[k].d])) };
-const round = (x, d) => Math.round(x * 10 ** d + 1e-7) / 10 ** d;
 
 /**
  * Values as reported: the six measurements at their decimals, and each calculation from them at
@@ -168,15 +173,6 @@ const HEAD = {
 };
 const SEVERE = new Set(['severe', 'very severe', 'severe, LV dysfunction', 'NF-LG', 'paradoxical LF-LG', 'classical LF-LG']);
 let BANDS = [];
-
-/** The slider for result g: where it is if that is in a band of g, else the middle of the nearest band of g. */
-function slideTo(x, g) {
-  const of = BANDS.filter((b) => b.g === g);
-  if (!of.length || of.some((b) => x >= b.a && (x < b.b || b.b === 1))) return x;
-  const dist = (b) => (x < b.a ? b.a - x : x - b.b);
-  const b = of.reduce((p, q) => (dist(q) < dist(p) ? q : p));
-  return Math.round(((b.a + b.b) / 2) * 200) / 200;
-}
 
 let sheet = null, st = null, setState = null;
 const beat = new Beat(RR);
@@ -436,12 +432,6 @@ function buildDiagram(host) {
   });
 }
 
-/** One step up or down from x, on the step's grid, within the limits. */
-function stepOf(x, I, dir) {
-  const n = dir > 0 ? Math.floor(x / I.step + 1e-6) + 1 : Math.ceil(x / I.step - 1e-6) - 1;
-  return round(clamp(n * I.step, I.min, I.max), I.d);
-}
-
 /** The keys of ax that differ from the model's values where the edits started. */
 function editedOf(ax) {
   const m = measure(modelAt(ax.base));
@@ -449,25 +439,6 @@ function editedOf(ax) {
 }
 
 const freeLive = () => { const live = document.querySelector('#ch-as .live'); if (live?.style.minHeight) live.style.minHeight = ''; };
-/** The box that scrolls the text: the panel beside the figure, or the page on a phone. */
-const scroller = (el) => { const p = el.closest('.panel'); return p && p.scrollHeight > p.clientHeight + 1 && getComputedStyle(p).overflowY !== 'visible' ? p : null; };
-
-/**
- * Keep a clicked button under the pointer while the text above it changes: the live sentence
- * keeps its height until the values follow the slider again, and growth above the button
- * scrolls away.
- */
-function steady(btn, fn) {
-  const live = document.querySelector('#ch-as .live');
-  if (live) live.style.minHeight = `${Math.max(live.offsetHeight, parseFloat(live.style.minHeight) || 0)}px`;
-  const y0 = btn?.getBoundingClientRect().top;
-  fn();
-  if (!btn || !btn.isConnected) return;
-  const dy = btn.getBoundingClientRect().top - y0;
-  if (Math.abs(dy) < 0.5) return;
-  const p = scroller(btn);
-  if (p) p.scrollTop += dy; else window.scrollBy(0, dy);
-}
 
 /** A ▲▼ click: the edited values and the slider at their result, in one patch; Play and the tour stop. */
 function edit(k, dir, btn = null) {
@@ -582,20 +553,6 @@ function changeLine(P, M, cause) {
   } else what = [...(P.ax && !M.ax ? ['edits cleared'] : []), ...cut].join(', ') || 'no cut-off crossed';
   const result = P.out === M.out ? `Result unchanged: ${M.out}` : `Result: ${P.out} → ${M.out}`;
   return { text: `${head}: ${what}. ${result}.`, crossed: cut.length > 0 || P.out !== M.out };
-}
-
-const FLASH = 1200;
-const timers = new WeakMap();
-/** A short flash on an element (none with reduced motion): the class goes after 1.4 s. */
-function flash(el, cls = 'is-flash') {
-  if (!el || reducedMotion) return;
-  el.classList.remove(cls);
-  void el.offsetWidth;   // restart the animation
-  el.classList.add(cls);
-  const all = timers.get(el) || {};
-  clearTimeout(all[cls]);
-  all[cls] = setTimeout(() => el.classList.remove(cls), FLASH + 200);
-  timers.set(el, all);
 }
 
 function flashChanges(P, M, cause) {
