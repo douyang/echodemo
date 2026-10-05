@@ -162,6 +162,10 @@
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">The right ventricle from normal to severe overload, under a pressure or a volume load: an RV-focused apical four-chamber view with the RV size, wall and FAC, a short-axis view of the septum with the two diameters of the eccentricity index, the continuous-wave TR jet with the RV systolic pressure, pulsed-wave flow in the RV outflow tract with its acceleration time, the M-mode of TAPSE and the tissue Doppler S′.</figcaption>
     </figure>
+    <figure class="fig" id="fig-endocarditis">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Infective endocarditis from a normal mitral valve to a large vegetation with leaflet perforation and severe regurgitation: the parasternal long-axis view zoomed on the valves, with the vegetation on the atrial side of the anterior mitral leaflet and a caliper on its maximal length; the apical three-chamber view with the color jet through the perforation; continuous-wave Doppler through the mitral valve; pulmonary vein flow; and the measurements against their cut-offs.</figcaption>
+    </figure>
     <figure class="fig" id="fig-report" hidden>
       <div class="sheet-host" id="report-host"></div>
       <figcaption class="sr-only">A structured echocardiography report built from the values on this page.</figcaption>
@@ -1467,6 +1471,77 @@
     </article>
 
     <!-- ======================================================== Report (hidden: SHOW_REPORT in src/order.js) -->
+    <article class="chapter" id="ch-endocarditis">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Infective endocarditis</h2><p class="ch-kicker">Vegetations, leaflet perforation and the echocardiographic criteria</p></div></div>
+      <p class="dek" data-part="dek">Echocardiography shows the lesions of infective endocarditis: the vegetation, and the destruction that it causes, such as leaflet perforation and abscess. The size and mobility of a vegetation predict embolism, and a length of 10 mm is the threshold in the ESC recommendations for surgery.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="ieS">Severity <output data-for="ieS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="ieS" data-key="ieS" min="0" max="1" step="0.005">
+          <div class="grades" id="ie-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Frame</span>
+          <div class="seg" role="group" aria-label="Frame" data-key="ieFrame">
+            <button type="button" data-val="cine">Cine</button><button type="button" data-val="sys">Systole</button><button type="button" data-val="dia">Diastole</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>The echocardiographic criteria</h3>
+        <p>In the 2023 Duke-ISCVID criteria, echocardiography or cardiac CT that shows a vegetation, a valvular or leaflet perforation, a valvular or leaflet aneurysm, an abscess, a pseudoaneurysm or an intracardiac fistula is a major criterion<span class="cite" data-ref="fowler2023"></span>. Significant new valvular regurgitation on echocardiography, compared with previous imaging, is a major criterion too; worsening or a change of preexisting regurgitation is not sufficient<span class="cite" data-ref="fowler2023"></span>. So is a new partial dehiscence of a prosthetic valve, compared with previous imaging<span class="cite" data-ref="fowler2023"></span>. The diagnosis is definite with two major criteria, one major and three minor criteria, or five minor criteria<span class="cite" data-ref="fowler2023"></span>. The 2023 ESC criteria count the lesions characteristic of IE on echocardiography, cardiac CT, [18F]FDG-PET/CT or WBC SPECT/CT as one major imaging criterion<span class="cite" data-ref="delgado2023"></span>.</p>
+        <p>The ESC defined the lesions on echocardiography as follows<span class="cite" data-ref="habib2015"></span>:</p>
+        <ul>
+        <li><b>Vegetation.</b> An oscillating or non-oscillating intracardiac mass on a valve or another endocardial structure, or on implanted intracardiac material.</li>
+        <li><b>Perforation.</b> An interruption of endocardial tissue continuity traversed by color Doppler flow.</li>
+        <li><b>Abscess.</b> A thickened, non-homogeneous perivalvular area with an echodense or echolucent appearance.</li>
+        <li><b>Pseudoaneurysm.</b> A pulsatile perivalvular echo-free space with flow on color Doppler.</li>
+        <li><b>Fistula.</b> Color Doppler communication between two neighboring cavities through a perforation.</li>
+        <li><b>Valve aneurysm.</b> A saccular bulging of valvular tissue.</li>
+        </ul>
+        <h3>TTE and TOE</h3>
+        <p>TTE is recommended as the first-line imaging modality in suspected IE<span class="cite" data-ref="delgado2023"></span>. TOE is recommended in all patients with a clinical suspicion of IE and a negative or nondiagnostic TTE, and in suspected IE with a prosthetic valve or an intracardiac device<span class="cite" data-ref="delgado2023"></span>. TOE is also recommended after a positive TTE, except in isolated right-sided native valve IE with a TTE of good quality and unequivocal findings<span class="cite" data-ref="delgado2023"></span>. When the first examination is negative or inconclusive and the clinical suspicion of IE remains high, repeating TTE or TOE within 5–7 days is recommended<span class="cite" data-ref="delgado2023"></span>.</p>
+        <p>TTE has limits for perivalvular complications, small vegetations, prosthetic valve endocarditis and vegetations on device leads<span class="cite" data-ref="delgado2023"></span>. For leaflet perforation, the estimated sensitivity is 45% for TTE and 95% for TOE, with a specificity of 98% for both<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>The vegetation</h3>
+        <p>A vegetation lies typically on the atrial side of an atrioventricular valve or on the ventricular side of the aortic valve, but it may affect any side<span class="cite" data-ref="saric2016"></span>. Its echo texture is that of myocardium; a healed vegetation is brighter and often calcified<span class="cite" data-ref="saric2016"></span>. Its shape is usually amorphous, shaggy or lobulated, and less often linear or round<span class="cite" data-ref="saric2016"></span>. It moves with a high-frequency flutter, oscillating or chaotic, independent of the motion of the valve; a large vegetation prolapses into the ventricle in diastole<span class="cite" data-ref="saric2016"></span>. The size of a vegetation is its maximal length<span class="cite" data-ref="delgado2023"></span>.</p>
+        <h3>Size, mobility and embolism</h3>
+        <p>Embolic events affect 20–50% of patients with IE, and they may be clinically silent in up to 50% of patients<span class="cite" data-ref="delgado2023"></span>. The risk is highest in the days around the diagnosis and falls within the first 2 weeks of antibiotic therapy<span class="cite" data-ref="delgado2023"></span>. The size and mobility of the vegetation are the most important independent predictors of a new embolic event<span class="cite" data-ref="delgado2023"></span>. A location on the mitral valve, a change of size under antibiotic therapy, the microorganism (especially <i>S. aureus</i>), a previous embolism and multivalvular involvement also raise the risk<span class="cite" data-ref="delgado2023"></span>. The greatest risk appears to be with vegetations of 10 mm or more on the anterior mitral leaflet<span class="cite" data-ref="baddour2015"></span>. The risk of neurological complications is particularly high with vegetations longer than 30 mm<span class="cite" data-ref="delgado2023"></span>.</p>
+        <p>In the studies of embolic risk, a highly mobile vegetation was pedunculated and prolapsed across the coaptation plane with the cardiac cycle: a mitral vegetation prolapses into the LV in diastole and into the LA in systole<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>Surgery to prevent embolism</h3>
+        <p>The ESC recommendations on surgery to prevent embolism use a vegetation length of 10 mm<span class="cite" data-ref="delgado2023"></span>:</p>
+        <ul>
+        <li>Urgent surgery is recommended in aortic or mitral IE, on a native or a prosthetic valve, with a persistent vegetation of 10 mm or more after one or more embolic episodes despite appropriate antibiotic therapy (class I).</li>
+        <li>Urgent surgery is recommended in IE with a vegetation of 10 mm or more and another indication for surgery (class I).</li>
+        <li>Urgent surgery may be considered in aortic or mitral IE with a vegetation of 10 mm or more, without severe valve dysfunction or clinical evidence of embolism, at low surgical risk (class IIb)<span class="cite" data-ref="delgado2023"></span>.</li>
+        </ul>
+        <p>Urgent surgery is surgery within 3–5 days<span class="cite" data-ref="delgado2023"></span>. The AHA statement uses mobile vegetations longer than 10 mm. In native valve IE, early surgery is reasonable with such a vegetation and severe valve regurgitation (class IIa). Early surgery may be considered with such a vegetation, particularly when it involves the anterior mitral leaflet and other relative indications for surgery are present (class IIb)<span class="cite" data-ref="baddour2015"></span>.</p>
+        <h3>Perforation and acute regurgitation</h3>
+        <p>Leaflet perforation, leaflet rupture and mitral chordal rupture cause new severe regurgitation, or worsen regurgitation already present, with acute heart failure<span class="cite" data-ref="delgado2023"></span>. Urgent surgery is recommended in aortic or mitral IE with severe acute regurgitation that causes symptoms of heart failure or echocardiographic signs of poor hemodynamic tolerance (class I)<span class="cite" data-ref="delgado2023"></span>. Emergency surgery, within 24 h, is recommended when it causes refractory pulmonary edema or cardiogenic shock (class I)<span class="cite" data-ref="delgado2023"></span>.</p>
+        <p>Leaflet destruction by endocarditis is one of the common causes of acute MR<span class="cite" data-ref="zoghbi2017"></span>. In acute MR, the low blood pressure and the high LA pressure lower the driving pressure, so the jet is slower. The color jet may not look large, and it is usually markedly eccentric, so color Doppler can underestimate the MR<span class="cite" data-ref="zoghbi2017"></span>. Systolic flow reversal in the pulmonary veins is usually present<span class="cite" data-ref="zoghbi2017"></span>. The LV and the LA can be of normal size in acute severe MR<span class="cite" data-ref="zoghbi2017"></span>. The guideline's Doppler methods for the severity of MR apply to chronic, not to acute severe MR, and TOE may identify acute severe MR better<span class="cite" data-ref="zoghbi2017"></span>. The figure grades the perforation jet by its vena contracta with the cut-offs of chronic MR: below 0.3 cm mild, and 0.7 cm or more severe<span class="cite" data-ref="zoghbi2017"></span> (<a href="#mr" data-go="mr">chapter 17</a>).</p>
+        <h3>Differential diagnosis</h3>
+        <p>Echocardiography should distinguish the vegetation of IE from a non-bacterial thrombotic vegetation, Lambl excrescences, a papillary fibroelastoma and other benign intracardiac masses<span class="cite" data-ref="delgado2023"></span>.</p>
+        <ul>
+        <li><b>Valvular strands and Lambl excrescences.</b> Filiform structures, 2 mm wide or less and about 3–10 mm long, that undulate at the line of leaflet closure, on the atrial side of the mitral valve and the ventricular side of the aortic valve. In a prospective TEE study they were found in 40–50% of patients and were not related to systemic embolism<span class="cite" data-ref="saric2016"></span>.</li>
+        <li><b>Papillary fibroelastoma.</b> On a valve it lies typically on the aortic side of the aortic valve or on the ventricular side of the mitral valve, the opposite of the typical location of IE. It is homogeneous, with a well-demarcated border, a stalk and frond-like extensions, and it rarely causes significant valve dysfunction<span class="cite" data-ref="saric2016"></span>.</li>
+        <li><b>Libman–Sacks vegetations.</b> Non-bacterial thrombotic vegetations of systemic lupus erythematosus and the antiphospholipid syndrome. They are rarely associated with valve dysfunction and never with valve perforation, which helps to tell them from IE<span class="cite" data-ref="delgado2023"></span>.</li>
+        <li><b>Old lesions.</b> Previous scarring and severe myxomatous change can be indistinguishable from active lesions<span class="cite" data-ref="baddour2015"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Echocardiography or cardiac CT that shows a vegetation, a perforation, an aneurysm, an abscess, a pseudoaneurysm or a fistula is a major criterion of the 2023 Duke-ISCVID criteria<span class="cite" data-ref="fowler2023"></span>.</li>
+        <li>TTE comes first. TOE is recommended when TTE is negative or nondiagnostic and the suspicion remains, with a prosthetic valve or a device, and after a positive TTE except in isolated right-sided native valve IE with a clear TTE<span class="cite" data-ref="delgado2023"></span>.</li>
+        <li>The size of a vegetation is its maximal length. Size and mobility are the most important predictors of a new embolic event, and 10 mm is the length in the ESC recommendations for urgent surgery<span class="cite" data-ref="delgado2023"></span>.</li>
+        <li>A perforation is an interruption of the leaflet with color flow through it<span class="cite" data-ref="habib2015"></span>. In acute MR the jet is eccentric and slower, and color Doppler can underestimate it; systolic flow reversal in the pulmonary veins supports severe MR<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
     <article class="chapter" id="ch-report" hidden>
       <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">Standardized echocardiography reporting</p></div></div>
       <p class="dek" data-part="dek">The standardized echocardiography report presents the findings of a study in a fixed order, so that the referring clinician can decide the next step. The summary statement is placed first. The findings for each structure follow, with structure described before function, and every measured value is classified as normal or abnormal.</p>

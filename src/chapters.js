@@ -20,6 +20,7 @@ import amyloidPage from './ch/amyloid.js';
 import ivcPage from './ch/ivc.js';
 import stressPage from './ch/stress.js';
 import rvPage from './ch/rv.js';
+import endocarditisPage from './ch/endocarditis.js';
 import report from './ch/report.js';
 
 import { ORDER, SHOW_REPORT } from './order.js';
@@ -39,6 +40,6 @@ export const PARTS = [
 ];
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, stressPage, rvPage, report].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, stressPage, rvPage, endocarditisPage, report].map((c) => [c.key, c]));
 /** The chapters in reading order (order.js). */
 export const CHAPTERS = ORDER.map((k) => BY[k]);

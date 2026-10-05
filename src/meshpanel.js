@@ -89,7 +89,8 @@ export class MeshPanel {
    * moves along its normal (echo.js setShift). o.calc: calcified valves, level by valve mesh
    * name (echo.js setCalc). o.regional: { key, scale, peri }, regional wall motion (echo.js
    * setRegional), taken when its key changes; o.noSys: the heart's own systolic change is off,
-   * as where a chapter sets the wall motion itself (echo.js noSys).
+   * as where a chapter sets the wall motion itself (echo.js noSys). o.extra: a chapter's own
+   * structures on the plane (echo.js extra), and o.extraKey, a string that changes when they do.
    * Returns F, or null while the model loads.
    */
   draw(ctx, P, title, o = {}) {
@@ -121,10 +122,11 @@ export class MeshPanel {
     const reg = o.regional || null, regKey = reg ? reg.key : '';
     if (regKey !== this.regKey) { ev.setRegional(reg ? reg.scale : null, reg ? reg.peri : null); this.regKey = regKey; }
     ev.noSys = !!o.noSys;
+    ev.extra = o.extra || null;
     const tms = o.tms ?? 0;
     const c = cycleAt(tms);
     const drive = o.drive ? o.drive(c.drive, c.t) : c.drive;
-    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive)].join('|');
+    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive), o.extraKey ?? ''].join('|');
     if (key !== this.last) {
       ev.frame({ s: c.s, v: c.v, drive, phase: c.phase, t: c.t });
       this.last = key;
@@ -171,6 +173,8 @@ export class MeshPanel {
     for (let d = 1; d < depth; d++) {
       const y = bx.y + mp.Y(d);
       if (y > bx.y + bx.h - 6) break;
+      // a zoomed view's sector starts above the box: no mark above it
+      if (y < bx.y + 2) continue;
       const l = d % 5 === 0 ? 6 : 3;
       ctx.beginPath();
       ctx.moveTo(x, y);

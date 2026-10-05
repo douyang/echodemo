@@ -489,6 +489,7 @@ export class EchoView {
     this.fore = 0;        // cm the probe sits off the view's plane, aimed at the same point: a foreshortened view (setFore)
     this.shift = 0;       // cm the view's plane moves along its own normal (setShift)
     this.calc = {};       // a chapter's calcified valves: level 0 to 1 by valve mesh name (setCalc)
+    this.extra = null;    // a chapter's own structures on the plane: (view, plane, state, valves) -> bmode items (meshpanel.js o.extra)
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -1103,8 +1104,11 @@ export class EchoView {
     const abd = {}, win = this.specOf(this.view).win;
     const skip = win === 'plax' || win === 'psax' ? ['liver', 'mhv', 'rhv'] : [];
     for (const [k, md] of Object.entries(this.abd)) if (!skip.includes(k)) abd[k] = md.section(g);
+    // a chapter's own structures (this.extra): it may cut the valve loops (a perforation) and
+    // returns bmode items, drawn before the leaflets (a vegetation)
+    const more = this.extra ? this.extra(this, g, state, valves) || [] : [];
     this.last = { tissue, valves, peri, chords, pap, state };
-    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd });
+    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd, more });
   }
 
   /** Screen mapping for the current view and canvas size. */
@@ -1327,6 +1331,7 @@ export class EchoView {
       { polys: tri(extra.chords), e: DB.chord - 7 },
       { polys: tri(extra.chordsCore), e: DB.chord },
       { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: 8, spec: 10, w: 0.15, all: true },
+      ...(extra.more || []),
       { polys: leaf, e: DB.valve },
       { borders: leaf, e: DB.valve, spec: 7, w: 0.06, closed: true },
       ...hotLayers,
