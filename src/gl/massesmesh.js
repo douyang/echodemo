@@ -767,7 +767,7 @@ function meshesAt(ev, p, st, rest) {
 const REST = { s: 0, t: 0, drive: { mv: 1, tv: 1, av: 0, pv: 0 } };
 
 /**
- * The image items for echo.js under: with an enhancing agent (p.uea), the cavities (the walls'
+ * The image items for echo.js underWalls: with an enhancing agent (p.uea), the cavities (the walls'
  * inner loops) bright first; then each mass, filled, with a bright surface, its speckle riding
  * with it (refs: the mass at rest). The masses' loops on the plane go to ev.massLoops, and the
  * mass's own points (meshesAt axis) to ev.massAxis, for the chapter's calipers.

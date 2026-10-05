@@ -250,7 +250,7 @@ function massOf(v, uea) {
 /** The panel's options for the mass, the agent and the wall motion. */
 function meshOpts(v, tt, uea) {
   const P = massOf(v, uea), heart = heartOf(st);
-  const o = { tms: tt, under: (ev, c) => massItems(ev, P, c), underKey: JSON.stringify(P) };
+  const o = { tms: tt, underWalls: (ev, c) => massItems(ev, P, c), underKey: JSON.stringify(P) };
   if (v.type === 'thrombus') {
     const reg = apexMotion(heart);
     if (reg) { o.regional = reg; o.noSys = !!LV_SYS[heart]; }

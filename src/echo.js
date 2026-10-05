@@ -486,10 +486,14 @@ export class EchoView {
     this.periStill = 0;   // 0 to 1: how far the sac keeps still while the heart contracts (fluid in it)
     this.standoff = 0;    // cm the probe sits back along the beam (fluid in front of the heart; setStandoff)
     this.sac = false;     // true: lung and fat outside the sac, so fluid in it shows as a dark band
+    this.periW = 0.15;    // cm: the width of the pericardium's bright line (a thick pericardium, chapter Constrictive pericarditis)
+    this.periE = 8;       // dB: its level against myocardium
     this.fore = 0;        // cm the probe sits off the view's plane, aimed at the same point: a foreshortened view (setFore)
     this.shift = 0;       // cm the view's plane moves along its own normal (setShift)
     this.calc = {};       // a chapter's calcified valves: level 0 to 1 by valve mesh name (setCalc)
-    this.under = null;    // a chapter's own image items under the walls: (ev, { loops, outer, state }) -> items (meshpanel.js o.under)
+    this.shapes = null;   // a chapter's own shapes on the plane (setShapes): septal defects, saline bubbles
+    this.extraUnder = null; // a chapter's own structures under the leaflets: (view, plane, state, valves) -> bmode items (meshpanel.js o.under)
+    this.underWalls = null; // a chapter's own image items under the walls: (ev, { loops, outer, state }) -> items (meshpanel.js o.underWalls)
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -652,6 +656,16 @@ export class EchoView {
   /** A chapter's calcified valves, level 0 to 1 by valve mesh name: brighter leaflets with a shadow behind. */
   setCalc(levels = {}) {
     this.calc = levels;
+  }
+
+  /**
+   * A chapter's own shapes on the plane (ch/shunts.js): fn(g, view) returns bmode.js items in plane
+   * cm, drawn into the image with the heart, or null. An item covers the walls under it, so a
+   * septal defect is blood over the septum; an item with top: true also covers the valves (saline
+   * bubbles). null: none, as in every other chapter.
+   */
+  setShapes(fn = null) {
+    this.shapes = fn;
   }
 
   /** The probe set back along the beam by cm, past fluid in front of the heart: the plane moves, the heart stays. */
@@ -1071,6 +1085,8 @@ export class EchoView {
     const valves = [];
     for (const vd of this.valves) {
       vd.morph(weights(vd, lw(vd)));
+      // a valve that a chapter replaces (a prosthesis, ch/prosthetic.js) moves but is not cut
+      if (this.hideValves && this.hideValves.has(vd.mesh.name)) continue;
       for (const L of vd.section(g)) { L.valve = vd.mesh.name; valves.push(L); }
     }
     // chordae: those in the middle of the slice show brightest
@@ -1104,8 +1120,16 @@ export class EchoView {
     const abd = {}, win = this.specOf(this.view).win;
     const skip = win === 'plax' || win === 'psax' ? ['liver', 'mhv', 'rhv'] : [];
     for (const [k, md] of Object.entries(this.abd)) if (!skip.includes(k)) abd[k] = md.section(g);
+    // a chapter's own structures under the leaflets (this.extraUnder): it may cut the valve loops
+    // (a perforation) and returns bmode items, drawn before the leaflets (a vegetation)
+    const under = this.extraUnder ? this.extraUnder(this, g, state, valves) || [] : [];
     this.last = { tissue, valves, peri, chords, pap, state };
-    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd });
+    // a chapter's own shapes, which can read this frame's sections (meshjet.js cavity)
+    const own = this.shapes ? this.shapes(g, this) || [] : [];
+    this.last.own = own;
+    // a chapter's own structures on the plane, as B-mode items (a prosthesis, ch/prosthetic.js)
+    const more = this.extraItems ? this.extraItems(this, g, state) : null;
+    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd, own, more, under });
   }
 
   /** Screen mapping for the current view and canvas size. */
@@ -1310,9 +1334,9 @@ export class EchoView {
         { polys: loops.filter((L) => !outer.includes(L)).map((L) => L.pts), e: DB.blood, blood: true },
       );
     }
-    // a chapter's own structures (this.under): a mass on the heart, or cavities filled with an
+    // a chapter's own structures (this.underWalls): a mass on the heart, or cavities filled with an
     // enhancing agent; drawn before the walls, so a wall covers the part of them inside it
-    const own = this.under ? this.under(this, { loops, outer, state }) : [];
+    const wallItems = this.underWalls ? this.underWalls(this, { loops, outer, state }) : [];
     const items = [
       { polys: liver, e: DB.liver },
       { borders: liver, e: 6, spec: 9, w: 0.12, closed: true, all: true },
@@ -1323,15 +1347,19 @@ export class EchoView {
       { borders: walls(arteries), e: DB.fibrous + 2, spec: 7, w: 0.28, all: true },
       { polys: [...veins, ...arteries], e: DB.blood, blood: true },
       ...sacItems,
-      ...own,
+      ...wallItems,
       { polys: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, rule: 'evenodd' },
       { polys: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo },
       { borders: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, spec: 8, closed: true },
       { borders: open.map((L) => L.pts), refs: ref(open), e: DB.myo, spec: 8 },
       { borders: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, spec: 6, closed: true },
+      // a chapter's own shapes over the walls (setShapes): a septal defect, as blood
+      ...(extra.own || []).filter((it) => !it.top),
       { polys: tri(extra.chords), e: DB.chord - 7 },
       { polys: tri(extra.chordsCore), e: DB.chord },
-      { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: 8, spec: 10, w: 0.15, all: true },
+      { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: this.periE, spec: 10, w: this.periW, all: true },
+      // a chapter's own structures under the leaflets (o.under): a vegetation
+      ...(extra.under || []),
       { polys: leaf, e: DB.valve },
       { borders: leaf, e: DB.valve, spec: 7, w: 0.06, closed: true },
       ...hotLayers,
@@ -1339,6 +1367,9 @@ export class EchoView {
       { lines: cor, closed: true, e: DB.fat + 4, w: 0.5 },
       { borders: cor, e: DB.fibrous, spec: 6, w: 0.07, closed: true, all: true },
       { polys: cor, e: DB.blood, blood: true },
+      ...(extra.more || []),
+      // and over the valves (top: true): saline bubbles
+      ...(extra.own || []).filter((it) => it.top),
     ];
     const box = m.zoomed ? { x: 8, y: m.boxTop, w: W - 16, h: m.boxH } : { x: 0, y: 0, w: W, h: H };
     const view = { box, cx, top, k: scale, half, depth: spec.depth, near: spec.liver ? 1.5 : spec.near ?? 1.2, liver: spec.liver ? spec.near : 0 };

@@ -178,7 +178,7 @@ function build(src) {
   const title = h('div');
   const T = LAY.title;
   const eye = h('p', 'card-eye', CLIP ? esc(REEL.title.eye) : `${NUM} <span>·</span> ${esc(PART_NAME)}`);
-  const t1 = h('p', 'card-title', esc(CLIP ? REEL.title.name : V.title ?? C.title));
+  const t1 = h('p', 'card-title', esc(CLIP ? REEL.title.name : C.title));
   const rule = h('div', 'card-rule');
   const sub = h('p', 'card-sub', esc(CLIP ? REEL.title.sub : SUB));
   Object.assign(eye.style, { left: `${T.x + 6}px`, top: `${T.y - 54}px` });
@@ -407,6 +407,15 @@ function updateCaption(t) {
   for (const s0 of capEls.eye.children) if (!s0.querySelector('i')) s0.insertAdjacentHTML('afterbegin', '<i></i>');
 }
 
+/** A chapter's long title keeps to one line on the title card: its type scales down to the card's width. The intro's card stays as it is. */
+function fitTitle() {
+  const t = cardEls && cardEls.t1;
+  if (!t || CLIP) return;
+  t.style.whiteSpace = 'nowrap';
+  const room = W - 2 * LAY.title.x, wide = t.scrollWidth;
+  if (wide > room) t.style.fontSize = `${Math.floor((parseFloat(getComputedStyle(t).fontSize) * room) / wide)}px`;
+}
+
 /** The caption's type scales down, if it must, so that the tallest caption fits its box. */
 let capScale = 1;
 function fitCaption() {
@@ -577,6 +586,7 @@ async function init() {
   labelTrack();
   set(STATES[0].a);
   fitCaption();
+  fitTitle();
   sizeReelTrack();
   window.__clock.start();
   return {

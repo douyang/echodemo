@@ -20,7 +20,6 @@
 // card's line; by default the first sentence of the chapter's dek), quant (a step for each
 // number that moves, as its slider has: the figure sees the values the site shows), presets,
 // discrete (numbers that change at the middle of a move, as text does: a control with set values).
-// title: the title card's title, for a chapter title too long for one line (by default the chapter's).
 // A step's pheno names the heart (src/pheno.js); the 2D views draw its valves.
 import { BEAT, FPS } from './timeline.js';
 
@@ -233,6 +232,39 @@ export const VIDEOS = {
       { set: { trS: 0.9 }, name: 'Torrential tricuspid regurgitation', track: 'Torrential', pick: [0, 3, 4], hold: 6 },
     ],
   },
+  // 19: a bioprosthesis from normal function to significant stenosis, then a mechanical valve;
+  // then the normal bioprosthesis in larger patients: mismatch
+  prosthetic: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { proS: 0.005 },
+    steps: [
+      { set: { proS: 0, proValve: 'bio', proCause: 'obst' }, name: 'Normal bioprosthesis', track: 'Bio normal', pick: [0, 1, 2], hold: 7 },
+      { set: { proS: 0.45 }, name: 'Possible stenosis of the bioprosthesis', track: 'Bio possible', pick: [0, 2, 3], move: 4, hold: 7 },
+      { set: { proS: 0.85 }, name: 'Significant stenosis of the bioprosthesis', track: 'Bio significant', pick: [0, 2, 5], move: 4, hold: 7 },
+      { set: { proS: 0, proValve: 'mech' }, name: 'Normal mechanical valve', track: 'Mech normal', pick: [0, 3], move: 3, hold: 6 },
+      { set: { proS: 0.42 }, name: 'Possible stenosis of the mechanical valve', track: 'Mech possible', pick: [0, 2, 3], move: 4, hold: 7 },
+      { set: { proS: 0.85 }, name: 'Significant stenosis of the mechanical valve', track: 'Mech significant', pick: [0, 3, 4], move: 4, hold: 7 },
+      { set: { proS: 0.5, proValve: 'bio', proCause: 'ppm' }, name: 'Moderate prosthesis–patient mismatch', track: 'Moderate mismatch', pick: [0, 1, 4], move: 3, hold: 7 },
+      { set: { proS: 0.9 }, name: 'Severe prosthesis–patient mismatch', track: 'Severe mismatch', pick: [1, 5, 6], move: 4, hold: 7 },
+    ],
+  },
+  // infective endocarditis: a vegetation on the anterior mitral leaflet grows and prolapses; the
+  // leaflet perforates, and the regurgitation through it grows from mild to severe
+  endocarditis: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { ieS: 0.005 },
+    steps: [
+      { set: { ieS: 0, ieFrame: 'cine' }, name: 'No vegetation', track: 'None', hold: 5 },
+      { set: { ieS: 0.17 }, track: '<10 mm', pick: [0, 1], move: 4, hold: 6 },
+      { set: { ieS: 0.4 }, track: '≥10 mm', pick: [1, 2], move: 4, hold: 7 },
+      { set: { ieFrame: 'dia' }, name: 'Diastole: the vegetation prolapses into the LV', track: 'Diastole', pick: [1], move: 2, hold: 5 },
+      { set: { ieS: 0.56, ieFrame: 'cine' }, track: 'Mild MR', pick: [3, 4], move: 4, hold: 6 },
+      { set: { ieS: 0.7 }, track: 'Moderate MR', pick: [4], move: 4, hold: 6 },
+      { set: { ieS: 0.9 }, track: 'Severe MR', pick: [4, 5, 6], move: 4, hold: 7 },
+    ],
+  },
   peri: {
     pane: '2D and Doppler',
     side: false,
@@ -243,6 +275,24 @@ export const VIDEOS = {
       { set: { periS: 0.45 }, name: 'Moderate pericardial effusion', track: 'Moderate', move: 4, hold: 6 },
       { set: { periS: 0.64 }, name: 'Severe pericardial effusion', track: 'Severe', pick: [0, 2, 3], move: 4, hold: 6 },
       { set: { periS: 0.85 }, name: 'Tamponade', track: 'Tamponade', pick: [0, 1, 4], move: 4, hold: 7 },
+    ],
+  },
+  // constriction from a normal pericardium to all three Mayo Clinic criteria, then restrictive
+  // cardiomyopathy to grade 3: a step in the middle of each band
+  constrict: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { conS: 0.005 },
+    steps: [
+      { set: { conS: 0, conMode: 'cp' }, track: 'Normal', pick: [0, 1], hold: 5 },
+      { set: { conS: 0.35 }, track: 'Thickened', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.58 }, track: 'Constriction', pick: [0, 1], move: 4, hold: 7 },
+      { set: { conS: 0.9 }, track: '3 of 3', pick: [1, 2, 3], move: 4, hold: 7 },
+      { set: { conS: 0.9 }, name: 'Annulus reversus', track: 'Annulus', pick: [4], move: 1, hold: 5 },
+      { set: { conS: 0, conMode: 'rcm' }, name: 'Restrictive cardiomyopathy', track: 'Restriction', line: 'The same slider for restrictive cardiomyopathy: the stiff myocardium, not the pericardium, limits filling.', move: 3, hold: 3 },
+      { set: { conS: 0.28 }, track: 'Grade 1', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.57 }, track: 'Grade 2', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.92 }, track: 'Grade 3', pick: [1, 2, 3], move: 4, hold: 8 },
     ],
   },
   // 17: the walls thicken; the echo criteria are met; the apex is spared
@@ -256,6 +306,23 @@ export const VIDEOS = {
       { set: { amyS: 0.45 }, track: 'Wall ≥12 mm', pick: [0, 1], move: 4, hold: 6 },
       { set: { amyS: 0.6 }, track: 'ESC criteria met', pick: [0, 1], move: 4, hold: 6 },
       { set: { amyS: 0.9 }, name: 'Relative apical sparing', track: 'Apical sparing', pick: [0, 2], move: 4, hold: 7 },
+    ],
+  },
+  // 21: a secundum ASD from none to large, a perimembranous VSD from restrictive to an RV
+  // pressure of half the systemic pressure, then the saline study for a PFO (the chapter's tour)
+  shunts: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { shS: 0.005 },
+    steps: [
+      { set: { shType: 'asd', shS: 0, shMan: 'valsalva' }, track: 'No ASD', pick: [0, 1], hold: 5 },
+      { set: { shS: 0.3 }, track: 'Small ASD', pick: [0, 1, 3], move: 4, hold: 6 },
+      { set: { shS: 0.75 }, track: 'Significant ASD', pick: [0, 1, 2], move: 4, hold: 7 },
+      { set: { shType: 'vsd', shS: 0.4 }, track: 'Restrictive VSD', pick: [0, 1, 4], move: 3, hold: 7 },
+      { set: { shS: 0.75 }, track: 'Significant VSD', pick: [1, 2, 4], move: 4, hold: 7 },
+      { set: { shS: 1 }, name: 'Perimembranous VSD, RV pressure over half the systemic pressure', track: 'RVSP ≥50%', pick: [1, 2, 5], move: 4, hold: 7 },
+      { set: { shType: 'pfo', shMan: 'valsalva', shS: 0.4 }, track: 'Valsalva only', pick: [0, 1], move: 3, hold: 8 },
+      { set: { shS: 0.9, shMan: 'rest' }, track: 'At rest', pick: [0, 1], move: 3, hold: 8 },
     ],
   },
   // 18: from a normal IVC to a raised RA pressure, severe TR and ventilation (the chapter's tour),
@@ -292,7 +359,6 @@ export const VIDEOS = {
   // the LV thrombus goes from mural to mobile, then an enhancing agent fills the cavity; the
   // fibroelastoma goes from sessile to mobile
   masses: {
-    title: 'Masses and thrombus',
     pane: '2D and Doppler',
     side: false,
     quant: { maS: 0.005 },
