@@ -41,6 +41,7 @@ SEEDS.update({'PULSE': 9301, 'IMAGE': 9302, 'SHIFT': 9303, 'PRESSURE': 9304, 'CY
 SEEDS['IVC'] = 9319                               # IVC (then chapter 18): the next number after that list
 SEEDS['STRESS'] = 9320                            # stress echocardiography (then chapter 19): the next number
 SEEDS['RV'] = 9321                                # the right ventricle (chapter 13): the next number
+SEEDS['CONSTRICT'] = 9323                         # constrictive pericarditis, added after the RV
 SEEDS['PROSTHETIC'] = 9324                        # prosthetic valves (chapter 19 when it was added)
 SEEDS['INTRO'] = 9300                             # the intro (video/reel.js): 93 and chapter 00
 PROG = ['C', 'Am', 'F', 'G']
