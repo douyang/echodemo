@@ -449,6 +449,11 @@ export const DISEASE = {
   // 0.5 mm at their free edges per unit of weight.
   avSten: { valve: 'as' },
   avThick: { valve: 'avthick' },
+  // Hypertrophic cardiomyopathy (chapter hcm; src/gl/hcmmesh.js). hcmSep: the anterior septum
+  // thicker at the base and in the middle of the LV, mostly on its LV side. hcmSam: the anterior
+  // mitral leaflet toward the septum, a move within the beat (setMotion).
+  hcmSep: { hcm: 'septum' },
+  hcmSam: { hcm: 'sam' },
 };
 /** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {
@@ -456,6 +461,7 @@ export async function buildDisease(ctx, key) {
   if (P.move) return buildMove(ctx, key, P.move);
   if (P.grow) return buildGrow(ctx, key, P.grow);
   if (P.valve) return buildValve(ctx, key, P.valve);
+  if (P.hcm) return (await import('./hcmmesh.js')).buildHcm(ctx, key, P.hcm, { addTarget, grid, nearest });
   const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
   /** The move of landmark name at weight 1 and end-diastole (cm). */
   out.shift = (name) => {

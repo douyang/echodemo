@@ -428,6 +428,19 @@ function fitCaption() {
   capScale = s;
 }
 
+/**
+ * The title card's title stays on one line: its type shrinks, if it must, to the 1664 px between
+ * the card's margins. At 156 px, "Stress echocardiography" takes 1600 px and keeps its size;
+ * "Hypertrophic cardiomyopathy" takes 2013 px and shrinks to 128 px.
+ */
+function fitTitle() {
+  if (CLIP) return;   // the intro's title card (video/reel.js) keeps its own type
+  const t1 = cardEls.t1, room = W - 2 * LAY.title.x;
+  t1.style.whiteSpace = 'nowrap';
+  const w = t1.scrollWidth;
+  if (w > room) t1.style.fontSize = `${Math.floor((parseFloat(getComputedStyle(t1).fontSize) * room) / w)}px`;
+}
+
 // ---------------------------------------------------------------- progress line
 function updateTrack(t, fade) {
   $('#track').style.opacity = (1 - fade).toFixed(3);
@@ -577,6 +590,7 @@ async function init() {
   labelTrack();
   set(STATES[0].a);
   fitCaption();
+  fitTitle();
   sizeReelTrack();
   window.__clock.start();
   return {

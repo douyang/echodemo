@@ -454,7 +454,8 @@ function plumeColor(v, nyq) {
  * dir: unit vector of the jet (downstream); q: flow (mL/s); va: aliasing velocity (cm/s); vc:
  * vena contracta (cm); jl, jw: jet length and largest width (cm); clip: chamber polygon (cm) the
  * jet stays inside; pclip: the polygon the convergence zone stays inside (none: it is not cut);
- * a: 0..1 strength over the cycle; pisa: false for no convergence zone.
+ * a: 0..1 strength over the cycle; pisa: false for no convergence zone; box: false to leave
+ * out the outline and return the box's extent { t0, t1, r0, r1 } (radians, px) instead.
  */
 export function jet(ctx, F, j) {
   if (!j || !(j.a > 0.02) || !(j.q > 0)) return;   // a NaN strength draws nothing
@@ -532,6 +533,8 @@ export function jet(ctx, F, j) {
   const polar = pts.map((q) => { const x = (q[0] - sect.cx) / k, y = (q[1] - sect.top) / k; return [Math.atan2(x, y), Math.hypot(x, y)]; });
   const t0 = Math.min(...polar.map((q) => q[0])) - 0.04, t1 = Math.max(...polar.map((q) => q[0])) + 0.04;
   const r0 = Math.max(0.5, Math.min(...polar.map((q) => q[1])) - 0.3) * k, r1 = (Math.max(...polar.map((q) => q[1])) + 0.3) * k;
+  // j.box false: no outline here; the box's extent goes back, so a caller can outline several jets as one box
+  if (j.box === false) return { t0, t1, r0, r1 };
   ctx.save();
   ctx.clip(F.clipBox);
   ctx.strokeStyle = 'rgba(205,212,216,0.5)';
