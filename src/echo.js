@@ -486,6 +486,8 @@ export class EchoView {
     this.periStill = 0;   // 0 to 1: how far the sac keeps still while the heart contracts (fluid in it)
     this.standoff = 0;    // cm the probe sits back along the beam (fluid in front of the heart; setStandoff)
     this.sac = false;     // true: lung and fat outside the sac, so fluid in it shows as a dark band
+    this.periW = 0.15;    // cm: the width of the pericardium's bright line (a thick pericardium, chapter Constrictive pericarditis)
+    this.periE = 8;       // dB: its level against myocardium
     this.fore = 0;        // cm the probe sits off the view's plane, aimed at the same point: a foreshortened view (setFore)
     this.shift = 0;       // cm the view's plane moves along its own normal (setShift)
     this.calc = {};       // a chapter's calcified valves: level 0 to 1 by valve mesh name (setCalc)
@@ -1081,6 +1083,8 @@ export class EchoView {
     const valves = [];
     for (const vd of this.valves) {
       vd.morph(weights(vd, lw(vd)));
+      // a valve that a chapter replaces (a prosthesis, ch/prosthetic.js) moves but is not cut
+      if (this.hideValves && this.hideValves.has(vd.mesh.name)) continue;
       for (const L of vd.section(g)) { L.valve = vd.mesh.name; valves.push(L); }
     }
     // chordae: those in the middle of the slice show brightest
@@ -1118,7 +1122,9 @@ export class EchoView {
     // a chapter's own shapes, which can read this frame's sections (meshjet.js cavity)
     const own = this.shapes ? this.shapes(g, this) || [] : [];
     this.last.own = own;
-    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd, own });
+    // a chapter's own structures on the plane, as B-mode items (a prosthesis, ch/prosthetic.js)
+    const more = this.extraItems ? this.extraItems(this, g, state) : null;
+    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd, own, more });
   }
 
   /** Screen mapping for the current view and canvas size. */
@@ -1342,7 +1348,7 @@ export class EchoView {
       ...(extra.own || []).filter((it) => !it.top),
       { polys: tri(extra.chords), e: DB.chord - 7 },
       { polys: tri(extra.chordsCore), e: DB.chord },
-      { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: 8, spec: 10, w: 0.15, all: true },
+      { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: this.periE, spec: 10, w: this.periW, all: true },
       { polys: leaf, e: DB.valve },
       { borders: leaf, e: DB.valve, spec: 7, w: 0.06, closed: true },
       ...hotLayers,
@@ -1350,6 +1356,7 @@ export class EchoView {
       { lines: cor, closed: true, e: DB.fat + 4, w: 0.5 },
       { borders: cor, e: DB.fibrous, spec: 6, w: 0.07, closed: true, all: true },
       { polys: cor, e: DB.blood, blood: true },
+      ...(extra.more || []),
       // and over the valves (top: true): saline bubbles
       ...(extra.own || []).filter((it) => it.top),
     ];

@@ -232,6 +232,23 @@ export const VIDEOS = {
       { set: { trS: 0.9 }, name: 'Torrential tricuspid regurgitation', track: 'Torrential', pick: [0, 3, 4], hold: 6 },
     ],
   },
+  // 19: a bioprosthesis from normal function to significant stenosis, then a mechanical valve;
+  // then the normal bioprosthesis in larger patients: mismatch
+  prosthetic: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { proS: 0.005 },
+    steps: [
+      { set: { proS: 0, proValve: 'bio', proCause: 'obst' }, name: 'Normal bioprosthesis', track: 'Bio normal', pick: [0, 1, 2], hold: 7 },
+      { set: { proS: 0.45 }, name: 'Possible stenosis of the bioprosthesis', track: 'Bio possible', pick: [0, 2, 3], move: 4, hold: 7 },
+      { set: { proS: 0.85 }, name: 'Significant stenosis of the bioprosthesis', track: 'Bio significant', pick: [0, 2, 5], move: 4, hold: 7 },
+      { set: { proS: 0, proValve: 'mech' }, name: 'Normal mechanical valve', track: 'Mech normal', pick: [0, 3], move: 3, hold: 6 },
+      { set: { proS: 0.42 }, name: 'Possible stenosis of the mechanical valve', track: 'Mech possible', pick: [0, 2, 3], move: 4, hold: 7 },
+      { set: { proS: 0.85 }, name: 'Significant stenosis of the mechanical valve', track: 'Mech significant', pick: [0, 3, 4], move: 4, hold: 7 },
+      { set: { proS: 0.5, proValve: 'bio', proCause: 'ppm' }, name: 'Moderate prosthesis–patient mismatch', track: 'Moderate mismatch', pick: [0, 1, 4], move: 3, hold: 7 },
+      { set: { proS: 0.9 }, name: 'Severe prosthesis–patient mismatch', track: 'Severe mismatch', pick: [1, 5, 6], move: 4, hold: 7 },
+    ],
+  },
   peri: {
     pane: '2D and Doppler',
     side: false,
@@ -242,6 +259,24 @@ export const VIDEOS = {
       { set: { periS: 0.45 }, name: 'Moderate pericardial effusion', track: 'Moderate', move: 4, hold: 6 },
       { set: { periS: 0.64 }, name: 'Severe pericardial effusion', track: 'Severe', pick: [0, 2, 3], move: 4, hold: 6 },
       { set: { periS: 0.85 }, name: 'Tamponade', track: 'Tamponade', pick: [0, 1, 4], move: 4, hold: 7 },
+    ],
+  },
+  // constriction from a normal pericardium to all three Mayo Clinic criteria, then restrictive
+  // cardiomyopathy to grade 3: a step in the middle of each band
+  constrict: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { conS: 0.005 },
+    steps: [
+      { set: { conS: 0, conMode: 'cp' }, track: 'Normal', pick: [0, 1], hold: 5 },
+      { set: { conS: 0.35 }, track: 'Thickened', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.58 }, track: 'Constriction', pick: [0, 1], move: 4, hold: 7 },
+      { set: { conS: 0.9 }, track: '3 of 3', pick: [1, 2, 3], move: 4, hold: 7 },
+      { set: { conS: 0.9 }, name: 'Annulus reversus', track: 'Annulus', pick: [4], move: 1, hold: 5 },
+      { set: { conS: 0, conMode: 'rcm' }, name: 'Restrictive cardiomyopathy', track: 'Restriction', line: 'The same slider for restrictive cardiomyopathy: the stiff myocardium, not the pericardium, limits filling.', move: 3, hold: 3 },
+      { set: { conS: 0.28 }, track: 'Grade 1', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.57 }, track: 'Grade 2', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.92 }, track: 'Grade 3', pick: [1, 2, 3], move: 4, hold: 8 },
     ],
   },
   // 17: the walls thicken; the echo criteria are met; the apex is spared
