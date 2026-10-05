@@ -330,7 +330,8 @@ export const VIDEOS = {
     ],
   },
   // 21: a secundum ASD from none to large, a perimembranous VSD from restrictive to an RV
-  // pressure of half the systemic pressure, then the saline study for a PFO (the chapter's tour)
+  // pressure of half the systemic pressure, the saline study for a PFO, then the LA pressure across
+  // a restrictive atrial communication at a mean of 8, 18 and 28 mmHg (the chapter's tour)
   shunts: {
     pane: '2D and Doppler',
     side: false,
@@ -344,6 +345,9 @@ export const VIDEOS = {
       { set: { shS: 1 }, name: 'Perimembranous VSD, RV pressure over half the systemic pressure', track: 'RVSP ≥50%', pick: [1, 2, 5], move: 4, hold: 7 },
       { set: { shType: 'pfo', shMan: 'valsalva', shS: 0.4 }, track: 'Valsalva only', pick: [0, 1], move: 3, cut: true, hold: 8 },
       { set: { shS: 0.9, shMan: 'rest' }, track: 'At rest', pick: [0, 1], move: 3, cut: true, hold: 8 },
+      { set: { shType: 'lap', shS: 0 }, track: 'LAP 8 mmHg', line: 'A restrictive communication keeps a gradient between the atria: LA pressure = RA pressure + 4V². {s3}', move: 3, cut: true, hold: 7 },
+      { set: { shS: 0.455 }, track: 'LAP 18 mmHg', pick: [1, 2, 3], move: 4, hold: 7 },
+      { set: { shS: 0.91 }, track: 'LAP 28 mmHg', pick: [3, 5, 6], move: 4, hold: 8 },
     ],
   },
   // 18: from a normal IVC to a raised RA pressure, severe TR and ventilation (the chapter's tour),

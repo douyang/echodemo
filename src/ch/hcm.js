@@ -15,7 +15,7 @@
 // Doppler strips are drawn from the same values. The gradient follows the contact as Pollick 1984
 // found it; the tracks are illustrative values set inside the guideline grades, not patient data.
 import { Sheet, clamp, MONO } from '../sketch.js';
-import { panel, spectral, vscale, SC, caliper } from '../scope.js';
+import { panel, spectral, vscale, SC, caliper, tagBox } from '../scope.js';
 import { RR, EV, cycleAt, lvotV } from '../cyclemodel.js';
 import { tracks, bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit, gradeTable, shown as rnd } from '../sev.js';
 import { cal, jet, barFor } from '../echo2d.js';
@@ -424,10 +424,13 @@ function outflowJet(ev, sy) {
   if (len(sub(AV, O)) < 0.5) return null;
   const dir = unit(sub(AV, O)), side = perp(dir), cut = [[add(O, side), sub(O, side)]];
   const clip = cavity(ev, blood(ev, add(O, mul(sub(AV, O), 0.75)), 0.4), cut);
-  const conv = cavity(ev, blood(ev, sub(O, mul(dir, 0.9)), 0.4), cut);
-  return clip.length >= 12 ? { O, dir, clip, pclip: conv.length >= 12 ? conv : null, L: len(sub(AV, O)) } : null;
+  return clip.length >= 12 ? { O, dir, clip, L: len(sub(AV, O)) } : null;
 }
-/** The MR jet: from where the leaflets part, into the LA and toward its posterior wall, which clips it. */
+/**
+ * The MR jet: from where the leaflets part, into the LA and toward its posterior wall, which clips
+ * it. tent: the blood between the gap and the annulus (the gap and the two hinges), which the jet
+ * crosses before it enters the LA, so the jet starts at the gap.
+ */
 function mrJet(ev, sy, vc) {
   const H = mvHinges(ev, sy);
   if (!H) return null;
@@ -449,10 +452,15 @@ function mrJet(ev, sy, vc) {
   const jA = ((6 + 40 * vc) / 100) * area(LA);
   const jl = Math.min(lMax * 0.9, Math.sqrt((jA / 0.55) * 1.6));
   const jw = jl > 0 ? Math.min((w1 - w0) * 0.8, jA / (0.55 * jl)) : 0;
-  return { O, dir, clip: LA, jl, jw };
+  return { O, dir, clip: LA, tent: [O, H.ant, H.post], jl, jw };
 }
 
 const VA = 60;   // cm/s, the color scale's aliasing velocity
+// cm/s: the fastest color drawn in the outflow and MR jets. Each core aliases once over its first
+// centimetre (KEEP_MR, KEEP_LVOT), from where the flow is fastest (the leaflet gap, the SAM
+// contact), and stays under twice the aliasing velocity, where a second wrap would start; the CW
+// strips carry the true velocity
+const V_COLOR = 1.8 * VA, KEEP_MR = 1.0, KEEP_LVOT = 0.8;
 /** One color box round the extents of the jets drawn (echo2d.js jet with box: false), as the scanner outlines it. */
 function colorBox(ctx, F, list) {
   const B = list.filter(Boolean);
@@ -485,12 +493,13 @@ function a3c(ctx, box, v, tms) {
       if (P.sam.kind === 'contact' && vo > 1.05) {
         const J = outflowJet(ev, sy);
         const a = clamp((vo - 1.0) / (P.vel - 1.0), 0, 1);
-        if (J && a > 0.04) boxes.push(jet(c, F, { q: 60 + 40 * P.vel, va: VA, vc: 0.35, jl: Math.min(J.L + 2.2, 1.6 + 0.9 * P.vel), jw: 1.0 + 0.12 * P.vel, a, O: J.O, dir: J.dir, clip: J.clip, pclip: J.pclip, box: false }));
+        // the jet starts at the contact, with no convergence zone in the LV
+        if (J && a > 0.04) boxes.push(jet(c, F, { q: 60 + 40 * P.vel, va: VA, vmax: V_COLOR, keep: KEEP_LVOT, vc: 0.35, jl: Math.min(J.L + 2.2, 1.6 + 0.9 * P.vel), jw: 1.0 + 0.12 * P.vel, a, O: J.O, dir: J.dir, clip: J.clip, pisa: false, box: false }));
       }
       const vm = mrAt(v, P, tms);
       if (P.vc > 0 && vm > 0.5) {
         const J = mrJet(ev, sy, P.vc), pk = P.mrVel || 1;
-        if (J) boxes.push(jet(c, F, { q: Math.PI * (P.vc / 2) ** 2 * vm * 100, va: VA, vc: P.vc, jl: J.jl, jw: J.jw, a: clamp(vm / pk, 0, 1), pisa: false, O: J.O, dir: J.dir, clip: J.clip, box: false }));
+        if (J) boxes.push(jet(c, F, { q: Math.PI * (P.vc / 2) ** 2 * vm * 100, va: VA, vmax: V_COLOR, keep: KEEP_MR, vc: P.vc, jl: J.jl, jw: J.jw, a: clamp(vm / pk, 0, 1), pisa: false, O: J.O, dir: J.dir, clip: J.clip, clipOr: [J.tent], box: false }));
       }
       colorBox(c, F, boxes);
       // the color bar through the beat whenever the state has jets, as mr.js draws it
@@ -523,7 +532,7 @@ function cwLvot(ctx, Pn, v) {
 function cwMr(ctx, Pn, v) {
   const P = stateOf(v);
   panel(ctx, Pn.x, Pn.y, Pn.w, Pn.h, fit(Pn.w, 'CW · MITRAL REGURGITATION', 'CW · MR'));
-  const bx = inner(Pn), base = 0.12, vs = cwScale(v);
+  const bx = inner(Pn), base = 0.12, vs = cwScale(v), narrow = bx.w < 300;
   if (P.sam.kind === 'none') {
     vscale(ctx, bx, vs, base, vs > 5 ? 2 : 1);
     // the Barlow heart's own MR, of the prolapse, is chapter mr's; this figure does not draw it
@@ -531,18 +540,44 @@ function cwMr(ctx, Pn, v) {
     note(ctx, bx, heartOf(st) === 'barlow' ? [`MR of the prolapse: chapter ${ch}`, `prolapse MR: ch. ${ch}`] : ['no mitral regurgitation', 'no MR'], 'top');
     return bx;
   }
-  const fn = (u) => -mrAt(v, P, (u * 2 * RR) % RR);
-  spectral(ctx, bx, { fn, scale: vs, base, mode: 'cw', broad: 0.35, key: `hcmmr|${P.mrVel}|${v.lap.toFixed(1)}|${P.vel}|${P.sam.kind}|${P.sam.f}|${vs}`, seed: 62 });
+  // the MR jet lies beside the LVOT, and a beam between the two records both: the MR envelope,
+  // and inside it the LVOT's, brighter where the two add (as chapter 14 draws the LVOT inside the
+  // aortic jet). The LVOT strip above holds its beam on the LVOT alone.
+  const at = (u) => (u * 2 * RR) % RR;
+  spectral(ctx, bx, {
+    fn: [(u) => -mrAt(v, P, at(u)), (u) => -lvotAt(P, at(u))], gain: [0.8, 1.3], scale: vs, base, mode: 'cw', broad: 0.35,
+    key: `hcmmr|${P.mrVel}|${v.lap.toFixed(1)}|${P.vel}|${P.sam.kind}|${P.sam.f}|${vs}`, seed: 62,
+  });
   vscale(ctx, bx, vs, base, vs > 5 ? 2 : 1);
-  let bu = 0, best = 0;
-  for (let i = 0; i <= 300; i++) { const y = -fn(i / 600); if (y > best) { best = y; bu = i / 600; } }
-  const k = (bx.h * (1 - base)) / vs, y0 = bx.y + base * bx.h, xp = bx.x + bu * bx.w, yp = y0 + best * k;
-  caliper(ctx, xp - 12, yp, xp + 12, yp, { solid: true });
-  const pk = { x0: xp - 14, y0: yp - 6, x1: xp + 14, y1: yp + 6 };
-  // what the two strips show against each other: a round top with contact (the LVOT jet is a
-  // dagger), an earlier peak where it leads by 30 ms or more (about 9 px on a desktop strip)
-  const cmp = [P.sam.kind === 'contact' ? 'rounder' : null, P.lvotT - P.mrT >= 30 ? 'earlier peak' : null, 'faster than the LVOT jet'].filter(Boolean).join(', ');
-  note(ctx, bx, [`MR peak ${P.mrVel.toFixed(1)} m/s · ${cmp}`, `MR peak ${P.mrVel.toFixed(1)} m/s`, `${P.mrVel.toFixed(1)} m/s`], 'auto', [pk]);
+  // the peaks, each with its caliper and tag: the MR's in the first beat, the LVOT's in the second
+  const k = (bx.h * (1 - base)) / vs, y0 = bx.y + base * bx.h, X = (ms) => bx.x + (ms / (2 * RR)) * bx.w;
+  const peaks = [[P.mrT, P.mrVel, 'MR'], [RR + P.lvotT, P.vel, 'LVOT']]
+    .map(([ms, vel, name]) => ({ x: X(ms), y: y0 + vel * k, text: narrow ? `${name} ${vel.toFixed(1)}` : `${name} ${vel.toFixed(1)} m/s` }));
+  const keep = peaks.map(({ x, y }) => ({ x0: x - 12, y0: y - 5, x1: x + 12, y1: y + 5 }));
+  peaks.forEach(({ x, y }) => caliper(ctx, x - 10, y, x + 10, y, { solid: true }));
+  // a tag beside its caliper, else above or below it, else a row further down
+  const boxAt = (x, y, text) => {
+    ctx.save();
+    ctx.font = `500 10.5px ${MONO}`;
+    const w = ctx.measureText(text).width + 12, h = 10.5 + 3 + 8;
+    ctx.restore();
+    const x0 = Math.max(bx.x + 4, Math.min(bx.x + bx.w - w - 4, x)), y0b = Math.max(bx.y + 4, Math.min(bx.y + bx.h - h - 4, y - h / 2));
+    return { x0, y0: y0b, x1: x0 + w, y1: y0b + h, h };
+  };
+  const meets = (a, b) => a.x0 < b.x1 + 2 && b.x0 < a.x1 + 2 && a.y0 < b.y1 + 2 && b.y0 < a.y1 + 2;
+  const tags = [];
+  for (const { x, y, text } of peaks) {
+    const h = boxAt(x + 14, y, text).h;
+    const ty = [y, y - h - 4, y + h + 4, y + 2 * h + 8].find((t) => { const b = boxAt(x + 14, t, text); return ![...keep, ...tags].some((o) => meets(b, o)); }) ?? y;
+    const r = tagBox(ctx, x + 14, ty, [text], { size: 10.5, bounds: bx });
+    tags.push({ x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h });
+  }
+  // how the two differ (Nagueh 2022): the MR envelope is rounder, peaks earlier and lasts past the
+  // aortic valve's closure; with contact the LVOT envelope is a late-peaking dagger. An earlier peak
+  // shows where the MR leads by 30 ms or more (about 9 px on a desktop strip).
+  const mrWords = [P.sam.kind === 'contact' ? 'rounder' : null, P.lvotT - P.mrT >= 30 ? 'earlier peak' : null, MR_OFF > EV.avc + 30 ? 'ends later' : null].filter(Boolean);
+  const lvotWord = P.sam.kind === 'contact' ? 'late-peaking dagger' : 'mid-systolic peak';
+  note(ctx, bx, [`MR ${mrWords.join(', ')} · LVOT ${lvotWord}`, `MR ${mrWords[0] || 'faster'} · LVOT ${P.sam.kind === 'contact' ? 'dagger' : 'mid-systolic'}`], 'auto', [...keep, ...tags]);
   return bx;
 }
 

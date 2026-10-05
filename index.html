@@ -176,7 +176,7 @@
     </figure>
     <figure class="fig" id="fig-shunts">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Shunts from none to large, for a secundum atrial septal defect, a perimembranous ventricular septal defect or a patent foramen ovale. Atrial septal defect: a subcostal view of the atrial septum with the defect, its caliper and the left-to-right color jet; an RV-focused apical four-chamber view with the RV and RA size; pulsed-wave Doppler in the RV and LV outflow tracts with their VTIs and diameters for Qp/Qs; and the continuous-wave TR jet with the RV systolic pressure. Ventricular septal defect: a short-axis view at the aortic valve with the defect just below the valve at about 11 o'clock and its jet into the RV; a parasternal long-axis view with the LV diameter; continuous-wave Doppler through the defect with its peak velocity, gradient and the RV systolic pressure; and the two outflow tracts for Qp/Qs. Patent foramen ovale: an apical four-chamber view during an agitated saline study, with the right heart opacified and bubbles crossing into the left atrium, and the number of bubbles in the left atrium beat by beat, at rest and after Valsalva release.</figcaption>
+      <figcaption class="sr-only">Shunts from none to large, for a secundum atrial septal defect, a perimembranous ventricular septal defect or a patent foramen ovale. Atrial septal defect: a subcostal view of the atrial septum with the defect, its caliper and the left-to-right color jet; an RV-focused apical four-chamber view with the RV and RA size; pulsed-wave Doppler in the RV and LV outflow tracts with their VTIs and diameters for Qp/Qs; and the continuous-wave TR jet with the RV systolic pressure. Ventricular septal defect: a short-axis view at the aortic valve with the defect just below the valve at about 11 o'clock and its jet into the RV; a parasternal long-axis view with the LV diameter; continuous-wave Doppler through the defect with its peak velocity, gradient and the RV systolic pressure; and the two outflow tracts for Qp/Qs. Patent foramen ovale: an apical four-chamber view during an agitated saline study, with the right heart opacified and bubbles crossing into the left atrium, and the number of bubbles in the left atrium beat by beat, at rest and after Valsalva release. LA pressure: a subcostal view of a restrictive 5-mm atrial communication with its left-to-right color jet; the LA and RA pressures over two beats, with their means; and continuous-wave Doppler across the septum, whose peak velocity and traced envelope, with the RA pressure, give the peak and mean LA pressure.</figcaption>
     </figure>
     <figure class="fig" id="fig-rv">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -1625,7 +1625,7 @@
         <li>The LVOT velocity rises slowly in early systole, then rises abruptly and peaks in mid-to-late systole, a dagger-shaped envelope. Some patients have a more symmetric envelope that peaks earlier<span class="cite" data-ref="nagueh2022"></span>. A fixed obstruction gives an envelope that peaks earlier: early and triangular in mild aortic stenosis, rounded and in mid-systole in more severe stenosis (<a href="#as" data-go="as">chapter 14</a>)<span class="cite" data-ref="nagueh2022"></span>.</li>
         <li>MR usually accompanies SAM, and its jet lies close to the LVOT. The CW beam is swept from the LVOT into the MR jet, and each signal is recorded and labeled<span class="cite" data-ref="nagueh2022"></span>.</li>
         <li>Compared with the LVOT jet, the MR jet usually peaks earlier and can last longer, its envelope is rounder, and its velocity is always higher. A velocity above 5.5 m/s is taken as LVOT flow only with caution<span class="cite" data-ref="nagueh2022"></span>.</li>
-        <li>The MR jet reflects the LV systolic pressure. The MR peak gradient minus the LVOT peak gradient is close to the systolic blood pressure, and ignoring the LA pressure underestimates the LVOT gradient<span class="cite" data-ref="nagueh2022"></span>. The two CW strips of the figure share one velocity scale.</li>
+        <li>The MR jet reflects the LV systolic pressure. The MR peak gradient minus the LVOT peak gradient is close to the systolic blood pressure, and ignoring the LA pressure underestimates the LVOT gradient<span class="cite" data-ref="nagueh2022"></span>. The two CW strips of the figure share one velocity scale. The MR strip records both jets, as a beam between them does: the MR envelope and, inside it, the brighter LVOT envelope, each labeled at its peak.</li>
         </ul>
         <h3>Mitral regurgitation</h3>
         <ul>
@@ -1723,7 +1723,7 @@
     <!-- ======================================================== Congenital -->
     <article class="chapter" id="ch-shunts">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">21</span><div><h2 class="ch-title">Shunts: ASD, VSD and PFO</h2><p class="ch-kicker">Septal defects, Qp/Qs and the saline study</p></div></div>
-      <p class="dek" data-part="dek">A septal defect or a patent foramen ovale lets blood pass between the left and the right heart. Echocardiography shows the defect and the direction of its flow, measures the shunt as Qp/Qs, and grades its effect on the chambers and on the pulmonary pressure.</p>
+      <p class="dek" data-part="dek">A septal defect or a patent foramen ovale lets blood pass between the left and the right heart. Echocardiography shows the defect and the direction of its flow, measures the shunt as Qp/Qs, and grades its effect on the chambers and on the pulmonary pressure. Across a restrictive atrial communication, the velocity of the shunt also gives the LA pressure.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
@@ -1736,7 +1736,7 @@
         <div class="control">
           <span class="label">Defect</span>
           <div class="seg" role="group" aria-label="Kind of defect" data-key="shType">
-            <button type="button" data-val="asd" title="Secundum atrial septal defect">ASD</button><button type="button" data-val="vsd" title="Perimembranous ventricular septal defect">VSD</button><button type="button" data-val="pfo" title="Patent foramen ovale">PFO</button>
+            <button type="button" data-val="asd" title="Secundum atrial septal defect">ASD</button><button type="button" data-val="vsd" title="Perimembranous ventricular septal defect">VSD</button><button type="button" data-val="pfo" title="Patent foramen ovale">PFO</button><button type="button" data-val="lap" title="LA pressure from a restrictive atrial communication">LA pressure</button>
           </div>
         </div>
         <div class="control" id="sh-man" hidden>
@@ -1783,12 +1783,23 @@
         <li><b>Counts.</b> Shunts have been graded by the number of bubbles in the left heart in one frame, but that number depends on the amount of contrast injected and on the Valsalva maneuver<span class="cite" data-ref="silvestry2015"></span>. The report states whether a shunt is present and the maneuver used, and comments on the degree of shunting<span class="cite" data-ref="taub2025"></span>.</li>
         </ul>
         <p>In patients aged 18 to 60 years with a prior PFO-associated stroke, the SCAI guideline recommends PFO closure rather than antiplatelet therapy alone<span class="cite" data-ref="kavinsky2022"></span>.</p>
+        <h3>LA pressure from an atrial shunt</h3>
+        <p>A restrictive atrial communication is small enough to keep a pressure difference between the atria. Across it, CW Doppler gives the LA–RA gradient as 4V², so the LA pressure is the RA pressure + 4V²<span class="cite" data-ref="gavazzoni2022,sakul2026"></span>.</p>
+        <ul>
+        <li><b>Mean LA pressure.</b> After transseptal mitral edge-to-edge repair in 34 patients, the mean gradient + the central venous pressure gave the mean LA pressure. Against the invasive LA pressure, the intraclass correlation was 0.81, Pearson r 0.6, and the bias −1.3 mmHg<span class="cite" data-ref="gavazzoni2022"></span>.</li>
+        <li><b>Peak LA pressure.</b> In 41 patients with an iatrogenic ASD after the same repair, the peak gradient + the RA pressure gave the peak LA pressure. The correlation was r = 0.90, the bias −1.54 mmHg, and the limits of agreement −6.2 to +3.1 mmHg<span class="cite" data-ref="sakul2026"></span>.</li>
+        <li><b>The RA pressure.</b> Both studies used TEE, and the RA pressure came from the catheter<span class="cite" data-ref="gavazzoni2022,sakul2026"></span>. On TTE the RA pressure comes from the IVC (<a href="#ivc" data-go="ivc">chapter 07</a>), and its error adds directly to the LA pressure.</li>
+        </ul>
+        <p>In a secundum ASD, the shunt flow is left to right in systole and in diastole. It starts in early systole, peaks in late systole to early diastole, and increases again with atrial contraction. It follows the phasic LA–RA pressure difference, measured at the same time<span class="cite" data-ref="lin1988"></span>. A large ASD lets the atrial pressures equalize. In 17 patients with ASD, the mean transatrial septal velocity was 41 ± 11 cm/s<span class="cite" data-ref="marx1985"></span>. As 4V², that velocity gives a gradient of about 1 mmHg, so the LA pressure is close to the RA pressure. The shunt therefore cannot show a raised LA pressure.</p>
+        <p>A PFO can shunt left to right when a left-sided lesion raises the LA size and pressure. In 15 of 56 adults with such lesions, the PFO shunted left to right. All 15 had an LA pressure above 13 mmHg (23.4 ± 7.6 mmHg) and an LA–RA gradient above 10 mmHg (19.3 ± 5.2 mmHg)<span class="cite" data-ref="wu1993"></span>.</p>
+        <p>The figure takes a 5-mm communication and an RA pressure of 3 mmHg, from a normal IVC. The slider sets the mean LA pressure from 8 to 30 mmHg. The pressure waveforms are teaching values. The figure calls a mean LA pressure above 15 mmHg raised. The study that validated the algorithm of <a href="#fill" data-go="fill">chapter 10</a> took an LV filling pressure above 15 mmHg as abnormally elevated<span class="cite" data-ref="lababidi2025"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
         <li>An ASD is measured in the subcostal four-chamber view, in which the septum lies across the beam; the apical four-chamber view shows its effect on the RA and the RV.</li>
         <li>A shunt is hemodynamically significant when it enlarges the chambers distal to it and/or Qp:Qs is 1.5 or more. Qp/Qs is the RVOT stroke volume ÷ the LVOT stroke volume.</li>
         <li>Across a VSD, CW Doppler gives the LV–RV gradient as 4V², and the RV systolic pressure is the systemic systolic pressure minus that gradient. A fast jet marks a restrictive defect.</li>
         <li>On the saline study, bubbles in the LA within 3–6 beats of full RA opacification indicate an intracardiac shunt such as a PFO. The release of a Valsalva maneuver can show a shunt that is absent at rest.</li>
+        <li>Across a restrictive atrial communication, CW Doppler gives the LA–RA gradient as 4V², and the LA pressure is the RA pressure + 4V². A large ASD lets the atrial pressures equalize, so it cannot show a raised LA pressure.</li>
         </ol>
       </div>
       <div class="quiz"></div>
