@@ -292,6 +292,23 @@ export const VIDEOS = {
       { set: { amyS: 0.9 }, name: 'Relative apical sparing', track: 'Apical sparing', pick: [0, 2], move: 4, hold: 7 },
     ],
   },
+  // 21: a secundum ASD from none to large, a perimembranous VSD from restrictive to an RV
+  // pressure of half the systemic pressure, then the saline study for a PFO (the chapter's tour)
+  shunts: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { shS: 0.005 },
+    steps: [
+      { set: { shType: 'asd', shS: 0, shMan: 'valsalva' }, track: 'No ASD', pick: [0, 1], hold: 5 },
+      { set: { shS: 0.3 }, track: 'Small ASD', pick: [0, 1, 3], move: 4, hold: 6 },
+      { set: { shS: 0.75 }, track: 'Significant ASD', pick: [0, 1, 2], move: 4, hold: 7 },
+      { set: { shType: 'vsd', shS: 0.4 }, track: 'Restrictive VSD', pick: [0, 1, 4], move: 3, hold: 7 },
+      { set: { shS: 0.75 }, track: 'Significant VSD', pick: [1, 2, 4], move: 4, hold: 7 },
+      { set: { shS: 1 }, name: 'Perimembranous VSD, RV pressure over half the systemic pressure', track: 'RVSP ≥50%', pick: [1, 2, 5], move: 4, hold: 7 },
+      { set: { shType: 'pfo', shMan: 'valsalva', shS: 0.4 }, track: 'Valsalva only', pick: [0, 1], move: 3, hold: 8 },
+      { set: { shS: 0.9, shMan: 'rest' }, track: 'At rest', pick: [0, 1], move: 3, hold: 8 },
+    ],
+  },
   // 18: from a normal IVC to a raised RA pressure, severe TR and ventilation (the chapter's tour),
   // then the IVC and the aorta side by side
   ivc: {

@@ -62,6 +62,8 @@ const PRESETS = {
 };
 // under a disease heart the valve, pericardium and amyloid pages start with no disease unless it is the heart's own
 const QUIET = { asS: 0, arS: 0, msS: 0, mrS: 0, trS: 0, proS: 0, periS: 0, amyS: 0 };
+// no heart of the menu has a shunt: under a disease heart the shunts page starts with none
+QUIET.shS = 0;
 /** The chapter state that heart key starts from ({} for the normal heart). */
 export function presetsFor(key) { return key === 'normal' || !PRESETS[key] ? {} : { ...QUIET, ...PRESETS[key] }; }
 /** Every state key that some heart presets. */

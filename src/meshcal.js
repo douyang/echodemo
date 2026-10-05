@@ -26,6 +26,8 @@ export function laWeight(lavi, heart = 'normal') {
   for (let i = 1; i < R.length; i++) if (r <= R[i]) return LA_W[i - 1] + ((LA_W[i] - LA_W[i - 1]) * (r - R[i - 1])) / (R[i] - R[i - 1]);
   return LA_W[LA_W.length - 1];
 }
+/** The smallest LA volume index (mL/m²) heart key shows: laWeight's range ends there (the shunts chapter). */
+export const laviLeast = (heart = 'normal') => (LA_BASE[heart] || LA_BASE.normal) * (LA_RATIO[heart] || LA_RATIO.normal)[0];
 
 // ---------------------------------------------------------------- the LV (chapter 09)
 // The LV of chapter 09 (dx_lvSize, dx_lvWall and the LV's own contraction, echo.js setLvSys):
@@ -156,6 +158,8 @@ export function lvWallOf(heart, wallMm) {
 export function lvSizeOf(heart, lvedd) {
   return invert(LV_SZ, (LVD[heart] || LVD.normal).d, lvedd);
 }
+/** The smallest LVIDd (mm, parasternal long axis) heart key shows: lvSizeOf's range ends there (the shunts chapter). */
+export const lveddLeast = (heart = 'normal') => (LVD[heart] || LVD.normal).d[0];
 
 /**
  * The weights that show LV diameters of lvedd and lvesd mm in the parasternal long axis on heart
