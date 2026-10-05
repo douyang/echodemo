@@ -1,4 +1,4 @@
-// The twenty-three chapters in reading order (order.js), grouped into nine parts.
+// The twenty-four chapters in reading order (order.js), grouped into nine parts.
 import pulse from './ch/pulse.js';
 import image from './ch/image.js';
 import windows from './ch/windows.js';
@@ -23,6 +23,7 @@ import rvPage from './ch/rv.js';
 import constrictPage from './ch/constrict.js';
 import prostheticPage from './ch/prosthetic.js';
 import shuntsPage from './ch/shunts.js';
+import endocarditisPage from './ch/endocarditis.js';
 import report from './ch/report.js';
 
 import { ORDER, SHOW_REPORT } from './order.js';
@@ -43,6 +44,6 @@ export const PARTS = [
 ];
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, periPage, amyloidPage, stressPage, rvPage, constrictPage, shuntsPage, report].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, periPage, amyloidPage, stressPage, rvPage, constrictPage, shuntsPage, report].map((c) => [c.key, c]));
 /** The chapters in reading order (order.js). */
 export const CHAPTERS = ORDER.map((k) => BY[k]);

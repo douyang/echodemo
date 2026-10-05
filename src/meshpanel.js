@@ -92,6 +92,8 @@ export class MeshPanel {
    * as where a chapter sets the wall motion itself (echo.js noSys). o.hide: valve mesh names
    * left out of the cut, and o.extra(ev, g, state): B-mode items of the chapter's own on the
    * plane, with o.extraKey naming what they show (a prosthesis, ch/prosthetic.js).
+   * o.under(ev, g, state, valves): items drawn under the leaflets, which may cut the valve
+   * loops (a vegetation and its perforation, ch/endocarditis.js), named by o.extraKey too.
    * Returns F, or null while the model loads.
    */
   draw(ctx, P, title, o = {}) {
@@ -128,6 +130,7 @@ export class MeshPanel {
     ev.noSys = !!o.noSys;
     ev.hideValves = o.hide || null;
     ev.extraItems = o.extra || null;
+    ev.extraUnder = o.under || null;
     const tms = o.tms ?? 0;
     const c = cycleAt(tms);
     const drive = o.drive ? o.drive(c.drive, c.t) : c.drive;
@@ -178,6 +181,8 @@ export class MeshPanel {
     for (let d = 1; d < depth; d++) {
       const y = bx.y + mp.Y(d);
       if (y > bx.y + bx.h - 6) break;
+      // a zoomed view's sector starts above the box: no mark above it
+      if (y < bx.y + 2) continue;
       const l = d % 5 === 0 ? 6 : 3;
       ctx.beginPath();
       ctx.moveTo(x, y);

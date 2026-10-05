@@ -492,6 +492,7 @@ export class EchoView {
     this.shift = 0;       // cm the view's plane moves along its own normal (setShift)
     this.calc = {};       // a chapter's calcified valves: level 0 to 1 by valve mesh name (setCalc)
     this.shapes = null;   // a chapter's own shapes on the plane (setShapes): septal defects, saline bubbles
+    this.extraUnder = null; // a chapter's own structures under the leaflets: (view, plane, state, valves) -> bmode items (meshpanel.js o.under)
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -1118,13 +1119,16 @@ export class EchoView {
     const abd = {}, win = this.specOf(this.view).win;
     const skip = win === 'plax' || win === 'psax' ? ['liver', 'mhv', 'rhv'] : [];
     for (const [k, md] of Object.entries(this.abd)) if (!skip.includes(k)) abd[k] = md.section(g);
+    // a chapter's own structures under the leaflets (this.extraUnder): it may cut the valve loops
+    // (a perforation) and returns bmode items, drawn before the leaflets (a vegetation)
+    const under = this.extraUnder ? this.extraUnder(this, g, state, valves) || [] : [];
     this.last = { tissue, valves, peri, chords, pap, state };
     // a chapter's own shapes, which can read this frame's sections (meshjet.js cavity)
     const own = this.shapes ? this.shapes(g, this) || [] : [];
     this.last.own = own;
     // a chapter's own structures on the plane, as B-mode items (a prosthesis, ch/prosthetic.js)
     const more = this.extraItems ? this.extraItems(this, g, state) : null;
-    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd, own, more });
+    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd, own, more, under });
   }
 
   /** Screen mapping for the current view and canvas size. */
@@ -1349,6 +1353,8 @@ export class EchoView {
       { polys: tri(extra.chords), e: DB.chord - 7 },
       { polys: tri(extra.chordsCore), e: DB.chord },
       { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: this.periE, spec: 10, w: this.periW, all: true },
+      // a chapter's own structures under the leaflets (o.under): a vegetation
+      ...(extra.under || []),
       { polys: leaf, e: DB.valve },
       { borders: leaf, e: DB.valve, spec: 7, w: 0.06, closed: true },
       ...hotLayers,

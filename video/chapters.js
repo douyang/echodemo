@@ -249,6 +249,22 @@ export const VIDEOS = {
       { set: { proS: 0.9 }, name: 'Severe prosthesis–patient mismatch', track: 'Severe mismatch', pick: [1, 5, 6], move: 4, hold: 7 },
     ],
   },
+  // infective endocarditis: a vegetation on the anterior mitral leaflet grows and prolapses; the
+  // leaflet perforates, and the regurgitation through it grows from mild to severe
+  endocarditis: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { ieS: 0.005 },
+    steps: [
+      { set: { ieS: 0, ieFrame: 'cine' }, name: 'No vegetation', track: 'None', hold: 5 },
+      { set: { ieS: 0.17 }, track: '<10 mm', pick: [0, 1], move: 4, hold: 6 },
+      { set: { ieS: 0.4 }, track: '≥10 mm', pick: [1, 2], move: 4, hold: 7 },
+      { set: { ieFrame: 'dia' }, name: 'Diastole: the vegetation prolapses into the LV', track: 'Diastole', pick: [1], move: 2, hold: 5 },
+      { set: { ieS: 0.56, ieFrame: 'cine' }, track: 'Mild MR', pick: [3, 4], move: 4, hold: 6 },
+      { set: { ieS: 0.7 }, track: 'Moderate MR', pick: [4], move: 4, hold: 6 },
+      { set: { ieS: 0.9 }, track: 'Severe MR', pick: [4, 5, 6], move: 4, hold: 7 },
+    ],
+  },
   peri: {
     pane: '2D and Doppler',
     side: false,
