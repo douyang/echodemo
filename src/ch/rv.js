@@ -4,12 +4,12 @@
 // RV free wall thickens first, then the RV dilates and its function falls, and the septum
 // flattens most at end-systole. Volume overload (an atrial septal defect, severe TR or PR): the
 // RV and the RA dilate at a near-normal pressure, the RV's function holds, and the septum flattens
-// at end-diastole only. The text holds the measurements as a diagram: the bands of Mukherjee 2025
-// Table 1, the septum at both times, and the echocardiographic probability of PH (Humbert 2022
-// Table 10 and Figure 5), with ▲▼ buttons on fifteen measurements and a switch for the notch. An
-// edit stores the measurements in rvx; the slider then marks a band of their result and does not
-// change them. A move of the slider or of the load, Play, the tour or a heart's preset clears
-// rvx, and the values follow the slider again.
+// at end-diastole only. The text can hold the measurements as a diagram (hidden: SHOW_CALC): the
+// bands of Mukherjee 2025 Table 1, the septum at both times, and the echocardiographic probability
+// of PH (Humbert 2022 Table 10 and Figure 5), with ▲▼ buttons on fifteen measurements and a switch
+// for the notch. An edit stores the measurements in rvx; the slider then marks a band of their
+// result and does not change them. A move of the slider or of the load, Play, the tour or a
+// heart's preset clears rvx, and the values follow the slider again.
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV, mitralV, cycleAt } from '../cyclemodel.js';
@@ -33,6 +33,12 @@ const EDITS = 'rvx';
 const AR = 3.1;      // cm, the model's aortic root, for the sign "PA diameter > aortic root"
 const FLAT = 1.1;    // the eccentricity index above which the septum is called flat (Humbert 2022 Table 10)
 const LOADS = ['pressure', 'volume'];
+// Hidden, with their code kept: the calculator in the text (#rv-calc, the ▲▼ buttons) and the
+// ESC/ERS 2022 echocardiographic probability of PH (its readout, its live sentence, and the prose
+// section and key point in index.html). Each comes back with its flag here and with the hidden
+// attributes that index.html puts on its markup.
+const SHOW_CALC = false;
+const SHOW_PROB = false;
 
 // ---------------------------------------------------------------- the model
 // The tracks over the slider s for each load. Pressure: the peak TR velocity (m/s) rises to 4.4,
@@ -841,7 +847,7 @@ function flashChanges(P, M, cause) {
   }
 }
 
-/** The live sentences: the result in bold, then size, function, the septum and the probability of PH. */
+/** The live sentences: the result in bold, then size, function, the septum and (SHOW_PROB) the probability of PH. */
 function liveOf(v, s, cite) {
   const M = cite('mukherjee2025'), H = cite('humbert2022');
   const w = (k) => wordOf(k, v.g[k]);
@@ -857,7 +863,7 @@ function liveOf(v, s, cite) {
   const s2 = ` TAPSE is ${v.tapse} mm (${w('tapse')}), S′ ${fmt(v.sPrime, 1)} cm/s (${w('sPrime')}) and FAC ${v.fac}% (${w('fac')})${M}.`;
   const s3 = ` The LV eccentricity index is ${v.eiD.toFixed(2)} at end-diastole and ${v.eiS.toFixed(2)} at end-systole: the septum is ${PATTERN[v.pat]}, ${v.pat === 'none' ? 'with no overload pattern' : `the pattern of ${PATTERN_MEANS[v.pat]}`}${M}.`;
   const signs = v.esc.cats.length ? `signs from ${v.esc.cats.length === 1 ? 'one category' : `${['', 'one', 'two', 'three'][v.esc.cats.length]} categories`} (${v.esc.cats.map((c) => SIGNS.find(([x]) => x === c)[2]).join(', ')})` : 'no other signs';
-  const s4 = ` A peak TR velocity of ${fmt(v.trv, 1)} m/s (${TRV_BANDS[v.esc.band][0]} m/s) with ${signs} gives ${v.esc.prob === 'intermediate' ? 'an' : 'a'} ${v.esc.prob} echocardiographic probability of PH${H}.`;
+  const s4 = !SHOW_PROB ? '' : ` A peak TR velocity of ${fmt(v.trv, 1)} m/s (${TRV_BANDS[v.esc.band][0]} m/s) with ${signs} gives ${v.esc.prob === 'intermediate' ? 'an' : 'a'} ${v.esc.prob} echocardiographic probability of PH${H}.`;
   const ed = s[EDITS] ? editedOf(s[EDITS]) : [];
   // the caveat on TAPSE last, so that the sentences before it keep their places (the video picks them)
   return `<b>${LEAD[v.load][v.grade]}.</b>${s0}${s1}${s2}${s3}${s4}${trac}${ed.length ? ` Edited values: ${ed.map((k) => NAME[k]).join(', ')}.` : ''}`;
@@ -895,7 +901,7 @@ const rvPage = {
       paintBands(host, BANDS_OF[load], { normal: 0, mild: 1, moderate: 2, severe: 3 }, { moderate: 'mod.' });
     };
     paint(state);
-    buildDiagram(document.getElementById('rv-calc'));
+    if (SHOW_CALC) buildDiagram(document.getElementById('rv-calc'));
     // The slider, the load, Play, the tour or a heart's preset: the values follow the slider again.
     // A store listener, not onState, so that a heart chosen on another chapter clears the edits too.
     subscribe?.((s, ch) => {
@@ -930,7 +936,7 @@ const rvPage = {
         { k: 'TAPSE', v: fmt(v.tapse), u: 'mm', flag: v.g.tapse > 0 },
         { k: 'RV systolic pressure', v: fmt(v.rvsp), u: 'mmHg', flag: v.g.rvsp > 0 },
         { k: 'LVEI, ED / ES', v: `${v.eiD.toFixed(2)} / ${v.eiS.toFixed(2)}`, text: true, flag: v.pat !== 'none' },
-        { k: 'Probability of PH', v: v.esc.prob, text: true, flag: v.esc.prob !== 'low' },
+        ...(SHOW_PROB ? [{ k: 'Probability of PH', v: v.esc.prob, text: true, flag: v.esc.prob !== 'low' }] : []),
       ],
       live: liveOf(v, s, cite),
       extra: () => renderDiagram(s, v),

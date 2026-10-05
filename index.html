@@ -750,7 +750,7 @@
         <p>The peak TR velocity gives the pressure difference between the RV and the RA, and the RA pressure estimated from the IVC is added to obtain the RV systolic pressure<span class="cite" data-ref="mukherjee2025"></span>.</p>
         <p>Without RV outflow obstruction, pulmonic stenosis or proximal PA stenosis, the RV systolic pressure equals the PA systolic pressure<span class="cite" data-ref="mukherjee2025"></span>. In significant TR, the RV and RA pressures can equalize early; the CW signal then becomes triangular and underestimates the RV–RA gradient<span class="cite" data-ref="mukherjee2025"></span> (<a href="#tr" data-go="tr">chapter 16</a>). A faint TR signal also underestimates it<span class="cite" data-ref="mukherjee2025"></span>.</p>
         <p>The IVC diameter and its collapse with a sniff give the RA pressure as one of three values: 3, 8 or 15 mmHg<span class="cite" data-ref="mukherjee2025"></span>. <a href="#ivc" data-go="ivc">Chapter 07</a> shows the measurement of the IVC and the pattern that gives each value.</p>
-        <p>A resting peak TR velocity of 2.9 m/s or more, or of 2.8 m/s or more with two other echocardiographic signs, suggests pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>. <a href="#rv" data-go="rv">Chapter 13</a> gives the echocardiographic probability of pulmonary hypertension from the peak TR velocity and the other signs, and the RV's response to a pressure load.</p>
+        <p>A resting peak TR velocity of 2.9 m/s or more, or of 2.8 m/s or more with two other echocardiographic signs, suggests pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>. <a href="#rv" data-go="rv">Chapter 13</a> shows the RV's response to a pressure load: its size, wall, function and septum.</p>
         <h3>Key points</h3>
         <ol class="steps">
         <li>Blood does not compress, so the same flow passes every level: the area × the velocity is constant, and the velocity rises as the area falls.</li>
@@ -1411,8 +1411,8 @@
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <!-- the measurements, with buttons on fifteen measurements and a switch (Mukherjee 2025 Table 1; Humbert 2022 Table 10 and Figure 5): src/ch/rv.js -->
-      <section class="ase asx" id="rv-calc" aria-label="Right ventricle: measurements, grades, the septum and the probability of pulmonary hypertension"></section>
+      <!-- hidden: the calculator, with buttons on fifteen measurements and a switch (Mukherjee 2025 Table 1; Humbert 2022 Table 10 and Figure 5); SHOW_CALC in src/ch/rv.js and this hidden attribute bring it back -->
+      <section class="ase asx" id="rv-calc" hidden aria-label="Right ventricle: measurements, grades, the septum and the probability of pulmonary hypertension"></section>
       <div class="prose" data-part="prose">
         <h3>RV size</h3>
         <p>The RV is measured at end-diastole in the RV-focused apical four-chamber view: the basal diameter just beneath the tricuspid annulus, the mid-ventricular diameter about halfway to the apex, and the length from the annulus to the apex<span class="cite" data-ref="mukherjee2025"></span>. The RV-focused view gives more reproducible measures than the standard four-chamber view<span class="cite" data-ref="mukherjee2025"></span>. At least one measure of RV size, typically the basal diameter, should be reported<span class="cite" data-ref="mukherjee2025"></span>. The RV area is traced from the lateral tricuspid annulus along the free wall to the apex and back along the septum, with the trabeculations, the papillary muscles and the moderator band in the cavity<span class="cite" data-ref="mukherjee2025"></span>. In the four-chamber view, the RV is normally no more than two-thirds the size of the LV, and the LV forms the apex<span class="cite" data-ref="mukherjee2025"></span>.</p>
@@ -1445,20 +1445,21 @@
         <li>An index above 1 at both times suggests RV pressure overload, with or without volume overload<span class="cite" data-ref="mukherjee2025"></span>.</li>
         </ul>
         <p>In the original study, the index was 1.26 at end-diastole and about 1.0 at end-systole in volume overload, and 1.44 at end-systole and 1.26 at end-diastole in pressure overload<span class="cite" data-ref="ryan1985"></span>. Conduction abnormalities, pacing, cardiac surgery and constriction can change the motion of the septum<span class="cite" data-ref="mukherjee2025"></span>.</p>
-        <h3>The probability of pulmonary hypertension</h3>
-        <p>Pulmonary hypertension is defined by a mean PA pressure above 20 mmHg at rest<span class="cite" data-ref="humbert2022"></span>. Echocardiography gives a probability of PH. The ESC/ERS guideline uses the peak TR velocity, not the estimated PA systolic pressure, because the estimate of the RA pressure adds error<span class="cite" data-ref="humbert2022"></span>:</p>
-        <ul>
+        <!-- hidden: the ESC/ERS probability of PH; SHOW_PROB in src/ch/rv.js and these hidden attributes bring it back -->
+        <h3 hidden>The probability of pulmonary hypertension</h3>
+        <p hidden>Pulmonary hypertension is defined by a mean PA pressure above 20 mmHg at rest<span class="cite" data-ref="humbert2022"></span>. Echocardiography gives a probability of PH. The ESC/ERS guideline uses the peak TR velocity, not the estimated PA systolic pressure, because the estimate of the RA pressure adds error<span class="cite" data-ref="humbert2022"></span>:</p>
+        <ul hidden>
         <li>A peak TR velocity of 2.8 m/s or less, or no measurable velocity, gives a low probability, or an intermediate one with other signs.</li>
         <li>A velocity of 2.9–3.4 m/s gives an intermediate probability, or a high one with other signs.</li>
         <li>A velocity above 3.4 m/s gives a high probability<span class="cite" data-ref="humbert2022"></span>.</li>
         </ul>
-        <p>The other signs are in three categories. The ventricles: an RV/LV basal ratio above 1.0, a flat septum with an LVEI above 1.1, and a TAPSE/sPAP ratio below 0.55 mm/mmHg. The pulmonary artery: an RVOT acceleration time below 105 ms or mid-systolic notching, an early-diastolic PR velocity above 2.2 m/s, and a PA wider than the aortic root or wider than 25 mm. The IVC and the RA: an IVC wider than 21 mm with a reduced collapse, and an RA area above 18 cm². Signs change the probability only when they come from at least two categories<span class="cite" data-ref="humbert2022"></span>. The ASE guideline calls a TR velocity of 2.9 m/s or more, or 2.8 m/s with at least two other signs, suggestive of PH<span class="cite" data-ref="mukherjee2025"></span>.</p>
-        <p>The signs are not specific to a pressure load. In the figure, a volume load reaches an intermediate probability with a normal TR velocity, through the RV/LV ratio, the septum at end-diastole, the PA diameter and the RA area.</p>
+        <p hidden>The other signs are in three categories. The ventricles: an RV/LV basal ratio above 1.0, a flat septum with an LVEI above 1.1, and a TAPSE/sPAP ratio below 0.55 mm/mmHg. The pulmonary artery: an RVOT acceleration time below 105 ms or mid-systolic notching, an early-diastolic PR velocity above 2.2 m/s, and a PA wider than the aortic root or wider than 25 mm. The IVC and the RA: an IVC wider than 21 mm with a reduced collapse, and an RA area above 18 cm². Signs change the probability only when they come from at least two categories<span class="cite" data-ref="humbert2022"></span>. The ASE guideline calls a TR velocity of 2.9 m/s or more, or 2.8 m/s with at least two other signs, suggestive of PH<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p hidden>The signs are not specific to a pressure load. In the figure, a volume load reaches an intermediate probability with a normal TR velocity, through the RV/LV ratio, the septum at end-diastole, the PA diameter and the RA area.</p>
         <h3>Key points</h3>
         <ol class="steps">
         <li>At least one measure of RV size, typically the basal diameter in the RV-focused view<span class="cite" data-ref="mukherjee2025"></span>, and at least one measure of RV function should be reported<span class="cite" data-ref="taub2025"></span>.</li>
         <li>The septum flattens at end-systole in pressure overload and at end-diastole only in volume overload.</li>
-        <li>The probability of PH comes from the peak TR velocity and from signs in at least two of three categories: the ventricles, the pulmonary artery, and the IVC and the RA.</li>
+        <li hidden>The probability of PH comes from the peak TR velocity and from signs in at least two of three categories: the ventricles, the pulmonary artery, and the IVC and the RA.</li>
         <li>In a failing, pressure-overloaded RV, TAPSE and S′ can overestimate RV function; FAC also shows the radial motion of the free wall and the septum.</li>
         </ol>
       </div>

@@ -292,7 +292,8 @@ function buildQuizzes() {
   if (!SHOW_QUIZ) return;
   for (const c of CHAPTERS) {
     const host = document.querySelector(`#ch-${c.key} .quiz`);
-    const quiz = c.quiz || QUIZ[c.key];
+    // a question marked hidden stays in quiz.js and is not shown
+    const quiz = (c.quiz || QUIZ[c.key])?.filter((it) => !it.hidden);
     if (!host || !quiz) continue;
     host.innerHTML = `<h3 class="quiz-head">Review questions</h3>` + quiz.map((it, i) => `
       <div class="q" data-q="${i}">
