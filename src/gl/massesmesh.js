@@ -3,7 +3,7 @@
 // papillary fibroelastoma on the aortic side of an aortic cusp. Each mass is a closed triangle
 // mesh in world cm. It is built in each frame from points of the heart that the view shows, so
 // it moves with that heart through the beat. The echo views cut it as they cut the heart
-// (section) and draw it under the walls (echo.js under), so a wall covers the part of a mass
+// (section) and draw it under the walls (echo.js underWalls), so a wall covers the part of a mass
 // that lies inside it. The places where the masses attach are found once for each heart, on the
 // heart's rest shape (anchorsOf).
 //
