@@ -404,6 +404,9 @@ a:hover { text-decoration-color: var(--accent); }
    goes to the next line whole */
 #ch-stress .readout dd { white-space: normal; }
 #ch-stress .readout dd small { display: inline-block; white-space: nowrap; }
+/* hypertrophic cardiomyopathy: the LVOT gradient's unit carries the peak velocity, and wraps whole */
+#ch-hcm .readout dd { white-space: normal; }
+#ch-hcm .readout dd small { display: inline-block; white-space: nowrap; }
 
 .live {
   margin: 0 0 16px;
@@ -848,6 +851,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="endocarditis"] .stage { height: min(64vh, 560px); }
   /* Cardiac masses: two echo views beside a Doppler strip or the wall motion map */
   html[data-ch="masses"] .stage { height: min(64vh, 560px); }
+  /* Hypertrophic cardiomyopathy: two echo views beside two CW strips and an M-mode strip */
+  html[data-ch="hcm"] .stage { height: min(64vh, 560px); }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }
   .split.wide .pane-2d { display: none; }
   /* with the free plane on, its echo shows under the 3D view */

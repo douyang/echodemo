@@ -277,6 +277,25 @@ export const VIDEOS = {
       { set: { periS: 0.85 }, name: 'Tamponade', track: 'Tamponade', pick: [0, 1, 4], move: 4, hold: 7 },
     ],
   },
+  // hcm: at rest from a normal heart to severe obstruction; back to latent obstruction at rest;
+  // the same heart with Valsalva and its SAM; then severe obstruction with Valsalva (the tour)
+  hcm: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { hcmS: 0.005 },
+    steps: [
+      { set: { hcmS: 0, hcmProv: 'rest', hcmFrame: 'cine' }, track: 'Normal', pick: [0, 1], hold: 6 },
+      { set: { hcmS: 0.3 }, track: '13–14 mm', pick: [1], move: 4, hold: 6 },
+      { set: { hcmS: 0.42 }, track: 'Wall ≥15 mm', pick: [0, 1], move: 4, hold: 6 },
+      { set: { hcmFrame: 'ed' }, name: 'End-diastole: the septum and the posterior wall', track: 'End-diastole', pick: [0], move: 2, hold: 5 },
+      { set: { hcmS: 0.72, hcmFrame: 'cine' }, track: 'At rest', pick: [1, 2], move: 4, hold: 7 },
+      { set: { hcmS: 1 }, name: 'Severe obstruction at rest', track: 'Severe', pick: [1, 2], move: 4, hold: 7 },
+      { set: { hcmS: 0.53 }, track: 'Latent', pick: [1, 2], move: 4, hold: 6 },
+      { set: { hcmProv: 'valsalva' }, name: 'Latent obstruction: the Valsalva strain', track: 'Valsalva', pick: [1, 2], move: 2, hold: 7 },
+      { set: { hcmFrame: 'sam' }, name: 'SAM: the leaflet meets the septum', track: 'SAM', pick: [3, 4], move: 2, hold: 6 },
+      { set: { hcmS: 1, hcmFrame: 'cine' }, name: 'Severe obstruction with Valsalva', track: 'Severe, Valsalva', pick: [2, 6], move: 4, hold: 7 },
+    ],
+  },
   // constriction from a normal pericardium to all three Mayo Clinic criteria, then restrictive
   // cardiomyopathy to grade 3: a step in the middle of each band
   constrict: {

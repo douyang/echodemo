@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart by Ultrasound</title>
-<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function and stress echocardiography, the right ventricle, valvular disease, pericardial disease, cardiac amyloidosis, intracardiac shunts and cardiac masses.">
+<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function and stress echocardiography, the right ventricle, valvular disease, pericardial disease, hypertrophic cardiomyopathy, cardiac amyloidosis, intracardiac shunts and cardiac masses.">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -159,6 +159,10 @@
     <figure class="fig" id="fig-amyloid">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Cardiac amyloidosis from a normal heart to advanced disease: a parasternal long-axis view at end-diastole with calipers on the septum, the cavity and the inferolateral wall, and an apical four-chamber view, both cut from the heart model; mitral inflow and septal tissue Doppler; the 17-segment longitudinal strain bull's-eye; and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-hcm">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Hypertrophic cardiomyopathy from a normal heart to severe obstruction, at rest or with the Valsalva maneuver: a parasternal long-axis view with calipers on the septum, the cavity and the posterior wall at end-diastole and the gap between the anterior mitral leaflet and the septum in systole, and an apical three-chamber view with the color jets in the LV outflow tract and the left atrium, both cut from the heart model; continuous-wave Doppler of the outflow tract and of the mitral regurgitation on one velocity scale; and an M-mode through the mitral valve that shows systolic anterior motion.</figcaption>
     </figure>
     <figure class="fig" id="fig-stress">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -1556,6 +1560,106 @@
         <li>An LV wall thickness of 12 mm or more without another cause, a small LV cavity and enlargement of both atria suggest cardiac amyloidosis.</li>
         <li>Restrictive filling, septal s′, e′ and a′ velocities below 5 cm/s and relative apical sparing of longitudinal strain support the diagnosis.</li>
         <li>The echocardiographic criteria raise the suspicion of cardiac amyloidosis but do not establish the diagnosis alone.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-hcm">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">20</span><div><h2 class="ch-title">Hypertrophic cardiomyopathy</h2><p class="ch-kicker">Septal hypertrophy, SAM and outflow obstruction</p></div></div>
+      <p class="dek" data-part="dek">In hypertrophic cardiomyopathy (HCM), the LV wall is thick without another cause, most often at the basal anterior septum. In most patients, systolic anterior motion of the mitral valve obstructs the LV outflow tract, at rest or only with provocation.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="hcmS">Severity <output data-for="hcmS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="hcmS" data-key="hcmS" min="0" max="1" step="0.005">
+          <div class="grades" id="hcm-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Maneuver</span>
+          <div class="seg" role="group" aria-label="Maneuver" data-key="hcmProv">
+            <button type="button" data-val="rest">Rest</button><button type="button" data-val="valsalva">Valsalva</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Frame</span>
+          <div class="seg" role="group" aria-label="Frame" data-key="hcmFrame">
+            <button type="button" data-val="cine">Cine</button><button type="button" data-val="ed">End-diastole</button><button type="button" data-val="sam">SAM</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="hcm-table"></table></div>
+      <div class="table-wrap"><table class="vt grade" id="hcm-table2"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>Definition</h3>
+        <p>In an adult, HCM is defined by a maximal end-diastolic wall thickness of 15 mm or more anywhere in the LV, without another cause of hypertrophy<span class="cite" data-ref="ommen2024"></span>. A wall of 13–14 mm can be diagnostic in a family member of a patient with HCM or with a positive genetic test<span class="cite" data-ref="ommen2024"></span>. The ESC guideline accepts 13 mm or more in adult first-degree relatives of a patient with unequivocal disease<span class="cite" data-ref="arbelo2023"></span>. The normal septum and posterior wall measure 6–9 mm in women and 6–10 mm in men<span class="cite" data-ref="lang2015"></span>.</p>
+        <h3>Patterns and measurement</h3>
+        <ul>
+        <li>The most common pattern is focal asymmetric hypertrophy of the basal anterior septum, defined as a septal to posterior wall thickness ratio above 1.3 in a normotensive patient. The variants are a sigmoid septum, reversed septal curvature, and concentric, mid-wall and apical hypertrophy<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li>The report states the pattern and distribution of the hypertrophy, and the location and size of the maximal wall thickness at end-diastole<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li>RV trabeculations, the moderator band and the crista supraventricularis are excluded from the septum. A long-axis view can cut the wall tangentially and overestimate it, so the short- and long-axis views are compared<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li>The apical, anterior and anterolateral walls are hard to see, and the threshold for an ultrasound enhancing agent is low. The apical views must not foreshorten the LV, especially in apical hypertrophy<span class="cite" data-ref="nagueh2022"></span>.</li>
+        </ul>
+        <h3>SAM and dynamic obstruction</h3>
+        <p>Obstruction of the LV outflow tract (LVOT) is caused mainly by systolic anterior motion (SAM) of the mitral valve<span class="cite" data-ref="ommen2024"></span>. Drag forces of the flow push the anterior leaflet toward the septum, and SAM can begin at a normal LVOT velocity. Venturi forces in the narrowed LVOT contribute but are not the primary cause<span class="cite" data-ref="nagueh2022"></span>. In 25 patients, SAM began on average 71 ms after the onset of the Q wave, at an LVOT velocity of 89 cm/s<span class="cite" data-ref="sherrid2000"></span>.</p>
+        <p>Most patients with obstruction have abnormal mitral leaflets or papillary muscles. Elongated leaflets coapt at their bodies rather than at their tips, and the part of the anterior leaflet beyond the coaptation point predisposes to SAM. Anterior or apical displacement of the papillary muscles slackens the chordae and contributes to SAM<span class="cite" data-ref="nagueh2022"></span>.</p>
+        <p>SAM is not specific to HCM. A low afterload, a low preload or a high inotropic state can also cause it, for example after mitral valve repair, or in an elderly patient with hypertension, a sigmoid septum and a hyperdynamic LV<span class="cite" data-ref="nagueh2022"></span>.</p>
+        <p>On M-mode through the mitral valve, SAM is mild when the leaflet stays more than 10 mm from the septum. It is moderate at 10 mm or less, or with contact for less than 30% of systole, and severe with contact for 30% of systole or more<span class="cite" data-ref="nagueh2022"></span>. In 11 patients studied by echocardiography and catheterization at the same time, SAM without septal contact went with no gradient or a gradient below 10 mmHg, and contact always went with a gradient above 10 mmHg. The earlier the contact began, the longer it lasted and the higher the gradient was: the gradient was 25 × (the duration of contact ÷ the time from the onset of SAM to contact) + 25 mmHg<span class="cite" data-ref="pollick1984"></span>.</p>
+        <h3>LVOT gradient and provocation</h3>
+        <ul>
+        <li>The peak LVOT velocity is recorded with CW Doppler, and the gradient is 4 × velocity²<span class="cite" data-ref="nagueh2022"></span>. Obstruction is present at a peak gradient of 30 mmHg or more<span class="cite" data-ref="ommen2024,arbelo2023"></span>.</li>
+        <li>The obstruction is dynamic. It varies with preload, afterload and contractility, and so with the heart rate, the blood pressure, the volume status, activity, medications, food and alcohol<span class="cite" data-ref="ommen2024"></span>.</li>
+        <li>When the resting peak gradient is below 50 mmHg, the echocardiogram is repeated with provocation: standing, the strain phase of the Valsalva maneuver or exercise<span class="cite" data-ref="ommen2024"></span>. The strain phase raises the intrathoracic pressure and reduces the venous return. The effort varies, and a Valsalva gradient is generally lower than an exercise gradient<span class="cite" data-ref="nagueh2022"></span>. In 320 patients, Valsalva underestimated the presence and the size of exercise-induced obstruction<span class="cite" data-ref="maron2006"></span>.</li>
+        <li>Dobutamine is not used to provoke obstruction: it is not physiologic and can produce gradients in some normal subjects<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li>About 30–35% of symptomatic patients have obstruction at rest, and another 30–35% have latent obstruction, present only with provocation. The remaining 30% have non-obstructive HCM<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li>Exercise echocardiography (<a href="#stress" data-go="stress">chapter 12</a>) is recommended for symptomatic patients without a resting or provoked gradient of 50 mmHg or more<span class="cite" data-ref="ommen2024,arbelo2023"></span>.</li>
+        <li>A resting or provoked gradient of 50 mmHg or more is the threshold for advanced drug or invasive therapy when symptoms persist despite standard therapy<span class="cite" data-ref="ommen2024"></span>.</li>
+        <li>In 1,101 patients, 25% had a resting gradient of 30 mmHg or more. Their risk of death from HCM was 2.0 times higher, and their risk of severe heart failure or death from heart failure or stroke 4.4 times higher. The risk did not increase further with gradients above 30 mmHg<span class="cite" data-ref="maron2003"></span>.</li>
+        </ul>
+        <h3>The LVOT jet and the MR jet</h3>
+        <ul>
+        <li>The LVOT velocity rises slowly in early systole, then rises abruptly and peaks in mid-to-late systole, a dagger-shaped envelope. Some patients have a more symmetric envelope that peaks earlier<span class="cite" data-ref="nagueh2022"></span>. A fixed obstruction gives an envelope that peaks earlier: early and triangular in mild aortic stenosis, rounded and in mid-systole in more severe stenosis (<a href="#as" data-go="as">chapter 14</a>)<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li>MR usually accompanies SAM, and its jet lies close to the LVOT. The CW beam is swept from the LVOT into the MR jet, and each signal is recorded and labeled<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li>Compared with the LVOT jet, the MR jet usually peaks earlier and can last longer, its envelope is rounder, and its velocity is always higher. A velocity above 5.5 m/s is taken as LVOT flow only with caution<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li>The MR jet reflects the LV systolic pressure. The MR peak gradient minus the LVOT peak gradient is close to the systolic blood pressure, and ignoring the LA pressure underestimates the LVOT gradient<span class="cite" data-ref="nagueh2022"></span>. The two CW strips of the figure share one velocity scale.</li>
+        </ul>
+        <h3>Mitral regurgitation</h3>
+        <ul>
+        <li>SAM parts the leaflets in systole. The jet is eccentric and directed posteriorly and laterally<span class="cite" data-ref="nagueh2022"></span>, and it is typically mid-to-late systolic<span class="cite" data-ref="ommen2024"></span>.</li>
+        <li>A central or anterior jet prompts a search for an intrinsic abnormality of the mitral valve, although SAM alone can also produce such a jet<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li>The factors that change the obstruction also change the MR, so both are assessed at rest and with provocation<span class="cite" data-ref="ommen2024"></span>. Color Doppler shows turbulent, aliased flow in the LVOT at the level of the obstruction<span class="cite" data-ref="nagueh2022"></span>. The MR is graded as in <a href="#mr" data-go="mr">chapter 17</a>; a vena contracta below 0.3 cm is mild and one of 0.7 cm or more is severe<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ul>
+        <h3>LV function, the LA and risk</h3>
+        <ul>
+        <li>The LVEF is normal to hyperdynamic in most patients. An LVEF below 50% defines LV dysfunction and occurs in 4–9% of cohorts<span class="cite" data-ref="nagueh2022"></span>. Global longitudinal strain can be abnormal when the wall motion and the EF are normal<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li>Four measurements estimate the LA pressure in HCM: an average E/e′ above 14, an LA volume index above 34 mL/m², an Ar−A duration of 30 ms or more and a peak TR velocity above 2.8 m/s<span class="cite" data-ref="nagueh2025"></span> (<a href="#fill" data-go="fill">chapter 10</a>).</li>
+        <li>Three of the major risk factors for sudden death are echocardiographic: a maximal wall thickness of 30 mm or more in any segment, an LV apical aneurysm and an LVEF below 50%<span class="cite" data-ref="ommen2024"></span>. An apical aneurysm is a thin-walled akinetic or dyskinetic segment at the LV apex with transmural scar or late gadolinium enhancement<span class="cite" data-ref="ommen2024"></span>.</li>
+        <li>A wall of 30 mm or more occurs in about 10% of patients<span class="cite" data-ref="nagueh2022"></span>. In 480 patients, the risk of sudden death rose with the wall thickness, from 0 per 1,000 person-years at 15 mm or less to 18.2 per 1,000 person-years at 30 mm or more<span class="cite" data-ref="spirito2000"></span>.</li>
+        <li>The HCM Risk-SCD estimate of the 5-year risk of sudden death uses three echocardiographic measurements: the maximal wall thickness, the LA diameter and the maximal LVOT gradient at rest or with Valsalva<span class="cite" data-ref="nagueh2022"></span>.</li>
+        </ul>
+        <h3>Differential diagnosis</h3>
+        <p>Asymmetric hypertrophy and dynamic obstruction are more common in HCM than in other diseases, but they are not pathognomonic<span class="cite" data-ref="nagueh2022"></span>.</p>
+        <ul>
+        <li><b>Athlete’s heart.</b> The wall is typically thinner than 15 mm, the four chambers dilate in balance, the EF is normal or low-normal, and the diastolic function is normal or supranormal<span class="cite" data-ref="nagueh2022"></span>. A dilated LV with uniform thickening, less than 2 mm different between contiguous segments, a normal mitral valve and no obstruction at rest or with exercise favor physiologic hypertrophy<span class="cite" data-ref="nagueh2022"></span>. A wall above 12 mm is rare in white athletes, and the upper limit of normal in elite black male athletes may be close to 15 mm<span class="cite" data-ref="nagueh2022"></span>. Athletes with HCM can also have a normal diastolic function and exercise capacity<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li><b>Hypertension.</b> Hypertensive heart disease most commonly gives concentric hypertrophy or remodeling, with diastolic dysfunction that depends on the severity and duration of the hypertension<span class="cite" data-ref="nagueh2022"></span>. The ratio of 1.3 for asymmetric septal hypertrophy applies to a normotensive patient<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li><b>Cardiac amyloidosis.</b> The LV wall thickens concentrically, sometimes more at the septum. Global longitudinal strain falls with relative apical sparing, both atria dilate, the valve leaflets thicken and a small pericardial effusion can be present. Filling becomes restrictive in advanced disease, and the QRS voltage is low for the wall thickness<span class="cite" data-ref="nagueh2022"></span> (<a href="#amyloid" data-go="amyloid">chapter 21</a>).</li>
+        <li><b>Fixed obstruction.</b> In aortic stenosis or a discrete subaortic membrane, the CW envelope peaks earlier than the dagger-shaped envelope, and the absence of SAM suggests a fixed obstruction. An early-peaking LVOT signal with aortic regurgitation favors a subaortic membrane<span class="cite" data-ref="nagueh2022"></span>.</li>
+        <li><b>Hyperdynamic LV.</b> A hyperdynamic LV with cavity obliteration gives a very late-peaking CW signal. Color and PW Doppler place it in the obliterated cavity, unlike the dagger-shaped LVOT jet of HCM<span class="cite" data-ref="nagueh2022"></span>.</li>
+        </ul>
+        <p>CMR is indicated when the echocardiographic images are suboptimal or the hypertrophy is borderline<span class="cite" data-ref="nagueh2022"></span>.</p>
+        <h3>The figure</h3>
+        <p>The long-axis and apical three-chamber views are cut from the heart model. The septum thickens at its base and in the middle of the LV, and the posterior wall keeps its thickness. The anterior leaflet moves to the printed SAM-septal gap, or touches the septum for the printed share of systole, and the LA grows to the printed volume index. The contact timing sets the gradient by the regression of Pollick<span class="cite" data-ref="pollick1984"></span>. The Valsalva switch shows the strain phase, with earlier contact and a higher gradient. In the model, the LV pressure peaks in mid-systole and the aortic pressure falls as the gradient rises, so the MR jet peaks before the LVOT jet. The walls, the LV diameter and the LVEF are measured on the images. The patient and the numbers are illustrative.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>HCM is a maximal end-diastolic LV wall thickness of 15 mm or more without another cause. A wall of 13–14 mm can be diagnostic in a family member or with a positive genetic test.</li>
+        <li>SAM of the anterior mitral leaflet causes dynamic LVOT obstruction. Contact with the septum for 30% of systole or more is severe SAM.</li>
+        <li>Obstruction is a peak LVOT gradient of 30 mmHg or more, at rest or with provocation. A resting gradient below 50 mmHg calls for provocation by standing, Valsalva or exercise.</li>
+        <li>On CW Doppler, the LVOT jet is dagger-shaped and peaks late. The MR jet peaks earlier, is rounder and is always faster.</li>
+        <li>A wall of 30 mm or more, an LV apical aneurysm and an LVEF below 50% are the echocardiographic major risk factors for sudden death.</li>
         </ol>
       </div>
       <div class="quiz"></div>
