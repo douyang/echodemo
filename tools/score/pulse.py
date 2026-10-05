@@ -42,6 +42,7 @@ SEEDS['IVC'] = 9319                               # IVC (then chapter 18): the n
 SEEDS['STRESS'] = 9320                            # stress echocardiography (then chapter 19): the next number
 SEEDS['RV'] = 9321                                # the right ventricle (chapter 13): the next number
 SEEDS['CONSTRICT'] = 9323                         # constrictive pericarditis, added after the RV
+SEEDS['PROSTHETIC'] = 9324                        # prosthetic valves (chapter 19 when it was added)
 SEEDS['INTRO'] = 9300                             # the intro (video/reel.js): 93 and chapter 00
 PROG = ['C', 'Am', 'F', 'G']
 CHORD = {'C': (0, [0, 4, 7]), 'Am': (9, [9, 0, 4]), 'F': (5, [5, 9, 0]), 'G': (7, [7, 11, 2])}

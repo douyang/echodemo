@@ -840,6 +840,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="rv"] .stage { height: min(64vh, 560px); }
   /* Constrictive pericarditis: the four-chamber view and tissue Doppler above two strips with breathing */
   html[data-ch="constrict"] .stage { height: min(64vh, 560px); }
+  /* Prosthetic valves: two echo views beside the CW and PW Doppler strips */
+  html[data-ch="prosthetic"] .stage { height: min(64vh, 560px); }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }
   .split.wide .pane-2d { display: none; }
   /* with the free plane on, its echo shows under the 3D view */
