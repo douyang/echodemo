@@ -94,6 +94,8 @@ export class MeshPanel {
    * plane, with o.extraKey naming what they show (a prosthesis, ch/prosthetic.js).
    * o.under(ev, g, state, valves): items drawn under the leaflets, which may cut the valve
    * loops (a vegetation and its perforation, ch/endocarditis.js), named by o.extraKey too.
+   * o.underWalls(ev, { loops, outer, state }): items drawn under the walls (a mass, ch/masses.js),
+   * with o.underKey, a string that changes when they do, so a still frame is cut again.
    * Returns F, or null while the model loads.
    */
   draw(ctx, P, title, o = {}) {
@@ -131,10 +133,11 @@ export class MeshPanel {
     ev.hideValves = o.hide || null;
     ev.extraItems = o.extra || null;
     ev.extraUnder = o.under || null;
+    ev.underWalls = o.underWalls || null;
     const tms = o.tms ?? 0;
     const c = cycleAt(tms);
     const drive = o.drive ? o.drive(c.drive, c.t) : c.drive;
-    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, ev.periW, ev.periE, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive), o.extraKey || ''].join('|');
+    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, ev.periW, ev.periE, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive), o.extraKey || '', o.underKey || ''].join('|');
     if (key !== this.last) {
       ev.frame({ s: c.s, v: c.v, drive, phase: c.phase, t: c.t });
       this.last = key;

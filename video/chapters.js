@@ -355,6 +355,27 @@ export const VIDEOS = {
       { set: { sxCase: 'viable', sxView: 'a2c' }, track: 'Viable', pick: [1, 2, 3], hold: 8 },
     ],
   },
+  // Cardiac masses: the chapter's tour. The myxoma grows until it obstructs the mitral valve;
+  // the LV thrombus goes from mural to mobile, then an enhancing agent fills the cavity; the
+  // fibroelastoma goes from sessile to mobile
+  masses: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { maS: 0.005 },
+    steps: [
+      { set: { maType: 'myxoma', maUea: false, maS: 0 }, track: 'No mass', pick: [1], hold: 5 },
+      { set: { maS: 0.15 }, track: 'Myxoma', pick: [0, 1], move: 3, hold: 6 },
+      { set: { maS: 0.62 }, track: 'Prolapse', pick: [0, 1], move: 4, hold: 7 },
+      { set: { maS: 1 }, track: 'Obstruction', pick: [2], move: 4, hold: 7 },
+      { set: { maType: 'thrombus', maS: 0 }, track: 'Akinetic apex', pick: [1], move: 2, hold: 5 },
+      { set: { maS: 0.2 }, track: 'Mural', pick: [0, 1], move: 3, hold: 6 },
+      { set: { maS: 0.55 }, track: 'Protruding', pick: [0, 1], move: 4, hold: 6 },
+      { set: { maS: 0.95 }, track: 'Mobile', pick: [0], move: 4, hold: 7 },
+      { set: { maUea: true }, name: 'With an enhancing agent', track: 'Agent', pick: [2], move: 2, hold: 6 },
+      { set: { maType: 'pfe', maUea: false, maS: 0.25 }, track: 'Sessile', pick: [0, 1], move: 2, hold: 6 },
+      { set: { maS: 0.85 }, track: 'Mobile', pick: [0, 1], move: 4, hold: 7 },
+    ],
+  },
 };
 
 /** The video's chapter keys. */

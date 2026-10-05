@@ -493,6 +493,7 @@ export class EchoView {
     this.calc = {};       // a chapter's calcified valves: level 0 to 1 by valve mesh name (setCalc)
     this.shapes = null;   // a chapter's own shapes on the plane (setShapes): septal defects, saline bubbles
     this.extraUnder = null; // a chapter's own structures under the leaflets: (view, plane, state, valves) -> bmode items (meshpanel.js o.under)
+    this.underWalls = null; // a chapter's own image items under the walls: (ev, { loops, outer, state }) -> items (meshpanel.js o.underWalls)
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -1333,6 +1334,9 @@ export class EchoView {
         { polys: loops.filter((L) => !outer.includes(L)).map((L) => L.pts), e: DB.blood, blood: true },
       );
     }
+    // a chapter's own structures (this.underWalls): a mass on the heart, or cavities filled with an
+    // enhancing agent; drawn before the walls, so a wall covers the part of them inside it
+    const wallItems = this.underWalls ? this.underWalls(this, { loops, outer, state }) : [];
     const items = [
       { polys: liver, e: DB.liver },
       { borders: liver, e: 6, spec: 9, w: 0.12, closed: true, all: true },
@@ -1343,6 +1347,7 @@ export class EchoView {
       { borders: walls(arteries), e: DB.fibrous + 2, spec: 7, w: 0.28, all: true },
       { polys: [...veins, ...arteries], e: DB.blood, blood: true },
       ...sacItems,
+      ...wallItems,
       { polys: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, rule: 'evenodd' },
       { polys: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo },
       { borders: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, spec: 8, closed: true },

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart by Ultrasound</title>
-<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function and stress echocardiography, the right ventricle, valvular disease, pericardial disease, cardiac amyloidosis and intracardiac shunts.">
+<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function and stress echocardiography, the right ventricle, valvular disease, pericardial disease, cardiac amyloidosis, intracardiac shunts and cardiac masses.">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -119,6 +119,10 @@
     <figure class="fig" id="fig-fill">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Diastolic function from normal to restrictive filling: an apical four-chamber view with the left atrium to scale, mitral inflow, septal and lateral tissue Doppler, pulmonary vein flow, left atrial strain and the tricuspid jet, with the 2025 diastolic algorithm and the path that the current values follow through it.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-masses">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Cardiac masses from none to large: a left atrial myxoma on a stalk from the atrial septum, which prolapses through the mitral valve in diastole, in the apical four-chamber view and the parasternal long axis, with continuous-wave mitral inflow and its mean gradient; an LV thrombus on an akinetic apex, mural, protruding or mobile, in the apical four-chamber view and the short axis at the apex, with the wall motion of the 17 segments; a papillary fibroelastoma on the aortic side of an aortic cusp, in the parasternal and apical long axes zoomed on the valve. Calipers measure each mass. With an ultrasound enhancing agent the cavities fill, and each mass shows its uptake.</figcaption>
     </figure>
     <figure class="fig" id="fig-as">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -955,6 +959,81 @@
         <li>Step 1 of the algorithm assesses e′, E/e′ and the peak TR velocity.</li>
         <li>If step 1 is not conclusive, step 3 assesses the pulmonary vein S/D ratio, LA reservoir strain and the LA volume index.</li>
         <li>When the LA pressure is raised, E/A determines the grade of diastolic dysfunction.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Masses -->
+    <article class="chapter" id="ch-masses">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">21</span><div><h2 class="ch-title">Cardiac masses and thrombus</h2><p class="ch-kicker">Left atrial myxoma, LV thrombus and papillary fibroelastoma</p></div></div>
+      <p class="dek" data-part="dek">A cardiac mass is described by its location, attachment, size, shape and mobility. The place of the mass, the wall motion beside it and an enhancing agent help to tell a thrombus from a tumor and from a normal structure.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="maS">Size <output data-for="maS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="maS" data-key="maS" min="0" max="1" step="0.005">
+          <div class="grades" id="masses-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Mass</span>
+          <div class="seg" role="group" aria-label="Kind of mass" data-key="maType">
+            <button type="button" data-val="myxoma">LA myxoma</button><button type="button" data-val="thrombus">LV thrombus</button><button type="button" data-val="pfe">Fibroelastoma</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Enhancing agent</span>
+          <div class="seg" role="group" aria-label="Ultrasound enhancing agent" data-key="maUea">
+            <button type="button" data-val="false">Off</button><button type="button" data-val="true">On</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Describing a mass</h3>
+        <p>The report of a cardiac mass should give its location, attachment, size, echogenicity, shape and mobility, and a differential diagnosis such as a tumor, a vegetation or a thrombus<span class="cite" data-ref="taub2025"></span>. A pedunculated mass is attached by a thin stalk that lets it move; a sessile mass is attached by a broad base that prevents significant movement<span class="cite" data-ref="taub2025"></span>. Color and spectral Doppler show the effect of a mass on flow, such as mitral stenosis from a large LA myxoma<span class="cite" data-ref="saric2016"></span>.</p>
+        <p>Primary cardiac tumors are rare: an autopsy prevalence of 0.05%, seven in more than 12,000 autopsies. Metastatic tumors are about 20 times more common. In adults the two most common primary tumors are the myxoma and the papillary fibroelastoma, and both often present with stroke or another embolism<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>Normal structures that mimic a mass</h3>
+        <p>On transthoracic echocardiography several normal structures can be taken for a mass<span class="cite" data-ref="malik2017"></span>, and the report should name a normal variant as such<span class="cite" data-ref="taub2025"></span>:</p>
+        <ul>
+        <li><b>Right atrium.</b> A prominent Eustachian valve, a Chiari network and the crista terminalis<span class="cite" data-ref="taub2025,malik2017"></span>.</li>
+        <li><b>Atrial septum.</b> Lipomatous hypertrophy<span class="cite" data-ref="malik2017"></span>. Thickening of the atrial septum that spares the fossa ovalis gives the septum a dumbbell shape<span class="cite" data-ref="taub2025"></span>; a myxoma, in contrast, is usually attached at the fossa ovalis.</li>
+        <li><b>Right ventricle.</b> The moderator band, in the apical part of the RV<span class="cite" data-ref="mitchell2019,malik2017"></span>.</li>
+        <li><b>Left ventricle.</b> A false tendon, an accessory papillary muscle and heavy trabeculation<span class="cite" data-ref="porter2018,malik2017"></span>.</li>
+        <li><b>Valves.</b> Strands, or Lambl's excrescences: filiform structures no wider than 2 mm and about 3–10 mm long, at the line of closure, on the atrial side of the mitral valve and the ventricular side of the aortic valve. TEE finds them in 40–50% of patients<span class="cite" data-ref="saric2016"></span>.</li>
+        </ul>
+        <p>Near-field clutter can mimic an apical thrombus. It does not move with the wall and appears to pass through it; color Doppler at a low scale, another imaging plane or an enhancing agent shows the true apex<span class="cite" data-ref="saric2026"></span>.</p>
+        <h3>Left atrial myxoma</h3>
+        <p>A myxoma lies in the LA in more than 75% of cases, attached by a stalk to the fossa ovalis in more than 90%. It can also arise in the LV, the RA and, rarely, the RV. Up to 5% are multiple, and about 7% occur in the Carney complex. Myxomas are more common in women; they are gelatinous and pedunculated, with a smooth, villous or friable surface<span class="cite" data-ref="saric2016"></span>.</p>
+        <p>A large myxoma can obstruct the mitral orifice and cause mitral stenosis; a mobile, villous or friable one has a high risk of embolism. Up to one third of patients have evidence of embolism, and surgery is generally indicated once the diagnosis is made<span class="cite" data-ref="saric2016"></span>. In a series of 112 left atrial myxomas, 67% of patients had symptoms of mitral obstruction and 29% had embolism; the tumors measured 1 to 15 cm, and 35% had a friable or villous surface<span class="cite" data-ref="pinede2001"></span>.</p>
+        <p>In the figure the tumor hangs on a short stalk from the septum. A tumor longer than the distance from its stalk to the mitral annulus reaches into the LV in diastole and returns to the LA in systole. The mean gradient is the mean of 4V² over diastole on the CW inflow trace, with the stroke volume held, at a heart rate of 70/min; <a href="#ms" data-go="ms">chapter 16</a> gives the bands of the mean gradient in rheumatic mitral stenosis.</p>
+        <h3>LV thrombus</h3>
+        <p>An LV thrombus forms where the wall motion is abnormal: after an acute myocardial infarction, and in a dilated LV with poor function. A thrombus in a segment with normal wall motion is unusual, except in endomyocardial fibrosis. After an anterior infarction a thrombus is more common than after an infarction elsewhere (11.5% against 2.3%), and more common again with an ejection fraction below 40% (17.8%). Most thrombi (90%) form within 14 days of the infarction, and the prevalence can reach 50% in a chronic LV aneurysm<span class="cite" data-ref="saric2016"></span>. <a href="#segments" data-go="segments">Chapter 11</a> shows the segments of each coronary territory.</p>
+        <p>A thrombus is a discrete mass with well-defined margins, distinct from the endocardium, seen in systole and diastole in an area of abnormal wall motion. It should be seen in two orthogonal views, an apical and a short-axis view<span class="cite" data-ref="saric2016"></span>. There are three types<span class="cite" data-ref="saric2016"></span>:</p>
+        <ul>
+        <li><b>Mural.</b> One surface faces the blood; the thrombus is flat and parallel to the endocardium.</li>
+        <li><b>Protruding.</b> More than one surface faces the blood, and the thrombus stands into the cavity.</li>
+        <li><b>Mobile.</b> The thrombus moves on its own, in part or as a whole.</li>
+        </ul>
+        <p>Embolism is least common with a mural thrombus and most common with a mobile one; yet 40% of embolic events occur in patients whose thrombi are neither protruding nor mobile<span class="cite" data-ref="saric2016"></span>. In the figure a thrombus is called protruding when its thickness is more than 0.35 of the half-length of its base.</p>
+        <p>Near-field clutter, false tendons, trabeculations and a foreshortened apex can mimic a thrombus. A focal zone at the apex, a higher transducer frequency and color Doppler at a low aliasing velocity help; when the diagnosis is still uncertain, an enhancing agent should be used. TTE is better than TEE for a thrombus in the LV apex, which lies far from a transesophageal probe<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>Papillary fibroelastoma</h3>
+        <p>The papillary fibroelastoma is the second most common primary cardiac tumor in adults. About 80% lie on the valves, most often the aortic valve and then the mitral valve. On a valve it lies typically on the downstream side: the aortic side of the aortic valve and the ventricular side of the mitral valve, the opposite of the usual site of an endocarditis lesion. It rarely causes significant valve dysfunction<span class="cite" data-ref="saric2016"></span>.</p>
+        <p>The tumor is homogeneous, round, oval or irregular, with a well-demarcated border, and often mobile. A dense central stalk carries frond-like extensions, like a sea anemone. Most are smaller than 20 mm (mean 8–9 mm), and more than 90% are single. TTE detects about 62% of them and TEE about 77%<span class="cite" data-ref="saric2016"></span>. In 162 patients the mean size on echocardiography was 9 ± 4.6 mm, and 43.6% of the tumors were mobile<span class="cite" data-ref="sun2001"></span>. In 725 published cases, the mobility of the tumor was the only independent predictor of death or nonfatal embolism<span class="cite" data-ref="gowda2003"></span>.</p>
+        <p>The ASE notes that patients with symptoms, or with a large or very mobile tumor, should undergo surgery, and that a small sessile tumor in a patient without symptoms may be watched. The differential diagnosis includes a myxoma, valvular strands and Lambl's excrescences<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>Enhancing agents, TEE, CMR and CT</h3>
+        <p>An ultrasound enhancing agent fills the cavities, and a thrombus then shows as a filling defect. The ASE recommends an agent when an LV thrombus cannot be ruled in or out without one<span class="cite" data-ref="porter2018"></span>. The uptake of the agent in a mass shows its blood supply: a thrombus and a papillary fibroelastoma are generally avascular and do not enhance, and a myxoma has a poor blood supply and enhances in part<span class="cite" data-ref="porter2018"></span>. A malignant tumor is often fully opacified<span class="cite" data-ref="saric2016"></span>. Complete enhancement, or enhancement greater than that of the myocardium, supports a highly vascular tumor, which is most often malignant. An avascular mass can appear to enhance in part in the far field, so this uptake is judged in views that put the mass in the near field<span class="cite" data-ref="porter2018"></span>.</p>
+        <p>In 121 patients at high risk after an infarction or with heart failure, with delayed-enhancement CMR as the reference, echocardiography without contrast detected 33% of LV thrombi and contrast echocardiography 61%. A thrombus that contrast echocardiography missed was more likely to be mural, or small when it lay at the apex<span class="cite" data-ref="weinsaft2009"></span>. Delayed-enhancement CMR has the highest sensitivity and specificity for an LV thrombus; it should be considered when contrast echocardiography finds none but the suspicion persists<span class="cite" data-ref="porter2018"></span>.</p>
+        <p>TEE may be better than TTE for a cardiac tumor, especially a myxoma or a papillary fibroelastoma, and 3D TEE shows the point of attachment of a myxoma on the septum. CMR characterizes the tissue of a tumor. CT has a high spatial resolution, 0.4–0.6 mm, but little soft-tissue contrast, which limits its assessment of the myocardium and of small thrombi; it uses radiation and iodinated contrast. CT and MRI show the structures next to the heart better than echocardiography, such as a malignant tumor of a nearby organ that invades the heart<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>A mass is reported by its location, attachment, size, echogenicity, shape and mobility, with a differential diagnosis.</li>
+        <li>A left atrial myxoma is usually attached by a stalk to the fossa ovalis. A large one prolapses into the LV in diastole and can obstruct the mitral valve.</li>
+        <li>An LV thrombus lies in a segment with abnormal wall motion, most often the apex after an anterior infarction. It should be seen in two views; with an enhancing agent it shows as a filling defect.</li>
+        <li>A papillary fibroelastoma is a small mass on the downstream side of a valve, most often the aortic side of the aortic valve. Its mobility predicts embolism.</li>
         </ol>
       </div>
       <div class="quiz"></div>
