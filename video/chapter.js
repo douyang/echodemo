@@ -178,7 +178,7 @@ function build(src) {
   const title = h('div');
   const T = LAY.title;
   const eye = h('p', 'card-eye', CLIP ? esc(REEL.title.eye) : `${NUM} <span>·</span> ${esc(PART_NAME)}`);
-  const t1 = h('p', 'card-title', esc(CLIP ? REEL.title.name : C.title));
+  const t1 = h('p', 'card-title', esc(CLIP ? REEL.title.name : V.title ?? C.title));
   const rule = h('div', 'card-rule');
   const sub = h('p', 'card-sub', esc(CLIP ? REEL.title.sub : SUB));
   Object.assign(eye.style, { left: `${T.x + 6}px`, top: `${T.y - 54}px` });

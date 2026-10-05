@@ -489,6 +489,7 @@ export class EchoView {
     this.fore = 0;        // cm the probe sits off the view's plane, aimed at the same point: a foreshortened view (setFore)
     this.shift = 0;       // cm the view's plane moves along its own normal (setShift)
     this.calc = {};       // a chapter's calcified valves: level 0 to 1 by valve mesh name (setCalc)
+    this.under = null;    // a chapter's own image items under the walls: (ev, { loops, outer, state }) -> items (meshpanel.js o.under)
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -1309,6 +1310,9 @@ export class EchoView {
         { polys: loops.filter((L) => !outer.includes(L)).map((L) => L.pts), e: DB.blood, blood: true },
       );
     }
+    // a chapter's own structures (this.under): a mass on the heart, or cavities filled with an
+    // enhancing agent; drawn before the walls, so a wall covers the part of them inside it
+    const own = this.under ? this.under(this, { loops, outer, state }) : [];
     const items = [
       { polys: liver, e: DB.liver },
       { borders: liver, e: 6, spec: 9, w: 0.12, closed: true, all: true },
@@ -1319,6 +1323,7 @@ export class EchoView {
       { borders: walls(arteries), e: DB.fibrous + 2, spec: 7, w: 0.28, all: true },
       { polys: [...veins, ...arteries], e: DB.blood, blood: true },
       ...sacItems,
+      ...own,
       { polys: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, rule: 'evenodd' },
       { polys: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo },
       { borders: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, spec: 8, closed: true },
