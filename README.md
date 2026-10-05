@@ -38,10 +38,10 @@ Planes is archived and hidden the same way: `SHOW_PLANES` in `src/order.js`; it 
 | --- | --- | --- |
 | ![01 Pulse](docs/screenshots/pulse.webp) | ![03 Doppler](docs/screenshots/shift.webp) | ![04 Views](docs/screenshots/windows.webp) |
 | ![05 Cycle](docs/screenshots/cycle.webp) | ![06 Loop](docs/screenshots/loop.webp) | ![07 Inferior vena cava](docs/screenshots/ivc.webp) |
-| ![09 Systolic function](docs/screenshots/eject.webp) | ![10 Regional wall motion](docs/screenshots/segments.webp) | ![11 Diastolic function](docs/screenshots/fill.webp) |
-| ![12 Aortic stenosis](docs/screenshots/as.webp) | ![13 Aortic regurgitation](docs/screenshots/ar.webp) | ![14 Mitral stenosis](docs/screenshots/ms.webp) |
-| ![15 Mitral regurgitation](docs/screenshots/mr.webp) | ![16 Tricuspid regurgitation](docs/screenshots/tr.webp) | ![17 Pericardial effusion](docs/screenshots/peri.webp) |
-| ![18 Cardiac amyloidosis](docs/screenshots/amyloid.webp) | ![19 Stress echocardiography](docs/screenshots/stress.webp) |  |
+| ![08 Doppler hemodynamics](docs/screenshots/pressure.webp) | ![09 Systolic function](docs/screenshots/eject.webp) | ![10 Regional wall motion](docs/screenshots/segments.webp) |
+| ![11 Diastolic function](docs/screenshots/fill.webp) | ![12 Aortic stenosis](docs/screenshots/as.webp) | ![13 Aortic regurgitation](docs/screenshots/ar.webp) |
+| ![14 Mitral stenosis](docs/screenshots/ms.webp) | ![15 Mitral regurgitation](docs/screenshots/mr.webp) | ![16 Tricuspid regurgitation](docs/screenshots/tr.webp) |
+| ![17 Pericardial effusion](docs/screenshots/peri.webp) | ![18 Cardiac amyloidosis](docs/screenshots/amyloid.webp) | ![19 Stress echocardiography](docs/screenshots/stress.webp) |
 
 On a phone the figure sits above the text and stays in view while the text scrolls:
 

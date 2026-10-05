@@ -195,7 +195,10 @@ function drawFlow(sh, t, F, B, narrow) {
     { x: X(T.xvc), name: F.wide ? 'valve (open wide)' : 'valve', a: F.a2, v: F.v2 },
     { x: X((T.xre + L) / 2), name: 'aorta', a: F.a3, v: F.v3 },
   ];
+  const rMax = Math.max(T.r1, T.r3 * 1.1) * k;
   const bot = yc + inner / 2 + (narrow ? 14 : 18);
+  const nameY = Math.max(top, yc - rMax - (narrow ? 8 : 10));
+  const valY = Math.min(bot, yc + rMax + (narrow ? 14 : 18));
   const fsz = narrow ? 10 : 11.5;
   const valveInk = F.v2 >= 4 ? t.flag : t.accent;
   // area and velocity under each level: in full where the three fit side by side, else as two
@@ -216,11 +219,11 @@ function drawFlow(sh, t, F, B, narrow) {
   for (const [i, l] of lv.entries()) {
     const align = i === 0 ? 'left' : i === 2 ? 'right' : 'center';
     const ax = i === 0 ? xs0 : i === 2 ? xs1 : l.x;
-    sh.text(narrow && i === 1 ? 'valve' : l.name, ax, top, { size: (narrow ? 14 : 16) * s, color: t.ink2, align });
-    sh.text(form(l), ax, bot, { ...lo, color: i === 1 ? valveInk : t.ink, align });
+    sh.text(narrow && i === 1 ? 'valve' : l.name, ax, nameY, { size: (narrow ? 14 : 16) * s, color: t.ink2, align });
+    sh.text(form(l), ax, valY, { ...lo, color: i === 1 ? valveInk : t.ink, align });
   }
   const units = fi !== 0;
-  if (units) sh.text('cm² · m/s', xs1, bot + 12, { family: MONO, weight: 400, size: 9, color: t.ink3, align: 'right' });
+  if (units) sh.text('cm² · m/s', xs1, valY + 12, { family: MONO, weight: 400, size: 9, color: t.ink3, align: 'right' });
   y = bot + (units ? 16 : narrow ? 16 : 10);
 
   // ---- three strips under the tube, on its axis: flow, velocity, pressure at peak flow
