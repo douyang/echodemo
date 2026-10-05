@@ -120,9 +120,10 @@ const provOf = (s) => (s[PROV] === 'valsalva' ? 'valsalva' : 'rest');
 /**
  * The values at slider position x on heart, as printed: the septum is the track's or the heart's
  * own, whichever is thicker; the posterior wall, the LV diameter and the LVEF are the image's;
- * the gradients are 4V² of the printed peak velocities. The grades read these numbers.
+ * the gradients are 4V² of the printed peak velocities. The grades read these numbers. withMr
+ * false leaves out the MR's peak, which the grade does not need (the bands ask for many grades).
  */
-function measure(x, heart) {
+function measure(x, heart, withMr = true) {
   const m = TRK(x);
   const v = { s: x, heart };
   v.ivs = Math.max(rnd(m.ivs), rnd(ownIvs(heart)));
@@ -140,7 +141,7 @@ function measure(x, heart) {
     const vc = rnd(vcOf(sm), 2);
     v[k] = { sam: sm, samGrade: SAM_GRADE(sm), vel, grad: rnd(4 * vel * vel), vc, mr: MR_GRADE(vc) };
   }
-  for (const k of ['rest', 'valsalva']) v[k].mrVel = rnd(mrPeak(v, v[k]), 1);
+  if (withMr) for (const k of ['rest', 'valsalva']) Object.assign(v[k], peaksOf(v, v[k]));
   v.grade = gradeOfV(v);
   return v;
 }
@@ -162,7 +163,17 @@ function shown(s) {
   if (key !== lastKey || !lastShown) { lastKey = key; lastShown = measure(s[KEY], heartOf(s)); }
   return lastShown;
 }
-export const gradeOf = (x, heart = 'normal') => measure(x, heart).grade;
+export const gradeOf = (x, heart = 'normal') => measure(x, heart, false).grade;
+/**
+ * The Doppler model at slider position x on heart, with maneuver prov: the printed values (v),
+ * the maneuver's state (P) and, as functions of the time in ms from the R wave, the LVOT and MR
+ * velocities (m/s) and the LV and aortic pressures (mmHg). The figure draws the same; tools and
+ * checks read it.
+ */
+export function dopplerAt(x, heart = 'normal', prov = 'rest') {
+  const v = measure(x, heart), P = v[prov];
+  return { v, P, lvot: (t) => lvotAt(P, t), mr: (t) => mrAt(v, P, t), lvp: (t) => lvpAt(P, t), aop: (t) => aopAt(P, t) };
+}
 
 // ---------------------------------------------------------------- SAM through the beat
 const smooth = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
@@ -210,29 +221,119 @@ function lvotAt(P, t) {
   else if (t > tp && t < tend) g = Math.pow(Math.cos((Math.PI / 2) * ((t - tp) / (tend - tp))), 0.7);
   return Math.max(base, V * g);
 }
-/** LV systolic pressure (mmHg) at t: the cycle model's, and in ejection at least the aortic pressure plus the LVOT gradient. */
-function lvpAt(P, t) {
-  const c = cycleAt(t), v = lvotAt(P, t);
-  return c.avOpen ? Math.max(c.lv, c.ao + 4 * v * v) : c.lv;
-}
 // The SAM-related MR starts when SAM parts the leaflets: halfway from the SAM's onset to the
 // contact (at least 100 ms), or to the SAM's peak without contact; it lasts to 430 ms, in
-// isovolumic relaxation. SAM-related MR is typically mid-to-late systolic (Ommen 2024).
+// isovolumic relaxation. MR often begins in isovolumic contraction, but in HCM it may begin only
+// as SAM parts the leaflets, in mid-to-late systole (Nagueh 2022). SAM-related MR is typically
+// mid-to-late systolic (Ommen 2024).
 const MR_OFF = 430;
 const mrOn = (sm) => (sm.kind === 'contact' ? Math.max(100, (T_ON + contactOf(sm)[0]) / 2) : (T_ON + T_PK) / 2);
-/** MR velocity (m/s) at t: √((LV pressure − LA pressure) ÷ 4) while the leaflets are apart. */
+
+// ---------------------------------------------------------------- the pressures
+// With SAM the LV systolic pressure is a rounded curve that peaks in mid-systole, and the aortic
+// pressure is the LV pressure less the LVOT gradient (4v², Bernoulli). So the aortic pressure
+// rises early (the spike), falls below the cycle model's as the gradient peaks, when the flow
+// ebbs and the aortic valve notches (Nagueh 2022), and recovers as the gradient falls (the dome).
+// The MR velocity comes from the LV pressure, so it peaks with it, before the LVOT velocity.
+// The curve: the cycle model's LV pressure plus a bump over ejection, A × b(t), with b(tb) = 1,
+// held by a soft minimum under the spike limit: the cycle model's aortic pressure plus AO_SWING
+// plus the gradient, at its running maximum up to the gradient's peak. On the five hearts the
+// aortic pressure so rises at most 22.5 mmHg above the cycle model's. A is the least that keeps
+// it at most AO_SWING below. tb starts at 190 ms, and at least 35 ms after the MR starts, so the
+// MR rises to its peak; the chapter takes the tb whose curve has one peak, earliest.
+const T_MID = 190, AO_SWING = 20, SOFT = 2.5;
+const B0 = EV.avo, B1 = EV.avc + 30, E_END = EV.avc + 8, DT = 2;
+/** The bump: 0 at aortic opening, 1 at tb, 0 at 30 ms after aortic closure. */
+function bumpAt(t, tb) {
+  if (t <= B0 || t >= B1) return 0;
+  const g = Math.log(0.5) / Math.log((tb - B0) / (B1 - B0));
+  return Math.sin(Math.PI * Math.pow((t - B0) / (B1 - B0), g));
+}
+/** A smooth minimum of a and b, within SOFT × ln 2 of the smaller. */
+function softMin(a, b) {
+  const m = Math.min(a, b);
+  return m - SOFT * Math.log(Math.exp((m - a) / SOFT) + Math.exp((m - b) / SOFT));
+}
+/** The number of peaks of the sequence y that stand more than 0.5 mmHg above their sides. */
+function peaksIn(y) {
+  let n = 0;
+  for (let i = 1; i < y.length - 1; i++) {
+    if (!(y[i] > y[i - 1] && y[i] >= y[i + 1])) continue;
+    let l = y[i], j = i - 1;
+    while (j >= 0 && y[j] <= y[i]) l = Math.min(l, y[j--]);
+    let r = y[i], k = i + 1;
+    while (k < y.length && y[k] <= y[i]) r = Math.min(r, y[k++]);
+    if (y[i] - Math.max(l, r) > 0.5 || (j < 0 && k >= y.length)) n++;
+  }
+  return n;
+}
+/**
+ * The LV pressure in ejection for state P, every DT ms from aortic opening to 8 ms after
+ * aortic closure: { y (mmHg), tb, A }, kept on P. Without SAM, the cycle model's.
+ */
+function lvShape(P) {
+  if (P.lvb) return P.lvb;
+  const ts = [];
+  for (let t = B0; t <= E_END; t += DT) {
+    const c = cycleAt(t), u = lvotAt(P, t);
+    ts.push({ t, lv: c.lv, ao: c.ao, gr: 4 * u * u });
+  }
+  if (P.sam.kind === 'none') return (P.lvb = { y: ts.map((q) => q.lv), tb: null, A: 0 });
+  const ip = ts.reduce((a, q, i) => (q.gr > ts[a].gr ? i : a), 0), tp = ts[ip].t;
+  // the spike limit, held at its running maximum up to the gradient's peak, so that it does not
+  // fall where the cycle model's aortic pressure passes its own peak while the gradient is low
+  let run = -Infinity;
+  const hi = ts.map((q, i) => { const h = q.ao + q.gr + AO_SWING; if (i > ip) return h; run = Math.max(run, h); return run; });
+  const first = Math.max(T_MID, mrOn(P.sam) + 35);
+  let best = null;
+  for (let tb = first; tb === first || tb <= tp; tb += 4) {
+    const b = ts.map((q) => bumpAt(q.t, tb));
+    let A = 0;
+    for (let i = 0; i < ts.length; i++) if (ts[i].t <= EV.avc && b[i] > 0.02) A = Math.max(A, (ts[i].ao + ts[i].gr - AO_SWING - ts[i].lv) / b[i]);
+    const y = ts.map((q, i) => softMin(q.lv + A * b[i], hi[i]));
+    if (peaksIn(y) !== 1) continue;
+    const pt = ts[y.reduce((a, q, i) => (q > y[a] ? i : a), 0)].t;
+    if (!best || pt < best.pt) best = { y, tb, A, pt };
+  }
+  // no curve with one peak: the cycle model's aortic pressure plus the gradient, as before
+  return (P.lvb = best || { y: ts.map((q) => Math.max(q.lv, q.ao + q.gr)), tb: null, A: 0 });
+}
+/**
+ * LV pressure (mmHg) at t for state P: lvShape's curve in ejection; after it, the curve's excess
+ * over the cycle model's LV pressure fades out over 25 ms; else the cycle model's.
+ */
+function lvpAt(P, t) {
+  t = ((t % RR) + RR) % RR;
+  const S = lvShape(P), lv = cycleAt(t).lv;
+  if (t < B0) return lv;
+  const n = S.y.length - 1, x = (t - B0) / DT;
+  if (x <= n) { const i = Math.min(n - 1, Math.floor(x)), u = x - i; return S.y[i] + (S.y[i + 1] - S.y[i]) * u; }
+  const tE = B0 + n * DT, over = S.y[n] - cycleAt(tE).lv;
+  return lv + over * (1 - smooth((t - tE) / 25));
+}
+/** Aortic pressure (mmHg) at t while the LVOT carries flow: the LV pressure less the LVOT gradient. */
+const aopAt = (P, t) => lvpAt(P, t) - 4 * lvotAt(P, t) ** 2;
+/**
+ * MR velocity (m/s) at t: √((LV pressure − LA pressure) ÷ 4) while the leaflets are apart. It
+ * starts at its full velocity, as the leaflets part, so it is faster than the LVOT velocity at
+ * every instant: the two differ by the aortic pressure less the LA pressure.
+ */
 function mrAt(v, P, t) {
   t = ((t % RR) + RR) % RR;
   if (P.sam.kind === 'none') return 0;
-  const t0 = mrOn(P.sam);
-  if (t < t0 || t > MR_OFF) return 0;
-  const on = smooth((t - t0) / 25), off = 1 - smooth((t - (MR_OFF - 20)) / 20);
-  return Math.sqrt(Math.max(0, lvpAt(P, t) - v.lap) / 4) * on * off;
+  if (t < mrOn(P.sam) || t > MR_OFF) return 0;
+  const off = 1 - smooth((t - (MR_OFF - 20)) / 20);
+  return Math.sqrt(Math.max(0, lvpAt(P, t) - v.lap) / 4) * off;
 }
-function mrPeak(v, P) {
-  let m = 0;
-  for (let t = 100; t <= MR_OFF; t += 2) m = Math.max(m, mrAt(v, P, t));
-  return m;
+/** The printed MR peak (m/s) and the times (ms) at which the MR and the LVOT velocities peak. */
+function peaksOf(v, P) {
+  let m = 0, mrT = null, l = 0, lvotT = null;
+  for (let t = 0; t <= MR_OFF; t += 1) {
+    const a = mrAt(v, P, t), b = lvotAt(P, t);
+    if (a > m) { m = a; mrT = t; }
+    if (b > l) { l = b; lvotT = t; }
+  }
+  return { mrVel: rnd(m, 1), mrT, lvotT };
 }
 
 let sheet = null, st = null;
@@ -438,7 +539,10 @@ function cwMr(ctx, Pn, v) {
   const k = (bx.h * (1 - base)) / vs, y0 = bx.y + base * bx.h, xp = bx.x + bu * bx.w, yp = y0 + best * k;
   caliper(ctx, xp - 12, yp, xp + 12, yp, { solid: true });
   const pk = { x0: xp - 14, y0: yp - 6, x1: xp + 14, y1: yp + 6 };
-  note(ctx, bx, [`MR peak ${P.mrVel.toFixed(1)} m/s · faster than the LVOT jet`, `MR peak ${P.mrVel.toFixed(1)} m/s`, `${P.mrVel.toFixed(1)} m/s`], 'auto', [pk]);
+  // what the two strips show against each other: a round top with contact (the LVOT jet is a
+  // dagger), an earlier peak where it leads by 30 ms or more (about 9 px on a desktop strip)
+  const cmp = [P.sam.kind === 'contact' ? 'rounder' : null, P.lvotT - P.mrT >= 30 ? 'earlier peak' : null, 'faster than the LVOT jet'].filter(Boolean).join(', ');
+  note(ctx, bx, [`MR peak ${P.mrVel.toFixed(1)} m/s · ${cmp}`, `MR peak ${P.mrVel.toFixed(1)} m/s`, `${P.mrVel.toFixed(1)} m/s`], 'auto', [pk]);
   return bx;
 }
 
