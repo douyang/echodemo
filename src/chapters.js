@@ -20,6 +20,7 @@ import amyloidPage from './ch/amyloid.js';
 import ivcPage from './ch/ivc.js';
 import stressPage from './ch/stress.js';
 import rvPage from './ch/rv.js';
+import shuntsPage from './ch/shunts.js';
 import report from './ch/report.js';
 
 import { ORDER, SHOW_REPORT } from './order.js';
@@ -35,10 +36,11 @@ export const PARTS = [
   { key: 'valves', num: 'VI', name: 'Valves' },
   { key: 'pericardium', num: 'VII', name: 'Pericardium' },
   { key: 'cardiomyopathy', num: 'VIII', name: 'Cardiomyopathy' },
-  ...(SHOW_REPORT ? [{ key: 'report', num: 'IX', name: 'Report' }] : []),
+  { key: 'congenital', num: 'IX', name: 'Congenital' },
+  ...(SHOW_REPORT ? [{ key: 'report', num: 'X', name: 'Report' }] : []),
 ];
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, stressPage, rvPage, report].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, periPage, amyloidPage, stressPage, rvPage, shuntsPage, report].map((c) => [c.key, c]));
 /** The chapters in reading order (order.js). */
 export const CHAPTERS = ORDER.map((k) => BY[k]);

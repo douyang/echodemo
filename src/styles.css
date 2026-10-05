@@ -838,6 +838,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="pressure"] .stage { height: min(64vh, 560px); }
   /* Right ventricle: two echo views beside three Doppler and M-mode strips */
   html[data-ch="rv"] .stage { height: min(64vh, 560px); }
+  /* Shunts: two echo views beside the Doppler strips or the bubble counts */
+  html[data-ch="shunts"] .stage { height: min(64vh, 560px); }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }
   .split.wide .pane-2d { display: none; }
   /* with the free plane on, its echo shows under the 3D view */

@@ -158,6 +158,10 @@
       </div>
       <figcaption class="sr-only">Buttons for the apical four-, two- and three-chamber views. Dobutamine stress echocardiography as a quad screen: the chosen view at rest, at low dose, at peak and in recovery, each cut from the heart model and beating at the heart rate of its stage, with the segment numbers on its walls colored by their wall motion score. Beside it, the response of each of the 17 segments on a bull's-eye, and the protocol: the dobutamine dose in 3-minute stages, atropine, and the heart rate against its target.</figcaption>
     </figure>
+    <figure class="fig" id="fig-shunts">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Shunts from none to large, for a secundum atrial septal defect, a perimembranous ventricular septal defect or a patent foramen ovale. Atrial septal defect: a subcostal view of the atrial septum with the defect, its caliper and the left-to-right color jet; an RV-focused apical four-chamber view with the RV and RA size; pulsed-wave Doppler in the RV and LV outflow tracts with their VTIs and diameters for Qp/Qs; and the continuous-wave TR jet with the RV systolic pressure. Ventricular septal defect: a short-axis view at the aortic valve with the defect just below the valve at about 11 o'clock and its jet into the RV; a parasternal long-axis view with the LV diameter; continuous-wave Doppler through the defect with its peak velocity, gradient and the RV systolic pressure; and the two outflow tracts for Qp/Qs. Patent foramen ovale: an apical four-chamber view during an agitated saline study, with the right heart opacified and bubbles crossing into the left atrium, and the number of bubbles in the left atrium beat by beat, at rest and after Valsalva release.</figcaption>
+    </figure>
     <figure class="fig" id="fig-rv">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">The right ventricle from normal to severe overload, under a pressure or a volume load: an RV-focused apical four-chamber view with the RV size, wall and FAC, a short-axis view of the septum with the two diameters of the eccentricity index, the continuous-wave TR jet with the RV systolic pressure, pulsed-wave flow in the RV outflow tract with its acceleration time, the M-mode of TAPSE and the tissue Doppler S′.</figcaption>
@@ -1379,6 +1383,80 @@
         <li>Dobutamine increases in 3-minute stages from 5 to 40 µg/kg/min, with atropine if needed, until the heart rate reaches 85% of the age-predicted maximum.</li>
         <li>Abnormalities in more than one territory, at a low heart rate or that persist into recovery indicate severe or multivessel disease.</li>
         <li>A dysfunctional segment that improves at low dose is viable. A biphasic response best predicts recovery of function after revascularization.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Congenital -->
+    <article class="chapter" id="ch-shunts">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">21</span><div><h2 class="ch-title">Shunts: ASD, VSD and PFO</h2><p class="ch-kicker">Septal defects, Qp/Qs and the saline study</p></div></div>
+      <p class="dek" data-part="dek">A septal defect or a patent foramen ovale lets blood pass between the left and the right heart. Echocardiography shows the defect and the direction of its flow, measures the shunt as Qp/Qs, and grades its effect on the chambers and on the pulmonary pressure.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="shS">Shunt <output data-for="shS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="shS" data-key="shS" min="0" max="1" step="0.005">
+          <div class="grades" id="sh-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Defect</span>
+          <div class="seg" role="group" aria-label="Kind of defect" data-key="shType">
+            <button type="button" data-val="asd" title="Secundum atrial septal defect">ASD</button><button type="button" data-val="vsd" title="Perimembranous ventricular septal defect">VSD</button><button type="button" data-val="pfo" title="Patent foramen ovale">PFO</button>
+          </div>
+        </div>
+        <div class="control" id="sh-man" hidden>
+          <span class="label">Saline study</span>
+          <div class="seg" role="group" aria-label="Maneuver for the saline study" data-key="shMan">
+            <button type="button" data-val="rest">Rest</button><button type="button" data-val="valsalva">Valsalva</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Atrial septal defect</h3>
+        <p>Secundum defects, in the region of the fossa ovalis, make up 80% of ASDs. Primum defects lie near the crux (15%) and superior sinus venosus defects near the entry of the SVC (5%); inferior sinus venosus defects and an unroofed coronary sinus each make up less than 1%<span class="cite" data-ref="baumgartner2020"></span>. The RV is more compliant than the LV, so a simple ASD shunts left to right. The shunt is in general relevant from a defect size of 10 mm, and it causes RV volume overload and pulmonary overcirculation<span class="cite" data-ref="baumgartner2020"></span>. A fall in LV compliance or a rise in LA pressure increases the shunt, so an ASD can become more important with age<span class="cite" data-ref="baumgartner2020"></span>.</p>
+        <ul>
+        <li><b>Views.</b> The subcostal four-chamber view is the preferred view of the atrial septum: the septum lies nearly perpendicular to the beam, a true defect is told from dropout, and the defect is measured along its long axis<span class="cite" data-ref="silvestry2015"></span>. In the apical four-chamber view the septum lies parallel to the beam and artifactual dropout is frequent, so an ASD should not be diagnosed or measured there. That view shows the RA and RV dilation and gives the RV pressure from the TR jet<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>Measurement.</b> The diameter is measured on 2D or 3D images without color, as color Doppler can bleed over the septal tissue and overestimate the defect. The color scale is lowered to 25–40 cm/s for the low-velocity shunt flow<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>TEE.</b> Sinus venosus defects in general require TEE. TEE is also required before device closure of a secundum defect: to size it, to assess its rims, and to exclude further defects and anomalous pulmonary venous connection<span class="cite" data-ref="baumgartner2020"></span>.</li>
+        </ul>
+        <p>RV volume overload is the key finding, and it characterizes the hemodynamic relevance of the defect better than the shunt ratio<span class="cite" data-ref="baumgartner2020"></span>. The RA and the RV dilate, and the ventricular septum flattens in diastole<span class="cite" data-ref="silvestry2015"></span> (<a href="#rv" data-go="rv">chapter 13</a>). The pulmonary vessels normally take the increased flow without a significant rise in PA pressure; a small percentage of patients develop pulmonary hypertension<span class="cite" data-ref="silvestry2015"></span>.</p>
+        <h3>The size of the shunt: Qp/Qs</h3>
+        <p>The stroke volume at each outflow tract is its area, π × (diameter ÷ 2)², times the VTI of the pulsed-wave envelope there (<a href="#pressure" data-go="pressure">chapter 08</a>). Qp/Qs is the RVOT stroke volume ÷ the LVOT stroke volume, from the maximal systolic diameter and the systolic VTI of each outflow tract<span class="cite" data-ref="silvestry2015"></span>. These calculations can have an error of up to 20%<span class="cite" data-ref="quinones2002"></span>, and significant regurgitation of a semilunar valve limits them<span class="cite" data-ref="silvestry2015"></span>. An intracardiac shunt is hemodynamically significant when the chambers distal to it are enlarged and/or Qp:Qs is 1.5:1 or more; a shunt that meets neither criterion is small or trivial<span class="cite" data-ref="stout2018"></span>. The figure takes the RV basal diameter as the chamber for an ASD, and the LVEDD for a VSD.</p>
+        <h3>Closure of an ASD</h3>
+        <ul>
+        <li>The AHA/ACC guideline recommends closure of an isolated secundum ASD that causes impaired functional capacity, RA and/or RV enlargement, and a net left-to-right shunt large enough to cause physiological sequelae (for example Qp:Qs &gt;1.5:1), without cyanosis. The condition is a systolic PA pressure below 50% of the systemic pressure and a pulmonary vascular resistance below one third of the systemic resistance. In an adult without symptoms but with these findings, closure is reasonable<span class="cite" data-ref="stout2018"></span>.</li>
+        <li>The ESC guideline recommends closure, whatever the symptoms, for RV volume overload without pulmonary arterial hypertension or LV disease. Device closure is the method of choice for a secundum defect that suits it: a stretched diameter of 38 mm or less and a rim of 5 mm, except toward the aorta<span class="cite" data-ref="baumgartner2020"></span>.</li>
+        <li>A calculated systolic PA pressure above 40 mmHg requires cardiac catheterization to measure the pulmonary vascular resistance<span class="cite" data-ref="baumgartner2020"></span>. Closure should not be performed with a systolic PA pressure above two thirds of the systemic pressure, a pulmonary vascular resistance above two thirds of the systemic resistance, and/or a net right-to-left shunt<span class="cite" data-ref="stout2018"></span>.</li>
+        </ul>
+        <h3>Ventricular septal defect</h3>
+        <p>Perimembranous defects make up 80% of VSDs. They lie in the membranous septum, next to the tricuspid and aortic valves, and tissue from the septal leaflet of the tricuspid valve can close them partly or completely. Muscular defects make up 15–20% at most and outlet defects, beneath the semilunar valves, 5%; inlet defects lie beneath the atrioventricular valves<span class="cite" data-ref="baumgartner2020"></span>. The direction and size of the shunt depend on the pulmonary and systemic vascular resistances, the size of the defect, the function of both ventricles, and any obstruction of the RVOT or the LVOT<span class="cite" data-ref="baumgartner2020"></span>.</p>
+        <ul>
+        <li><b>The gradient.</b> CW Doppler through the defect gives the pressure difference between the LV and the RV as 4V². In 38 patients it agreed with the catheter (r = 0.95), and the RV systolic pressure followed as the LV or aortic systolic pressure minus that difference<span class="cite" data-ref="silbert1986"></span>. The figure takes a systolic blood pressure of 125 mmHg for the aortic systolic pressure.</li>
+        <li><b>Restrictive defects.</b> A small VSD with an insignificant left-to-right shunt, no LV volume overload and no pulmonary hypertension is restrictive<span class="cite" data-ref="baumgartner2020"></span>. Its jet is fast: in children, the peak velocity fell as the ratio of pulmonary to systemic resistance rose (r = −0.77), and CW Doppler told restrictive from nonrestrictive defects<span class="cite" data-ref="murphy1986"></span>.</li>
+        <li><b>The findings.</b> The key findings are the location, number and size of the defects, the severity of LV volume overload and the estimated PA pressure. Aortic regurgitation from the prolapse of a cusp should be sought, especially with outlet and high perimembranous defects, and a double-chambered RV and a sinus of Valsalva aneurysm should be excluded<span class="cite" data-ref="baumgartner2020"></span>. The report gives each defect's size in two axes, the direction of shunting with the peak gradient, the left heart chamber sizes and the evidence of pulmonary hypertension<span class="cite" data-ref="taub2025"></span>.</li>
+        </ul>
+        <p>A large shunt loads the LA and the LV with volume: the LV enlarges, with an increased stroke volume<span class="cite" data-ref="baumgartner2020"></span>. The figure calls the LV enlarged above an LVEDD of 58 mm and the LA above a volume index of 34 mL/m², the upper limits of normal for men<span class="cite" data-ref="lang2015"></span>. The AHA/ACC guideline recommends closure for LV volume overload with a hemodynamically significant shunt (Qp:Qs &gt;1.5:1), if the systolic PA pressure is below 50% of the systemic pressure and the pulmonary vascular resistance below one third of the systemic resistance. With a systolic PA pressure of 50% of the systemic pressure or more, closure may be considered<span class="cite" data-ref="stout2018"></span>. The ESC guideline recommends closure, whatever the symptoms, for LV volume overload without pulmonary arterial hypertension<span class="cite" data-ref="baumgartner2020"></span>. In a large, nonrestrictive VSD, severe pulmonary vascular disease can reverse the shunt: Eisenmenger syndrome<span class="cite" data-ref="baumgartner2020"></span>.</p>
+        <h3>Patent foramen ovale and the saline study</h3>
+        <p>A PFO is present in 20–25% of the population<span class="cite" data-ref="silvestry2015"></span>. For the saline study, agitated saline is injected into a vein of the arm. Its microbubbles are too large to pass the normal pulmonary vessels, so bubbles in the left heart have crossed a shunt, within the heart or within the lungs<span class="cite" data-ref="silvestry2015,mitchell2019"></span>.</p>
+        <ul>
+        <li><b>Timing.</b> The beats are counted from the first beat with the RA and the RV fully opacified<span class="cite" data-ref="mitchell2019"></span>. Bubbles in the LA within 3–6 beats indicate an intracardiac shunt such as a PFO, ideally seen crossing the atrial septum. Bubbles after 3–6 beats, which enter the LA from the pulmonary veins, indicate an intrapulmonary shunt such as an arteriovenous malformation<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>Valsalva.</b> A maneuver that raises the RA pressure for a moment, a Valsalva maneuver or a cough, is usually needed to show a PFO that does not shunt at rest<span class="cite" data-ref="silvestry2015"></span>. The patient releases the strain when the contrast arrives in the RA<span class="cite" data-ref="mitchell2019"></span>. A shift of the atrial septum toward the LA at the release shows that the RA pressure exceeded the LA pressure<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>Views.</b> The apical four-chamber view is preferred, to avoid shadowing of the left heart; the subcostal four-chamber view is the alternative. At least 20 consecutive beats are recorded<span class="cite" data-ref="mitchell2019"></span>. TTE with agitated saline detects a PFO with reasonable sensitivity and specificity, but TEE is the reference standard<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>Pitfalls.</b> False negatives come from inadequate opacification of the RA, an inadequate Valsalva maneuver, a eustachian valve that directs the IVC flow to the septum, an LA pressure that the RA pressure cannot exceed (as in LV diastolic dysfunction), and poor images. A sinus venosus defect or an unrecognized ASD, and pseudocontrast in the strain phase of the Valsalva maneuver, give false positives<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>Counts.</b> Shunts have been graded by the number of bubbles in the left heart in one frame, but that number depends on the amount of contrast injected and on the Valsalva maneuver<span class="cite" data-ref="silvestry2015"></span>. The report states whether a shunt is present and the maneuver used, and comments on the degree of shunting<span class="cite" data-ref="taub2025"></span>.</li>
+        </ul>
+        <p>In patients aged 18 to 60 years with a prior PFO-associated stroke, the SCAI guideline recommends PFO closure rather than antiplatelet therapy alone<span class="cite" data-ref="kavinsky2022"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>An ASD is measured in the subcostal four-chamber view, in which the septum lies across the beam; the apical four-chamber view shows its effect on the RA and the RV.</li>
+        <li>A shunt is hemodynamically significant when it enlarges the chambers distal to it and/or Qp:Qs is 1.5 or more. Qp/Qs is the RVOT stroke volume ÷ the LVOT stroke volume.</li>
+        <li>Across a VSD, CW Doppler gives the LV–RV gradient as 4V², and the RV systolic pressure is the systemic systolic pressure minus that gradient. A fast jet marks a restrictive defect.</li>
+        <li>On the saline study, bubbles in the LA within 3–6 beats of full RA opacification indicate an intracardiac shunt such as a PFO. The release of a Valsalva maneuver can show a shunt that is absent at rest.</li>
         </ol>
       </div>
       <div class="quiz"></div>

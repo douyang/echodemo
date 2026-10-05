@@ -489,6 +489,7 @@ export class EchoView {
     this.fore = 0;        // cm the probe sits off the view's plane, aimed at the same point: a foreshortened view (setFore)
     this.shift = 0;       // cm the view's plane moves along its own normal (setShift)
     this.calc = {};       // a chapter's calcified valves: level 0 to 1 by valve mesh name (setCalc)
+    this.shapes = null;   // a chapter's own shapes on the plane (setShapes): septal defects, saline bubbles
     this.dShifts = null;
     // the plane on screen: cur (O, d, r, n), easing toward the view's plane after a change
     this.cur = null;
@@ -651,6 +652,16 @@ export class EchoView {
   /** A chapter's calcified valves, level 0 to 1 by valve mesh name: brighter leaflets with a shadow behind. */
   setCalc(levels = {}) {
     this.calc = levels;
+  }
+
+  /**
+   * A chapter's own shapes on the plane (ch/shunts.js): fn(g, view) returns bmode.js items in plane
+   * cm, drawn into the image with the heart, or null. An item covers the walls under it, so a
+   * septal defect is blood over the septum; an item with top: true also covers the valves (saline
+   * bubbles). null: none, as in every other chapter.
+   */
+  setShapes(fn = null) {
+    this.shapes = fn;
   }
 
   /** The probe set back along the beam by cm, past fluid in front of the heart: the plane moves, the heart stays. */
@@ -1104,7 +1115,10 @@ export class EchoView {
     const skip = win === 'plax' || win === 'psax' ? ['liver', 'mhv', 'rhv'] : [];
     for (const [k, md] of Object.entries(this.abd)) if (!skip.includes(k)) abd[k] = md.section(g);
     this.last = { tissue, valves, peri, chords, pap, state };
-    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd });
+    // a chapter's own shapes, which can read this frame's sections (meshjet.js cavity)
+    const own = this.shapes ? this.shapes(g, this) || [] : [];
+    this.last.own = own;
+    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd, own });
   }
 
   /** Screen mapping for the current view and canvas size. */
@@ -1324,6 +1338,8 @@ export class EchoView {
       { borders: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, spec: 8, closed: true },
       { borders: open.map((L) => L.pts), refs: ref(open), e: DB.myo, spec: 8 },
       { borders: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, spec: 6, closed: true },
+      // a chapter's own shapes over the walls (setShapes): a septal defect, as blood
+      ...(extra.own || []).filter((it) => !it.top),
       { polys: tri(extra.chords), e: DB.chord - 7 },
       { polys: tri(extra.chordsCore), e: DB.chord },
       { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: 8, spec: 10, w: 0.15, all: true },
@@ -1334,6 +1350,8 @@ export class EchoView {
       { lines: cor, closed: true, e: DB.fat + 4, w: 0.5 },
       { borders: cor, e: DB.fibrous, spec: 6, w: 0.07, closed: true, all: true },
       { polys: cor, e: DB.blood, blood: true },
+      // and over the valves (top: true): saline bubbles
+      ...(extra.own || []).filter((it) => it.top),
     ];
     const box = m.zoomed ? { x: 8, y: m.boxTop, w: W - 16, h: m.boxH } : { x: 0, y: 0, w: W, h: H };
     const view = { box, cx, top, k: scale, half, depth: spec.depth, near: spec.liver ? 1.5 : spec.near ?? 1.2, liver: spec.liver ? spec.near : 0 };
