@@ -486,6 +486,8 @@ export class EchoView {
     this.periStill = 0;   // 0 to 1: how far the sac keeps still while the heart contracts (fluid in it)
     this.standoff = 0;    // cm the probe sits back along the beam (fluid in front of the heart; setStandoff)
     this.sac = false;     // true: lung and fat outside the sac, so fluid in it shows as a dark band
+    this.periW = 0.15;    // cm: the width of the pericardium's bright line (a thick pericardium, chapter Constrictive pericarditis)
+    this.periE = 8;       // dB: its level against myocardium
     this.fore = 0;        // cm the probe sits off the view's plane, aimed at the same point: a foreshortened view (setFore)
     this.shift = 0;       // cm the view's plane moves along its own normal (setShift)
     this.calc = {};       // a chapter's calcified valves: level 0 to 1 by valve mesh name (setCalc)
@@ -1326,7 +1328,7 @@ export class EchoView {
       { borders: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, spec: 6, closed: true },
       { polys: tri(extra.chords), e: DB.chord - 7 },
       { polys: tri(extra.chordsCore), e: DB.chord },
-      { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: 8, spec: 10, w: 0.15, all: true },
+      { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: this.periE, spec: 10, w: this.periW, all: true },
       { polys: leaf, e: DB.valve },
       { borders: leaf, e: DB.valve, spec: 7, w: 0.06, closed: true },
       ...hotLayers,

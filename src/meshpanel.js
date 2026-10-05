@@ -113,6 +113,9 @@ export class MeshPanel {
     if (o.deeper) ev.depth = ev.specOf(this.view).depth + o.deeper;
     ev.sac = !!o.sac;
     ev.periStill = o.still || 0;
+    // o.peri: a thick pericardium, { w: the bright line's width (cm), e: its level (dB) }
+    ev.periW = o.peri?.w ?? 0.15;
+    ev.periE = o.peri?.e ?? 8;
     ev.setLvSys(o.lvK ?? 1, this.mask);
     ev.setRvSys(o.rvK ?? 1, this.rvMask, o.rvT ?? 1);
     ev.setFore(o.fore || 0);
@@ -124,7 +127,7 @@ export class MeshPanel {
     const tms = o.tms ?? 0;
     const c = cycleAt(tms);
     const drive = o.drive ? o.drive(c.drive, c.t) : c.drive;
-    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive)].join('|');
+    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, ev.periW, ev.periE, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive)].join('|');
     if (key !== this.last) {
       ev.frame({ s: c.s, v: c.v, drive, phase: c.phase, t: c.t });
       this.last = key;

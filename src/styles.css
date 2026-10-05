@@ -841,6 +841,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="pressure"] .stage { height: min(64vh, 560px); }
   /* Right ventricle: two echo views beside three Doppler and M-mode strips */
   html[data-ch="rv"] .stage { height: min(64vh, 560px); }
+  /* Constrictive pericarditis: the four-chamber view and tissue Doppler above two strips with breathing */
+  html[data-ch="constrict"] .stage { height: min(64vh, 560px); }
   /* Hypertrophic cardiomyopathy: two echo views beside two CW strips and an M-mode strip */
   html[data-ch="hcm"] .stage { height: min(64vh, 560px); }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }

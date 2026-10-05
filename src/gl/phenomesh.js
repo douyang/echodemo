@@ -420,6 +420,10 @@ export const DISEASE = {
   // tamponade's underfilled chambers, weight 0 to 1: the LV walls 2.8 mm in, the RV free wall
   // 6 mm, the RA free wall 3 mm
   under: { move: 'under' },
+  // Constrictive pericarditis: the whole sac out from the heart, 1 cm at weight 1, the same over
+  // the ventricles, the grooves and the atria. The chapter draws the sac's bright line wider by
+  // twice the weight, so the line's inner edge stays where it was (echo.js periW).
+  periThick: { move: 'sacOut' },
   // The LV of chapter 09. lvSize: at weight 1 the LV wall 1 cm out at its middle (less toward the
   // apex and the base) and the apex 0.8 cm farther from the base; a negative weight makes the LV
   // smaller. lvWall: the amyloid heart's own thickening on the LV wall alone (weight 1: the amyloid
@@ -525,7 +529,7 @@ function moveFrame(ctx) {
   const unit = (c) => { const r = c.r || 1; return [c.rx / r, c.ry / r, c.rz / r]; };
   const MESHES = {
     sac: ['Pericardium'], sacFront: ['Pericardium'], raFold: ['Myocardium'], rvFold: ['Myocardium'], septum: ['Myocardium'],
-    swing: null, bob: null, under: ['Myocardium', 'Papillary'],
+    swing: null, bob: null, under: ['Myocardium', 'Papillary'], sacOut: ['Pericardium'],
   };
   // the swing and the bob move every mesh but the sac
   const on = (kind, name) => (MESHES[kind] ? MESHES[kind].includes(name) : name !== 'Pericardium');
@@ -544,6 +548,7 @@ function moveFrame(ctx) {
   };
   const field = (kind, name, i, x, y, z, out) => {
     if (kind === 'sac' || kind === 'sacFront') return sac(x, y, z, out, kind === 'sacFront');
+    if (kind === 'sacOut') { const [ux, uy, uz] = unit(lvCoords(F, x, y, z)); out[0] += ux; out[1] += uy; out[2] += uz; return; }
     if (kind === 'swing') {
       const px = x - pivot.x, py = y - pivot.y, pz = z - pivot.z;
       out[0] += (N.y * pz - N.z * py) / Lp; out[1] += (N.z * px - N.x * pz) / Lp; out[2] += (N.x * py - N.y * px) / Lp;
