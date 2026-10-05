@@ -407,6 +407,15 @@ function updateCaption(t) {
   for (const s0 of capEls.eye.children) if (!s0.querySelector('i')) s0.insertAdjacentHTML('afterbegin', '<i></i>');
 }
 
+/** A chapter's long title keeps to one line on the title card: its type scales down to the card's width. The intro's card stays as it is. */
+function fitTitle() {
+  const t = cardEls && cardEls.t1;
+  if (!t || CLIP) return;
+  t.style.whiteSpace = 'nowrap';
+  const room = W - 2 * LAY.title.x, wide = t.scrollWidth;
+  if (wide > room) t.style.fontSize = `${Math.floor((parseFloat(getComputedStyle(t).fontSize) * room) / wide)}px`;
+}
+
 /** The caption's type scales down, if it must, so that the tallest caption fits its box. */
 let capScale = 1;
 function fitCaption() {
@@ -426,19 +435,6 @@ function fitCaption() {
   }
   Object.assign(cap.style, { width: `${box.w / s}px`, height: `${box.h / s}px`, transform: `scale(${s.toFixed(4)})`, transformOrigin: '0 0' });
   capScale = s;
-}
-
-/**
- * The title card's title stays on one line: its type shrinks, if it must, to the 1664 px between
- * the card's margins. At 156 px, "Stress echocardiography" takes 1600 px and keeps its size;
- * "Hypertrophic cardiomyopathy" takes 2013 px and shrinks to 128 px.
- */
-function fitTitle() {
-  if (CLIP) return;   // the intro's title card (video/reel.js) keeps its own type
-  const t1 = cardEls.t1, room = W - 2 * LAY.title.x;
-  t1.style.whiteSpace = 'nowrap';
-  const w = t1.scrollWidth;
-  if (w > room) t1.style.fontSize = `${Math.floor((parseFloat(getComputedStyle(t1).fontSize) * room) / w)}px`;
 }
 
 // ---------------------------------------------------------------- progress line

@@ -232,6 +232,39 @@ export const VIDEOS = {
       { set: { trS: 0.9 }, name: 'Torrential tricuspid regurgitation', track: 'Torrential', pick: [0, 3, 4], hold: 6 },
     ],
   },
+  // 19: a bioprosthesis from normal function to significant stenosis, then a mechanical valve;
+  // then the normal bioprosthesis in larger patients: mismatch
+  prosthetic: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { proS: 0.005 },
+    steps: [
+      { set: { proS: 0, proValve: 'bio', proCause: 'obst' }, name: 'Normal bioprosthesis', track: 'Bio normal', pick: [0, 1, 2], hold: 7 },
+      { set: { proS: 0.45 }, name: 'Possible stenosis of the bioprosthesis', track: 'Bio possible', pick: [0, 2, 3], move: 4, hold: 7 },
+      { set: { proS: 0.85 }, name: 'Significant stenosis of the bioprosthesis', track: 'Bio significant', pick: [0, 2, 5], move: 4, hold: 7 },
+      { set: { proS: 0, proValve: 'mech' }, name: 'Normal mechanical valve', track: 'Mech normal', pick: [0, 3], move: 3, hold: 6 },
+      { set: { proS: 0.42 }, name: 'Possible stenosis of the mechanical valve', track: 'Mech possible', pick: [0, 2, 3], move: 4, hold: 7 },
+      { set: { proS: 0.85 }, name: 'Significant stenosis of the mechanical valve', track: 'Mech significant', pick: [0, 3, 4], move: 4, hold: 7 },
+      { set: { proS: 0.5, proValve: 'bio', proCause: 'ppm' }, name: 'Moderate prosthesis–patient mismatch', track: 'Moderate mismatch', pick: [0, 1, 4], move: 3, hold: 7 },
+      { set: { proS: 0.9 }, name: 'Severe prosthesis–patient mismatch', track: 'Severe mismatch', pick: [1, 5, 6], move: 4, hold: 7 },
+    ],
+  },
+  // infective endocarditis: a vegetation on the anterior mitral leaflet grows and prolapses; the
+  // leaflet perforates, and the regurgitation through it grows from mild to severe
+  endocarditis: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { ieS: 0.005 },
+    steps: [
+      { set: { ieS: 0, ieFrame: 'cine' }, name: 'No vegetation', track: 'None', hold: 5 },
+      { set: { ieS: 0.17 }, track: '<10 mm', pick: [0, 1], move: 4, hold: 6 },
+      { set: { ieS: 0.4 }, track: '≥10 mm', pick: [1, 2], move: 4, hold: 7 },
+      { set: { ieFrame: 'dia' }, name: 'Diastole: the vegetation prolapses into the LV', track: 'Diastole', pick: [1], move: 2, hold: 5 },
+      { set: { ieS: 0.56, ieFrame: 'cine' }, track: 'Mild MR', pick: [3, 4], move: 4, hold: 6 },
+      { set: { ieS: 0.7 }, track: 'Moderate MR', pick: [4], move: 4, hold: 6 },
+      { set: { ieS: 0.9 }, track: 'Severe MR', pick: [4, 5, 6], move: 4, hold: 7 },
+    ],
+  },
   peri: {
     pane: '2D and Doppler',
     side: false,
@@ -294,6 +327,23 @@ export const VIDEOS = {
       { set: { amyS: 0.9 }, name: 'Relative apical sparing', track: 'Apical sparing', pick: [0, 2], move: 4, hold: 7 },
     ],
   },
+  // 21: a secundum ASD from none to large, a perimembranous VSD from restrictive to an RV
+  // pressure of half the systemic pressure, then the saline study for a PFO (the chapter's tour)
+  shunts: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { shS: 0.005 },
+    steps: [
+      { set: { shType: 'asd', shS: 0, shMan: 'valsalva' }, track: 'No ASD', pick: [0, 1], hold: 5 },
+      { set: { shS: 0.3 }, track: 'Small ASD', pick: [0, 1, 3], move: 4, hold: 6 },
+      { set: { shS: 0.75 }, track: 'Significant ASD', pick: [0, 1, 2], move: 4, hold: 7 },
+      { set: { shType: 'vsd', shS: 0.4 }, track: 'Restrictive VSD', pick: [0, 1, 4], move: 3, hold: 7 },
+      { set: { shS: 0.75 }, track: 'Significant VSD', pick: [1, 2, 4], move: 4, hold: 7 },
+      { set: { shS: 1 }, name: 'Perimembranous VSD, RV pressure over half the systemic pressure', track: 'RVSP ≥50%', pick: [1, 2, 5], move: 4, hold: 7 },
+      { set: { shType: 'pfo', shMan: 'valsalva', shS: 0.4 }, track: 'Valsalva only', pick: [0, 1], move: 3, hold: 8 },
+      { set: { shS: 0.9, shMan: 'rest' }, track: 'At rest', pick: [0, 1], move: 3, hold: 8 },
+    ],
+  },
   // 18: from a normal IVC to a raised RA pressure, severe TR and ventilation (the chapter's tour),
   // then the IVC and the aorta side by side
   ivc: {
@@ -322,6 +372,27 @@ export const VIDEOS = {
       { set: { sxCase: 'multi', sxView: 'a2c' }, track: 'Two vessels', pick: [1, 2], hold: 7 },
       { set: { sxCase: 'scar', sxView: 'a2c' }, track: 'Scar', pick: [0, 1], hold: 7 },
       { set: { sxCase: 'viable', sxView: 'a2c' }, track: 'Viable', pick: [1, 2, 3], hold: 8 },
+    ],
+  },
+  // Cardiac masses: the chapter's tour. The myxoma grows until it obstructs the mitral valve;
+  // the LV thrombus goes from mural to mobile, then an enhancing agent fills the cavity; the
+  // fibroelastoma goes from sessile to mobile
+  masses: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { maS: 0.005 },
+    steps: [
+      { set: { maType: 'myxoma', maUea: false, maS: 0 }, track: 'No mass', pick: [1], hold: 5 },
+      { set: { maS: 0.15 }, track: 'Myxoma', pick: [0, 1], move: 3, hold: 6 },
+      { set: { maS: 0.62 }, track: 'Prolapse', pick: [0, 1], move: 4, hold: 7 },
+      { set: { maS: 1 }, track: 'Obstruction', pick: [2], move: 4, hold: 7 },
+      { set: { maType: 'thrombus', maS: 0 }, track: 'Akinetic apex', pick: [1], move: 2, hold: 5 },
+      { set: { maS: 0.2 }, track: 'Mural', pick: [0, 1], move: 3, hold: 6 },
+      { set: { maS: 0.55 }, track: 'Protruding', pick: [0, 1], move: 4, hold: 6 },
+      { set: { maS: 0.95 }, track: 'Mobile', pick: [0], move: 4, hold: 7 },
+      { set: { maUea: true }, name: 'With an enhancing agent', track: 'Agent', pick: [2], move: 2, hold: 6 },
+      { set: { maType: 'pfe', maUea: false, maS: 0.25 }, track: 'Sessile', pick: [0, 1], move: 2, hold: 6 },
+      { set: { maS: 0.85 }, track: 'Mobile', pick: [0, 1], move: 4, hold: 7 },
     ],
   },
 };

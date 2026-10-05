@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart by Ultrasound</title>
-<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function and stress echocardiography, the right ventricle, valvular disease, pericardial disease, hypertrophic cardiomyopathy and cardiac amyloidosis.">
+<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function and stress echocardiography, the right ventricle, valvular disease, pericardial disease, hypertrophic cardiomyopathy, cardiac amyloidosis, intracardiac shunts and cardiac masses.">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -120,6 +120,10 @@
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Diastolic function from normal to restrictive filling: an apical four-chamber view with the left atrium to scale, mitral inflow, septal and lateral tissue Doppler, pulmonary vein flow, left atrial strain and the tricuspid jet, with the 2025 diastolic algorithm and the path that the current values follow through it.</figcaption>
     </figure>
+    <figure class="fig" id="fig-masses">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Cardiac masses from none to large: a left atrial myxoma on a stalk from the atrial septum, which prolapses through the mitral valve in diastole, in the apical four-chamber view and the parasternal long axis, with continuous-wave mitral inflow and its mean gradient; an LV thrombus on an akinetic apex, mural, protruding or mobile, in the apical four-chamber view and the short axis at the apex, with the wall motion of the 17 segments; a papillary fibroelastoma on the aortic side of an aortic cusp, in the parasternal and apical long axes zoomed on the valve. Calipers measure each mass. With an ultrasound enhancing agent the cavities fill, and each mass shows its uptake.</figcaption>
+    </figure>
     <figure class="fig" id="fig-as">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Aortic stenosis from a normal valve to severe stenosis and then low flow: an apical five-chamber view with the LV outflow tract, the thickened and calcified valve, the aortic root and the jet, and the continuous-wave Doppler line through the valve; the continuous-wave trace with the dense LVOT envelope inside the aortic jet and both peak velocities marked; the short-axis valve orifice to scale; and the measurements against their cut-offs.</figcaption>
@@ -139,6 +143,10 @@
     <figure class="fig" id="fig-tr">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Tricuspid regurgitation from mild to torrential: an apical four-chamber view with the color jet and a dilating right heart, the continuous-wave jet, hepatic vein flow, the inferior vena cava on M-mode, a short-axis view of the septum, and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-prosthetic">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">A prosthetic aortic valve from normal function to significant stenosis, or a normal valve that is small for the patient: a zoomed parasternal long-axis view and a short-axis view of the valve, cut from the heart model, with the sewing ring and the stent and leaflets of a bioprosthesis or the housing and discs of a bileaflet mechanical valve, and the shadow and reverberation behind the metal; continuous-wave Doppler through the valve with its peak velocity, acceleration time and ejection time; pulsed-wave Doppler in the LVOT; and the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-peri">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -166,9 +174,17 @@
       </div>
       <figcaption class="sr-only">Buttons for the apical four-, two- and three-chamber views. Dobutamine stress echocardiography as a quad screen: the chosen view at rest, at low dose, at peak and in recovery, each cut from the heart model and beating at the heart rate of its stage, with the segment numbers on its walls colored by their wall motion score. Beside it, the response of each of the 17 segments on a bull's-eye, and the protocol: the dobutamine dose in 3-minute stages, atropine, and the heart rate against its target.</figcaption>
     </figure>
+    <figure class="fig" id="fig-shunts">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Shunts from none to large, for a secundum atrial septal defect, a perimembranous ventricular septal defect or a patent foramen ovale. Atrial septal defect: a subcostal view of the atrial septum with the defect, its caliper and the left-to-right color jet; an RV-focused apical four-chamber view with the RV and RA size; pulsed-wave Doppler in the RV and LV outflow tracts with their VTIs and diameters for Qp/Qs; and the continuous-wave TR jet with the RV systolic pressure. Ventricular septal defect: a short-axis view at the aortic valve with the defect just below the valve at about 11 o'clock and its jet into the RV; a parasternal long-axis view with the LV diameter; continuous-wave Doppler through the defect with its peak velocity, gradient and the RV systolic pressure; and the two outflow tracts for Qp/Qs. Patent foramen ovale: an apical four-chamber view during an agitated saline study, with the right heart opacified and bubbles crossing into the left atrium, and the number of bubbles in the left atrium beat by beat, at rest and after Valsalva release.</figcaption>
+    </figure>
     <figure class="fig" id="fig-rv">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">The right ventricle from normal to severe overload, under a pressure or a volume load: an RV-focused apical four-chamber view with the RV size, wall and FAC, a short-axis view of the septum with the two diameters of the eccentricity index, the continuous-wave TR jet with the RV systolic pressure, pulsed-wave flow in the RV outflow tract with its acceleration time, the M-mode of TAPSE and the tissue Doppler S′.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-endocarditis">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Infective endocarditis from a normal mitral valve to a large vegetation with leaflet perforation and severe regurgitation: the parasternal long-axis view zoomed on the valves, with the vegetation on the atrial side of the anterior mitral leaflet and a caliper on its maximal length; the apical three-chamber view with the color jet through the perforation; continuous-wave Doppler through the mitral valve; pulmonary vein flow; and the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-report" hidden>
       <div class="sheet-host" id="report-host"></div>
@@ -952,6 +968,81 @@
       <div class="quiz"></div>
     </article>
 
+    <!-- ======================================================== Masses -->
+    <article class="chapter" id="ch-masses">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">21</span><div><h2 class="ch-title">Cardiac masses and thrombus</h2><p class="ch-kicker">Left atrial myxoma, LV thrombus and papillary fibroelastoma</p></div></div>
+      <p class="dek" data-part="dek">A cardiac mass is described by its location, attachment, size, shape and mobility. The place of the mass, the wall motion beside it and an enhancing agent help to tell a thrombus from a tumor and from a normal structure.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="maS">Size <output data-for="maS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="maS" data-key="maS" min="0" max="1" step="0.005">
+          <div class="grades" id="masses-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Mass</span>
+          <div class="seg" role="group" aria-label="Kind of mass" data-key="maType">
+            <button type="button" data-val="myxoma">LA myxoma</button><button type="button" data-val="thrombus">LV thrombus</button><button type="button" data-val="pfe">Fibroelastoma</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Enhancing agent</span>
+          <div class="seg" role="group" aria-label="Ultrasound enhancing agent" data-key="maUea">
+            <button type="button" data-val="false">Off</button><button type="button" data-val="true">On</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Describing a mass</h3>
+        <p>The report of a cardiac mass should give its location, attachment, size, echogenicity, shape and mobility, and a differential diagnosis such as a tumor, a vegetation or a thrombus<span class="cite" data-ref="taub2025"></span>. A pedunculated mass is attached by a thin stalk that lets it move; a sessile mass is attached by a broad base that prevents significant movement<span class="cite" data-ref="taub2025"></span>. Color and spectral Doppler show the effect of a mass on flow, such as mitral stenosis from a large LA myxoma<span class="cite" data-ref="saric2016"></span>.</p>
+        <p>Primary cardiac tumors are rare: an autopsy prevalence of 0.05%, seven in more than 12,000 autopsies. Metastatic tumors are about 20 times more common. In adults the two most common primary tumors are the myxoma and the papillary fibroelastoma, and both often present with stroke or another embolism<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>Normal structures that mimic a mass</h3>
+        <p>On transthoracic echocardiography several normal structures can be taken for a mass<span class="cite" data-ref="malik2017"></span>, and the report should name a normal variant as such<span class="cite" data-ref="taub2025"></span>:</p>
+        <ul>
+        <li><b>Right atrium.</b> A prominent Eustachian valve, a Chiari network and the crista terminalis<span class="cite" data-ref="taub2025,malik2017"></span>.</li>
+        <li><b>Atrial septum.</b> Lipomatous hypertrophy<span class="cite" data-ref="malik2017"></span>. Thickening of the atrial septum that spares the fossa ovalis gives the septum a dumbbell shape<span class="cite" data-ref="taub2025"></span>; a myxoma, in contrast, is usually attached at the fossa ovalis.</li>
+        <li><b>Right ventricle.</b> The moderator band, in the apical part of the RV<span class="cite" data-ref="mitchell2019,malik2017"></span>.</li>
+        <li><b>Left ventricle.</b> A false tendon, an accessory papillary muscle and heavy trabeculation<span class="cite" data-ref="porter2018,malik2017"></span>.</li>
+        <li><b>Valves.</b> Strands, or Lambl's excrescences: filiform structures no wider than 2 mm and about 3–10 mm long, at the line of closure, on the atrial side of the mitral valve and the ventricular side of the aortic valve. TEE finds them in 40–50% of patients<span class="cite" data-ref="saric2016"></span>.</li>
+        </ul>
+        <p>Near-field clutter can mimic an apical thrombus. It does not move with the wall and appears to pass through it; color Doppler at a low scale, another imaging plane or an enhancing agent shows the true apex<span class="cite" data-ref="saric2026"></span>.</p>
+        <h3>Left atrial myxoma</h3>
+        <p>A myxoma lies in the LA in more than 75% of cases, attached by a stalk to the fossa ovalis in more than 90%. It can also arise in the LV, the RA and, rarely, the RV. Up to 5% are multiple, and about 7% occur in the Carney complex. Myxomas are more common in women; they are gelatinous and pedunculated, with a smooth, villous or friable surface<span class="cite" data-ref="saric2016"></span>.</p>
+        <p>A large myxoma can obstruct the mitral orifice and cause mitral stenosis; a mobile, villous or friable one has a high risk of embolism. Up to one third of patients have evidence of embolism, and surgery is generally indicated once the diagnosis is made<span class="cite" data-ref="saric2016"></span>. In a series of 112 left atrial myxomas, 67% of patients had symptoms of mitral obstruction and 29% had embolism; the tumors measured 1 to 15 cm, and 35% had a friable or villous surface<span class="cite" data-ref="pinede2001"></span>.</p>
+        <p>In the figure the tumor hangs on a short stalk from the septum. A tumor longer than the distance from its stalk to the mitral annulus reaches into the LV in diastole and returns to the LA in systole. The mean gradient is the mean of 4V² over diastole on the CW inflow trace, with the stroke volume held, at a heart rate of 70/min; <a href="#ms" data-go="ms">chapter 16</a> gives the bands of the mean gradient in rheumatic mitral stenosis.</p>
+        <h3>LV thrombus</h3>
+        <p>An LV thrombus forms where the wall motion is abnormal: after an acute myocardial infarction, and in a dilated LV with poor function. A thrombus in a segment with normal wall motion is unusual, except in endomyocardial fibrosis. After an anterior infarction a thrombus is more common than after an infarction elsewhere (11.5% against 2.3%), and more common again with an ejection fraction below 40% (17.8%). Most thrombi (90%) form within 14 days of the infarction, and the prevalence can reach 50% in a chronic LV aneurysm<span class="cite" data-ref="saric2016"></span>. <a href="#segments" data-go="segments">Chapter 11</a> shows the segments of each coronary territory.</p>
+        <p>A thrombus is a discrete mass with well-defined margins, distinct from the endocardium, seen in systole and diastole in an area of abnormal wall motion. It should be seen in two orthogonal views, an apical and a short-axis view<span class="cite" data-ref="saric2016"></span>. There are three types<span class="cite" data-ref="saric2016"></span>:</p>
+        <ul>
+        <li><b>Mural.</b> One surface faces the blood; the thrombus is flat and parallel to the endocardium.</li>
+        <li><b>Protruding.</b> More than one surface faces the blood, and the thrombus stands into the cavity.</li>
+        <li><b>Mobile.</b> The thrombus moves on its own, in part or as a whole.</li>
+        </ul>
+        <p>Embolism is least common with a mural thrombus and most common with a mobile one; yet 40% of embolic events occur in patients whose thrombi are neither protruding nor mobile<span class="cite" data-ref="saric2016"></span>. In the figure a thrombus is called protruding when its thickness is more than 0.35 of the half-length of its base.</p>
+        <p>Near-field clutter, false tendons, trabeculations and a foreshortened apex can mimic a thrombus. A focal zone at the apex, a higher transducer frequency and color Doppler at a low aliasing velocity help; when the diagnosis is still uncertain, an enhancing agent should be used. TTE is better than TEE for a thrombus in the LV apex, which lies far from a transesophageal probe<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>Papillary fibroelastoma</h3>
+        <p>The papillary fibroelastoma is the second most common primary cardiac tumor in adults. About 80% lie on the valves, most often the aortic valve and then the mitral valve. On a valve it lies typically on the downstream side: the aortic side of the aortic valve and the ventricular side of the mitral valve, the opposite of the usual site of an endocarditis lesion. It rarely causes significant valve dysfunction<span class="cite" data-ref="saric2016"></span>.</p>
+        <p>The tumor is homogeneous, round, oval or irregular, with a well-demarcated border, and often mobile. A dense central stalk carries frond-like extensions, like a sea anemone. Most are smaller than 20 mm (mean 8–9 mm), and more than 90% are single. TTE detects about 62% of them and TEE about 77%<span class="cite" data-ref="saric2016"></span>. In 162 patients the mean size on echocardiography was 9 ± 4.6 mm, and 43.6% of the tumors were mobile<span class="cite" data-ref="sun2001"></span>. In 725 published cases, the mobility of the tumor was the only independent predictor of death or nonfatal embolism<span class="cite" data-ref="gowda2003"></span>.</p>
+        <p>The ASE notes that patients with symptoms, or with a large or very mobile tumor, should undergo surgery, and that a small sessile tumor in a patient without symptoms may be watched. The differential diagnosis includes a myxoma, valvular strands and Lambl's excrescences<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>Enhancing agents, TEE, CMR and CT</h3>
+        <p>An ultrasound enhancing agent fills the cavities, and a thrombus then shows as a filling defect. The ASE recommends an agent when an LV thrombus cannot be ruled in or out without one<span class="cite" data-ref="porter2018"></span>. The uptake of the agent in a mass shows its blood supply: a thrombus and a papillary fibroelastoma are generally avascular and do not enhance, and a myxoma has a poor blood supply and enhances in part<span class="cite" data-ref="porter2018"></span>. A malignant tumor is often fully opacified<span class="cite" data-ref="saric2016"></span>. Complete enhancement, or enhancement greater than that of the myocardium, supports a highly vascular tumor, which is most often malignant. An avascular mass can appear to enhance in part in the far field, so this uptake is judged in views that put the mass in the near field<span class="cite" data-ref="porter2018"></span>.</p>
+        <p>In 121 patients at high risk after an infarction or with heart failure, with delayed-enhancement CMR as the reference, echocardiography without contrast detected 33% of LV thrombi and contrast echocardiography 61%. A thrombus that contrast echocardiography missed was more likely to be mural, or small when it lay at the apex<span class="cite" data-ref="weinsaft2009"></span>. Delayed-enhancement CMR has the highest sensitivity and specificity for an LV thrombus; it should be considered when contrast echocardiography finds none but the suspicion persists<span class="cite" data-ref="porter2018"></span>.</p>
+        <p>TEE may be better than TTE for a cardiac tumor, especially a myxoma or a papillary fibroelastoma, and 3D TEE shows the point of attachment of a myxoma on the septum. CMR characterizes the tissue of a tumor. CT has a high spatial resolution, 0.4–0.6 mm, but little soft-tissue contrast, which limits its assessment of the myocardium and of small thrombi; it uses radiation and iodinated contrast. CT and MRI show the structures next to the heart better than echocardiography, such as a malignant tumor of a nearby organ that invades the heart<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>A mass is reported by its location, attachment, size, echogenicity, shape and mobility, with a differential diagnosis.</li>
+        <li>A left atrial myxoma is usually attached by a stalk to the fossa ovalis. A large one prolapses into the LV in diastole and can obstruct the mitral valve.</li>
+        <li>An LV thrombus lies in a segment with abnormal wall motion, most often the apex after an anterior infarction. It should be seen in two views; with an enhancing agent it shows as a filling defect.</li>
+        <li>A papillary fibroelastoma is a small mass on the downstream side of a valve, most often the aortic side of the aortic valve. Its mobility predicts embolism.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
     <!-- ======================================================== Valves -->
     <article class="chapter" id="ch-as">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">12</span><div><h2 class="ch-title">Aortic stenosis</h2><p class="ch-kicker">LV pressure load</p></div></div>
@@ -1216,6 +1307,70 @@
         <li>Tricuspid regurgitation is severe when the vena contracta is ≥0.7 cm, the EROA is ≥0.40 cm² and the regurgitant volume is ≥45 mL.</li>
         <li>Systolic flow reversal in the hepatic veins is specific for severe tricuspid regurgitation.</li>
         <li>A low peak TR velocity does not exclude severe tricuspid regurgitation.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-prosthetic">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Prosthetic valves</h2><p class="ch-kicker">Aortic prostheses: stenosis and mismatch</p></div></div>
+      <p class="dek" data-part="dek">A prosthetic aortic valve is assessed by its Doppler velocities, its EOA and its DVI, against the reference values of its type and size. A high gradient through a prosthesis can come from obstruction of the valve, from a normal valve that is small for the patient, or from a high flow.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="proS">Severity <output data-for="proS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="proS" data-key="proS" min="0" max="1" step="0.005">
+          <div class="grades" id="pro-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Valve</span>
+          <div class="seg" role="group" aria-label="Type of prosthesis" data-key="proValve">
+            <button type="button" data-val="bio">Bioprosthesis</button><button type="button" data-val="mech">Mechanical</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Cause</span>
+          <div class="seg" role="group" aria-label="Cause of a high gradient" data-key="proCause">
+            <button type="button" data-val="obst">Obstruction</button><button type="button" data-val="ppm">Mismatch</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="pro-table"></table></div>
+      <div class="table-wrap"><table class="vt grade" id="pro-table2"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>Types of prostheses</h3>
+        <p>Surgical prostheses are mechanical or biological. A mechanical valve is more durable, and it needs long-term anticoagulation<span class="cite" data-ref="zoghbi2024"></span>. The bileaflet tilting disc valve is the most common mechanical valve and has the best hemodynamics of the mechanical valves; single tilting disc valves are used infrequently, and caged-ball valves are no longer implanted<span class="cite" data-ref="zoghbi2024"></span>. Surgical biological valves are xenografts of porcine valve or bovine pericardium, homografts or autografts (the Ross procedure); stented xenografts are the most common. Transcatheter valves are biological<span class="cite" data-ref="zoghbi2024"></span>. A bioprosthesis is recommended at any age when anticoagulation is contraindicated or not desired. Otherwise, a mechanical aortic valve is reasonable below 50 years of age, the choice is individualized from 50 to 65 years, and a bioprosthesis is reasonable above 65 years<span class="cite" data-ref="otto2020"></span>.</p>
+        <p>The figure shows a 23-mm stented bovine pericardial valve or a 23-mm bileaflet mechanical valve in the aortic annulus of the heart model. In the zoomed parasternal long axis, the sewing ring and the stent, or the housing and the discs, are brighter than the heart's tissue. The metal of the mechanical valve casts an acoustic shadow and reverberations over the structures behind it. The short axis, square to the aortic root, shows the open bioprosthesis just below the free edges of its leaflets, with the EOA as the area of its orifice, or the housing and discs of the mechanical valve.</p>
+        <h3>Imaging the prosthesis</h3>
+        <p>An initial TTE after implantation is recommended to assess the valve's hemodynamics and ventricular function<span class="cite" data-ref="otto2020"></span>. This baseline study shows whether mismatch is present, and later studies are compared with it<span class="cite" data-ref="zoghbi2024"></span>. After a surgical bioprosthesis, TTE at 5 and 10 years and then annually is reasonable, even without a change in clinical status<span class="cite" data-ref="otto2020"></span>. The report should include the type and size of the prosthesis, the date of surgery, the blood pressure, the heart rate and the body surface area<span class="cite" data-ref="zoghbi2024"></span>.</p>
+        <p>Reverberation and shadowing from an aortic prosthesis prevent a complete assessment of the posterior annulus and root on TTE; on TEE the same artifact can limit the anterior root<span class="cite" data-ref="zoghbi2024"></span>. TEE is recommended when the posterior annulus or root is poorly seen on TTE, or when it may be abnormal<span class="cite" data-ref="zoghbi2024"></span>.</p>
+        <h3>Gradients, EOA and DVI</h3>
+        <p>The velocities and gradients through a prosthesis depend on the flow and on the valve's type and size<span class="cite" data-ref="zoghbi2024"></span>. The pressure gradient is 4V²; when the LVOT velocity exceeds 1.5 m/s, it is 4(V<sub>2</sub>² − V<sub>1</sub>²)<span class="cite" data-ref="zoghbi2024"></span>. The EOA by the continuity equation (<a href="#as" data-go="as">chapter 14</a>) is the stroke volume in the LVOT divided by the VTI of the jet; it depends less on flow than the gradient does<span class="cite" data-ref="zoghbi2024"></span>. After surgical replacement, the LVOT diameter is the largest diameter square to the LVOT, just below the valve plane; the label size of the prosthesis should not be used to calculate the LVOT area<span class="cite" data-ref="zoghbi2024"></span>. The EOA is compared with the normal values of the same valve type and size<span class="cite" data-ref="zoghbi2024"></span>.</p>
+        <p>The DVI is the LVOT VTI divided by the VTI of the jet, so it needs no LVOT diameter. After surgical aortic valve replacement, a DVI of 0.35 or less is associated with adverse outcomes<span class="cite" data-ref="zoghbi2024"></span>.</p>
+        <p>In a bileaflet mechanical valve, the narrow central orifice carries a faster jet than the two lateral orifices, and the pressure recovers past the valve. CW Doppler records this jet, so it overestimates the gradient and underestimates the EOA, most in small valves at high flow<span class="cite" data-ref="zoghbi2024"></span>. The normal values of each valve already include this effect<span class="cite" data-ref="zoghbi2024"></span>.</p>
+        <h3>Contour and acceleration time</h3>
+        <p>A normal prosthesis gives a triangular jet that peaks early in ejection. As the valve narrows, the peak comes later and the contour becomes rounded and symmetric<span class="cite" data-ref="zoghbi2024"></span>. The acceleration time, from the onset of flow to the peak velocity, is normal below 80 ms and suggests significant stenosis above 100 ms. The ratio of the acceleration time to the LV ejection time is normal below 0.32 and suggests significant stenosis above 0.37. LV function and heart rate also change the contour and the acceleration time<span class="cite" data-ref="zoghbi2024"></span>.</p>
+        <h3>Grading prosthetic aortic stenosis</h3>
+        <p>The ASE guideline grades each measure as normal, possible stenosis or suggestive of significant stenosis (the table above). Significant stenosis should meet at least one flow-dependent measure (the peak velocity or the mean gradient) and one flow-independent measure (the EOA or the DVI)<span class="cite" data-ref="zoghbi2024"></span>. The diagnosis should not rest on one measure, and serial studies should be compared when they are available<span class="cite" data-ref="zoghbi2024"></span>. Prosthetic valve obstruction is usually defined as a rise in the mean gradient of more than 50% from baseline, or of more than 10 mmHg across an aortic prosthesis, once other causes such as a high-output state are excluded<span class="cite" data-ref="otto2020"></span>. With poor LV function or a high blood pressure, the gradient can stay low despite significant stenosis<span class="cite" data-ref="zoghbi2024"></span>.</p>
+        <p>In the figure, the valve is possibly stenotic once any measure leaves its normal column, and significantly stenotic by the rule above. The bioprosthesis's leaflets thicken and open less, and the mechanical valve loses the motion of one disc, then of both. The table takes a DVI above 0.35 as normal, while the guideline's algorithm for a high velocity separates its branches at 0.30 and 0.25; the page grades the DVI by the table.</p>
+        <h3>Obstruction, mismatch or high flow</h3>
+        <p>Prosthesis–patient mismatch occurs when the EOA of a normal prosthesis is too small for the patient's body size and flow needs: the leaflets are normal, and the indexed EOA (the EOA divided by the body surface area) is small<span class="cite" data-ref="zoghbi2024"></span>. The gradient rises steeply once the indexed EOA falls below 0.8–0.9 cm²/m², and an indexed EOA of 0.85 cm²/m² or less is the usual threshold for mismatch in the aortic position<span class="cite" data-ref="pibarot2006"></span>. With a BMI below 30 kg/m², mismatch is moderate at 0.66–0.85 cm²/m² and severe at 0.65 cm²/m² or less<span class="cite" data-ref="zoghbi2024"></span>. The indexed EOA overestimates mismatch in obesity, so with a BMI of 30 kg/m² or more the cut-offs are 0.70 and 0.55 cm²/m²<span class="cite" data-ref="zoghbi2024"></span>. To avoid mismatch, the prosthesis's reference EOA should be at least 0.85 cm²/m² × the body surface area: 1.53 cm² for a body surface area of 1.80 m²<span class="cite" data-ref="pibarot2006"></span>.</p>
+        <p>High-flow states, mismatch, obstruction above or below the valve and pressure recovery should be excluded as causes of a high gradient<span class="cite" data-ref="zoghbi2024"></span>. The velocity cut-offs of the table hold for a normal stroke volume, 50–90 mL<span class="cite" data-ref="zoghbi2024"></span>. For a peak velocity above 3 m/s, the ASE algorithm reads the contour and the DVI. An early peak (acceleration time below 100 ms, AT/ET below 0.37) with a DVI of 0.30 or more indicates a normal prosthesis: an indexed EOA below 0.85 cm²/m² then points to mismatch, and one above it to a high-flow state. A DVI of 0.25–0.29 indicates possible stenosis, and a late peak with a DVI below 0.25 indicates stenosis<span class="cite" data-ref="zoghbi2024"></span>. Stenosis is distinguished from mismatch by comparison with the early postoperative study and by the appearance and motion of the leaflets<span class="cite" data-ref="otto2020"></span>. With normal leaflet motion and no thrombus, a high gradient means mismatch, pannus, or both<span class="cite" data-ref="otto2020"></span>. In the figure, mismatch is the same valve, opening normally, in patients with a larger body surface area and the same stroke volume index.</p>
+        <h3>TEE, fluoroscopy and CT</h3>
+        <p>When symptoms or signs suggest prosthetic dysfunction, TEE, gated cardiac CT or fluoroscopy is recommended, even if TTE shows no dysfunction<span class="cite" data-ref="otto2020"></span>. Strong reflections from a mechanical valve obscure the motion of its leaflets on TTE in most patients, and fluoroscopy or cine-CT is recommended to assess that motion in mechanical valve stenosis<span class="cite" data-ref="otto2020"></span>. Cine fluoroscopy measures the opening and closing angles of the leaflets; on CT, a bileaflet valve normally opens to 73–90°<span class="cite" data-ref="zoghbi2024"></span>.</p>
+        <p>Contrast CT can separate thrombus from pannus. Thrombus is more common early after surgery, usually lies on the aortic side of an aortic prosthesis and measures less than 200 HU; pannus forms late, usually on the ventricular side, and measures more than 200 HU. A cut-off of 145 HU separates them with a sensitivity of 87.5% and a specificity of 96%<span class="cite" data-ref="zoghbi2024"></span>. In a stenotic bioprosthesis, a thin layer of thrombus on the cusps can cause the obstruction and can resolve with oral anticoagulation; 3D TEE or 4D CT can detect it<span class="cite" data-ref="otto2020"></span>.</p>
+        <h3>Paravalvular regurgitation</h3>
+        <p>In a surgical valve, a paravalvular leak arises from dehiscence of the sewing ring<span class="cite" data-ref="zoghbi2024"></span>. The leak is located by a jet that arises and runs outside the sewing ring<span class="cite" data-ref="zoghbi2024"></span>. The share of the ring's circumference that the jets occupy grades the leak, together with the vena contracta: less than 10% is mild, 10–29% moderate and 30% or more severe<span class="cite" data-ref="zoghbi2024"></span>. Shadowing can hide a posterior leak on TTE and an anterior leak on TEE<span class="cite" data-ref="zoghbi2024"></span>. A normal bileaflet valve has small washing jets just inside the sewing ring, where the closed leaflets meet the housing, and in the centre, where they meet each other<span class="cite" data-ref="zoghbi2024"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>The EOA of a prosthesis is compared with the normal values of its type and size, and the LVOT diameter is measured, not taken from the label size.</li>
+        <li>Significant stenosis of an aortic prosthesis needs a flow-dependent measure (peak velocity ≥4 m/s or mean gradient ≥35 mmHg) and a flow-independent one (DVI &lt;0.25, or an EOA 2 SDs below the reference).</li>
+        <li>A late-peaking, rounded jet with an acceleration time above 100 ms and a low DVI suggests stenosis; an early-peaking jet with a normal DVI and a small indexed EOA suggests mismatch.</li>
+        <li>Reverberation and shadowing hide the posterior root on TTE. Fluoroscopy or CT shows the motion of mechanical leaflets, and CT separates thrombus from pannus.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -1565,6 +1720,80 @@
       <div class="quiz"></div>
     </article>
 
+    <!-- ======================================================== Congenital -->
+    <article class="chapter" id="ch-shunts">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">21</span><div><h2 class="ch-title">Shunts: ASD, VSD and PFO</h2><p class="ch-kicker">Septal defects, Qp/Qs and the saline study</p></div></div>
+      <p class="dek" data-part="dek">A septal defect or a patent foramen ovale lets blood pass between the left and the right heart. Echocardiography shows the defect and the direction of its flow, measures the shunt as Qp/Qs, and grades its effect on the chambers and on the pulmonary pressure.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="shS">Shunt <output data-for="shS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="shS" data-key="shS" min="0" max="1" step="0.005">
+          <div class="grades" id="sh-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Defect</span>
+          <div class="seg" role="group" aria-label="Kind of defect" data-key="shType">
+            <button type="button" data-val="asd" title="Secundum atrial septal defect">ASD</button><button type="button" data-val="vsd" title="Perimembranous ventricular septal defect">VSD</button><button type="button" data-val="pfo" title="Patent foramen ovale">PFO</button>
+          </div>
+        </div>
+        <div class="control" id="sh-man" hidden>
+          <span class="label">Saline study</span>
+          <div class="seg" role="group" aria-label="Maneuver for the saline study" data-key="shMan">
+            <button type="button" data-val="rest">Rest</button><button type="button" data-val="valsalva">Valsalva</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Atrial septal defect</h3>
+        <p>Secundum defects, in the region of the fossa ovalis, make up 80% of ASDs. Primum defects lie near the crux (15%) and superior sinus venosus defects near the entry of the SVC (5%); inferior sinus venosus defects and an unroofed coronary sinus each make up less than 1%<span class="cite" data-ref="baumgartner2020"></span>. The RV is more compliant than the LV, so a simple ASD shunts left to right. The shunt is in general relevant from a defect size of 10 mm, and it causes RV volume overload and pulmonary overcirculation<span class="cite" data-ref="baumgartner2020"></span>. A fall in LV compliance or a rise in LA pressure increases the shunt, so an ASD can become more important with age<span class="cite" data-ref="baumgartner2020"></span>.</p>
+        <ul>
+        <li><b>Views.</b> The subcostal four-chamber view is the preferred view of the atrial septum: the septum lies nearly perpendicular to the beam, a true defect is told from dropout, and the defect is measured along its long axis<span class="cite" data-ref="silvestry2015"></span>. In the apical four-chamber view the septum lies parallel to the beam and artifactual dropout is frequent, so an ASD should not be diagnosed or measured there. That view shows the RA and RV dilation and gives the RV pressure from the TR jet<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>Measurement.</b> The diameter is measured on 2D or 3D images without color, as color Doppler can bleed over the septal tissue and overestimate the defect. The color scale is lowered to 25–40 cm/s for the low-velocity shunt flow<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>TEE.</b> Sinus venosus defects in general require TEE. TEE is also required before device closure of a secundum defect: to size it, to assess its rims, and to exclude further defects and anomalous pulmonary venous connection<span class="cite" data-ref="baumgartner2020"></span>.</li>
+        </ul>
+        <p>RV volume overload is the key finding, and it characterizes the hemodynamic relevance of the defect better than the shunt ratio<span class="cite" data-ref="baumgartner2020"></span>. The RA and the RV dilate, and the ventricular septum flattens in diastole<span class="cite" data-ref="silvestry2015"></span> (<a href="#rv" data-go="rv">chapter 13</a>). The pulmonary vessels normally take the increased flow without a significant rise in PA pressure; a small percentage of patients develop pulmonary hypertension<span class="cite" data-ref="silvestry2015"></span>.</p>
+        <h3>The size of the shunt: Qp/Qs</h3>
+        <p>The stroke volume at each outflow tract is its area, π × (diameter ÷ 2)², times the VTI of the pulsed-wave envelope there (<a href="#pressure" data-go="pressure">chapter 08</a>). Qp/Qs is the RVOT stroke volume ÷ the LVOT stroke volume, from the maximal systolic diameter and the systolic VTI of each outflow tract<span class="cite" data-ref="silvestry2015"></span>. These calculations can have an error of up to 20%<span class="cite" data-ref="quinones2002"></span>, and significant regurgitation of a semilunar valve limits them<span class="cite" data-ref="silvestry2015"></span>. An intracardiac shunt is hemodynamically significant when the chambers distal to it are enlarged and/or Qp:Qs is 1.5:1 or more; a shunt that meets neither criterion is small or trivial<span class="cite" data-ref="stout2018"></span>. The figure takes the RV basal diameter as the chamber for an ASD, and the LVEDD for a VSD.</p>
+        <h3>Closure of an ASD</h3>
+        <ul>
+        <li>The AHA/ACC guideline recommends closure of an isolated secundum ASD that causes impaired functional capacity, RA and/or RV enlargement, and a net left-to-right shunt large enough to cause physiological sequelae (for example Qp:Qs &gt;1.5:1), without cyanosis. The condition is a systolic PA pressure below 50% of the systemic pressure and a pulmonary vascular resistance below one third of the systemic resistance. In an adult without symptoms but with these findings, closure is reasonable<span class="cite" data-ref="stout2018"></span>.</li>
+        <li>The ESC guideline recommends closure, whatever the symptoms, for RV volume overload without pulmonary arterial hypertension or LV disease. Device closure is the method of choice for a secundum defect that suits it: a stretched diameter of 38 mm or less and a rim of 5 mm, except toward the aorta<span class="cite" data-ref="baumgartner2020"></span>.</li>
+        <li>A calculated systolic PA pressure above 40 mmHg requires cardiac catheterization to measure the pulmonary vascular resistance<span class="cite" data-ref="baumgartner2020"></span>. Closure should not be performed with a systolic PA pressure above two thirds of the systemic pressure, a pulmonary vascular resistance above two thirds of the systemic resistance, and/or a net right-to-left shunt<span class="cite" data-ref="stout2018"></span>.</li>
+        </ul>
+        <h3>Ventricular septal defect</h3>
+        <p>Perimembranous defects make up 80% of VSDs. They lie in the membranous septum, next to the tricuspid and aortic valves, and tissue from the septal leaflet of the tricuspid valve can close them partly or completely. Muscular defects make up 15–20% at most and outlet defects, beneath the semilunar valves, 5%; inlet defects lie beneath the atrioventricular valves<span class="cite" data-ref="baumgartner2020"></span>. The direction and size of the shunt depend on the pulmonary and systemic vascular resistances, the size of the defect, the function of both ventricles, and any obstruction of the RVOT or the LVOT<span class="cite" data-ref="baumgartner2020"></span>.</p>
+        <ul>
+        <li><b>The gradient.</b> CW Doppler through the defect gives the pressure difference between the LV and the RV as 4V². In 38 patients it agreed with the catheter (r = 0.95), and the RV systolic pressure followed as the LV or aortic systolic pressure minus that difference<span class="cite" data-ref="silbert1986"></span>. The figure takes a systolic blood pressure of 125 mmHg for the aortic systolic pressure.</li>
+        <li><b>Restrictive defects.</b> A small VSD with an insignificant left-to-right shunt, no LV volume overload and no pulmonary hypertension is restrictive<span class="cite" data-ref="baumgartner2020"></span>. Its jet is fast: in children, the peak velocity fell as the ratio of pulmonary to systemic resistance rose (r = −0.77), and CW Doppler told restrictive from nonrestrictive defects<span class="cite" data-ref="murphy1986"></span>.</li>
+        <li><b>The findings.</b> The key findings are the location, number and size of the defects, the severity of LV volume overload and the estimated PA pressure. Aortic regurgitation from the prolapse of a cusp should be sought, especially with outlet and high perimembranous defects, and a double-chambered RV and a sinus of Valsalva aneurysm should be excluded<span class="cite" data-ref="baumgartner2020"></span>. The report gives each defect's size in two axes, the direction of shunting with the peak gradient, the left heart chamber sizes and the evidence of pulmonary hypertension<span class="cite" data-ref="taub2025"></span>.</li>
+        </ul>
+        <p>A large shunt loads the LA and the LV with volume: the LV enlarges, with an increased stroke volume<span class="cite" data-ref="baumgartner2020"></span>. The figure calls the LV enlarged above an LVEDD of 58 mm and the LA above a volume index of 34 mL/m², the upper limits of normal for men<span class="cite" data-ref="lang2015"></span>. The AHA/ACC guideline recommends closure for LV volume overload with a hemodynamically significant shunt (Qp:Qs &gt;1.5:1), if the systolic PA pressure is below 50% of the systemic pressure and the pulmonary vascular resistance below one third of the systemic resistance. With a systolic PA pressure of 50% of the systemic pressure or more, closure may be considered<span class="cite" data-ref="stout2018"></span>. The ESC guideline recommends closure, whatever the symptoms, for LV volume overload without pulmonary arterial hypertension<span class="cite" data-ref="baumgartner2020"></span>. In a large, nonrestrictive VSD, severe pulmonary vascular disease can reverse the shunt: Eisenmenger syndrome<span class="cite" data-ref="baumgartner2020"></span>.</p>
+        <h3>Patent foramen ovale and the saline study</h3>
+        <p>A PFO is present in 20–25% of the population<span class="cite" data-ref="silvestry2015"></span>. For the saline study, agitated saline is injected into a vein of the arm. Its microbubbles are too large to pass the normal pulmonary vessels, so bubbles in the left heart have crossed a shunt, within the heart or within the lungs<span class="cite" data-ref="silvestry2015,mitchell2019"></span>.</p>
+        <ul>
+        <li><b>Timing.</b> The beats are counted from the first beat with the RA and the RV fully opacified<span class="cite" data-ref="mitchell2019"></span>. Bubbles in the LA within 3–6 beats indicate an intracardiac shunt such as a PFO, ideally seen crossing the atrial septum. Bubbles after 3–6 beats, which enter the LA from the pulmonary veins, indicate an intrapulmonary shunt such as an arteriovenous malformation<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>Valsalva.</b> A maneuver that raises the RA pressure for a moment, a Valsalva maneuver or a cough, is usually needed to show a PFO that does not shunt at rest<span class="cite" data-ref="silvestry2015"></span>. The patient releases the strain when the contrast arrives in the RA<span class="cite" data-ref="mitchell2019"></span>. A shift of the atrial septum toward the LA at the release shows that the RA pressure exceeded the LA pressure<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>Views.</b> The apical four-chamber view is preferred, to avoid shadowing of the left heart; the subcostal four-chamber view is the alternative. At least 20 consecutive beats are recorded<span class="cite" data-ref="mitchell2019"></span>. TTE with agitated saline detects a PFO with reasonable sensitivity and specificity, but TEE is the reference standard<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>Pitfalls.</b> False negatives come from inadequate opacification of the RA, an inadequate Valsalva maneuver, a eustachian valve that directs the IVC flow to the septum, an LA pressure that the RA pressure cannot exceed (as in LV diastolic dysfunction), and poor images. A sinus venosus defect or an unrecognized ASD, and pseudocontrast in the strain phase of the Valsalva maneuver, give false positives<span class="cite" data-ref="silvestry2015"></span>.</li>
+        <li><b>Counts.</b> Shunts have been graded by the number of bubbles in the left heart in one frame, but that number depends on the amount of contrast injected and on the Valsalva maneuver<span class="cite" data-ref="silvestry2015"></span>. The report states whether a shunt is present and the maneuver used, and comments on the degree of shunting<span class="cite" data-ref="taub2025"></span>.</li>
+        </ul>
+        <p>In patients aged 18 to 60 years with a prior PFO-associated stroke, the SCAI guideline recommends PFO closure rather than antiplatelet therapy alone<span class="cite" data-ref="kavinsky2022"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>An ASD is measured in the subcostal four-chamber view, in which the septum lies across the beam; the apical four-chamber view shows its effect on the RA and the RV.</li>
+        <li>A shunt is hemodynamically significant when it enlarges the chambers distal to it and/or Qp:Qs is 1.5 or more. Qp/Qs is the RVOT stroke volume ÷ the LVOT stroke volume.</li>
+        <li>Across a VSD, CW Doppler gives the LV–RV gradient as 4V², and the RV systolic pressure is the systemic systolic pressure minus that gradient. A fast jet marks a restrictive defect.</li>
+        <li>On the saline study, bubbles in the LA within 3–6 beats of full RA opacification indicate an intracardiac shunt such as a PFO. The release of a Valsalva maneuver can show a shunt that is absent at rest.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
     <article class="chapter" id="ch-rv">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">13</span><div><h2 class="ch-title">Right ventricle</h2><p class="ch-kicker">RV size and function, pressure and volume overload</p></div></div>
       <p class="dek" data-part="dek">The RV is assessed by its size, its systolic function and the pressure that it generates. The septum shows the kind of load: it flattens at end-systole in pressure overload and at end-diastole only in volume overload.</p>
@@ -1648,6 +1877,77 @@
     </article>
 
     <!-- ======================================================== Report (hidden: SHOW_REPORT in src/order.js) -->
+    <article class="chapter" id="ch-endocarditis">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Infective endocarditis</h2><p class="ch-kicker">Vegetations, leaflet perforation and the echocardiographic criteria</p></div></div>
+      <p class="dek" data-part="dek">Echocardiography shows the lesions of infective endocarditis: the vegetation, and the destruction that it causes, such as leaflet perforation and abscess. The size and mobility of a vegetation predict embolism, and a length of 10 mm is the threshold in the ESC recommendations for surgery.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="ieS">Severity <output data-for="ieS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="ieS" data-key="ieS" min="0" max="1" step="0.005">
+          <div class="grades" id="ie-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Frame</span>
+          <div class="seg" role="group" aria-label="Frame" data-key="ieFrame">
+            <button type="button" data-val="cine">Cine</button><button type="button" data-val="sys">Systole</button><button type="button" data-val="dia">Diastole</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>The echocardiographic criteria</h3>
+        <p>In the 2023 Duke-ISCVID criteria, echocardiography or cardiac CT that shows a vegetation, a valvular or leaflet perforation, a valvular or leaflet aneurysm, an abscess, a pseudoaneurysm or an intracardiac fistula is a major criterion<span class="cite" data-ref="fowler2023"></span>. Significant new valvular regurgitation on echocardiography, compared with previous imaging, is a major criterion too; worsening or a change of preexisting regurgitation is not sufficient<span class="cite" data-ref="fowler2023"></span>. So is a new partial dehiscence of a prosthetic valve, compared with previous imaging<span class="cite" data-ref="fowler2023"></span>. The diagnosis is definite with two major criteria, one major and three minor criteria, or five minor criteria<span class="cite" data-ref="fowler2023"></span>. The 2023 ESC criteria count the lesions characteristic of IE on echocardiography, cardiac CT, [18F]FDG-PET/CT or WBC SPECT/CT as one major imaging criterion<span class="cite" data-ref="delgado2023"></span>.</p>
+        <p>The ESC defined the lesions on echocardiography as follows<span class="cite" data-ref="habib2015"></span>:</p>
+        <ul>
+        <li><b>Vegetation.</b> An oscillating or non-oscillating intracardiac mass on a valve or another endocardial structure, or on implanted intracardiac material.</li>
+        <li><b>Perforation.</b> An interruption of endocardial tissue continuity traversed by color Doppler flow.</li>
+        <li><b>Abscess.</b> A thickened, non-homogeneous perivalvular area with an echodense or echolucent appearance.</li>
+        <li><b>Pseudoaneurysm.</b> A pulsatile perivalvular echo-free space with flow on color Doppler.</li>
+        <li><b>Fistula.</b> Color Doppler communication between two neighboring cavities through a perforation.</li>
+        <li><b>Valve aneurysm.</b> A saccular bulging of valvular tissue.</li>
+        </ul>
+        <h3>TTE and TOE</h3>
+        <p>TTE is recommended as the first-line imaging modality in suspected IE<span class="cite" data-ref="delgado2023"></span>. TOE is recommended in all patients with a clinical suspicion of IE and a negative or nondiagnostic TTE, and in suspected IE with a prosthetic valve or an intracardiac device<span class="cite" data-ref="delgado2023"></span>. TOE is also recommended after a positive TTE, except in isolated right-sided native valve IE with a TTE of good quality and unequivocal findings<span class="cite" data-ref="delgado2023"></span>. When the first examination is negative or inconclusive and the clinical suspicion of IE remains high, repeating TTE or TOE within 5–7 days is recommended<span class="cite" data-ref="delgado2023"></span>.</p>
+        <p>TTE has limits for perivalvular complications, small vegetations, prosthetic valve endocarditis and vegetations on device leads<span class="cite" data-ref="delgado2023"></span>. For leaflet perforation, the estimated sensitivity is 45% for TTE and 95% for TOE, with a specificity of 98% for both<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>The vegetation</h3>
+        <p>A vegetation lies typically on the atrial side of an atrioventricular valve or on the ventricular side of the aortic valve, but it may affect any side<span class="cite" data-ref="saric2016"></span>. Its echo texture is that of myocardium; a healed vegetation is brighter and often calcified<span class="cite" data-ref="saric2016"></span>. Its shape is usually amorphous, shaggy or lobulated, and less often linear or round<span class="cite" data-ref="saric2016"></span>. It moves with a high-frequency flutter, oscillating or chaotic, independent of the motion of the valve; a large vegetation prolapses into the ventricle in diastole<span class="cite" data-ref="saric2016"></span>. The size of a vegetation is its maximal length<span class="cite" data-ref="delgado2023"></span>.</p>
+        <h3>Size, mobility and embolism</h3>
+        <p>Embolic events affect 20–50% of patients with IE, and they may be clinically silent in up to 50% of patients<span class="cite" data-ref="delgado2023"></span>. The risk is highest in the days around the diagnosis and falls within the first 2 weeks of antibiotic therapy<span class="cite" data-ref="delgado2023"></span>. The size and mobility of the vegetation are the most important independent predictors of a new embolic event<span class="cite" data-ref="delgado2023"></span>. A location on the mitral valve, a change of size under antibiotic therapy, the microorganism (especially <i>S. aureus</i>), a previous embolism and multivalvular involvement also raise the risk<span class="cite" data-ref="delgado2023"></span>. The greatest risk appears to be with vegetations of 10 mm or more on the anterior mitral leaflet<span class="cite" data-ref="baddour2015"></span>. The risk of neurological complications is particularly high with vegetations longer than 30 mm<span class="cite" data-ref="delgado2023"></span>.</p>
+        <p>In the studies of embolic risk, a highly mobile vegetation was pedunculated and prolapsed across the coaptation plane with the cardiac cycle: a mitral vegetation prolapses into the LV in diastole and into the LA in systole<span class="cite" data-ref="saric2016"></span>.</p>
+        <h3>Surgery to prevent embolism</h3>
+        <p>The ESC recommendations on surgery to prevent embolism use a vegetation length of 10 mm<span class="cite" data-ref="delgado2023"></span>:</p>
+        <ul>
+        <li>Urgent surgery is recommended in aortic or mitral IE, on a native or a prosthetic valve, with a persistent vegetation of 10 mm or more after one or more embolic episodes despite appropriate antibiotic therapy (class I).</li>
+        <li>Urgent surgery is recommended in IE with a vegetation of 10 mm or more and another indication for surgery (class I).</li>
+        <li>Urgent surgery may be considered in aortic or mitral IE with a vegetation of 10 mm or more, without severe valve dysfunction or clinical evidence of embolism, at low surgical risk (class IIb)<span class="cite" data-ref="delgado2023"></span>.</li>
+        </ul>
+        <p>Urgent surgery is surgery within 3–5 days<span class="cite" data-ref="delgado2023"></span>. The AHA statement uses mobile vegetations longer than 10 mm. In native valve IE, early surgery is reasonable with such a vegetation and severe valve regurgitation (class IIa). Early surgery may be considered with such a vegetation, particularly when it involves the anterior mitral leaflet and other relative indications for surgery are present (class IIb)<span class="cite" data-ref="baddour2015"></span>.</p>
+        <h3>Perforation and acute regurgitation</h3>
+        <p>Leaflet perforation, leaflet rupture and mitral chordal rupture cause new severe regurgitation, or worsen regurgitation already present, with acute heart failure<span class="cite" data-ref="delgado2023"></span>. Urgent surgery is recommended in aortic or mitral IE with severe acute regurgitation that causes symptoms of heart failure or echocardiographic signs of poor hemodynamic tolerance (class I)<span class="cite" data-ref="delgado2023"></span>. Emergency surgery, within 24 h, is recommended when it causes refractory pulmonary edema or cardiogenic shock (class I)<span class="cite" data-ref="delgado2023"></span>.</p>
+        <p>Leaflet destruction by endocarditis is one of the common causes of acute MR<span class="cite" data-ref="zoghbi2017"></span>. In acute MR, the low blood pressure and the high LA pressure lower the driving pressure, so the jet is slower. The color jet may not look large, and it is usually markedly eccentric, so color Doppler can underestimate the MR<span class="cite" data-ref="zoghbi2017"></span>. Systolic flow reversal in the pulmonary veins is usually present<span class="cite" data-ref="zoghbi2017"></span>. The LV and the LA can be of normal size in acute severe MR<span class="cite" data-ref="zoghbi2017"></span>. The guideline's Doppler methods for the severity of MR apply to chronic, not to acute severe MR, and TOE may identify acute severe MR better<span class="cite" data-ref="zoghbi2017"></span>. The figure grades the perforation jet by its vena contracta with the cut-offs of chronic MR: below 0.3 cm mild, and 0.7 cm or more severe<span class="cite" data-ref="zoghbi2017"></span> (<a href="#mr" data-go="mr">chapter 17</a>).</p>
+        <h3>Differential diagnosis</h3>
+        <p>Echocardiography should distinguish the vegetation of IE from a non-bacterial thrombotic vegetation, Lambl excrescences, a papillary fibroelastoma and other benign intracardiac masses<span class="cite" data-ref="delgado2023"></span>.</p>
+        <ul>
+        <li><b>Valvular strands and Lambl excrescences.</b> Filiform structures, 2 mm wide or less and about 3–10 mm long, that undulate at the line of leaflet closure, on the atrial side of the mitral valve and the ventricular side of the aortic valve. In a prospective TEE study they were found in 40–50% of patients and were not related to systemic embolism<span class="cite" data-ref="saric2016"></span>.</li>
+        <li><b>Papillary fibroelastoma.</b> On a valve it lies typically on the aortic side of the aortic valve or on the ventricular side of the mitral valve, the opposite of the typical location of IE. It is homogeneous, with a well-demarcated border, a stalk and frond-like extensions, and it rarely causes significant valve dysfunction<span class="cite" data-ref="saric2016"></span>.</li>
+        <li><b>Libman–Sacks vegetations.</b> Non-bacterial thrombotic vegetations of systemic lupus erythematosus and the antiphospholipid syndrome. They are rarely associated with valve dysfunction and never with valve perforation, which helps to tell them from IE<span class="cite" data-ref="delgado2023"></span>.</li>
+        <li><b>Old lesions.</b> Previous scarring and severe myxomatous change can be indistinguishable from active lesions<span class="cite" data-ref="baddour2015"></span>.</li>
+        </ul>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Echocardiography or cardiac CT that shows a vegetation, a perforation, an aneurysm, an abscess, a pseudoaneurysm or a fistula is a major criterion of the 2023 Duke-ISCVID criteria<span class="cite" data-ref="fowler2023"></span>.</li>
+        <li>TTE comes first. TOE is recommended when TTE is negative or nondiagnostic and the suspicion remains, with a prosthetic valve or a device, and after a positive TTE except in isolated right-sided native valve IE with a clear TTE<span class="cite" data-ref="delgado2023"></span>.</li>
+        <li>The size of a vegetation is its maximal length. Size and mobility are the most important predictors of a new embolic event, and 10 mm is the length in the ESC recommendations for urgent surgery<span class="cite" data-ref="delgado2023"></span>.</li>
+        <li>A perforation is an interruption of the leaflet with color flow through it<span class="cite" data-ref="habib2015"></span>. In acute MR the jet is eccentric and slower, and color Doppler can underestimate it; systolic flow reversal in the pulmonary veins supports severe MR<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
     <article class="chapter" id="ch-report" hidden>
       <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Report</h2><p class="ch-kicker">Standardized echocardiography reporting</p></div></div>
       <p class="dek" data-part="dek">The standardized echocardiography report presents the findings of a study in a fixed order, so that the referring clinician can decide the next step. The summary statement is placed first. The findings for each structure follow, with structure described before function, and every measured value is classified as normal or abnormal.</p>

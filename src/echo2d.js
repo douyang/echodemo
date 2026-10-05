@@ -478,6 +478,8 @@ export function jet(ctx, F, j) {
   if (!JC) JC = document.createElement('canvas');
   if (JC.width < W || JC.height < H) { JC.width = Math.max(JC.width, W); JC.height = Math.max(JC.height, H); }
   const g = JC.getContext('2d', { willReadFrequently: true });
+  // a larger jet drawn before leaves its pixels past W x H, which smoothing would draw at the edge
+  g.clearRect(0, 0, JC.width, JC.height);
   const img = g.createImageData(W, H), px = img.data;
   const pathOf = (poly) => {
     if (!poly) return null;
