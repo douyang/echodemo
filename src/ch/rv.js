@@ -17,7 +17,7 @@ import { rapEstimate } from '../norms.js';
 import { tracks, bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit, waveLetter } from '../sev.js';
 import { cal } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
-import { rvGrowOf, raAreaWeight, raAreaMin, sepOf, sepEsOf, rvThickOf, rvWallOwn, rvSepAdd, lvBasalAt } from '../meshcal.js';
+import { rvGrowOf, raAreaWeight, raAreaMin, sepOf, sepEsOf, rvThickOf, rvWallOwn, rvSepAdd, lvBasalAt, rvFacAt, rvTapseOwn, RV_TAPSE } from '../meshcal.js';
 import { blood, cavity, onPlane, hingesOf, middle, sub, add, mul, dot, unit, perp } from '../meshjet.js';
 import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
 import { cue } from '../music.js';
@@ -38,13 +38,16 @@ const LOADS = ['pressure', 'volume'];
 // The tracks over the slider s for each load. Pressure: the peak TR velocity (m/s) rises to 4.4,
 // the IVC dilates and collapses less, the RVOT acceleration time (ms) falls to 58 and the RVOT
 // flow notches from s 0.45 (nd, the notch's depth on the drawing); the RV free wall (mm)
-// thickens before the RV basal diameter (cm) grows; the end-systolic area grows before the
-// end-diastolic area, and FAC falls faster than TAPSE and S′. The eccentricity index at
-// end-systole (eiS) rises more than at end-diastole (eiD): Ryan 1985 found 1.44 ± 0.16 and
-// 1.26 ± 0.11 in pressure overload. Volume: the RV and RA dilate at a TR velocity below 2.8
-// m/s; TAPSE and S′ rise and then fall back; eiD rises to 1.42 and eiS stays near 1 (Ryan 1985:
-// 1.26 ± 0.12 at end-diastole). rvotV: the peak RVOT velocity (m/s), drawn and not graded; pa:
-// the main PA (cm); prv: the early-diastolic PR velocity (m/s).
+// thickens before the RV basal diameter (cm) grows; the RV's systolic function falls: the
+// tricuspid annulus's travel (kT, a share of the heart's own) to 0.6 and the free wall's own motion
+// (kr) to 0.2, so FAC falls faster than TAPSE and S′. The eccentricity index at end-systole (eiS)
+// rises more than at end-diastole (eiD): Ryan 1985 found 1.44 ± 0.16 and 1.26 ± 0.11 in pressure
+// overload. Volume: the RV and RA dilate at a TR velocity below 2.8 m/s; the annulus's travel
+// rises by up to 15% and falls back; eiD rises to 1.42 and eiS stays near 1 (Ryan 1985: 1.26 ±
+// 0.12 at end-diastole), so the septum moves toward the RV in systole and the FAC rises. rvotV:
+// the peak RVOT velocity (m/s), drawn and not graded; pa: the main PA (cm); prv: the
+// early-diastolic PR velocity (m/s). TAPSE, S′ and FAC are not on the tracks: modelAt takes them
+// from the heart mesh (meshcal.js RV_TAPSE and rvFacAt), as the image shows them.
 const STOPS = [0, 0.25, 0.5, 0.75, 1];
 const TRACKS = {
   pressure: tracks(STOPS, {
@@ -55,9 +58,9 @@ const TRACKS = {
     nd: [0, 0, 0.6, 1, 1],
     rvb: [3.4, 3.6, 4.1, 4.6, 5.1],
     wall: [4.0, 6.0, 7.5, 8.5, 9.5],
-    tapse: [23, 22, 19, 15, 12],
+    kT: [1, 0.975, 0.9, 0.75, 0.6],
+    kr: [1, 1, 0.5, 0.3, 0.2],
     sPrime: [13, 12.5, 11, 9, 7.5],
-    fac: [48, 42, 32, 25, 19],
     eda: [18, 20, 25, 30, 35],
     ra: [16, 17, 19, 23, 27],
     eiD: [1.0, 1.04, 1.1, 1.18, 1.24],
@@ -74,9 +77,9 @@ const TRACKS = {
     nd: [0, 0, 0, 0, 0],
     rvb: [3.4, 4.0, 4.6, 5.1, 5.6],
     wall: [4.0, 4.0, 4.2, 4.4, 4.6],
-    tapse: [23, 26, 27, 25, 22],
+    kT: [1, 1.1, 1.15, 1.1, 1.0],
+    kr: [1, 1, 1, 1, 1],
     sPrime: [13, 14.5, 15, 14, 12],
-    fac: [48, 47, 45, 40, 35],
     eda: [18, 24, 30, 36, 42],
     ra: [16, 18, 21, 24, 27],
     eiD: [1.0, 1.1, 1.22, 1.33, 1.42],
@@ -88,8 +91,24 @@ const TRACKS = {
 };
 
 /**
+ * The annulus's travel on heart under load, as a share of the heart's own, for the track's kT. A
+ * pressure load does not shorten a travel below the normal heart's at that pressure: a heart whose
+ * own travel is shorter (amyloid 12 mm, ischemic 15 mm, against 20 mm) keeps it until the normal
+ * heart's falls below it.
+ */
+const annulusOf = (heart, load, kT) => (load === 'pressure' ? Math.min(1, kT * Math.max(1, RV_TAPSE.normal / rvTapseOwn(heart))) : kT);
+/** The FAC (%) along a track: under a pressure load it does not rise again (the mesh's rises by up to 0.7). */
+function facOf(heart, load, s) {
+  let f = rvFacAt(heart, load, s).fac;
+  if (load === 'pressure') for (let x = 0; x < s; x += 0.1) f = Math.min(f, rvFacAt(heart, load, x).fac);
+  return f;
+}
+
+/**
  * The model at slider position s under load on heart: its measurements before rounding. The RV
  * free wall and the RA are at least the heart's own (the amyloid heart's wall is 7.5 mm thick).
+ * TAPSE is the image's annulus travel (kTe of the heart's own) and FAC the image's; S′ follows
+ * TAPSE from the normal heart's track.
  */
 function modelAt(s, load, heart) {
   const m = TRACKS[load](s);
@@ -97,6 +116,10 @@ function modelAt(s, load, heart) {
   m.load = load;
   m.wall = Math.max(m.wall, rvWallOwn(heart));
   m.ra = Math.max(m.ra, raAreaMin(heart));
+  m.kTe = annulusOf(heart, load, m.kT);
+  m.tapse = rvTapseOwn(heart) * m.kTe;
+  m.sPrime *= m.tapse / (RV_TAPSE.normal * m.kT);
+  m.fac = facOf(heart, load, s);
   m.esa = m.eda * (1 - m.fac / 100);
   m.notch = m.nd >= 0.5 ? 'yes' : 'no';
   return m;
@@ -264,10 +287,10 @@ const BANDS_OF = { pressure: [], volume: [] };
 // diameter less what the septum's shift adds (rvGrow, meshcal.js rvGrowOf and rvSepAdd), its wall
 // at the printed thickness (rvThick, rvThickOf), its RA at the printed area (raGrow,
 // raAreaWeight), and the septum at the printed eccentricity index at end-diastole and at
-// end-systole, moving between them with the systolic weight (sep, sepOf and sepEsOf). The RV free
-// wall's own motion scales with the FAC (rvK): none at 20%, the heart's own at 45%. The mesh's FAC
-// is 37% with no free-wall motion, as the base and the septum still move, so the cine shows the
-// free wall's hypokinesis and not the printed FAC.
+// end-systole, moving between them with the systolic weight (sep, sepOf and sepEsOf). The
+// tricuspid valve travels the printed TAPSE (rvT, a share of the heart's own travel), and the RV
+// free wall's own motion (rvK) is the track's, moved by the printed FAC's distance from the
+// image's (meshcal.js rvFacAt and its slopes), so the cine shows the printed FAC.
 const redraw = () => { if (sheet) sheet.dirty = true; };
 const MESH = new MeshPanel('a4c_rv', { diseases: ['rvGrow', 'raGrow', 'rvThick', 'sep'], rv: true, redraw });
 const MESH_PM = new MeshPanel('psax_pm', { diseases: ['rvGrow', 'rvThick', 'sep'], rv: true, redraw });
@@ -279,8 +302,14 @@ function meshOf(v, tt) {
   return {
     disease: { rvGrow: rvGrowOf(heart, v.rvb - rvSepAdd(heart, wD)), raGrow: raAreaWeight(heart, v.ra), rvThick: rvThickOf(heart, v.wall) },
     motion: { sep: wD + (wS - wD) * sy },
-    rvK: clamp((v.fac - 20) / 25, 0, 1.25),
+    ...rvMotion(heart, v),
   };
+}
+/** The RV's own motion for the values v on heart: the tricuspid valve's travel (rvT) and the free wall's (rvK). */
+function rvMotion(heart, v) {
+  const rvT = clamp(v.tapse / rvTapseOwn(heart), 0.3, 1.15);
+  const f = rvFacAt(heart, v.load, v.s);
+  return { rvT, rvK: clamp(v.kr + (v.fac - f.fac - f.sT * (rvT - v.kTe)) / f.sR, 0, 1.25) };
 }
 
 /** The longest of the titles that fits a panel w px wide (scope.js panel: 11 px, 10 px in from each side). */
@@ -305,7 +334,7 @@ function rvName(ev, s) {
 function a4c(ctx, box, v, tt) {
   const M = meshOf(v, tt);
   MESH.draw(ctx, box, titleOf(ctx, box.w, ['APICAL FOUR-CHAMBER, RV FOCUSED', 'A4C, RV FOCUSED', 'A4C RV']), {
-    tms: tt, disease: M.disease, motion: M.motion, rvK: M.rvK,
+    tms: tt, disease: M.disease, motion: M.motion, rvK: M.rvK, rvT: M.rvT,
     // deeper as the RA grows (its length as the root of its area, 5 cm at 19.7 cm²)
     deeper: Math.max(0, 5 * (Math.sqrt(v.ra / 19.7) - 1)),
     names: [['lv', 'LV', 'apex', 0.45], [rvName, 'RV'], ['la', 'LA'], ['ra', 'RA']],
@@ -343,7 +372,7 @@ function psax(ctx, box, v, tt) {
   const M = meshOf(v, tt), sy = cycleAt(tt).s;
   const title = titleOf(ctx, box.w, [`PSAX · LVEI ${v.eiD.toFixed(2)} ED · ${v.eiS.toFixed(2)} ES`, `PSAX · EI ${v.eiD.toFixed(2)} / ${v.eiS.toFixed(2)}`, `EI ${v.eiD.toFixed(2)}/${v.eiS.toFixed(2)}`]);
   MESH_PM.draw(ctx, box, title, {
-    tms: tt, disease: M.disease, motion: M.motion, rvK: M.rvK, names: [['rv', 'RV']],
+    tms: tt, disease: M.disease, motion: M.motion, rvK: M.rvK, rvT: M.rvT, names: [['rv', 'RV']],
     over: (c, F, ev) => {
       const an = ev.anchors(sy), lv = onPlane(ev, an.lv), rv = onPlane(ev, an.rv);
       const P = cavity(ev, blood(ev, lv));
@@ -823,7 +852,7 @@ function liveOf(v, s, cite) {
     ? ` The RV basal diameter is ${fmt(v.rvb, 1)} cm (${w('rvb')}), the RV free wall ${fmt(v.wall, 1)} mm (${w('wall')}) and the RA area ${v.ra} cm² (${w('ra')}).`
     : ` The RV free wall is ${fmt(v.wall, 1)} mm (${w('wall')}), and the RV end-diastolic area ${fmt(v.eda, 1)} cm² (${w('eda')}).`;
   const trac = v.g.tapse === 0 && v.g.fac > 0
-    ? ' TAPSE and S′ measure the base of the free wall, which can keep its motion in a pressure-overloaded RV, so they can overestimate RV function while FAC falls.'
+    ? ` TAPSE and S′ measure the base of the free wall, which can keep its motion in a pressure-overloaded RV, so they can overestimate RV function while FAC falls${M}.`
     : '';
   const s2 = ` TAPSE is ${v.tapse} mm (${w('tapse')}), S′ ${fmt(v.sPrime, 1)} cm/s (${w('sPrime')}) and FAC ${v.fac}% (${w('fac')})${M}.`;
   const s3 = ` The LV eccentricity index is ${v.eiD.toFixed(2)} at end-diastole and ${v.eiS.toFixed(2)} at end-systole: the septum is ${PATTERN[v.pat]}, ${v.pat === 'none' ? 'with no overload pattern' : `the pattern of ${PATTERN_MEANS[v.pat]}`}${M}.`;

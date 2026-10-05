@@ -413,3 +413,43 @@ const RA_AREA = {
 export function raAreaWeight(heart, area) { return invert(RA_W, RA_AREA[heart] || RA_AREA.normal, area); }
 /** The smallest RA area (cm²) that heart key shows. */
 export const raAreaMin = (heart) => (RA_AREA[heart] || RA_AREA.normal)[0];
+
+// ---------------------------------------------------------------- the right ventricle's function (chapter 13)
+// The tricuspid valve's travel toward the apex in systole on the RV-focused four-chamber view (mm)
+// at the heart's own motion: the image's TAPSE. echo.js setRvSys scales it by kT.
+export const RV_TAPSE = { normal: 19.89, amyloid: 12.06, icm: 14.9, barlow: 19.88, bav: 19.95 };
+// The RV's FAC (%) on that view along each load's track of chapter 13, at s = 0, 0.1, ... 1, with
+// that track's kT (as rv.js annulusOf) and kr; and dFAC/dkr and dFAC/dkT there: [fac, by kr, by
+// kT]. The RV is traced as the union of the traces from four starts past the tricuspid hinges (the
+// RV landmark, and 1.5, 2.5 and 3.5 cm from the hinges' middle toward the apex), each start but
+// the first inside the traces before it.
+const RV_FAC = {
+  normal: {
+    pressure: [[48.2, 8.4, 37], [45.2, 9.2, 34], [42.2, 7.8, 32], [39.1, 7.7, 42], [35.4, 10.1, 42], [31.4, 8.4, 42], [28.8, 7.8, 45], [25.9, 7.0, 46], [22.3, 8.6, 43], [19.6, 8.4, 46], [16.7, 6.7, 41]],
+    volume: [[48.2, 8.4, 37], [52.7, 8.0, 34], [55.6, 8.1, 34], [58.2, 6.0, 31], [60.4, 5.5, 33], [61.5, 5.2, 34], [61.5, 4.7, 32], [61.3, 4.2, 44], [60.2, 8.7, 39], [57.9, 4.7, 42], [57.2, 5.0, 29]],
+  },
+  amyloid: {
+    pressure: [[29.2, 4.7, 21], [27.1, 5.0, 20], [22.4, 4.4, 22], [20.7, 4.7, 24], [18.0, 4.5, 29], [16.0, 3.5, 26], [15.2, 3.0, 27], [14.6, 3.3, 25], [13.8, 3.1, 28], [14.2, 2.1, 29], [14.5, 1.8, 29]],
+    volume: [[29.2, 4.7, 21], [30.9, 4.7, 22], [33.8, 3.4, 23], [35.5, 3.6, 21], [38.4, 3.3, 21], [40.0, 3.2, 20], [40.5, 3.6, 18], [41.2, 3.0, 19], [41.3, 2.7, 18], [41.8, 3.4, 17], [42.0, 2.7, 16]],
+  },
+  icm: {
+    pressure: [[30.9, 8.1, 30], [30.8, 7.8, 32], [26.3, 7.7, 30], [21.2, 8.3, 32], [17.6, 6.1, 33], [15.6, 5.8, 31], [15.0, 5.6, 28], [15.6, 5.2, 25], [14.7, 5.3, 26], [13.3, 5.7, 32], [12.3, 4.9, 26]],
+    volume: [[30.9, 8.1, 30], [35.3, 7.5, 25], [41.2, 6.5, 22], [45.7, 5.8, 22], [48.7, 5.6, 23], [50.7, 4.9, 23], [51.9, 4.7, 21], [53.0, 4.9, 18], [53.4, 4.5, 20], [53.3, 4.8, 21], [53.1, 4.4, 20]],
+  },
+  barlow: {
+    pressure: [[49.8, 9.3, 34], [49.8, 8.9, 51], [44.6, 8.8, 60], [40.6, 8.4, 59], [37.0, 7.9, 44], [33.8, 7.7, 46], [30.2, 8.6, 42], [27.6, 7.7, 46], [24.3, 8.3, 53], [20.6, 7.1, 53], [17.6, 7.7, 52]],
+    volume: [[49.8, 9.3, 34], [55.2, 8.4, 46], [58.6, 7.2, 36], [62.1, 6.7, 42], [64.2, 7.9, 39], [66.0, 7.3, 35], [66.6, 5.3, 32], [66.6, 5.3, 30], [65.7, 5.2, 26], [64.6, 5.2, 33], [63.0, 5.0, 34]],
+  },
+  bav: {
+    pressure: [[49.5, 9.1, 34], [47.5, 7.4, 36], [43.5, 8.0, 36], [40.7, 8.2, 39], [36.7, 7.8, 32], [31.9, 7.1, 38], [28.9, 7.2, 35], [26.1, 7.3, 41], [24.0, 8.6, 39], [20.3, 8.0, 45], [16.6, 7.0, 44]],
+    volume: [[49.5, 9.1, 34], [52.5, 8.7, 34], [56.2, 6.3, 43], [58.5, 5.4, 46], [61.1, 5.3, 31], [61.8, 4.8, 32], [61.7, 4.8, 28], [60.9, 4.5, 38], [59.4, 4.7, 38], [58.9, 5.1, 27], [57.4, 4.5, 27]],
+  },
+};
+const S11 = Array.from({ length: 11 }, (_, i) => i / 10);
+/** The RV's FAC (%) on the image on heart key under load at slider position s, and its slopes: { fac, sR, sT }. */
+export function rvFacAt(heart, load, s) {
+  const T = (RV_FAC[heart] || RV_FAC.normal)[load], [i, t] = cell(S11, s);
+  return { fac: lerp(T[i][0], T[i + 1][0], t), sR: lerp(T[i][1], T[i + 1][1], t), sT: lerp(T[i][2], T[i + 1][2], t) };
+}
+/** The image's TAPSE (mm) at the heart's own motion on heart key. */
+export const rvTapseOwn = (heart) => RV_TAPSE[heart] || RV_TAPSE.normal;
