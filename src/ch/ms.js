@@ -643,8 +643,9 @@ const msPage = {
   title: 'Mitral stenosis',
   nav: 'MS',
   dwell: 18,
-  defaults: { msS: 0.55, msCine: true, [EDITS]: null },
-  format: { msS: (x, s) => (s?.[EDITS] ? shown(s).grade : gradeOf(x)) },
+  // the heart rate is this chapter's own: the mean gradient follows it
+  defaults: { msS: 0.55, msCine: true, hr: 70, [EDITS]: null },
+  format: { msS: (x, s) => (s?.[EDITS] ? shown(s).grade : gradeOf(x)), hr: (v) => `${Math.round(v)} /min` },
   watch: ['msS', 'msCine', 'hr', EDITS],
   figure(fig) {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));

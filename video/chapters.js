@@ -66,17 +66,18 @@ export const VIDEOS = {
       { set: { vtrue: 2 }, name: 'Aliasing on color Doppler', track: 'Color, 2 m/s', pick: [0, 3], move: 4 },
     ],
   },
-  // Doppler hemodynamics: a caliper error on the LVOT, then the TR jet and the RA pressure (from the IVC chapter)
+  // Doppler hemodynamics: the valve narrows, then the aorta; then the TR jet and the RA pressure (from the IVC chapter)
   pressure: {
-    pane: 'Flow and gradients',
-    quant: { calErr: 0.5, trV: 0.05 },
+    pane: 'Flow and pressure',
+    quant: { valveA: 0.05, aoD: 0.1, trV: 0.05 },
     discrete: ['rap'],
     steps: [
-      { set: { sv: 70, lvotD: 2, calErr: 0, hr: 70, trV: 2.4, rap: 3 }, name: 'Stroke volume from the LVOT', track: 'Stroke volume', pick: [0], hold: 6 },
-      { set: { calErr: 2 }, name: 'LVOT diameter error of 2 mm', track: '+2 mm', pick: [0], move: 4, hold: 6 },
-      { set: { calErr: 0 }, name: 'RV systolic pressure', track: 'RVSP', pick: [1], move: 4, hold: 6 },
-      { set: { trV: 3, rap: 8 }, name: 'Higher peak TR velocity, RA pressure 8 mmHg', track: 'TR 3.0 m/s', pick: [1], move: 4, hold: 6 },
-      { set: { trV: 3.5, rap: 15 }, name: 'RA pressure 15 mmHg', track: 'TR 3.5 m/s', pick: [1], move: 4, hold: 7 },
+      { set: { sv: 70, lvotD: 2, valveA: 2.5, aoD: 3, trV: 2.4, rap: 3 }, name: 'The same flow at every level', track: 'Flow', pick: [0], hold: 6 },
+      { set: { valveA: 1.2 }, name: 'A narrower valve: the velocity rises', track: 'Valve 1.2 cm²', pick: [0], move: 4, hold: 6 },
+      { set: { valveA: 0.7 }, name: 'The pressure falls where the velocity rises', track: 'Valve 0.7 cm²', pick: [1], move: 4, hold: 6 },
+      { set: { aoD: 2.2 }, name: 'A small aorta: more pressure recovery', track: 'Aorta 2.2 cm', pick: [1], move: 4, hold: 6 },
+      { set: { trV: 3, rap: 8 }, name: 'Higher peak TR velocity, RA pressure 8 mmHg', track: 'TR 3.0 m/s', pick: [2], move: 4, hold: 6 },
+      { set: { trV: 3.5, rap: 15 }, name: 'RA pressure 15 mmHg', track: 'TR 3.5 m/s', pick: [2], move: 4, hold: 7 },
     ],
   },
   // 05: the cursor runs through one beat, phase by phase

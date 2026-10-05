@@ -3,11 +3,10 @@
 // A chapter's sliders, buttons and Play write its own keys, and no other chapter reads them, so a
 // setting in one chapter does not change another. Each disease page is a one-slider model that
 // keeps its numbers in their guideline grades; no model here computes two lesions together.
-// SHARED names the keys that several chapters read: the open chapter, the two Play states, the
-// heart of the Heart menu (every chapter shows it and opens at its values, pheno.js), and the
-// heart rate, which Doppler hemodynamics and Mitral stenosis both set. tools/check-state.mjs
-// fails when a chapter reads another chapter's key that SHARED does not name.
-export const SHARED = ['chapter', 'playing', 'anim', 'pheno', 'hr'];
+// SHARED names the keys that several chapters read: the open chapter, the two Play states and
+// the heart of the Heart menu (every chapter shows it and opens at its values, pheno.js).
+// tools/check-state.mjs fails when a chapter reads another chapter's key that SHARED does not name.
+export const SHARED = ['chapter', 'playing', 'anim', 'pheno'];
 
 const listeners = new Set();
 
