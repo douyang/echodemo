@@ -100,7 +100,7 @@
     </figure>
     <figure class="fig" id="fig-pressure">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Left: stroke volume from the outflow tract area and the velocity-time integral. Right: right ventricular systolic pressure from the tricuspid regurgitation velocity, as a bar that stacks the pressure difference on the right atrial pressure.</figcaption>
+      <figcaption class="sr-only">Left: blood flows from the LV outflow tract through the aortic valve into the aorta. The same flow passes every level, so the velocity rises where the area is small, and the pressure falls there and partly rises again in the aorta. Strips under the tube show the flow, the velocity and the pressure along it, and pulsed-wave Doppler before the valve and continuous-wave Doppler through it share one velocity scale. Right: right ventricular systolic pressure from the tricuspid regurgitation velocity, as a bar that stacks the pressure difference on the right atrial pressure.</figcaption>
     </figure>
     <figure class="fig" id="fig-eject">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -691,24 +691,24 @@
 
     <article class="chapter" id="ch-pressure">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">08</span><div><h2 class="ch-title">Doppler hemodynamics</h2><p class="ch-kicker">Flow, area and pressure from Doppler</p></div></div>
-      <p class="dek" data-part="dek">Almost every echocardiographic report includes two Doppler calculations: stroke volume from the LV outflow tract and RV systolic pressure from the tricuspid regurgitant jet. Stroke volume is the product of the LVOT area and the LVOT VTI. RV systolic pressure is the pressure difference calculated from the peak TR velocity with the simplified Bernoulli equation plus the RA pressure estimated from the IVC.</p>
+      <p class="dek" data-part="dek">Almost every echocardiographic report includes Doppler calculations of flow and pressure. The same flow passes the LV outflow tract, the aortic valve and the aorta, so the velocity rises where the area falls, and the pressure falls where the velocity rises. RV systolic pressure is the pressure difference calculated from the peak TR velocity with the simplified Bernoulli equation plus the RA pressure estimated from the IVC.</p>
       <div class="controls">
         <div class="row2">
           <div class="control">
             <label for="sv">Stroke volume <output data-for="sv"></output></label>
-            <input type="range" id="sv" data-key="sv" min="20" max="120" step="1">
+            <input type="range" id="sv" data-key="sv" min="30" max="100" step="1">
           </div>
           <div class="control">
             <label for="lvotD">LVOT diameter <output data-for="lvotD"></output></label>
-            <input type="range" id="lvotD" data-key="lvotD" min="1.6" max="2.6" step="0.01">
+            <input type="range" id="lvotD" data-key="lvotD" min="1.8" max="2.6" step="0.05">
           </div>
           <div class="control">
-            <label for="calErr">Caliper error <output data-for="calErr"></output></label>
-            <input type="range" id="calErr" data-key="calErr" min="-3" max="3" step="0.5">
+            <label for="valveA">Valve area <output data-for="valveA"></output></label>
+            <input type="range" id="valveA" data-key="valveA" min="0.6" max="3" step="0.05">
           </div>
           <div class="control">
-            <label for="hr">Heart rate <output data-for="hr"></output></label>
-            <input type="range" id="hr" data-key="hr" min="40" max="140" step="1">
+            <label for="aoD">Aorta diameter <output data-for="aoD"></output></label>
+            <input type="range" id="aoD" data-key="aoD" min="2.2" max="4.5" step="0.1">
           </div>
           <div class="control">
             <label for="trV">Peak TR velocity <output data-for="trV"></output></label>
@@ -725,31 +725,35 @@
       <dl class="readouts"></dl>
       <p class="live"></p>
       <div class="prose" data-part="prose">
-        <h3>Stroke volume</h3>
-        <p class="eq">SV = 0.785 × d² × VTI &nbsp;(d, VTI in cm; SV in mL)</p>
-        <p>The LV outflow tract is assumed to be circular, with diameter d<span class="cite" data-ref="zoghbi2017"></span>. The LVOT diameter is measured in a zoomed parasternal long-axis view from inner edge to inner edge in mid-systole<span class="cite" data-ref="baumgartner2017"></span>. The LVOT velocity is recorded with pulsed-wave Doppler from the apical five-chamber or apical long-axis view, with the sample volume just below the aortic valve<span class="cite" data-ref="mitchell2019"></span>. Both measurements should be made at the same level<span class="cite" data-ref="baumgartner2017"></span>.</p>
+        <h3>Flow is the same at every level</h3>
+        <p class="eq">flow rate = area × velocity &nbsp;·&nbsp; A₁ × V₁ = A₂ × V₂</p>
+        <p>Blood does not compress, so in each instant the same flow passes every level of the outflow: the LV outflow tract, the aortic valve and the aorta. The flow rate through an orifice equals the area of the orifice multiplied by the velocity of the blood in it<span class="cite" data-ref="zoghbi2017"></span>. Where the area is small, the velocity is high: an orifice with a quarter of the area carries the same flow at four times the velocity. For a given orifice area, the velocity and the gradient increase with the flow rate and decrease when it falls<span class="cite" data-ref="baumgartner2017"></span>.</p>
+        <p>The volume that passes in one beat equals the area multiplied by the VTI, and it is the same at each level: the stroke volume ejected through the LV outflow tract all passes through the aortic valve. The continuity equation uses this: the aortic valve area equals the LVOT area multiplied by the LVOT VTI and divided by the aortic VTI<span class="cite" data-ref="baumgartner2017"></span>. <a href="#as" data-go="as">Chapter 12</a> calculates the valve area in this way. The velocity ratio, the LVOT velocity divided by the aortic velocity, gives the valve area as a fraction of the LVOT area without the LVOT diameter. It approaches 1 without stenosis, and a ratio of 0.25 or less suggests severe stenosis<span class="cite" data-ref="baumgartner2017"></span>.</p>
+        <h3>Stroke volume from the LVOT</h3>
+        <p>Stroke volume is the LVOT area multiplied by the LVOT VTI. The LV outflow tract is assumed to be circular, so its area is 0.785 × d², with the diameter d in cm<span class="cite" data-ref="zoghbi2017"></span>. The LVOT diameter is measured in a zoomed parasternal long-axis view from inner edge to inner edge in mid-systole<span class="cite" data-ref="baumgartner2017"></span>. The LVOT velocity is recorded with pulsed-wave Doppler from the apical five-chamber or apical long-axis view, with the sample volume just below the aortic valve<span class="cite" data-ref="mitchell2019"></span>. Both measurements should be made at the same level<span class="cite" data-ref="baumgartner2017"></span>.</p>
         <p>Because the diameter is squared, a small error in its measurement produces a large error in the calculated stroke volume. Repeated LVOT diameter measurements vary by 5 to 8%, which is the largest source of error in the continuity equation<span class="cite" data-ref="baumgartner2017"></span>. A 2 mm error in the diameter of a 2.0 cm outflow tract changes the calculated stroke volume by approximately 20%.</p>
         <p>Normal resting values from catheterization studies are a stroke volume of 60 to 100 mL, a cardiac output of 4 to 8 L/min and a cardiac index of 2.5 to 4.0 L/min/m²<span class="cite" data-ref="humbert2022"></span>.</p>
-        <h3>Flow through an orifice</h3>
-        <p class="eq">flow rate = area × velocity &nbsp;·&nbsp; volume per beat = area × VTI</p>
-        <p>The flow rate through an orifice equals the area of the orifice multiplied by the velocity of the blood in it. The volume that passes in one beat equals the area multiplied by the VTI. The stroke volume above is this product for the LV outflow tract<span class="cite" data-ref="zoghbi2017"></span>. Two methods apply the same principle to the valves.</p>
-        <ul>
-        <li><b>Continuity equation.</b> The volume that passes through the LV outflow tract also passes through the aortic valve. The aortic valve area therefore equals the LVOT area multiplied by the LVOT VTI and divided by the aortic VTI<span class="cite" data-ref="baumgartner2017"></span>. <a href="#as" data-go="as">Chapter 12</a> calculates the valve area in this way.</li>
-        <li><b>Flow convergence (PISA).</b> Blood accelerates toward a regurgitant orifice in roughly hemispheric shells<span class="cite" data-ref="zoghbi2017"></span>. Color Doppler shows the shell at the aliasing velocity (<a href="#shift" data-go="shift">chapter 03</a>), and the flow rate through the orifice is the area of that shell × the aliasing velocity<span class="cite" data-ref="zoghbi2017"></span>. <a href="#mr" data-go="mr">Chapter 15</a> derives the effective regurgitant orifice area (EROA) and the regurgitant volume from it, and <a href="#tr" data-go="tr">chapter 16</a> applies it to TR.</li>
-        </ul>
-        <p>The <b>vena contracta</b> is the narrowest part of a regurgitant jet, at or just downstream of the orifice. It is slightly smaller than the anatomic orifice, and its cross-sectional area is a measure of the EROA<span class="cite" data-ref="zoghbi2017"></span>. The <b>regurgitant fraction</b> is the regurgitant volume divided by the stroke volume through the regurgitant valve<span class="cite" data-ref="zoghbi2017"></span>.</p>
+        <h3>Pressure falls where velocity rises</h3>
+        <p class="eq">ΔP = 4 (V₂² − V₁²) ≈ 4 V₂²</p>
+        <p>As the blood speeds up into a narrow orifice, pressure is converted into velocity, and the pressure is lowest at the vena contracta, the narrowest part of the jet<span class="cite" data-ref="baumgartner2017"></span>. The simplified Bernoulli equation calculates the pressure difference in mmHg from the velocity in m/s. It assumes that viscous losses and acceleration are negligible and that the velocity proximal to the narrowing can be ignored<span class="cite" data-ref="baumgartner2017"></span>. When the proximal velocity is over 1.5 m/s, or the jet velocity is under 3.0 m/s, the proximal velocity is included: ΔP = 4 (V₂² − V₁²)<span class="cite" data-ref="baumgartner2017,quinones2002"></span>.</p>
+        <p>Past the orifice, the jet slows in the aorta. Part of its kinetic energy is lost as heat in turbulence, and the rest is converted back into pressure, which rises again: this is <b>pressure recovery</b><span class="cite" data-ref="baumgartner2017"></span>. The recovered pressure equals 4V² × 2 EOA/AoA × (1 − EOA/AoA), where EOA is the effective orifice area and AoA is the area of the ascending aorta<span class="cite" data-ref="baumgartner2017"></span>. Doppler measures the pressure drop from the LV to the vena contracta, while a catheter measures the net drop from the LV to the aorta. In most adults with aortic stenosis the recovery is small, but when the ascending aorta is narrower than 30 mm, the Doppler gradient can be significantly higher than the net gradient<span class="cite" data-ref="baumgartner2017"></span>.</p>
+        <p>The maximum gradient is the maximum instantaneous pressure difference across the valve. The mean gradient is the average of the instantaneous gradients over ejection, and it cannot be calculated from the mean velocity<span class="cite" data-ref="baumgartner2017"></span>.</p>
+        <h3>Flow convergence (PISA)</h3>
+        <p>Blood accelerates toward a regurgitant orifice in roughly hemispheric shells<span class="cite" data-ref="zoghbi2017"></span>. Color Doppler shows the shell at the aliasing velocity (<a href="#shift" data-go="shift">chapter 03</a>), and the flow rate through the orifice is the area of that shell × the aliasing velocity<span class="cite" data-ref="zoghbi2017"></span>. <a href="#mr" data-go="mr">Chapter 15</a> derives the effective regurgitant orifice area (EROA) and the regurgitant volume from it, and <a href="#tr" data-go="tr">chapter 16</a> applies it to TR.</p>
+        <p>The <b>vena contracta</b> of a regurgitant jet is its narrowest part, at or just downstream of the orifice. It is slightly smaller than the anatomic orifice, and its cross-sectional area is a measure of the EROA<span class="cite" data-ref="zoghbi2017"></span>. The <b>regurgitant fraction</b> is the regurgitant volume divided by the stroke volume through the regurgitant valve<span class="cite" data-ref="zoghbi2017"></span>.</p>
         <h3>Pressure gradients and RV systolic pressure</h3>
-        <p class="eq">ΔP = 4 v² &nbsp;·&nbsp; RVSP = 4 × (peak TR velocity)² + RA pressure</p>
-        <p>The simplified Bernoulli equation calculates the pressure difference in mmHg from a velocity in m/s<span class="cite" data-ref="baumgartner2017"></span>. It is valid when the velocity proximal to the narrowing is 1.5 m/s or less<span class="cite" data-ref="quinones2002"></span>. The peak TR velocity gives the pressure difference between the RV and the RA, and the RA pressure estimated from the IVC is added to obtain the RV systolic pressure<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p class="eq">RVSP = 4 × (peak TR velocity)² + RA pressure</p>
+        <p>The peak TR velocity gives the pressure difference between the RV and the RA, and the RA pressure estimated from the IVC is added to obtain the RV systolic pressure<span class="cite" data-ref="mukherjee2025"></span>.</p>
         <p>Without RV outflow obstruction, pulmonic stenosis or proximal PA stenosis, the RV systolic pressure equals the PA systolic pressure<span class="cite" data-ref="mukherjee2025"></span>. In significant TR, the RV and RA pressures can equalize early; the CW signal then becomes triangular and underestimates the RV–RA gradient<span class="cite" data-ref="mukherjee2025"></span> (<a href="#tr" data-go="tr">chapter 16</a>). A faint TR signal also underestimates it<span class="cite" data-ref="mukherjee2025"></span>.</p>
         <p>The IVC diameter and its collapse with a sniff give the RA pressure as one of three values: 3, 8 or 15 mmHg<span class="cite" data-ref="mukherjee2025"></span>. <a href="#ivc" data-go="ivc">Chapter 07</a> shows the measurement of the IVC and the pattern that gives each value.</p>
         <p>A resting peak TR velocity of 2.9 m/s or more, or of 2.8 m/s or more with two other echocardiographic signs, suggests pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
+        <li>Blood does not compress, so the same flow passes every level: the area × the velocity is constant, and the velocity rises as the area falls.</li>
+        <li>The pressure falls where the velocity rises: ΔP = 4 (V₂² − V₁²), simplified to 4V₂² when the proximal velocity is small.</li>
+        <li>Past the valve, part of the pressure returns as the jet slows (pressure recovery); with an ascending aorta under 30 mm, the Doppler gradient can exceed the net gradient.</li>
         <li>Stroke volume equals the LVOT area × the LVOT VTI, and an error in the LVOT diameter is squared in the calculation.</li>
-        <li>The simplified Bernoulli equation gives the pressure difference as ΔP = 4v².</li>
         <li>RV systolic pressure equals 4 × (peak TR velocity)² plus the RA pressure estimated from the IVC.</li>
-        <li>The flow rate through an orifice equals its area × the velocity. The continuity equation and the PISA method both use this principle.</li>
         </ol>
       </div>
       <div class="quiz"></div>
