@@ -293,8 +293,11 @@ function scriptAt(u) {
   if (s.kind === 'title') return STATES[0].a;
   if (s.kind === 'end') return STATES[STATES.length - 1].b;
   if (s.kind === 'hold') return mix(STATES[s.i].a, STATES[s.i].b, clamp01((u - s.t0) / (s.t1 - s.t0)));
-  const to = STATES[s.to];
-  return { ...mix(STATES[s.from].b, to.a, ease((u - s.t0) / (s.t1 - s.t0))), ...to.via };
+  const to = STATES[s.to], p = ease((u - s.t0) / (s.t1 - s.t0));
+  // a step that switches the kind (video/chapters.js `cut`) changes every key at the middle of its
+  // move: the slider's value belongs to the kind, so the old kind does not ease into the new one
+  if (V.steps[s.to]?.cut) return { ...(p < 0.5 ? STATES[s.from].b : to.a), ...to.via };
+  return { ...mix(STATES[s.from].b, to.a, p), ...to.via };
 }
 
 /** The chapter's motion, stepped at 1/FPS from the start: the script's state, then anim(). */

@@ -11,6 +11,8 @@
 //   drift   numbers that move evenly to these values across the hold
 //   via     keys set while the plane moves into the step (the loop's sliders move as 'custom')
 //   move    beats from the step before (numbers ease; other values change at the middle)
+//   cut     every key changes at the middle of the move: for a step that switches the kind
+//           (a mass, a valve, a defect or a disease) whose slider value means another thing
 //   hold    beats on the step
 //   name, line   the caption; by default the chapter's live sentence at the step's state: its
 //           bold lead, then the rest. pick: which sentences of the rest (0 = the first)
@@ -242,10 +244,10 @@ export const VIDEOS = {
       { set: { proS: 0, proValve: 'bio', proCause: 'obst' }, name: 'Normal bioprosthesis', track: 'Bio normal', pick: [0, 1, 2], hold: 7 },
       { set: { proS: 0.45 }, name: 'Possible stenosis of the bioprosthesis', track: 'Bio possible', pick: [0, 2, 3], move: 4, hold: 7 },
       { set: { proS: 0.85 }, name: 'Significant stenosis of the bioprosthesis', track: 'Bio significant', pick: [0, 2, 5], move: 4, hold: 7 },
-      { set: { proS: 0, proValve: 'mech' }, name: 'Normal mechanical valve', track: 'Mech normal', pick: [0, 3], move: 3, hold: 6 },
+      { set: { proS: 0, proValve: 'mech' }, name: 'Normal mechanical valve', track: 'Mech normal', pick: [0, 3], move: 3, cut: true, hold: 6 },
       { set: { proS: 0.42 }, name: 'Possible stenosis of the mechanical valve', track: 'Mech possible', pick: [0, 2, 3], move: 4, hold: 7 },
       { set: { proS: 0.85 }, name: 'Significant stenosis of the mechanical valve', track: 'Mech significant', pick: [0, 3, 4], move: 4, hold: 7 },
-      { set: { proS: 0.5, proValve: 'bio', proCause: 'ppm' }, name: 'Moderate prosthesis–patient mismatch', track: 'Moderate mismatch', pick: [0, 1, 4], move: 3, hold: 7 },
+      { set: { proS: 0.5, proValve: 'bio', proCause: 'ppm' }, name: 'Moderate prosthesis–patient mismatch', track: 'Moderate mismatch', pick: [0, 1, 4], move: 3, cut: true, hold: 7 },
       { set: { proS: 0.9 }, name: 'Severe prosthesis–patient mismatch', track: 'Severe mismatch', pick: [1, 5, 6], move: 4, hold: 7 },
     ],
   },
@@ -308,7 +310,7 @@ export const VIDEOS = {
       { set: { conS: 0.58 }, track: 'Constriction', pick: [0, 1], move: 4, hold: 7 },
       { set: { conS: 0.9 }, track: '3 of 3', pick: [1, 2, 3], move: 4, hold: 7 },
       { set: { conS: 0.9 }, name: 'Annulus reversus', track: 'Annulus', pick: [4], move: 1, hold: 5 },
-      { set: { conS: 0, conMode: 'rcm' }, name: 'Restrictive cardiomyopathy', track: 'Restriction', line: 'The same slider for restrictive cardiomyopathy: the stiff myocardium, not the pericardium, limits filling.', move: 3, hold: 3 },
+      { set: { conS: 0, conMode: 'rcm' }, name: 'Restrictive cardiomyopathy', track: 'Restriction', line: 'The same slider for restrictive cardiomyopathy: the stiff myocardium, not the pericardium, limits filling.', move: 3, cut: true, hold: 3 },
       { set: { conS: 0.28 }, track: 'Grade 1', pick: [0, 1], move: 4, hold: 6 },
       { set: { conS: 0.57 }, track: 'Grade 2', pick: [0, 1], move: 4, hold: 6 },
       { set: { conS: 0.92 }, track: 'Grade 3', pick: [1, 2, 3], move: 4, hold: 8 },
@@ -337,11 +339,11 @@ export const VIDEOS = {
       { set: { shType: 'asd', shS: 0, shMan: 'valsalva' }, track: 'No ASD', pick: [0, 1], hold: 5 },
       { set: { shS: 0.3 }, track: 'Small ASD', pick: [0, 1, 3], move: 4, hold: 6 },
       { set: { shS: 0.75 }, track: 'Significant ASD', pick: [0, 1, 2], move: 4, hold: 7 },
-      { set: { shType: 'vsd', shS: 0.4 }, track: 'Restrictive VSD', pick: [0, 1, 4], move: 3, hold: 7 },
+      { set: { shType: 'vsd', shS: 0.4 }, track: 'Restrictive VSD', pick: [0, 1, 4], move: 3, cut: true, hold: 7 },
       { set: { shS: 0.75 }, track: 'Significant VSD', pick: [1, 2, 4], move: 4, hold: 7 },
       { set: { shS: 1 }, name: 'Perimembranous VSD, RV pressure over half the systemic pressure', track: 'RVSP ≥50%', pick: [1, 2, 5], move: 4, hold: 7 },
-      { set: { shType: 'pfo', shMan: 'valsalva', shS: 0.4 }, track: 'Valsalva only', pick: [0, 1], move: 3, hold: 8 },
-      { set: { shS: 0.9, shMan: 'rest' }, track: 'At rest', pick: [0, 1], move: 3, hold: 8 },
+      { set: { shType: 'pfo', shMan: 'valsalva', shS: 0.4 }, track: 'Valsalva only', pick: [0, 1], move: 3, cut: true, hold: 8 },
+      { set: { shS: 0.9, shMan: 'rest' }, track: 'At rest', pick: [0, 1], move: 3, cut: true, hold: 8 },
     ],
   },
   // 18: from a normal IVC to a raised RA pressure, severe TR and ventilation (the chapter's tour),
@@ -386,12 +388,12 @@ export const VIDEOS = {
       { set: { maS: 0.15 }, track: 'Myxoma', pick: [0, 1], move: 3, hold: 6 },
       { set: { maS: 0.62 }, track: 'Prolapse', pick: [0, 1], move: 4, hold: 7 },
       { set: { maS: 1 }, track: 'Obstruction', pick: [2], move: 4, hold: 7 },
-      { set: { maType: 'thrombus', maS: 0 }, track: 'Akinetic apex', pick: [1], move: 2, hold: 5 },
+      { set: { maType: 'thrombus', maS: 0 }, track: 'Akinetic apex', pick: [1], move: 2, cut: true, hold: 5 },
       { set: { maS: 0.2 }, track: 'Mural', pick: [0, 1], move: 3, hold: 6 },
       { set: { maS: 0.55 }, track: 'Protruding', pick: [0, 1], move: 4, hold: 6 },
       { set: { maS: 0.95 }, track: 'Mobile', pick: [0], move: 4, hold: 7 },
       { set: { maUea: true }, name: 'With an enhancing agent', track: 'Agent', pick: [2], move: 2, hold: 6 },
-      { set: { maType: 'pfe', maUea: false, maS: 0.25 }, track: 'Sessile', pick: [0, 1], move: 2, hold: 6 },
+      { set: { maType: 'pfe', maUea: false, maS: 0.25 }, track: 'Sessile', pick: [0, 1], move: 2, cut: true, hold: 6 },
       { set: { maS: 0.85 }, track: 'Mobile', pick: [0, 1], move: 4, hold: 7 },
     ],
   },

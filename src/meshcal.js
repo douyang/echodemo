@@ -121,8 +121,8 @@ export function lvSizeFor(heart, ratio) {
   return invert(LV_SZ, col, ratio * col[LV_SZ.indexOf(0)]);
 }
 
-// The LV diameters in the parasternal long axis (chapters 13 and 15), measured as chapter 18's
-// calipers measure them (echo.js caliperLine): square to the LV's long axis through the point
+// The LV diameters in the parasternal long axis (chapters 14, 15, 17 and 25), measured as chapter
+// 24's calipers measure them (echo.js caliperLine): square to the LV's long axis through the point
 // 30% of the way from the LV's middle to the mitral valve, from the septum to the posterior
 // wall. d: LVIDd (mm) at end-diastole by size weight (LV_SZ); s: LVIDs (mm) at end-systole by
 // size and contraction k (LV_K).
