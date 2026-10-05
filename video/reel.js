@@ -14,7 +14,8 @@
 //  - Systolic function, Diastolic function: dense panels. LV function shows in the segments and
 //    amyloid clips.
 //  - AR, MS, TR: the layout of AS and MR.
-// Stress echocardiography, added with its chapter, is the last clip: the quad screen of a stress test.
+// Stress echocardiography, added with its chapter, follows Regional wall motion, as its chapter does:
+// the quad screen of a stress test. The right ventricle (chapter 13), added after the review, has no clip.
 //
 // A clip has ch (the chapter's key) and bars (its length in bars of the score). A chapter clip has
 // a video in the shape of video/chapters.js. The clip of Views has a cut of the views video
@@ -34,7 +35,7 @@ const TWO = { hold0: 0.75, move: 1, hold1: 1.25 };
 export const REEL = {
   key: 'intro',
   // the title card: the site's name and the start of its description (index.html, meta description)
-  title: { eye: '19 chapters', name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive guide to echocardiography.' },
+  title: { eye: `${CHAPTERS.length} chapters`, name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive guide to echocardiography.' },
   intro: 2,
   outro: 3,
   clips: [
@@ -56,6 +57,14 @@ export const REEL = {
       { set: { culprit: 'none', wm: 3 }, name: 'Normal wall motion', line: 'All 16 segments are scored 1 (normal), and the wall motion score index is 1.00.', hold: TWO.hold0 },
       { set: { culprit: 'lad' }, pick: [0], move: TWO.move, hold: TWO.hold1 },
     ] } },
+    // Stress echocardiography: the quad screen of a dobutamine test in one view, from a normal response
+    // to ischemia in the LAD territory: the segments turn abnormal at peak. The line is from the chapter's
+    // dek. Four bars, so that the score's whole four-bar phrases end on the end card at 105 BPM.
+    { ch: 'stress', bars: 4, video: { pane: 'Dobutamine stress', steps: [
+      { set: { sxCase: 'normal', sxView: 'a2c' }, name: 'Normal response', line: '', hold: 1 },
+      { set: { sxCase: 'lad', sxView: 'a2c' }, name: 'Ischemia in the LAD territory',
+        line: 'A segment that is normal at rest and becomes abnormal with stress indicates ischemia in the territory of its coronary artery.', move: 1, hold: 2 },
+    ] } },
     // AS, MR, pericardial effusion, amyloidosis: a page from normal to its most telling grade
     { ch: 'as', bars: 3, video: { pane: '2D and Doppler', side: false, quant: { asS: 0.005 }, steps: [
       { set: { asS: 0.05, asCine: true }, name: 'No aortic stenosis', pick: [0], hold: TWO.hold0 },
@@ -72,14 +81,6 @@ export const REEL = {
     { ch: 'amyloid', bars: 3, video: { pane: 'Echocardiographic signs', side: false, quant: { amyS: 0.0025 }, steps: [
       { set: { amyS: 0 }, pick: [2], hold: TWO.hold0 },
       { set: { amyS: 0.9 }, name: 'Relative apical sparing', line: 'The septum measures {IVSd} mm. {s2}', move: TWO.move, hold: TWO.hold1 },
-    ] } },
-    // Stress echocardiography: the quad screen of a dobutamine test in one view, from a normal response
-    // to ischemia in the LAD territory: the segments turn abnormal at peak. The line is from the chapter's
-    // dek. Four bars, so that the score's whole four-bar phrases end on the end card at 105 BPM.
-    { ch: 'stress', bars: 4, video: { pane: 'Dobutamine stress', steps: [
-      { set: { sxCase: 'normal', sxView: 'a2c' }, name: 'Normal response', line: '', hold: 1 },
-      { set: { sxCase: 'lad', sxView: 'a2c' }, name: 'Ischemia in the LAD territory',
-        line: 'A segment that is normal at rest and becomes abnormal with stress indicates ischemia in the territory of its coronary artery.', move: 1, hold: 2 },
     ] } },
   ],
 };

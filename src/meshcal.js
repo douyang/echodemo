@@ -340,3 +340,116 @@ export function foreOffset(view, f, size = 0) {
   while (n < row.length && row[n] > row[n - 1]) n++;
   return invert(FORE_D.slice(0, n), row.slice(0, n), f);
 }
+
+// ---------------------------------------------------------------- the right ventricle (chapter 13)
+// rvThick (phenomesh.js DISEASE) on the RV-focused four-chamber view at end-diastole: the RV free
+// wall's thickness (mm) on the line of the RV basal diameter, linear in the weight on every heart.
+// own: at weight 0, the mean of rvGrow 0 and 1 (rvGrow changes it by less than 0.2 mm); per: mm
+// per unit of weight. The RV basal diameter grows by less than 0.1 cm at weight 1.
+const RVW = {
+  normal: { own: 3.55, per: 8.77 },
+  amyloid: { own: 7.49, per: 9.0 },
+  icm: { own: 3.19, per: 8.85 },
+  barlow: { own: 3.3, per: 8.87 },
+  bav: { own: 3.51, per: 9.1 },
+};
+/** The RV free wall's own thickness (mm) on heart key. */
+export const rvWallOwn = (heart) => (RVW[heart] || RVW.normal).own;
+/** The rvThick weight whose RV free wall is mm thick on heart key; a thinner wall than the heart's own thins it, to 2.6 mm less. */
+export function rvThickOf(heart, mm) {
+  const T = RVW[heart] || RVW.normal;
+  return Math.max(-0.3, (mm - T.own) / T.per);
+}
+// sep at end-systole (aortic valve closure), where the systolic weight reaches 1: the eccentricity
+// index on the short axis at the papillary muscles by weight (SEP_W), up to the largest index
+// before the septum folds back (weight 1.5 on the normal and the amyloid heart, 2 on the Barlow
+// and the bicuspid heart).
+const EI_ES = {
+  normal: [1.016, 1.075, 1.131, 1.226, 1.338, 1.425, 1.476],
+  amyloid: [0.899, 1.053, 1.137, 1.233, 1.322, 1.387, 1.437],
+  icm: [1.083, 1.114, 1.149, 1.191, 1.24, 1.3, 1.37, 1.536, 1.724],
+  barlow: [1.035, 1.079, 1.114, 1.182, 1.271, 1.348, 1.415, 1.504],
+  bav: [1.022, 1.076, 1.148, 1.242, 1.351, 1.419, 1.477, 1.525],
+};
+/** The sep weight whose eccentricity index at end-systole is ei on heart key; held to the table. */
+export function sepEsOf(heart, ei) {
+  const T = EI_ES[heart] || EI_ES.normal;
+  return invert(SEP_W.slice(0, T.length), T, ei);
+}
+/** The largest eccentricity index at end-systole that the septum of heart key shows. */
+export const eiEsMax = (heart) => { const T = EI_ES[heart] || EI_ES.normal; return T[T.length - 1]; };
+// sep on the RV-focused four-chamber view at end-diastole, rvGrow 0: the RV basal diameter (cm)
+// and the LV basal diameter (cm: the widest the LV cavity is in its basal third, parallel to the
+// mitral annulus), by weight SEP4. The septum's move adds to the RV basal diameter that rvGrow
+// gives: the sum is within 0.03 cm of the measured diameter at rvGrow 0.5 to 1.5.
+const SEP4 = [0, 0.5, 1, 1.5, 2, 2.5];
+const SEP_A4C = {
+  normal: { rv: [3.073, 3.345, 3.683, 4.061, 4.404, 4.708], lv: [4.529, 4.139, 3.792, 3.523, 3.421, 3.432] },
+  amyloid: { rv: [3.018, 3.315, 3.673, 4.053, 4.416, 4.74], lv: [3.76, 3.413, 3.139, 2.932, 2.913, 2.912] },
+  icm: { rv: [3.06, 3.315, 3.665, 4.055, 4.432, 4.779], lv: [6.039, 5.618, 5.216, 4.891, 4.618, 4.393] },
+  barlow: { rv: [3.068, 3.334, 3.677, 4.061, 4.428, 4.757], lv: [5.522, 5.114, 4.924, 4.824, 4.752, 4.74] },
+  bav: { rv: [2.82, 3.135, 3.49, 3.87, 4.228, 4.546], lv: [4.103, 3.732, 3.423, 3.261, 3.257, 3.251] },
+};
+/** The RV basal diameter (cm) that the septum at sep weight w adds on heart key. */
+export function rvSepAdd(heart, w) {
+  const T = (SEP_A4C[heart] || SEP_A4C.normal).rv, [i, t] = cell(SEP4, w);
+  return lerp(T[i], T[i + 1], t) - T[0];
+}
+/** The LV basal diameter (cm) on heart key with the septum at sep weight w. */
+export function lvBasalAt(heart, w) {
+  const T = (SEP_A4C[heart] || SEP_A4C.normal).lv, [i, t] = cell(SEP4, w);
+  return lerp(T[i], T[i + 1], t);
+}
+// raGrow on the RV-focused four-chamber view at end-systole: the RA area (cm², traced as for the
+// area-length volume) by weight (RA_W). The normal heart's own RA is 19.7 cm².
+const RA_AREA = {
+  normal: [15.52, 17.39, 19.68, 21.43, 23.37, 25.49, 27.79, 30.26, 32.91, 38.78, 45.39],
+  amyloid: [19.55, 23.03, 26.92, 29.74, 32.74, 35.94, 39.3, 42.83, 46.58, 54.56, 63.3],
+  icm: [13.08, 15.1, 17.53, 19.38, 21.41, 23.62, 26.03, 28.6, 31.38, 37.45, 44.25],
+  barlow: [14.52, 16.39, 18.55, 20.19, 22.1, 24.11, 26.27, 28.36, 31.11, 36.04, 41.64],
+  bav: [14.49, 16.33, 18.58, 20.31, 22.21, 24.3, 26.57, 29.02, 31.65, 37.47, 44.01],
+};
+/** The raGrow weight whose RA area at end-systole is area cm² on heart key; held to the table. */
+export function raAreaWeight(heart, area) { return invert(RA_W, RA_AREA[heart] || RA_AREA.normal, area); }
+/** The smallest RA area (cm²) that heart key shows. */
+export const raAreaMin = (heart) => (RA_AREA[heart] || RA_AREA.normal)[0];
+
+// ---------------------------------------------------------------- the right ventricle's function (chapter 13)
+// The tricuspid valve's travel toward the apex in systole on the RV-focused four-chamber view (mm)
+// at the heart's own motion: the image's TAPSE. echo.js setRvSys scales it by kT.
+export const RV_TAPSE = { normal: 19.89, amyloid: 12.06, icm: 14.9, barlow: 19.88, bav: 19.95 };
+// The RV's FAC (%) on that view along each load's track of chapter 13, at s = 0, 0.1, ... 1, with
+// that track's kT (as rv.js annulusOf) and kr; and dFAC/dkr and dFAC/dkT there: [fac, by kr, by
+// kT]. The RV is traced as the union of the traces from four starts past the tricuspid hinges (the
+// RV landmark, and 1.5, 2.5 and 3.5 cm from the hinges' middle toward the apex), each start but
+// the first inside the traces before it.
+const RV_FAC = {
+  normal: {
+    pressure: [[48.2, 8.4, 37], [45.2, 9.2, 34], [42.2, 7.8, 32], [39.1, 7.7, 42], [35.4, 10.1, 42], [31.4, 8.4, 42], [28.8, 7.8, 45], [25.9, 7.0, 46], [22.3, 8.6, 43], [19.6, 8.4, 46], [16.7, 6.7, 41]],
+    volume: [[48.2, 8.4, 37], [52.7, 8.0, 34], [55.6, 8.1, 34], [58.2, 6.0, 31], [60.4, 5.5, 33], [61.5, 5.2, 34], [61.5, 4.7, 32], [61.3, 4.2, 44], [60.2, 8.7, 39], [57.9, 4.7, 42], [57.2, 5.0, 29]],
+  },
+  amyloid: {
+    pressure: [[29.2, 4.7, 21], [27.1, 5.0, 20], [22.4, 4.4, 22], [20.7, 4.7, 24], [18.0, 4.5, 29], [16.0, 3.5, 26], [15.2, 3.0, 27], [14.6, 3.3, 25], [13.8, 3.1, 28], [14.2, 2.1, 29], [14.5, 1.8, 29]],
+    volume: [[29.2, 4.7, 21], [30.9, 4.7, 22], [33.8, 3.4, 23], [35.5, 3.6, 21], [38.4, 3.3, 21], [40.0, 3.2, 20], [40.5, 3.6, 18], [41.2, 3.0, 19], [41.3, 2.7, 18], [41.8, 3.4, 17], [42.0, 2.7, 16]],
+  },
+  icm: {
+    pressure: [[30.9, 8.1, 30], [30.8, 7.8, 32], [26.3, 7.7, 30], [21.2, 8.3, 32], [17.6, 6.1, 33], [15.6, 5.8, 31], [15.0, 5.6, 28], [15.6, 5.2, 25], [14.7, 5.3, 26], [13.3, 5.7, 32], [12.3, 4.9, 26]],
+    volume: [[30.9, 8.1, 30], [35.3, 7.5, 25], [41.2, 6.5, 22], [45.7, 5.8, 22], [48.7, 5.6, 23], [50.7, 4.9, 23], [51.9, 4.7, 21], [53.0, 4.9, 18], [53.4, 4.5, 20], [53.3, 4.8, 21], [53.1, 4.4, 20]],
+  },
+  barlow: {
+    pressure: [[49.8, 9.3, 34], [49.8, 8.9, 51], [44.6, 8.8, 60], [40.6, 8.4, 59], [37.0, 7.9, 44], [33.8, 7.7, 46], [30.2, 8.6, 42], [27.6, 7.7, 46], [24.3, 8.3, 53], [20.6, 7.1, 53], [17.6, 7.7, 52]],
+    volume: [[49.8, 9.3, 34], [55.2, 8.4, 46], [58.6, 7.2, 36], [62.1, 6.7, 42], [64.2, 7.9, 39], [66.0, 7.3, 35], [66.6, 5.3, 32], [66.6, 5.3, 30], [65.7, 5.2, 26], [64.6, 5.2, 33], [63.0, 5.0, 34]],
+  },
+  bav: {
+    pressure: [[49.5, 9.1, 34], [47.5, 7.4, 36], [43.5, 8.0, 36], [40.7, 8.2, 39], [36.7, 7.8, 32], [31.9, 7.1, 38], [28.9, 7.2, 35], [26.1, 7.3, 41], [24.0, 8.6, 39], [20.3, 8.0, 45], [16.6, 7.0, 44]],
+    volume: [[49.5, 9.1, 34], [52.5, 8.7, 34], [56.2, 6.3, 43], [58.5, 5.4, 46], [61.1, 5.3, 31], [61.8, 4.8, 32], [61.7, 4.8, 28], [60.9, 4.5, 38], [59.4, 4.7, 38], [58.9, 5.1, 27], [57.4, 4.5, 27]],
+  },
+};
+const S11 = Array.from({ length: 11 }, (_, i) => i / 10);
+/** The RV's FAC (%) on the image on heart key under load at slider position s, and its slopes: { fac, sR, sT }. */
+export function rvFacAt(heart, load, s) {
+  const T = (RV_FAC[heart] || RV_FAC.normal)[load], [i, t] = cell(S11, s);
+  return { fac: lerp(T[i][0], T[i + 1][0], t), sR: lerp(T[i][1], T[i + 1][1], t), sT: lerp(T[i][2], T[i + 1][2], t) };
+}
+/** The image's TAPSE (mm) at the heart's own motion on heart key. */
+export const rvTapseOwn = (heart) => RV_TAPSE[heart] || RV_TAPSE.normal;

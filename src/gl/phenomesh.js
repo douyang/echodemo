@@ -334,12 +334,18 @@ export async function preparePhenotypes(meshes, anat, turn, VESSELS) {
   // the LV wall, smoothed over 0.7 cm so the septum's two faces and the LV-RV junctions blend
   const G = grid(mpos, null, 0.7);
   const lvMask = new Float32Array(nMyo), laNear = new Float32Array(nMyo), aoNear = new Float32Array(nMyo);
+  // the RV free wall, smoothed as the LV wall is, without the septum's RV face (chapter 13 scales its
+  // contraction): the share of RV wall within 0.7 cm, where the wall lies 1.3 cm or more out from
+  // the LV cavity's radius (as rvGrow takes the free wall)
+  const rvMask = new Float32Array(nMyo);
   const GLA = grid(mpos, (i) => REG[i] === 3, 0.8), GAO = grid(mpos, (i) => REG[i] === 5, 0.8);
   for (let i = 0; i < nMyo; i++) {
     if ((i & 127) === 0) await tick();
     const x = mpos[3 * i], y = mpos[3 * i + 1], z = mpos[3 * i + 2];
     const nb = nearest(G, x, y, z, 24, 0.7);
     lvMask[i] = nb.length ? nb.filter(([j]) => REG[j] === 1).length / nb.length : REG[i] === 1 ? 1 : 0;
+    const rvShare = nb.length ? nb.filter(([j]) => REG[j] === 2).length / nb.length : REG[i] === 2 ? 1 : 0;
+    if (rvShare) { const c = lvCoords(F, x, y, z); rvMask[i] = rvShare * smooth((c.r - F.Rref(c.u) - 1.3) / 1.4); }
     // other walls within a centimetre of the LA or the aorta move with them, so walls that
     // touch (the atrial septum, the aortic root on the LA) do not cross
     if (REG[i] === 3 || REG[i] === 7) laNear[i] = 1;
@@ -356,7 +362,7 @@ export async function preparePhenotypes(meshes, anat, turn, VESSELS) {
     const [w, r] = descAxis(desc, mpos[3 * i], mpos[3 * i + 1], mpos[3 * i + 2]);
     laNear[i] *= 1 - w * (1 - smooth((r - 1.5) / 0.5));
   }
-  return { meshes, anat, F, REG, lvMask, laNear, aoNear, aoLine, desc, mpos, nMyo };
+  return { meshes, anat, F, REG, lvMask, rvMask, laNear, aoNear, aoLine, desc, mpos, nMyo };
 }
 
 /**
@@ -427,6 +433,10 @@ export const DISEASE = {
   // valve, the pericardium and the coronaries move with the wall next to them.
   rvGrow: { grow: 'rv' },
   raGrow: { grow: 'ra' },
+  // The right ventricle (chapter 13). rvThick: the RV free wall thicker, its epicardial face out
+  // from the LV axis by 1 cm at weight 1 where rvGrow moves the wall most; the cavity keeps its
+  // size, and the pericardium and the coronaries move with the face next to them.
+  rvThick: { grow: 'rvthick' },
   // Rheumatic mitral stenosis (chapter 14). msValve: open, each leaflet point loses a share of
   // its swing that grows toward the tips (all of it at the tips at weight 1), so the tips hold
   // a small orifice and the bodies bow into the LV; shut, the valve is the heart's own. mvThick:
@@ -615,8 +625,23 @@ async function buildGrow(ctx, key, kind) {
     const vx = x - T.raC.x, vy = y - T.raC.y, vz = z - T.raC.z, l = Math.hypot(vx, vy, vz) || 1;
     return 1 - smooth(((vx * F.X.x + vy * F.X.y + vz * F.X.z) / l - 0.2) / 0.4);
   };
+  // rvthick: the free wall's outer face, by its distance to the pericardium (the outer face lies
+  // 0.15-0.5 cm from it, the inner face 0.5 cm or more); a smooth function of the place, so the
+  // wall does not tear where the two faces are near each other
+  const GP = kind === 'rvthick' ? grid(meshes.Pericardium.geometry.attributes.position.array, null, 0.6) : null;
   const field = (i, x, y, z, out) => {
     if (kind === 'ra') { if (T.raNear[i]) raAt(x, y, z, T.raNear[i] * notSeptum(x, y, z), out); return; }
+    if (kind === 'rvthick') {
+      if (REG[i] !== 2) return;
+      const c = lvCoords(F, x, y, z), r = c.r || 1;
+      const free = smooth((c.r - F.Rref(c.u) - 1.3) / 1.4);
+      const lev = smooth((c.u - 0.05) / 0.35) * (1 - smooth((c.u - 1.08) / 0.2));
+      const nb = nearest(GP, x, y, z, 1, 1.2), dp = nb.length ? Math.sqrt(nb[0][1]) : 1.2;
+      const epi = 1 - smooth((dp - 0.28) / 0.3);
+      const k = M.across(c) * lev * free * epi;
+      out[0] += (c.rx / r) * k; out[1] += (c.ry / r) * k; out[2] += (c.rz / r) * k;
+      return;
+    }
     if (REG[i] !== 2 && REG[i] !== 4) return;
     const c = lvCoords(F, x, y, z), r = c.r || 1;
     // the free wall, not the septum's face; full from the middle of the RV to the annulus, and
@@ -636,7 +661,7 @@ async function buildGrow(ctx, key, kind) {
   }
   addTarget(meshes.Myocardium, `dx_${key}`, ed);
   const G = grid(mpos, null, 1.0);
-  for (const name of ['TricuspidValve', 'TricuspidChordae', 'Pericardium', 'Coronaries']) {
+  for (const name of kind === 'rvthick' ? ['Pericardium', 'Coronaries'] : ['TricuspidValve', 'TricuspidChordae', 'Pericardium', 'Coronaries']) {
     const mesh = meshes[name];
     if (!mesh) continue;
     const p = mesh.geometry.attributes.position.array, n = p.length / 3;

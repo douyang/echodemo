@@ -121,6 +121,12 @@ export async function lvMask() {
   const [PM, E, { apicalTurn }, { VESSELS }] = await Promise.all([import('./gl/phenomesh.js'), import('./echo.js'), import('./aha.js'), import('./views.js')]);
   return (await fieldsOf(m, PM, E, apicalTurn, VESSELS)).lvMask;
 }
+/** Each myocardium vertex's share of RV free wall, 0 to 1 (phenomesh.js preparePhenotypes): the RV's own motion scales by it. */
+export async function rvMask() {
+  const m = await loadModel();
+  const [PM, E, { apicalTurn }, { VESSELS }] = await Promise.all([import('./gl/phenomesh.js'), import('./echo.js'), import('./aha.js'), import('./views.js')]);
+  return (await fieldsOf(m, PM, E, apicalTurn, VESSELS)).rvMask;
+}
 
 /** Normal-heart wall and cavity sizes measured on the mesh (mm), for label anchors. */
 export function normalGeo(doc) { return cornerGeo(doc, 'normal'); }

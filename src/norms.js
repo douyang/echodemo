@@ -106,9 +106,14 @@ export const NORM_TABLES = [
       ['RV basal diameter (cm)', '<4.1', '4.1–4.4', '>4.4 to 4.9', '>4.9'],
       ['RV mid diameter (cm)', '<3.5', '3.5–3.8', '>3.8 to 4.2', '>4.2'],
       ['RV wall thickness (mm)', '<5', '5–7', '>7 to 9', '>9'],
+      ['RV end-diastolic area (cm²)', '<25', '25–28', '>28 to 32', '>32'],
+      ['RV end-systolic area (cm²)', '<14', '14–16', '>16 to 19', '>19'],
       ['RA area (cm²)', '<19', '19–22', '>22 to 24', '>24'],
-      ['RA volume index (mL/m²)', '<30', '30–36', '>36 to 41', '>41'],
+      ['RA volume index, method of disks (mL/m²)', '<30', '30–36', '>36 to 41', '>41'],
       ['Peak TR velocity (m/s)', '<2.8', '2.8–3.1', '3.2–3.5', '≥3.6'],
+      ['RV systolic pressure (mmHg)', '≤34', '35–49', '50–69', '≥70'],
+      ['RVOT acceleration time (ms)', '>105', '80–105', '60 to <80', '<60'],
+      ['Main PA diameter (cm)', '≤2.5', '>2.5 to 3.0', '>3.0 to 3.5', '>3.5'],
     ],
     note: 'Abnormal denotes mild or worse. A resting peak TR velocity ≥2.9 m/s, or ≥2.8 m/s with two other signs, suggests pulmonary hypertension.',
     ref: 'mukherjee2025',
@@ -262,10 +267,9 @@ export function rapEstimate({ d, col, mode = 'sniff', sec = 'unclear', reflux = 
 }
 /** The range of an RA pressure value (Mukherjee 2025 Table 4). */
 export const RAP_RANGE = { 3: '0–5', 8: '5–10', 15: '10–20' };
-// Right-heart grades (Mukherjee 2025 Table 1). Table 1 lists 1.3 cm in the mild and the moderate
-// band of TAPSE, and 7.2 cm/s in both bands of S′; these take the moderate band, as the bands of
-// FAC exclude their lower limit. RV_BANDS: the four bands of each, normal to severe, at the
-// decimals the site prints (TAPSE in mm).
+// Right-heart grades (Mukherjee 2025 Table 1, as corrected in May 2025: the first printing listed
+// 1.3 cm in the mild and the moderate band of TAPSE, and 7.2 cm/s in both bands of S′). RV_BANDS:
+// the four bands of each, normal to severe, at the decimals the site prints (TAPSE in mm).
 export const RV_BANDS = {
   tapse: ['>17', '13.1–17.0', '10.1–13.0', '≤10.0'],
   sPrime: ['>9.5', '7.3–9.5', '5.1–7.2', '≤5.0'],

@@ -10,7 +10,7 @@ import { panel, SC, sectorPath } from './scope.js';
 import { note } from './sev.js';
 import { cycleAt } from './cyclemodel.js';
 import { scanner } from './scanner.js';
-import { diseaseTargets, lvMask } from './model3d.js';
+import { diseaseTargets, lvMask, rvMask } from './model3d.js';
 import { measures } from './echo2d.js';
 
 // the panels started on this page (start): a video page waits for all of them (video/chapter.js)
@@ -25,13 +25,16 @@ export class MeshPanel {
   /**
    * view: a view key of views.js (a4c, plax...). o.diseases: the disease keys the chapter
    * weights (phenomesh.js DISEASE); o.lv: the chapter scales the LV's own contraction (draw's
-   * o.lvK); o.redraw: called when the model or the targets arrive.
+   * o.lvK); o.rv: the chapter scales the RV free wall's own contraction (draw's o.rvK); o.redraw:
+   * called when the model or the targets arrive.
    */
   constructor(view, o = {}) {
     this.view = view;
     this.diseases = o.diseases || [];
     this.lv = !!o.lv;
+    this.rv = !!o.rv;
     this.mask = null;
+    this.rvMask = null;
     this.redraw = o.redraw || (() => {});
     this.ev = null;
     this.shifts = null;
@@ -56,6 +59,7 @@ export class MeshPanel {
       const S = await scanner();
       const shifts = this.diseases.length ? await diseaseTargets(this.diseases) : null;
       if (this.lv) this.mask = await lvMask();
+      if (this.rv) this.rvMask = await rvMask();
       const ev = S.make(300, 240, this.view, { fill: true });
       ev.setView(this.view, { animate: false });
       this.ev = ev;
@@ -75,7 +79,7 @@ export class MeshPanel {
    * of the moves within the beat (echo.js setMotion); o.standoff: cm of fluid between the probe
    * and the heart, and o.deeper: cm added to the view's depth; o.sac: lung and fat outside the
    * sac, and o.still (0 to 1): the sac keeps still in systole; o.lvK: the LV's own contraction
-   * (echo.js setLvSys); o.fore: cm the probe sits off the plane (echo.js setFore); o.over(ctx,
+   * (echo.js setLvSys); o.rvK: the RV free wall's own contraction and o.rvT the tricuspid valve's travel (echo.js setRvSys); o.fore: cm the probe sits off the plane (echo.js setFore); o.over(ctx,
    * F, ev): drawn on the image before the box and the names (jets, calipers); o.lines: the
    * measurement box (echo2d.js measures); o.names: chamber names, [[anchor, text], ...], kept
    * clear of the box; [anchor, text, toward, f] puts the name fraction f of the way from anchor
@@ -110,6 +114,7 @@ export class MeshPanel {
     ev.sac = !!o.sac;
     ev.periStill = o.still || 0;
     ev.setLvSys(o.lvK ?? 1, this.mask);
+    ev.setRvSys(o.rvK ?? 1, this.rvMask, o.rvT ?? 1);
     ev.setFore(o.fore || 0);
     ev.setShift(o.shift || 0);
     ev.setCalc(o.calc || {});
@@ -119,7 +124,7 @@ export class MeshPanel {
     const tms = o.tms ?? 0;
     const c = cycleAt(tms);
     const drive = o.drive ? o.drive(c.drive, c.t) : c.drive;
-    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, o.lvK ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive)].join('|');
+    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive)].join('|');
     if (key !== this.last) {
       ev.frame({ s: c.s, v: c.v, drive, phase: c.phase, t: c.t });
       this.last = key;

@@ -581,16 +581,50 @@ export class EchoView {
     if (k === this.lvK && mask === this.lvMaskArr) return;
     this.lvK = k;
     this.lvMaskArr = mask;
-    if (!mask || k === 1) {
+    this.applySys();
+  }
+
+  /**
+   * The RV's own contraction by k (1 the heart's own, 0 none; chapter 13 sets it from the FAC):
+   * every systolic target of the RV free wall scales by k, through mask, each wall vertex's share
+   * of RV free wall (model3d.js rvMask), and the RV's trabeculations (the papillary mesh's region
+   * 2) with it. It adds to setLvSys. kT scales the systolic travel of the tricuspid valve and its
+   * chordae toward the apex (the image's TAPSE), 1 the heart's own.
+   */
+  setRvSys(k = 1, mask = null, kT = 1) {
+    if (k === (this.rvK ?? 1) && mask === (this.rvMaskArr ?? null) && kT === (this.rvT ?? 1)) return;
+    this.rvK = k;
+    this.rvMaskArr = mask;
+    this.rvT = kT;
+    this.applySys();
+  }
+
+  /** The scales of the systolic targets from setLvSys and setRvSys. */
+  applySys() {
+    const lv = !!this.lvMaskArr && (this.lvK ?? 1) !== 1, rv = !!this.rvMaskArr && (this.rvK ?? 1) !== 1;
+    // the tricuspid valve and its chordae descend by kT (the annulus's travel, TAPSE)
+    const kT = this.rvT ?? 1;
+    for (const md of [...this.valves, ...this.chords]) {
+      if (md.mesh.name !== 'TricuspidValve' && md.mesh.name !== 'TricuspidChordae') continue;
+      md.scale = kT === 1 ? null : Object.fromEntries(Object.keys(md.dict).filter((n) => n === 'systole' || n === 'amyloid_systole' || n.endsWith('_sys')).map((n) => [n, new Float32Array(md.count).fill(kT)]));
+    }
+    if (!lv && !rv) {
       this.myo.scale = null;
       if (this.pap) this.pap.scale = null;
       return;
     }
+    const kl = lv ? this.lvK : 1, kr = rv ? this.rvK : 1;
     const S = new Float32Array(this.myo.count);
-    for (let i = 0; i < S.length; i++) S[i] = 1 + (k - 1) * mask[i];
+    for (let i = 0; i < S.length; i++) S[i] = 1 + (lv ? (kl - 1) * this.lvMaskArr[i] : 0) + (rv ? (kr - 1) * this.rvMaskArr[i] : 0);
     const all = (md, sc) => Object.fromEntries(Object.keys(md.dict).filter((n) => n === 'systole' || n === 'amyloid_systole' || n.endsWith('_sys')).map((n) => [n, sc]));
     this.myo.scale = all(this.myo, S);
-    if (this.pap) this.pap.scale = all(this.pap, new Float32Array(this.pap.count).fill(k));
+    if (!this.pap) return;
+    // the papillary mesh: the LV's papillary muscles take the LV's k; with an RV k, the RV's
+    // trabeculations (region 2) take it
+    const P = new Float32Array(this.pap.count).fill(kl);
+    const col = rv && this.pap.mesh.geometry.attributes.color;
+    if (col) for (let i = 0; i < P.length; i++) if (Math.round(col.getX(i) * 10) === 2) P[i] = kr;
+    this.pap.scale = all(this.pap, P);
   }
 
   /**
@@ -982,6 +1016,8 @@ export class EchoView {
     const rest = { amyloid: P.a, ...this.disease };
     if (P.mesh) rest[`ph_${P.mesh}`] = 1;
     for (const md of [this.myo, ...this.valves, ...this.chords, this.pap, this.peri, this.cor]) if (md) md.setRest(rest);
+    // the RV's scales (setRvSys) take the new heart's systolic targets too
+    if ((this.rvT ?? 1) !== 1 || (this.rvMaskArr && (this.rvK ?? 1) !== 1)) this.applySys();
     this.geo = this.own ? this.ownGeo : m.sizes;
     this.cusps = null;
     const free = this.geoms.free;
