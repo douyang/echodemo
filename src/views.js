@@ -31,8 +31,7 @@ export const VIEWS = {
     labels: [['asc', 'ascending Ao'], ['av', 'AV'], ['lv', 'LV'], ['la', 'LA']] }),
   rv_in: V({ win: 'plax', short: 'RVIT', name: 'RV inflow', lab: 'PLAX_RV_inflow', plane: 'rv_in', depth: 16,
     labels: [['rv', 'RV'], ['tv', 'TV'], ['ra', 'RA'], ['ivc', 'IVC']] }),
-  // cor: false, the model's left main runs through a gap in the mesh beside the valve here
-  rv_out: V({ win: 'plax', short: 'RVOT', name: 'RV outflow', lab: 'PLAX_RV_outflow', plane: 'rv_out', depth: 13, cor: false,
+  rv_out: V({ win: 'plax', short: 'RVOT', name: 'RV outflow', lab: 'PLAX_RV_outflow', plane: 'rv_out', depth: 13,
     labels: [['rvot', 'RVOT'], ['pv', 'PV'], ['mpa', 'main PA']] }),
   // ---- parasternal short axis
   // the great-vessel levels, as ASE draws them (Mitchell 2019, Table 2, rows 2.7-2.10): at the aortic
@@ -50,7 +49,8 @@ export const VIEWS = {
   // zoomed on the valve and turned until it is round: the three cusps by name
   psax_avz: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, zoomed aortic valve', lab: 'PSAX_(level_great_vessels)_zoomed_AV', plane: 'psax_avz', depth: 13, zoom: { at: 'av', w: 5 },
     labels: [['rcc', 'RCC'], ['lcc', 'LCC'], ['ncc', 'NCC']] }),
-  psax_cor: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, coronary artery origins', lab: null, plane: 'psax_cor', depth: 14, zoom: { at: 'avroot', w: 5 },
+  // cor: true, the only view that draws the coronary arteries (echo.js)
+  psax_cor: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, coronary artery origins', lab: null, plane: 'psax_cor', depth: 14, zoom: { at: 'avroot', w: 5 }, cor: true,
     labels: [['lmca', 'LMCA'], ['rca', 'RCA'], ['avroot', 'Ao root']] }),
   psax_mv: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, mitral valve level', lab: 'PSAX_(level_of_MV)', plane: 'psax', level: 0.6, depth: 14,
     labels: [['rv', 'RV'], ['ivs', 'IVS'], ['lv', 'LV'], ['mv', 'MV']] }),

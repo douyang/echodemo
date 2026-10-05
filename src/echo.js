@@ -446,6 +446,37 @@ function cuspDirs(model) {
   return { rcc: R, ncc: N, lcc: L };
 }
 
+/**
+ * One valve's closed section loops, wound for the nonzero fill (bmode.js): a loop that lies wholly
+ * inside another runs the other way and so cuts a hole. A leaflet funnel cut across then shows
+ * as a ring (the mitral orifice in short axis at diastasis), not a disc. Loops that only overlap
+ * (two leaflets in contact) keep one winding and fill as one. The section walk (MeshData.section)
+ * gives each loop either winding.
+ */
+function wound(loops) {
+  const area = (P) => { let a = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += P[j][0] * P[i][1] - P[i][0] * P[j][1]; return a; };
+  const inside = (P, x, y) => {
+    let c = false;
+    for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+      const [xi, yi] = P[i], [xj, yj] = P[j];
+      if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  if (loops.length < 2) return loops;
+  return loops.map((P, i) => {
+    const step = Math.max(1, Math.floor(P.length / 12));
+    let depth = 0;
+    for (let j = 0; j < loops.length; j++) {
+      if (j === i) continue;
+      let all = true;
+      for (let k = 0; k < P.length && all; k += step) all = inside(loops[j], P[k][0], P[k][1]);
+      if (all) depth++;
+    }
+    return (area(P) > 0) === (depth % 2 === 0) ? P : P.slice().reverse();
+  });
+}
+
 // chambers and vessels may sit a little further from the plane than walls and valves and still show
 const ECHO_ONLY = new Set(['liver', 'hv', 'abdao', 'celiac', 'sma', 'ivcl']);
 // full names for the tags on the cross-section
@@ -1109,8 +1140,11 @@ export class EchoView {
       this.peri.morph(w);
       peri = this.peri.section(g, true);
     }
+    // the coronary arteries only where a view sets cor: true (the coronary artery origins). Elsewhere
+    // their cuts come and go through the plane with each beat, inside the aortic sinuses or in the
+    // atrioventricular groove, and read as a vessel that moves through the root
     let cor = [];
-    if (this.cor && this.specOf(this.view).cor !== false) {
+    if (this.cor && this.specOf(this.view).cor === true) {
       this.cor.morph(weights(this.cor));
       cor = this.cor.section(g);
     }
@@ -1195,9 +1229,10 @@ export class EchoView {
       const own = hotOf[k] || [DB.valve, 0];
       hotOf[k] = [Math.max(own[0], DB.valve + 7 * c), Math.max(own[1], 6 * c)];
     }
-    const leaf = valves.filter((L) => closed(L) && !hotOf[L.valve]).map((L) => L.pts);
+    const loopsOfValve = (k) => wound(valves.filter((L) => closed(L) && L.valve === k).map((L) => L.pts));
+    const leaf = [...new Set(valves.map((L) => L.valve))].filter((k) => !hotOf[k]).flatMap(loopsOfValve);
     const hotLayers = Object.entries(hotOf).flatMap(([k, [db, shadow]]) => {
-      const pts = valves.filter((L) => closed(L) && L.valve === k).map((L) => L.pts);
+      const pts = loopsOfValve(k);
       return [{ polys: pts, e: db, shadow }, { borders: pts, e: db, spec: 7, w: 0.06, closed: true }];
     });
     // below the diaphragm: the liver with its bright capsule, the veins and arteries in it or
