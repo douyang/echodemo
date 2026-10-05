@@ -104,7 +104,7 @@ function zoomCentre(ev) {
   const d = Math.hypot(a[0] - m[0], a[1] - m[1]) || 1;
   return [m[0] + ((a[0] - m[0]) / d) * 1.0, m[1] + ((a[1] - m[1]) / d) * 1.0];
 }
-const extraOf = (v) => ({ extra: endocarditisHook({ veg: v.veg, mob: v.mob, hole: v.vc }), extraKey: `${v.veg}|${v.mob.toFixed(3)}|${v.vc}` });
+const extraOf = (v) => ({ under: endocarditisHook({ veg: v.veg, mob: v.mob, hole: v.vc }), extraKey: `${v.veg}|${v.mob.toFixed(3)}|${v.vc}` });
 
 /** The longest of the titles that fits a panel w px wide (scope.js panel: 11 px, 10 px in from each side). */
 function titleOf(ctx, w, names) {

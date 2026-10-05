@@ -838,6 +838,12 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="pressure"] .stage { height: min(64vh, 560px); }
   /* Right ventricle: two echo views beside three Doppler and M-mode strips */
   html[data-ch="rv"] .stage { height: min(64vh, 560px); }
+  /* Constrictive pericarditis: the four-chamber view and tissue Doppler above two strips with breathing */
+  html[data-ch="constrict"] .stage { height: min(64vh, 560px); }
+  /* Prosthetic valves: two echo views beside the CW and PW Doppler strips */
+  html[data-ch="prosthetic"] .stage { height: min(64vh, 560px); }
+  /* Shunts: two echo views beside the Doppler strips or the bubble counts */
+  html[data-ch="shunts"] .stage { height: min(64vh, 560px); }
   /* Infective endocarditis: two echo views beside two Doppler strips */
   html[data-ch="endocarditis"] .stage { height: min(64vh, 560px); }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }

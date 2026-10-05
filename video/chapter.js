@@ -407,6 +407,15 @@ function updateCaption(t) {
   for (const s0 of capEls.eye.children) if (!s0.querySelector('i')) s0.insertAdjacentHTML('afterbegin', '<i></i>');
 }
 
+/** A chapter's long title keeps to one line on the title card: its type scales down to the card's width. The intro's card stays as it is. */
+function fitTitle() {
+  const t = cardEls && cardEls.t1;
+  if (!t || CLIP) return;
+  t.style.whiteSpace = 'nowrap';
+  const room = W - 2 * LAY.title.x, wide = t.scrollWidth;
+  if (wide > room) t.style.fontSize = `${Math.floor((parseFloat(getComputedStyle(t).fontSize) * room) / wide)}px`;
+}
+
 /** The caption's type scales down, if it must, so that the tallest caption fits its box. */
 let capScale = 1;
 function fitCaption() {
@@ -577,6 +586,7 @@ async function init() {
   labelTrack();
   set(STATES[0].a);
   fitCaption();
+  fitTitle();
   sizeReelTrack();
   window.__clock.start();
   return {

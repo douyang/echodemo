@@ -11,7 +11,7 @@
 // while it is open. It also flutters. Saric 2016 (Table 5) describes this motion and a myocardial
 // texture, so its section is drawn at the echogenicity of myocardium. The perforation removes the
 // leaflet's section inside a sphere round the hole, so the gap on the plane is the hole's diameter.
-// echo.js calls the hook (EchoView.extra) after it cuts the valves, and draws the items it returns
+// echo.js calls the hook (EchoView.extraUnder) after it cuts the valves, and draws the items it returns
 // before the leaflets.
 import { DB } from '../bmode.js';
 import { cycleAt, EV, RR } from '../cyclemodel.js';
@@ -367,7 +367,7 @@ function cutHole(valves, g, Xh, rh) {
 
 // ---------------------------------------------------------------- the hook
 /**
- * The hook for EchoView.extra (meshpanel.js o.extra): the vegetation and the perforation of the
+ * The hook for EchoView.extraUnder (meshpanel.js o.under): the vegetation and the perforation of the
  * values v, on any view in the parasternal long-axis plane. v: { veg (mm, the maximal length;
  * 0 for none), mob (0 sessile .. 1 pedunculated, prolapsing), hole (cm, the perforation's
  * diameter; 0 for none) }. What it finds stays on the view as ev.ie (for the overlays): the
