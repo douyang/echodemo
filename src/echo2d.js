@@ -449,11 +449,13 @@ function plumeColor(v, nyq) {
  * orifice O and a jet downstream, inside a color box: velocity along the beam, red toward the
  * probe, wrapping at the aliasing velocity. Every jet is drawn as the torrential TR jet shows:
  * a smooth flame, laminar, with no variance mosaic, its core aliasing once. So the velocity
- * drawn is at most 3.2 times the aliasing velocity, and a jet across the beam is drawn as if at
- * 40 degrees to it; the CW panels carry the true velocity.
+ * drawn is at most 3.2 times the aliasing velocity (vmax, cm/s, sets another), and a jet across
+ * the beam is drawn as if at 40 degrees to it; the CW panels carry the true velocity.
  * dir: unit vector of the jet (downstream); q: flow (mL/s); va: aliasing velocity (cm/s); vc:
  * vena contracta (cm); jl, jw: jet length and largest width (cm); clip: chamber polygon (cm) the
- * jet stays inside; pclip: the polygon the convergence zone stays inside (none: it is not cut);
+ * jet stays inside; clipOr: more polygons it may fill too (the blood between the orifice and the
+ * chamber); keep: cm over which the core keeps its velocity before it slows (its potential
+ * core; 0 by default); pclip: the polygon the convergence zone stays inside (none: it is not cut);
  * a: 0..1 strength over the cycle; pisa: false for no convergence zone; box: false to leave
  * out the outline and return the box's extent { t0, t1, r0, r1 } (radians, px) instead.
  */
@@ -462,7 +464,7 @@ export function jet(ctx, F, j) {
   const { k, box, sect } = F;
   const O = j.O, d = unit(j.dir), n = perp(d);
   const va = j.va, L = j.jl * Math.min(1, j.a * 1.15), Wd = j.jw, w0 = Math.max(0.12, j.vc / 2);
-  const v0 = Math.min(clamp(j.q / (Math.PI * w0 * w0), 90, 600), 3.2 * va);   // cm/s at the vena contracta
+  const v0 = Math.min(clamp(j.q / (Math.PI * w0 * w0), 90, 600), j.vmax ?? 3.2 * va);   // cm/s at the vena contracta
   // toward the probe or away, as the jet leaves the orifice; a jet across the beam is drawn as if
   // it met the beam at no more than about 40 degrees, so it shows its flame too
   const sgn = Math.sign(dot(d, unit(mul(O, -1)))) || -1;
@@ -488,7 +490,7 @@ export function jet(ctx, F, j) {
     path.closePath();
     return path;
   };
-  const clip = pathOf(j.clip), pclip = pathOf(j.pclip);
+  const clip = pathOf(j.clip), pclip = pathOf(j.pclip), also = (j.clipOr || []).map(pathOf).filter(Boolean);
   const f = cine.live ? Math.floor(performance.now() / 45) : 0;
   for (let jj = 0; jj < H; jj++) {
     for (let ii = 0; ii < W; ii++) {
@@ -502,8 +504,8 @@ export function jet(ctx, F, j) {
         if (al > L) continue;
         const half = halfAt(al);
         if (Math.abs(ac) > half) continue;
-        if (clip && !g.isPointInPath(clip, X, Y)) continue;
-        const vcl = v0 / (1 + (0.35 * al) / w0);
+        if (clip && !g.isPointInPath(clip, X, Y) && !also.some((q) => g.isPointInPath(q, X, Y))) continue;
+        const vcl = v0 / (1 + (0.35 * Math.max(0, al - (j.keep || 0))) / w0);
         const v = vcl * Math.exp(-((ac / (0.55 * half)) ** 2)) * j.a;
         const turb = 0.08;
         const nz = blob(ii, jj, 2.2, f) - 0.5, nz2 = blob(ii + 50, jj + 50, 1.3, f) - 0.5;
