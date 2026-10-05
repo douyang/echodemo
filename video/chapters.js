@@ -232,6 +232,23 @@ export const VIDEOS = {
       { set: { trS: 0.9 }, name: 'Torrential tricuspid regurgitation', track: 'Torrential', pick: [0, 3, 4], hold: 6 },
     ],
   },
+  // 19: a bioprosthesis from normal function to significant stenosis, then a mechanical valve;
+  // then the normal bioprosthesis in larger patients: mismatch
+  prosthetic: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { proS: 0.005 },
+    steps: [
+      { set: { proS: 0, proValve: 'bio', proCause: 'obst' }, name: 'Normal bioprosthesis', track: 'Bio normal', pick: [0, 1, 2], hold: 7 },
+      { set: { proS: 0.45 }, name: 'Possible stenosis of the bioprosthesis', track: 'Bio possible', pick: [0, 2, 3], move: 4, hold: 7 },
+      { set: { proS: 0.85 }, name: 'Significant stenosis of the bioprosthesis', track: 'Bio significant', pick: [0, 2, 5], move: 4, hold: 7 },
+      { set: { proS: 0, proValve: 'mech' }, name: 'Normal mechanical valve', track: 'Mech normal', pick: [0, 3], move: 3, hold: 6 },
+      { set: { proS: 0.42 }, name: 'Possible stenosis of the mechanical valve', track: 'Mech possible', pick: [0, 2, 3], move: 4, hold: 7 },
+      { set: { proS: 0.85 }, name: 'Significant stenosis of the mechanical valve', track: 'Mech significant', pick: [0, 3, 4], move: 4, hold: 7 },
+      { set: { proS: 0.5, proValve: 'bio', proCause: 'ppm' }, name: 'Moderate prosthesis–patient mismatch', track: 'Moderate mismatch', pick: [0, 1, 4], move: 3, hold: 7 },
+      { set: { proS: 0.9 }, name: 'Severe prosthesis–patient mismatch', track: 'Severe mismatch', pick: [1, 5, 6], move: 4, hold: 7 },
+    ],
+  },
   peri: {
     pane: '2D and Doppler',
     side: false,

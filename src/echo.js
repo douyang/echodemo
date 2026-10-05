@@ -1070,6 +1070,8 @@ export class EchoView {
     const valves = [];
     for (const vd of this.valves) {
       vd.morph(weights(vd, lw(vd)));
+      // a valve that a chapter replaces (a prosthesis, ch/prosthetic.js) moves but is not cut
+      if (this.hideValves && this.hideValves.has(vd.mesh.name)) continue;
       for (const L of vd.section(g)) { L.valve = vd.mesh.name; valves.push(L); }
     }
     // chordae: those in the middle of the slice show brightest
@@ -1104,7 +1106,9 @@ export class EchoView {
     const skip = win === 'plax' || win === 'psax' ? ['liver', 'mhv', 'rhv'] : [];
     for (const [k, md] of Object.entries(this.abd)) if (!skip.includes(k)) abd[k] = md.section(g);
     this.last = { tissue, valves, peri, chords, pap, state };
-    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd });
+    // a chapter's own structures on the plane, as B-mode items (a prosthesis, ch/prosthetic.js)
+    const more = this.extraItems ? this.extraItems(this, g, state) : null;
+    this.draw(tissue, valves, peri, state, { chords, chordsCore, pap, cor, abd, more });
   }
 
   /** Screen mapping for the current view and canvas size. */
@@ -1334,6 +1338,7 @@ export class EchoView {
       { lines: cor, closed: true, e: DB.fat + 4, w: 0.5 },
       { borders: cor, e: DB.fibrous, spec: 6, w: 0.07, closed: true, all: true },
       { polys: cor, e: DB.blood, blood: true },
+      ...(extra.more || []),
     ];
     const box = m.zoomed ? { x: 8, y: m.boxTop, w: W - 16, h: m.boxH } : { x: 0, y: 0, w: W, h: H };
     const view = { box, cx, top, k: scale, half, depth: spec.depth, near: spec.liver ? 1.5 : spec.near ?? 1.2, liver: spec.liver ? spec.near : 0 };

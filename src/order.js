@@ -17,7 +17,7 @@ export const SHOW_PLANES = false;
 
 export const ORDER = [
   'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'cycle', 'loop', 'ivc', 'pressure',
-  'eject', 'fill', 'segments', 'stress', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'peri', 'amyloid', ...(SHOW_REPORT ? ['report'] : []),
+  'eject', 'fill', 'segments', 'stress', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'prosthetic', 'peri', 'amyloid', ...(SHOW_REPORT ? ['report'] : []),
 ];
 
 /** A chapter's number as the page prints it ("08"); '' for a chapter that is not shown. */
