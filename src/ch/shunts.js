@@ -5,8 +5,11 @@
 // RV-focused four-chamber view, PW in the RVOT and the LVOT for Qp/Qs, and the TR jet. VSD: the
 // defect in the short axis at the aortic valve with its jet into the RV, the LV in the long axis,
 // CW through the defect, and Qp/Qs. PFO: the saline study in the four-chamber view, and the
-// bubbles in the LA beat by beat at rest and with Valsalva. The defects are cut in the heart
-// mesh (gl/shuntsmesh.js): each prints the diameter that the image shows.
+// bubbles in the LA beat by beat at rest and with Valsalva. LA pressure: a restrictive 5-mm
+// atrial communication in the subcostal view, the LA and RA pressures, and CW across the septum,
+// whose 4V² added to the RA pressure gives the LA pressure; there the slider sets the mean LA
+// pressure. The defects are cut in the heart mesh (gl/shuntsmesh.js): each prints the diameter
+// that the image shows.
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
@@ -18,15 +21,17 @@ import { blood, cavity, area, onPlane, hingesOf, middle, plaxCalipers, sub, add,
 import { septaOf, defectFrame, wallFrame, slide, planeOf, cutOf, axisOnPlane, throughWall } from '../gl/shuntsmesh.js';
 import { DB } from '../bmode.js';
 import { round } from '../edits.js';
+import { numOf } from '../order.js';
 
 const KEY = 'shS';
 const TYPE = 'shType';
 const MAN = 'shMan';
-const TYPES = ['asd', 'vsd', 'pfo'];
+const TYPES = ['asd', 'vsd', 'pfo', 'lap'];
 const SBP = 125;       // mmHg, the systolic blood pressure of the model, for the RV pressure across a VSD
-const RAP = 3;         // mmHg, the RA pressure of a normal IVC (chapter 07), for the RV pressure from the TR jet
+const RAP = 3;         // mmHg, the RA pressure of a normal IVC (chapter 07), for the RV pressure from the TR jet and the LA pressure
 const VA_ASD = 40;     // cm/s, the color scale for the low-velocity ASD flow (Silvestry 2015: 25-40)
 const VA_VSD = 60;     // cm/s, as on the valve pages' high-velocity jets
+const LAP_LO = 8, LAP_HI = 30;   // mmHg, the mean LA pressure at either end of the slider (LA pressure)
 const VSD_SHIFT = -0.7;   // cm the short axis at the aortic valve moves toward the apex: the LVOT under the valve
 // The subcostal view moves 1 cm back from the aortic root, to the middle of the atrial septum.
 // There the septum runs about 2 cm from its upper rim (a fold of the two atrial walls) to the
@@ -40,7 +45,8 @@ const ASD_SHIFT = -1.0, ASD_SLIDE = 1.4;
 // the shunt; the TR velocity (m/s) rises a little. VSD: the diameter (mm) grows to 10 mm; the
 // peak velocity across it (m/s) falls as the RV pressure rises; the LV (LVEDD, mm) and the LA
 // (LA volume index, mL/m²) enlarge with the shunt. PFO: the bubbles in the LA at the peak frame
-// after Valsalva release and at rest. Teaching values set inside the guideline bands.
+// after Valsalva release and at rest. LA pressure: the mean LA pressure (mmHg) from 8 to 30, with
+// a normal RV basal diameter (cm) and RA area (cm²). Teaching values set inside the guideline bands.
 const TRACKS = {
   asd: tracks([0, 0.08, 0.42, 0.7, 1], {
     d: [0, 0, 10, 15, 20],
@@ -66,7 +72,59 @@ const TRACKS = {
     val: [0, 0, 8, 20, 32],
     rest: [0, 0, 0, 3, 10],
   }),
+  lap: tracks([0, 1], {
+    lap: [LAP_LO, LAP_HI],
+    rvb: [3.4, 3.4],
+    ra: [16, 16],
+  }),
 };
+
+// ---------------------------------------------------------------- the LA pressure
+// A restrictive atrial communication of 5 mm with left-to-right flow, as after a transseptal
+// puncture for mitral edge-to-edge repair, or a PFO stretched by a dilated LA. It keeps a pressure
+// difference between the atria, so the velocity across it gives the LA pressure: RAP + 4V². Each
+// atrium's pressure over the beat (mmHg, t in ms from the R wave): a trough, the a wave in late
+// diastole, which falls in early systole (the x descent), and the v wave, which rises through
+// systole to its peak just before the mitral valve opens and falls after it (the y descent). The
+// trough sits where the time-average of the beat is the mean. The LA's waves grow with its mean:
+// the v wave peaks 70% above a mean of 8 mmHg and 35% above 30. The RA's are smaller, at RAP.
+const LAP_D = 5;           // mm, the communication
+const LAP_UP = 15;         // mmHg: a mean LA pressure above it is raised (Lababidi 2025, the algorithm of chapter 10)
+const T_A = 815, T_V = EV.mvo - 13;   // ms, the peaks of the a and v waves, as the cycle model's LA has them
+const hump = (t, pk, rise, fall) => Math.exp(-(((t - pk) / (t < pk ? rise : fall)) ** 2));
+const aWave = (t) => hump(t < T_A - 400 ? t + RR : t, T_A, 28, 85);
+const vWave = (t) => hump(t, T_V, 150, 45);
+/** The time-average of f over the beat, in steps of 1 ms. */
+const beatMean = (f) => { let a = 0; for (let t = 0; t < RR; t++) a += f(t); return a / RR; };
+const A_MEAN = beatMean(aWave), V_MEAN = beatMean(vWave);
+/** An atrium's pressure (mmHg) over the beat: mean `mean`, a and v waves ha and hv above the trough. */
+function atrialP(mean, ha, hv) {
+  const trough = mean - ha * A_MEAN - hv * V_MEAN;
+  return (t) => trough + ha * aWave(t) + hv * vWave(t);
+}
+const RA_P = atrialP(RAP, 3.5, 2.5);
+const WAVES = new Map();
+/**
+ * The atria at mean LA pressure m (mmHg): la(t), ra(t), the septal velocity vel(t) (m/s, left to
+ * right) from LAP − RAP = 4V², its peak vp at time tp, and mg, the mean of 4V² over the beat (a
+ * traced envelope's mean gradient). Kept for the last few m: the figure asks every frame.
+ */
+function lapWaves(m) {
+  let W = WAVES.get(m);
+  if (W) return W;
+  const k = (m - LAP_LO) / (LAP_HI - LAP_LO), la = atrialP(m, 6.5 + 2.5 * k, 8 + 6.5 * k), ra = RA_P;
+  const vel = (t) => Math.sqrt(Math.max(0, la(t) - ra(t)) / 4);
+  let vp = 0, tp = 0, g = 0;
+  for (let t = 0; t < RR; t++) {
+    const u = vel(t);
+    if (u > vp) { vp = u; tp = t; }
+    g += 4 * u * u;
+  }
+  W = { la, ra, vel, vp, tp, mg: g / RR };
+  if (WAVES.size > 8) WAVES.delete(WAVES.keys().next().value);
+  WAVES.set(m, W);
+  return W;
+}
 
 /** The model at slider position s for defect type: its values before rounding. */
 function modelAt(s, type) {
@@ -81,11 +139,13 @@ const GRADES = {
   asd: ['none', 'small', 'significant'],
   vsd: ['none', 'restrictive', 'significant', 'raised'],
   pfo: ['none', 'valsalva', 'rest'],
+  lap: ['normal', 'raised'],
 };
-const LEVEL = { none: 0, small: 1, restrictive: 1, valsalva: 1, significant: 2, rest: 2, raised: 3 };
-// the bands' names under the slider, where a grade's own name would not read well, and short ones
-const LABEL = { valsalva: 'Valsalva only', rest: 'at rest', raised: 'RVSP ≥50%' };
-const SHORT = { significant: 'signif.', restrictive: 'restr.', valsalva: 'Valsalva', raised: '≥50%' };
+const LEVEL = { none: 0, normal: 0, small: 1, restrictive: 1, valsalva: 1, significant: 2, rest: 2, raised: 3 };
+// the bands' names under the slider, by defect, where a grade's own name would not read well, and
+// short ones: the VSD's raised is its RV pressure, the LA pressure's is its own name
+const LABEL = { vsd: { raised: 'RVSP ≥50%' }, pfo: { valsalva: 'Valsalva only', rest: 'at rest' } };
+const SHORT = { asd: { significant: 'signif.' }, vsd: { significant: 'signif.', restrictive: 'restr.', raised: '≥50%' }, pfo: { valsalva: 'Valsalva' } };
 
 // The RA area that the RV's growth adds on the RV-focused four-chamber view at end-systole: a + b w
 // cm² per unit of rvGrow at raGrow w, measured on each heart as meshcal.js traces its RA_AREA (which
@@ -106,12 +166,29 @@ function raLeast(heart, g) {
 
 /**
  * Values as reported, at the decimals of the ASE report (Taub 2025): the defect in mm, the
- * outflow diameters to 0.1 cm and their VTIs to 1 cm, Qp/Qs to 0.1, the peak velocity to 0.1 m/s
- * and its gradient to 1 mmHg. Each calculation takes the rounded values before it, and the grade
- * reads them, so no grade contradicts a number on screen.
+ * outflow diameters to 0.1 cm and their VTIs to 1 cm, Qp/Qs to 0.1, the peak velocity to 0.1 m/s,
+ * and the gradients and pressures to 1 mmHg. Each calculation takes the rounded values before it,
+ * and the grade reads them, so no grade contradicts a number on screen.
  */
 function measure(raw, type, heart = 'normal') {
   const v = { ...raw, type, heart };
+  if (type === 'lap') {
+    // the peak velocity gives the peak LA pressure, the traced envelope's mean gradient the mean
+    const W = lapWaves(raw.lap);
+    v.d = LAP_D;
+    v.rap = RAP;
+    v.vp = round(W.vp, 1);
+    v.pkGrad = round(4 * v.vp ** 2, 0);
+    v.pkLap = v.pkGrad + v.rap;
+    v.mnGrad = round(W.mg, 0);
+    v.mnLap = v.mnGrad + v.rap;
+    // the right heart is normal, held to the size the heart shown can take (the subcostal view)
+    v.rvb = round(raw.rvb, 1);
+    v.ra = round(Math.max(raw.ra, raLeast(heart, rvGrowOf(heart, v.rvb))), 0);
+    v.shunt = 'left to right';
+    v.grade = v.mnLap > LAP_UP ? 'raised' : 'normal';
+    return v;
+  }
   if (type === 'pfo') {
     v.val = round(raw.val, 0);
     v.rest = round(raw.rest, 0);
@@ -178,7 +255,7 @@ export const valuesAt = (x, type = 'asd', heart = 'normal') => measure(modelAt(x
 
 let sheet = null, st = null;
 const beat = new Beat(RR);
-const BANDS_OF = { asd: [], vsd: [], pfo: [] };
+const BANDS_OF = { asd: [], vsd: [], pfo: [], lap: [] };
 
 // ---------------------------------------------------------------- the saline study
 // The study runs over 11 beats, as the four-chamber view records it: beat -1 before the
@@ -333,9 +410,17 @@ function rightHeart(heart, v) {
   return { rvGrow: g, raGrow: raGrowFor(heart, v.ra, g) };
 }
 
-/** The subcostal view of the atrial septum: the ASD, its left-to-right jet, and its caliper. */
+/**
+ * The subcostal view of the atrial septum: the ASD, its left-to-right jet, and its caliper. The
+ * ASD's flow (mL/s) is the difference of the two stroke volumes at 70 per minute. The flow across
+ * the restrictive communication (LA pressure) is its area times the peak septal velocity, and its
+ * strength follows v(t).
+ */
 function asdSub(ctx, box, v, tt) {
-  const heart = heartOf(st);
+  const heart = heartOf(st), t = cycleAt(tt).t, W = v.type === 'lap' ? lapWaves(v.lap) : null;
+  const flow = W
+    ? { q: Math.PI * (v.d / 20) ** 2 * v.vp * 100, jl: 1 + 0.6 * v.vp, jw: 0.8, a: W.vel(t) / W.vp }
+    : { q: ((v.svp - v.svs) * 70) / 60, jl: 1.4 + 1.6 * clamp(v.qpqs - 1, 0, 1.6), jw: v.d / 10 + 0.3, a: asdFlow(t) };
   P_SUB.draw(ctx, box, titleOf(ctx, box.w, [`SUBCOSTAL · ATRIAL SEPTUM · COLOR ${VA_ASD} cm/s`, `SUBCOSTAL · IAS · ${VA_ASD} cm/s`, 'SC · IAS']), {
     tms: tt, disease: rightHeart(heart, v), shift: ASD_SHIFT,
     shapes: defectShapes('asd', v.d), shapesKey: `asd|${v.d}`,
@@ -345,13 +430,12 @@ function asdSub(ctx, box, v, tt) {
       if (!D || !D.axis) return;
       const O = D.cut.c, dir = D.axis;
       const RA = chamber(ev, add(O, mul(dir, 1.6))), LA = chamber(ev, sub(O, mul(dir, 1.4)));
-      const q = ((v.svp - v.svs) * 70) / 60;
-      shuntJet(c, F, D, { q, va: VA_ASD, vc: v.d / 10, jl: 1.4 + 1.6 * clamp(v.qpqs - 1, 0, 1.6), jw: v.d / 10 + 0.3, a: asdFlow(cycleAt(tt).t), pisa: false, clip: RA, pclip: LA });
+      shuntJet(c, F, D, { ...flow, va: VA_ASD, vc: v.d / 10, pisa: false, clip: RA, pclip: LA });
       barFor(c, F, -VA_ASD, VA_ASD);
       const K = defectCaliper(D);
       if (K) cal(c, F, K[0], K[1], '', { solid: true });
     },
-    lines: v.d ? [`ASD ${v.d} mm`, 'L→R'] : ['septum intact'],
+    lines: v.type === 'lap' ? [`defect ${v.d} mm`, ['restrictive · L→R', 'L→R']] : v.d ? [`ASD ${v.d} mm`, 'L→R'] : ['septum intact'],
   });
 }
 
@@ -574,6 +658,175 @@ function trCW(ctx, P, v) {
 }
 
 /**
+ * The LA and RA pressures of the model over two beats: the LA solid, the RA dashed, the gap
+ * between them (4V² across the septum) shaded, each mean dotted and printed on the scale, and the
+ * LA's waves named on the second beat.
+ */
+function lapPressure(ctx, P, v) {
+  panel(ctx, P.x, P.y, P.w, P.h, titleOf(ctx, P.w, ['LA AND RA PRESSURE', 'LA AND RA']));
+  const bx = inner(P, 36), top = 50, W = lapWaves(v.lap), n = Math.max(80, Math.round(bx.w / 2));
+  const X = (ms) => bx.x + (ms / (2 * RR)) * bx.w, Y = (p) => bx.y + bx.h * (1 - p / top);
+  const trace = (f, back = false) => {
+    for (let i = 0; i <= n; i++) {
+      const t = ((back ? n - i : i) / n) * 2 * RR;
+      ctx.lineTo(X(t), Y(f(t % RR)));
+    }
+  };
+  ctx.save();
+  ctx.beginPath();
+  trace(W.la);
+  trace(W.ra, true);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(216,65,47,0.3)';
+  ctx.fill();
+  ctx.strokeStyle = SC.cal;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 3]);
+  for (const p of [v.lap, RAP]) {
+    ctx.beginPath();
+    ctx.moveTo(bx.x, Y(p));
+    ctx.lineTo(bx.x + bx.w, Y(p));
+    ctx.stroke();
+  }
+  ctx.strokeStyle = SC.text;
+  ctx.lineWidth = 1.6;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  trace(W.la);
+  ctx.stroke();
+  ctx.lineWidth = 1.3;
+  ctx.setLineDash([5, 3]);
+  ctx.beginPath();
+  trace(W.ra);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // the key along the top, clear of the LA's v wave at 30 mmHg (41 mmHg on a scale to 50); on a
+  // narrow panel without the means, which the scale prints in their colour
+  ctx.font = `400 10px ${MONO}`;
+  ctx.fillStyle = SC.text;
+  ctx.textAlign = 'left';
+  let x = bx.x + 6;
+  const key = [['LA', [], SC.text], ['RA', [5, 3], SC.text], ['mean', [2, 3], SC.cal]];
+  const keyW = (list) => list.reduce((w, [name]) => w + 28 + ctx.measureText(name).width, 0);
+  if (keyW(key) > bx.w - 4) key.pop();
+  for (const [name, dash, color] of key) {
+    ctx.strokeStyle = color;
+    ctx.setLineDash(dash);
+    ctx.beginPath();
+    ctx.moveTo(x, bx.y + 8.5);
+    ctx.lineTo(x + 14, bx.y + 8.5);
+    ctx.stroke();
+    ctx.fillText(name, x + 18, bx.y + 12);
+    x += 18 + ctx.measureText(name).width + 10;
+  }
+  ctx.setLineDash([]);
+  // the LA's waves on the second beat, clear of the still cursor on the first: a and v above it,
+  // the x and y descents below it where the gap down to the RA and its mean leaves room
+  ctx.fillStyle = SC.dim;
+  ctx.textAlign = 'center';
+  const marks = [['a', T_A, -5], ['v', T_V, -5]];
+  const room = (t) => Y(Math.max(W.ra(t), RAP)) - Y(W.la(t));
+  if (bx.w >= 250 && room(150) >= 16 && room(545) >= 16) marks.push(['x', 150, 11], ['y', 545, 11]);
+  for (const [name, t, dy] of marks) ctx.fillText(name, X(RR + t), Y(W.la(t)) + dy);
+  // the scale: every 10 mmHg, the means in the colour of their lines
+  ctx.textAlign = 'left';
+  ctx.strokeStyle = SC.dim;
+  const sx = bx.x + bx.w + 3, means = [[v.lap, v.mnLap], [RAP, RAP]];
+  for (let p = 10; p < top; p += 10) {
+    const y = Y(p);
+    ctx.beginPath();
+    ctx.moveTo(sx - 3, y);
+    ctx.lineTo(sx + 1, y);
+    ctx.stroke();
+    if (means.every(([q]) => Math.abs(Y(q) - y) > 13)) ctx.fillText(String(p), sx + 3, y + 3.5);
+  }
+  ctx.fillText('mmHg', sx + 3, bx.y + 10);
+  ctx.fillStyle = SC.cal;
+  for (const [q, shownAs] of means) ctx.fillText(String(shownAs), sx + 3, Y(q) + 3.5);
+  ctx.restore();
+  return bx;
+}
+
+/**
+ * CW across the atrial septum from the subcostal window: the left-to-right flow toward the probe
+ * through the whole beat, a caliper on its peak, and the first beat's envelope traced (its mean
+ * gradient). The envelope takes the shape of the mean LA pressure to 0.5 mmHg, so the strip is
+ * drawn again only every 0.5 mmHg, scaled to peak at the printed velocity.
+ */
+function lapCW(ctx, P, v) {
+  panel(ctx, P.x, P.y, P.w, P.h, fit(P.w, 'CW · ATRIAL SEPTUM · SUBCOSTAL', 'CW · IAS'));
+  const bx = inner(P), base = 0.86, vs = Math.max(3, Math.ceil(v.vp + 0.6));
+  const mq = Math.round(v.lap * 2) / 2, W = lapWaves(mq), kv = v.vp / W.vp;
+  const vel = (t) => W.vel(t) * kv;
+  spectral(ctx, bx, { fn: (u) => vel((u * 2 * RR) % RR), scale: vs, base, mode: 'cw', broad: 0.4, key: `shlap|${mq}|${v.vp}|${vs}`, seed: 65 });
+  vscale(ctx, bx, vs, base, 1);
+  const k = (bx.h * base) / vs, y0 = bx.y + base * bx.h, X = (ms) => bx.x + (ms / (2 * RR)) * bx.w;
+  // the trace of the first beat: the envelope, closed to the baseline at either end
+  ctx.save();
+  ctx.strokeStyle = SC.cal;
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([3, 2]);
+  ctx.beginPath();
+  ctx.moveTo(X(0), y0);
+  for (let i = 0; i <= 120; i++) { const t = (i / 120) * (RR - 1); ctx.lineTo(X(t), y0 - vel(t) * k); }
+  ctx.lineTo(X(RR - 1), y0);
+  ctx.stroke();
+  ctx.restore();
+  const xp = X(W.tp), yp = y0 - v.vp * k;
+  caliper(ctx, xp - 14, yp, xp + 14, yp, { solid: true });
+  note(ctx, bx, [`peak ${v.vp.toFixed(1)} m/s · 4V² ${v.pkGrad} + RAP ${v.rap} = peak LAP ${v.pkLap} mmHg`, `${v.vp.toFixed(1)} m/s · 4V² ${v.pkGrad} + ${v.rap} = peak LAP ${v.pkLap}`, `${v.vp.toFixed(1)} m/s · peak LAP ${v.pkLap}`, `peak LAP ${v.pkLap}`], 'top');
+  note(ctx, bx, [`mean gradient ${v.mnGrad} + RAP ${v.rap} = mean LAP ${v.mnLap} mmHg`, `mean 4V² ${v.mnGrad} + ${v.rap} = mean LAP ${v.mnLap}`, `mean LAP ${v.mnLap} mmHg`, `mean LAP ${v.mnLap}`], 'bottom');
+  return bx;
+}
+
+/**
+ * The method and its limits, word-wrapped to a panel w px wide at the largest type that fits in
+ * hMax px: the formulas, then the limits, a gap between the two. The lines (y from the panel's
+ * top) and the height they take; null when they do not fit at 9 px.
+ */
+function methodLines(ctx, w, hMax) {
+  const blocks = [
+    [SC.cal, ['LAP = RAP + 4V²', 'peak LAP = RAP + 4Vmax²', 'mean LAP = RAP + mean gradient (traced)']],
+    [SC.text, ['Needs a restrictive defect: across a large ASD the atrial pressures equalize.', `RAP comes from the IVC (chapter ${numOf('ivc')}). Its error adds directly to the LAP.`]],
+  ];
+  const room = w - 20;
+  ctx.save();
+  try {
+    for (const px of [11, 10, 9]) {
+      ctx.font = `500 ${px}px ${MONO}`;
+      const out = [];
+      let y = 22 + px + 6;
+      for (const [color, paras] of blocks) {
+        for (const text of paras) {
+          let line = '';
+          for (const word of text.split(' ')) {
+            const next = line ? `${line} ${word}` : word;
+            if (line && ctx.measureText(next).width > room) { out.push({ color, text: line, y }); y += px + 4; line = word; } else line = next;
+          }
+          out.push({ color, text: line, y });
+          y += px + 4;
+        }
+        y += 6;
+      }
+      const h = y - px - 10 + 12;
+      if (h <= hMax && out.every((l) => ctx.measureText(l.text).width <= room)) return { px, out, h };
+    }
+    return null;
+  } finally {
+    ctx.restore();
+  }
+}
+/** The method panel under the CW strip, with its lines (methodLines). */
+function lapMethod(ctx, P, m) {
+  panel(ctx, P.x, P.y, P.w, P.h, 'METHOD AND LIMITS');
+  ctx.save();
+  ctx.font = `500 ${m.px}px ${MONO}`;
+  ctx.textAlign = 'left';
+  for (const l of m.out) { ctx.fillStyle = l.color; ctx.fillText(l.text, P.x + 10, P.y + l.y); }
+  ctx.restore();
+}
+
+/**
  * The bubbles in the LA beat by beat for one maneuver: bars for the LA's count and a band for the
  * RA's opacification, the window of 3 to 6 beats, and the beat the view shows (cur).
  */
@@ -634,8 +887,8 @@ function draw(sh) {
   const W = sh.w, H = sh.h, ctx = sh.ctx;
   const v = shown(st), type = v.type;
   // with the cine still (reduced motion), the frame that shows the shunt: late systole across an
-  // ASD, mid-systole across a VSD
-  const still = type === 'vsd' ? 200 : 330;
+  // ASD, mid-systole across a VSD, the v wave's peak across a restrictive communication
+  const still = type === 'vsd' ? 200 : type === 'lap' ? T_V : 330;
   const tt = beat.at(true, still);
   const sweep = (bx) => cursor(ctx, bx, cine.live ? beat.sweep : still / (2 * RR));
   const phone = W < 700;
@@ -652,6 +905,16 @@ function draw(sh) {
     return;
   }
   const [a1, a2] = rows(colL, [1.35, 1], gap);
+  if (type === 'lap') {
+    asdSub(ctx, a1, v, tt);
+    // the CW strip, tall, and under it the method in the height its lines take, where they fit
+    // in 40% of the column
+    const m = methodLines(ctx, colR.w, 0.4 * colR.h - gap);
+    const r1 = m ? { ...colR, h: colR.h - gap - m.h } : colR;
+    if (m) lapMethod(ctx, { ...colR, y: colR.y + colR.h - m.h, h: m.h }, m);
+    for (const bx of [lapPressure(ctx, a2, v), lapCW(ctx, r1, v)]) sweep(bx);
+    return;
+  }
   if (type === 'asd') {
     asdSub(ctx, a1, v, tt);
     asdA4c(ctx, a2, v, tt);
@@ -671,12 +934,23 @@ const LEAD = {
   asd: { none: 'No atrial septal defect', small: 'Small secundum ASD', significant: 'Hemodynamically significant secundum ASD' },
   vsd: { none: 'No ventricular septal defect', restrictive: 'Small, restrictive perimembranous VSD', significant: 'Hemodynamically significant perimembranous VSD', raised: 'Perimembranous VSD with an RV systolic pressure of half the systemic pressure or more' },
   pfo: { none: 'No right-to-left shunt on the saline study', valsalva: 'PFO: right-to-left shunt after Valsalva release only', rest: 'PFO: right-to-left shunt at rest and after Valsalva release' },
+  lap: { normal: 'Normal LA pressure across a restrictive atrial communication', raised: 'Raised LA pressure across a restrictive atrial communication' },
 };
 const RVB_WORD = ['normal', 'mildly dilated', 'moderately dilated', 'severely dilated'];
 const RVSP_WORD = (p) => (p <= 34 ? 'normal' : p <= 49 ? 'mildly raised' : p <= 69 ? 'moderately raised' : 'severely raised');
 
 function liveOf(v, s, cite) {
   const SV = cite('silvestry2015'), ST = cite('stout2018'), ES = cite('baumgartner2020'), MU = cite('mukherjee2025'), LG = cite('lang2015');
+  if (v.type === 'lap') {
+    const GZ = cite('gavazzoni2022'), SK = cite('sakul2026');
+    return `<b>${LEAD.lap[v.grade]}.</b> The ${v.d}-mm communication keeps a pressure difference between the atria, so CW Doppler across the septum gives the LA–RA gradient as 4V²${cite('gavazzoni2022,sakul2026')}.`
+      + ` The peak septal velocity is ${fmt(v.vp, 1)} m/s, a peak gradient of 4 × ${fmt(v.vp, 1)}² = ${v.pkGrad} mmHg.`
+      + ` With an RA pressure of ${v.rap} mmHg, the peak LA pressure is ${v.pkGrad} + ${v.rap} = ${v.pkLap} mmHg${SK}.`
+      + ` The mean gradient of the traced envelope is ${v.mnGrad} mmHg, so the mean LA pressure is ${v.mnGrad} + ${v.rap} = ${v.mnLap} mmHg${GZ}.`
+      + ` A mean LA pressure ${v.grade === 'raised' ? `above ${LAP_UP} mmHg is raised` : `of ${LAP_UP} mmHg or less is normal`}${cite('lababidi2025')}.`
+      + ` The method needs a restrictive communication: across a large ASD the atrial pressures equalize, and the gradient is about 1 mmHg${cite('marx1985')}.`
+      + ` The RA pressure comes from the IVC${MU} (<a href="#ivc" data-go="ivc">chapter ${numOf('ivc')}</a>), and its error adds directly to the LA pressure.`;
+  }
   const qp = `Qp/Qs is (${fmt(v.rvotD, 1)}² × ${v.rvotVti}) ÷ (${fmt(v.lvotD, 1)}² × ${v.lvotVti}) = ${fmt(v.qpqs, 1)}`;
   if (v.type === 'asd') {
     if (v.grade === 'none') return `<b>${LEAD.asd.none}.</b> The atrial septum is intact. The RV basal diameter is ${fmt(v.rvb, 1)} cm and the RA area ${v.ra} cm², both normal${MU}, and the RV and LV stroke volumes are equal (Qp/Qs ${fmt(v.qpqs, 1)}).`;
@@ -706,12 +980,13 @@ const shuntsPage = {
   part: 'congenital',
   title: 'Shunts: ASD, VSD and PFO',
   nav: 'Shunts',
-  dwell: 30,
+  dwell: 40,
   defaults: { shS: 0.55, shType: 'asd', shMan: 'valsalva' },
   format: {
     shS: (x, s) => {
-      const type = s ? typeOf(s) : 'asd', g = gradeOf(x, type);
-      const name = { asd: 'ASD', vsd: 'VSD', pfo: 'PFO' }[type];
+      const type = s ? typeOf(s) : 'asd';
+      if (type === 'lap') return `mean LAP ${valuesAt(x, 'lap').mnLap} mmHg`;
+      const g = gradeOf(x, type), name = { asd: 'ASD', vsd: 'VSD', pfo: 'PFO' }[type];
       if (type === 'pfo') return { none: 'no shunt', valsalva: 'Valsalva only', rest: 'at rest' }[g];
       return g === 'none' ? `no ${name}` : g === 'raised' ? `${name}, RVSP ≥50%` : `${g} ${name}`;
     },
@@ -741,17 +1016,18 @@ const shuntsPage = {
     if (live) study.ms = (study.ms + dt * 1000) % (BEATS * RR);
     if (live && sheet) sheet.dirty = true;
   },
-  // the sequence: a secundum ASD from none to large, a perimembranous VSD, then a PFO on the saline
-  // study with Valsalva
+  // the sequence: a secundum ASD from none to large, a perimembranous VSD, a PFO on the saline
+  // study with Valsalva, then the LA pressure across a restrictive communication from 8 to 30 mmHg
   tourEnter(set) { set({ shS: 0, shType: 'asd', shMan: 'valsalva' }); },
   tourTick(tt, set) {
     const at = (t0) => Math.round(clamp((tt - t0) / 8.5, 0, 1) * 200) / 200;
     if (tt < 10) set({ shType: 'asd', shS: at(0.5) });
     else if (tt < 20) set({ shType: 'vsd', shS: at(10.5) });
-    else set({ shType: 'pfo', shMan: 'valsalva', shS: at(20.5) });
+    else if (tt < 30) set({ shType: 'pfo', shMan: 'valsalva', shS: at(20.5) });
+    else set({ shType: 'lap', shS: at(30.5) });
   },
   // the time of the sequence at which tourTick shows this state (its inverse): the sequence continues from it
-  tourAt(s) { const t0 = { asd: 0.5, vsd: 10.5, pfo: 20.5 }[typeOf(s)]; return t0 + s.shS * 8.5; },
+  tourAt(s) { const t0 = { asd: 0.5, vsd: 10.5, pfo: 20.5, lap: 30.5 }[typeOf(s)]; return t0 + s.shS * 8.5; },
   text(s, { cite }) {
     const v = shown(s);
     if (typeof document !== 'undefined') {
@@ -781,6 +1057,14 @@ const shuntsPage = {
         { k: 'VSD peak velocity', v: v.d ? fmt(v.vmax, 1) : '–', u: v.d ? 'm/s' : '', flag: false },
         { k: 'RV systolic pressure', v: v.d ? fmt(v.rvsp) : '–', u: v.d ? 'mmHg' : '', flag: v.d > 0 && v.rvsp > 34 },
         { k: 'LVEDD', v: fmt(v.lvedd), u: 'mm', flag: v.lvBig },
+      ];
+    } else if (v.type === 'lap') {
+      readouts = [
+        { k: 'Mean LA pressure', v: fmt(v.mnLap), u: 'mmHg', flag: v.grade === 'raised' },
+        { k: 'Peak LA pressure', v: fmt(v.pkLap), u: 'mmHg', flag: false },
+        { k: 'Peak septal velocity', v: fmt(v.vp, 1), u: 'm/s', flag: false },
+        { k: 'Mean gradient', v: fmt(v.mnGrad), u: 'mmHg', flag: false },
+        { k: 'RA pressure (IVC)', v: fmt(v.rap), u: 'mmHg', flag: false },
       ];
     } else {
       const man = manOf(s), n = man === 'rest' ? v.rest : v.val;
@@ -817,8 +1101,8 @@ function paintFor(s) {
   const type = typeOf(s);
   if (type === painted || typeof document === 'undefined') return;
   painted = type;
-  const named = (o) => Object.fromEntries(Object.entries(o).map(([g, x]) => [LABEL[g] || g, x]));
-  paintBands(document.getElementById('sh-grades'), BANDS_OF[type].map((b) => ({ ...b, g: LABEL[b.g] || b.g })), named(LEVEL), named(SHORT));
+  const L = LABEL[type] || {}, named = (o) => Object.fromEntries(Object.entries(o).map(([g, x]) => [L[g] || g, x]));
+  paintBands(document.getElementById('sh-grades'), BANDS_OF[type].map((b) => ({ ...b, g: L[b.g] || b.g })), named(LEVEL), named(SHORT[type] || {}));
 }
 
 export default shuntsPage;
