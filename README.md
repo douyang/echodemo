@@ -313,7 +313,7 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 | 05 Cycle | The seven phases of the cardiac cycle, the cursor running through each | 0:50 |
 | 06 Loop | Normal, HFrEF, HFpEF, pressure load, volume load | 0:48 |
 | 07 Inferior vena cava | RA pressure 3 mmHg; indeterminate, 8 mmHg; 15 mmHg; severe TR (20 mmHg can be considered); positive-pressure ventilation; IVC or aorta | 0:57 |
-| 08 Doppler hemodynamics | Stroke volume; an LVOT diameter error of 2 mm; RV systolic pressure at a peak TR velocity of 2.4, 3.0 and 3.5 m/s, with an RA pressure of 3, 8 and 15 mmHg | 0:48 |
+| 08 Doppler hemodynamics | The same flow at every level; the valve narrowed to 1.2 and 0.7 cm², then the aorta to 2.2 cm; RV systolic pressure at a peak TR velocity of 2.4, 3.0 and 3.5 m/s, with an RA pressure of 3, 8 and 15 mmHg | 0:57 |
 | 09 Systolic function | Normal LV systolic function; dilated LV with an LVEF of 30%; foreshortened apical views; normal RV systolic function; RV systolic dysfunction | 0:48 |
 | 10 Regional wall motion | Normal wall motion; LAD, RCA and circumflex occlusion | 0:48 |
 | 11 Diastolic function | Normal diastolic function; grades 1, 2 and 3, each with its path through the 2025 ASE algorithm | 0:48 |
