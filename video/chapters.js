@@ -244,6 +244,24 @@ export const VIDEOS = {
       { set: { periS: 0.85 }, name: 'Tamponade', track: 'Tamponade', pick: [0, 1, 4], move: 4, hold: 7 },
     ],
   },
+  // constriction from a normal pericardium to all three Mayo Clinic criteria, then restrictive
+  // cardiomyopathy to grade 3: a step in the middle of each band
+  constrict: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { conS: 0.005 },
+    steps: [
+      { set: { conS: 0, conMode: 'cp' }, track: 'Normal', pick: [0, 1], hold: 5 },
+      { set: { conS: 0.35 }, track: 'Thickened', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.58 }, track: 'Constriction', pick: [0, 1], move: 4, hold: 7 },
+      { set: { conS: 0.9 }, track: '3 of 3', pick: [1, 2, 3], move: 4, hold: 7 },
+      { set: { conS: 0.9 }, name: 'Annulus reversus', track: 'Annulus', pick: [4], move: 1, hold: 5 },
+      { set: { conS: 0, conMode: 'rcm' }, name: 'Restrictive cardiomyopathy', track: 'Restriction', line: 'The same slider for restrictive cardiomyopathy: the stiff myocardium, not the pericardium, limits filling.', move: 3, hold: 3 },
+      { set: { conS: 0.28 }, track: 'Grade 1', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.57 }, track: 'Grade 2', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.92 }, track: 'Grade 3', pick: [1, 2, 3], move: 4, hold: 8 },
+    ],
+  },
   // 17: the walls thicken; the echo criteria are met; the apex is spared
   amyloid: {
     pane: 'Echocardiographic signs',
