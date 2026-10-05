@@ -655,7 +655,7 @@ function textOf(s, cite) {
 // ---------------------------------------------------------------- the chapter
 export default {
   key: 'stress',
-  part: 'stress',
+  part: 'function',
   title: 'Stress echocardiography',
   nav: 'Stress',
   dwell: 21,

@@ -1,7 +1,8 @@
-// Systolic function. Left: LV volumes by the biplane method of disks in the apical
-// four- and two-chamber views: each echo view with its traced border and disks, above the disk
-// model of the same LV, and what foreshortening does to them. Right: three measures of RV
-// systolic function (TAPSE, tissue Doppler S′, fractional area change).
+// Systolic function. LV volumes by the biplane method of disks in the apical four- and
+// two-chamber views: each echo view with its traced border and disks, above the disk model of the
+// same LV, and what foreshortening does to them. The RV side (three measures of RV systolic
+// function: TAPSE, tissue Doppler S′, fractional area change) is hidden: chapter 13 (rv.js) shows
+// the RV; the code stays and comes back with SHOW_RV.
 // The text holds the measurements as a diagram, with ▲▼ buttons on the traced volumes (LV) and
 // on TAPSE, S′ and the RV areas (RV), and a switch for the sex: the stroke volume, the LVEF and
 // the volume indexes in the bands of Lang 2015 for that sex, the heart failure category
@@ -27,6 +28,12 @@ import { BSA } from './pressure.js';
 
 /** A ▲▼ edit renders again and keeps its button under the pointer (edits.js). */
 const steady = (btn, fn) => holdPlace('#ch-eject .live', btn, fn);
+
+// The RV side, hidden: chapter 13 shows the RV. With true, the Ventricle switch in index.html
+// (hidden there) shows it again.
+const SHOW_RV = false;
+/** The side shown: the LV, or the RV when SHOW_RV allows it. */
+const sideOf = (s) => (SHOW_RV && s.side === 'rv' ? 'rv' : 'lv');
 
 const DISKS = 20;               // the method of disks (modified Simpson's rule)
 const EF_MIN = 10, EF_MAX = 80; // %, the ejection fraction slider
@@ -317,7 +324,7 @@ const EV_ES = EV.avc;   // end-systole: aortic valve closure
 function draw(sh, t) {
   const W = sh.w, H = sh.h;
   const narrow = W < 700;
-  if (st.side === 'rv') { cine.live = false; drawRV(sh, t, W, H, narrow); return; }
+  if (sideOf(st) === 'rv') { cine.live = false; drawRV(sh, t, W, H, narrow); return; }
   const v = lvShown(st), L = v.L;
   const { t: tt, ph } = frameNow();
   cine.live = st.frame8 === 'cine' && !reducedMotion;
@@ -418,7 +425,7 @@ const UP = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.2 7.2 5 2.6l
 const DOWN = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.2 2.8 5 7.4l3.8-4.6z" fill="currentColor"/></svg>';
 const LV_BANDS_NOTE = 'Lang 2015 gives the normal ranges and the severity bands by sex<span class="cite" data-ref="lang2015"></span>. Above the normal range the diagram calls the LVEF hyperdynamic, a term of the ASE reporting guideline<span class="cite" data-ref="taub2025"></span>, which gives no number for it. The body surface area is 1.97 m² (175 cm, 80 kg).';
 const LV_RES_NOTE = 'The heart failure categories apply to a patient with heart failure<span class="cite" data-ref="heidenreich2022"></span>. At an LVEF of 50–51% in a man and 50–53% in a woman, Lang 2015 calls the LVEF mildly abnormal, and the heart failure guideline counts it as preserved.';
-const RV_BANDS_NOTE = 'Table 1 lists 13 mm in the mild and the moderate band of TAPSE, and 7.2 cm/s in the mild and the moderate band of S′<span class="cite" data-ref="mukherjee2025"></span>; the diagram takes the moderate band, as the bands of FAC exclude their lower limit.';
+const RV_BANDS_NOTE = 'The bands are those of Table 1 as corrected in May 2025<span class="cite" data-ref="mukherjee2025"></span>: TAPSE is mildly reduced at 14–17 mm and S′ at 7.3–9.5 cm/s.';
 const RV_RES_NOTE = 'TAPSE and S′ measure the motion of one point of the tricuspid annulus; FAC comes from the whole RV area in one plane. When TAPSE can underestimate RV function, as after cardiac surgery, an abnormal TAPSE should be reported only if adjunctive findings such as FAC or 3D RVEF support it<span class="cite" data-ref="mukherjee2025"></span>.';
 const DEFAULTS = { side: 'lv', edv: 120, ef: 60, wall: 9, fore: 0, tapse: 22, sPrime: 12, fac: 45, rvEda: RV_EDA, ejSex: 'M', frame8: 'cine' };
 /** The values that Reset gives back on each side: the chapter's start under the heart shown. */
@@ -574,7 +581,7 @@ function sideState(s, side) {
 /** The diagram of the side shown: numbers, bands and result; then what changed. */
 function renderDiagram(s) {
   if (!D.lv) return;
-  const side = s.side === 'rv' ? 'rv' : 'lv', other = side === 'lv' ? 'rv' : 'lv';
+  const side = sideOf(s), other = side === 'lv' ? 'rv' : 'lv';
   D[side].host.hidden = false;
   D[other].host.hidden = true;
   fresh[other] = true;
@@ -725,7 +732,7 @@ export default {
   part: 'function',
   title: 'Systolic function',
   nav: 'Systolic',
-  dwell: 16,
+  dwell: 11,
   defaults: { ...DEFAULTS },
   format: {
     edv: (v) => `${Math.round(v)} mL`,
@@ -753,19 +760,20 @@ export default {
   warm() { ECHO.a4c.start(); ECHO.a2c.start(); },
   leave() { fresh.lv = fresh.rv = true; freeLive(); },
   anim(dt, s) {
-    if (reducedMotion || s.frame8 !== 'cine' || s.side !== 'lv') return;
+    if (reducedMotion || s.frame8 !== 'cine' || sideOf(s) !== 'lv') return;
     clock += dt / 1.5;
     if (sheet) sheet.dirty = true;
   },
   tourEnter(set) { set({ side: 'lv', edv: 120, ef: 60, wall: 9, fore: 0, ejSex: 'M', frame8: 'cine' }); },
+  // the LV only: a dilated LV with a reduced EF, then foreshortened views, then back (the RV
+  // steps went with the RV side to chapter 13)
   tourTick(tt, set) {
     if (tt < 5) set({ ef: Math.round(60 - clamp((tt - 1) / 3.5, 0, 1) * 30), edv: Math.round(120 + clamp((tt - 1) / 3.5, 0, 1) * 80) });
-    else if (tt < 9) set({ ef: 60, edv: 120, fore: Math.round(clamp((tt - 5.5) / 3, 0, 1) * 20) });
-    else if (tt < 10) set({ fore: 0, side: 'rv', tapse: 22, sPrime: 12, fac: 45, rvEda: RV_EDA });
-    else set({ tapse: Math.round((22 - clamp((tt - 10.5) / 4, 0, 1) * 10) * 2) / 2, sPrime: Math.round((12 - clamp((tt - 10.5) / 4, 0, 1) * 5) * 2) / 2, fac: Math.round(45 - clamp((tt - 10.5) / 4, 0, 1) * 18) });
+    else if (tt < 9.5) set({ ef: 60, edv: 120, fore: Math.round(clamp((tt - 5.5) / 3, 0, 1) * 20) });
+    else set({ fore: 0 });
   },
   text(s, { cite }) {
-    if (s.side === 'rv') {
+    if (sideOf(s) === 'rv') {
       const v = rvShown(s);
       return {
         readouts: [

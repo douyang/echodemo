@@ -107,15 +107,15 @@ export const VIDEOS = {
     ],
   },
   // 08: a dilated LV with a low EF, foreshortening, then the RV
+  // 09: the LV only (the RV went to chapter 13)
   eject: {
     pane: 'Volumes and function',
-    quant: { edv: 1, ef: 1, fore: 1, tapse: 0.5, sPrime: 0.5, fac: 1 },
+    quant: { edv: 1, ef: 1, fore: 1 },
     steps: [
-      { set: { side: 'lv', edv: 120, ef: 60, wall: 9, fore: 0, ejSex: 'M', tapse: 22, sPrime: 12, fac: 45, rvEda: 20, frame8: 'cine' }, name: 'Normal LV systolic function', track: 'Normal LV', pick: [0, 2], hold: 6 },
+      { set: { side: 'lv', edv: 120, ef: 60, wall: 9, fore: 0, ejSex: 'M', frame8: 'cine' }, name: 'Normal LV systolic function', track: 'Normal LV', pick: [0, 2], hold: 6 },
       { set: { edv: 200, ef: 30 }, name: 'Dilated LV with reduced LVEF', track: 'Reduced LVEF', pick: [0, 1], move: 4, hold: 6 },
       { set: { edv: 120, ef: 60, fore: 20 }, name: 'Foreshortened apical views', track: 'Foreshortened', pick: [2, 3], move: 4, hold: 6 },
-      { set: { fore: 0, side: 'rv' }, name: 'Normal RV systolic function', track: 'Normal RV', pick: [0, 1], move: 4, hold: 6 },
-      { set: { tapse: 12, sPrime: 7, fac: 27 }, name: 'RV systolic dysfunction', track: 'RV dysfunction', pick: [0], move: 4, hold: 7 },
+      { set: { fore: 0 }, name: 'The views through the true apex', track: 'True apex', pick: [0, 2], move: 4, hold: 6 },
     ],
   },
   // 09: the three coronary territories, akinetic
@@ -196,6 +196,25 @@ export const VIDEOS = {
       { set: { mrS: 0.4 }, name: 'Moderate mitral regurgitation', track: 'Moderate', pick: [0, 1, 2], move: 4, hold: 6 },
       { set: { mrS: 0.65 }, name: 'Severe mitral regurgitation', track: 'Severe', pick: [0, 1, 3], move: 4, hold: 6 },
       { set: { mrS: 0.9 }, name: 'Severe mitral regurgitation with LV dysfunction', track: 'LV dysfunction', pick: [0, 1, 3], move: 4, hold: 7 },
+    ],
+  },
+  // 13: pressure overload from a normal RV to severe PH, and the septum at end-systole; then
+  // volume overload, and the septum at end-diastole
+  rv: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { rvS: 0.005 },
+    steps: [
+      { set: { rvS: 0, rvLoad: 'pressure', rvFrame: 'cine', rvx: null }, name: 'Normal RV', track: 'Normal', pick: [1, 2], hold: 6 },
+      { set: { rvS: 0.3 }, name: 'Mild pulmonary hypertension', track: 'Mild PH', pick: [0, 4], move: 4, hold: 6 },
+      { set: { rvS: 0.55 }, name: 'Moderate pulmonary hypertension', track: 'Moderate PH', pick: [0, 2, 5], move: 4, hold: 7 },
+      { set: { rvS: 0.9 }, name: 'Severe pulmonary hypertension', track: 'Severe PH', pick: [1, 3], move: 4, hold: 7 },
+      { set: { rvFrame: 'es' }, name: 'End-systole: the septum flattens', track: 'End-systole', pick: [3], move: 2, hold: 5 },
+      { set: { rvS: 0, rvFrame: 'cine' }, name: 'A normal RV again', track: 'Back', line: '', move: 3, hold: 2 },
+      { set: { rvLoad: 'volume' }, name: 'Volume overload', track: 'Volume', line: 'The same RV under a volume load: an atrial septal defect, or significant TR or PR.', move: 1, hold: 3 },
+      { set: { rvS: 0.45 }, name: 'Moderate RV dilation', track: 'Moderate dilation', pick: [0, 3], move: 4, hold: 6 },
+      { set: { rvS: 0.85 }, name: 'Severe RV dilation', track: 'Severe dilation', pick: [0, 4], move: 4, hold: 7 },
+      { set: { rvFrame: 'ed' }, name: 'End-diastole: the septum flattens', track: 'End-diastole', pick: [3], move: 2, hold: 6 },
     ],
   },
   tr: {

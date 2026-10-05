@@ -27,18 +27,21 @@ export const PHENO_STORE = 'heart-in-sound-heart';
 
 // Each chapter opens at the heart's own values. The LV sizes come from the heart mesh itself
 // (short-axis slices of each shape at end-diastole and end-systole); the valve pages start at
-// the grade that goes with the heart, read off each page's own model.
+// the grade that goes with the heart, read off each page's own model. The RV chapter starts
+// under a pressure load at the peak TR velocity of the heart's Doppler hemodynamics (trV).
 const segs = (list, wm) => Array.from({ length: 17 }, (_, i) => (list.includes(i + 1) ? wm : 1)).join('');
 const LAD = [1, 2, 7, 8, 13, 14, 17];
 const PRESETS = {
   amyloid: {
     pv: 'hfpef', sv: 40, trV: 3.0,
     side: 'lv', edv: 72, ef: 54, wall: 16, tapse: 15, sPrime: 9, fac: 35,
+    rvLoad: 'pressure', rvS: 0.25,
     fstate: 3, periS: 0.25, amyS: 1, caseId: 'amyloid',
   },
   icm: {
     pv: 'hfref', sv: 45, trV: 3.1,
     side: 'lv', edv: 222, ef: 25, wall: 8, tapse: 16, sPrime: 9.5, fac: 34,
+    rvLoad: 'pressure', rvS: 0.3,
     culprit: 'lad', wm: 3, segs: segs(LAD, 3),
     fstate: 2.2, caseId: 'icm',
     // stress echocardiography: a viability study, as the LAD territory is akinetic at rest
@@ -47,11 +50,13 @@ const PRESETS = {
   barlow: {
     pv: 'mr', sv: 55, trV: 3.0,
     side: 'lv', edv: 183, ef: 67, wall: 9,
+    rvLoad: 'pressure', rvS: 0.25,
     mrS: 0.6, caseId: 'barlow',
   },
   bav: {
     pv: 'as', sv: 60, trV: 2.6,
     side: 'lv', edv: 90, ef: 63, wall: 12.5,
+    rvLoad: 'pressure', rvS: 0.1,
     fstate: 1, asS: 0.55, caseId: 'bav',
   },
 };

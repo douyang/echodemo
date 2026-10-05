@@ -340,3 +340,76 @@ export function foreOffset(view, f, size = 0) {
   while (n < row.length && row[n] > row[n - 1]) n++;
   return invert(FORE_D.slice(0, n), row.slice(0, n), f);
 }
+
+// ---------------------------------------------------------------- the right ventricle (chapter 13)
+// rvThick (phenomesh.js DISEASE) on the RV-focused four-chamber view at end-diastole: the RV free
+// wall's thickness (mm) on the line of the RV basal diameter, linear in the weight on every heart.
+// own: at weight 0, the mean of rvGrow 0 and 1 (rvGrow changes it by less than 0.2 mm); per: mm
+// per unit of weight. The RV basal diameter grows by less than 0.1 cm at weight 1.
+const RVW = {
+  normal: { own: 3.55, per: 8.77 },
+  amyloid: { own: 7.49, per: 9.0 },
+  icm: { own: 3.19, per: 8.85 },
+  barlow: { own: 3.3, per: 8.87 },
+  bav: { own: 3.51, per: 9.1 },
+};
+/** The RV free wall's own thickness (mm) on heart key. */
+export const rvWallOwn = (heart) => (RVW[heart] || RVW.normal).own;
+/** The rvThick weight whose RV free wall is mm thick on heart key; a thinner wall than the heart's own thins it, to 2.6 mm less. */
+export function rvThickOf(heart, mm) {
+  const T = RVW[heart] || RVW.normal;
+  return Math.max(-0.3, (mm - T.own) / T.per);
+}
+// sep at end-systole (aortic valve closure), where the systolic weight reaches 1: the eccentricity
+// index on the short axis at the papillary muscles by weight (SEP_W), up to the largest index
+// before the septum folds back (weight 1.5 on the normal and the amyloid heart, 2 on the Barlow
+// and the bicuspid heart).
+const EI_ES = {
+  normal: [1.016, 1.075, 1.131, 1.226, 1.338, 1.425, 1.476],
+  amyloid: [0.899, 1.053, 1.137, 1.233, 1.322, 1.387, 1.437],
+  icm: [1.083, 1.114, 1.149, 1.191, 1.24, 1.3, 1.37, 1.536, 1.724],
+  barlow: [1.035, 1.079, 1.114, 1.182, 1.271, 1.348, 1.415, 1.504],
+  bav: [1.022, 1.076, 1.148, 1.242, 1.351, 1.419, 1.477, 1.525],
+};
+/** The sep weight whose eccentricity index at end-systole is ei on heart key; held to the table. */
+export function sepEsOf(heart, ei) {
+  const T = EI_ES[heart] || EI_ES.normal;
+  return invert(SEP_W.slice(0, T.length), T, ei);
+}
+/** The largest eccentricity index at end-systole that the septum of heart key shows. */
+export const eiEsMax = (heart) => { const T = EI_ES[heart] || EI_ES.normal; return T[T.length - 1]; };
+// sep on the RV-focused four-chamber view at end-diastole, rvGrow 0: the RV basal diameter (cm)
+// and the LV basal diameter (cm: the widest the LV cavity is in its basal third, parallel to the
+// mitral annulus), by weight SEP4. The septum's move adds to the RV basal diameter that rvGrow
+// gives: the sum is within 0.03 cm of the measured diameter at rvGrow 0.5 to 1.5.
+const SEP4 = [0, 0.5, 1, 1.5, 2, 2.5];
+const SEP_A4C = {
+  normal: { rv: [3.073, 3.345, 3.683, 4.061, 4.404, 4.708], lv: [4.529, 4.139, 3.792, 3.523, 3.421, 3.432] },
+  amyloid: { rv: [3.018, 3.315, 3.673, 4.053, 4.416, 4.74], lv: [3.76, 3.413, 3.139, 2.932, 2.913, 2.912] },
+  icm: { rv: [3.06, 3.315, 3.665, 4.055, 4.432, 4.779], lv: [6.039, 5.618, 5.216, 4.891, 4.618, 4.393] },
+  barlow: { rv: [3.068, 3.334, 3.677, 4.061, 4.428, 4.757], lv: [5.522, 5.114, 4.924, 4.824, 4.752, 4.74] },
+  bav: { rv: [2.82, 3.135, 3.49, 3.87, 4.228, 4.546], lv: [4.103, 3.732, 3.423, 3.261, 3.257, 3.251] },
+};
+/** The RV basal diameter (cm) that the septum at sep weight w adds on heart key. */
+export function rvSepAdd(heart, w) {
+  const T = (SEP_A4C[heart] || SEP_A4C.normal).rv, [i, t] = cell(SEP4, w);
+  return lerp(T[i], T[i + 1], t) - T[0];
+}
+/** The LV basal diameter (cm) on heart key with the septum at sep weight w. */
+export function lvBasalAt(heart, w) {
+  const T = (SEP_A4C[heart] || SEP_A4C.normal).lv, [i, t] = cell(SEP4, w);
+  return lerp(T[i], T[i + 1], t);
+}
+// raGrow on the RV-focused four-chamber view at end-systole: the RA area (cm², traced as for the
+// area-length volume) by weight (RA_W). The normal heart's own RA is 19.7 cm².
+const RA_AREA = {
+  normal: [15.52, 17.39, 19.68, 21.43, 23.37, 25.49, 27.79, 30.26, 32.91, 38.78, 45.39],
+  amyloid: [19.55, 23.03, 26.92, 29.74, 32.74, 35.94, 39.3, 42.83, 46.58, 54.56, 63.3],
+  icm: [13.08, 15.1, 17.53, 19.38, 21.41, 23.62, 26.03, 28.6, 31.38, 37.45, 44.25],
+  barlow: [14.52, 16.39, 18.55, 20.19, 22.1, 24.11, 26.27, 28.36, 31.11, 36.04, 41.64],
+  bav: [14.49, 16.33, 18.58, 20.31, 22.21, 24.3, 26.57, 29.02, 31.65, 37.47, 44.01],
+};
+/** The raGrow weight whose RA area at end-systole is area cm² on heart key; held to the table. */
+export function raAreaWeight(heart, area) { return invert(RA_W, RA_AREA[heart] || RA_AREA.normal, area); }
+/** The smallest RA area (cm²) that heart key shows. */
+export const raAreaMin = (heart) => (RA_AREA[heart] || RA_AREA.normal)[0];
