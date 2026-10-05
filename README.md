@@ -331,12 +331,14 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 - Added on October 4, 2026, with its chapter: 19 Stress echocardiography. Its figure names the view above the quad screen, where the site has the view buttons. The page builds the captions after the chapter's `ready()`, which waits for the volumes of every case, so each caption has its LVEF.
 - Rendered again on October 4, 2026, with the new parasternal long axis (the plane through the aortic root): 02, 13, 17 and 18, each with the frames its layout gives. 12 and 15 were not rendered again: the new LV diameter tables move their LV by at most 0.2 mm in the normal heart, less than a pixel.
 - Rendered again on October 5, 2026, with the RV chapter: 09, which shows the LV only (four steps, 0:39), and 10, 11, 12 and 14 to 20, whose numbers changed. 13 Right ventricle is new. Before the render, the scores of the ten renumbered chapters were built again; each is byte-identical to the score in use. 09 and 13 have new scores. The videos before are kept in `video/out/old/2026-10-05-pre-rv/`.
-- Not rendered yet: the new chapters 19 Prosthetic valves, 20 Infective endocarditis, 22 Constrictive pericarditis, 23 Hypertrophic cardiomyopathy, 25 Shunts and 26 Cardiac masses and thrombus. The videos of 21 Pericardial effusion and 24 Cardiac amyloidosis still show their old numbers. All six new chapters are now merged, and these videos are rendered next.
+- Rendered on October 5, 2026, with the six new chapters: 19 Prosthetic valves, 20 Infective endocarditis, 22 Constrictive pericarditis, 23 Hypertrophic cardiomyopathy, 25 Shunts: ASD, VSD and PFO, and 26 Cardiac masses and thrombus. 21 Pericardial effusion and 24 Cardiac amyloidosis were rendered again for their new numbers. Their scores were built again, and each is byte-identical to the score in use. The videos before are kept in `video/out/old/2026-10-05-pre-new-chapters/`.
+- A step that switches the kind changes every key at the middle of its move (`cut` in `video/chapters.js`): the valve in 19, constriction to restrictive cardiomyopathy in 22, the defect and the maneuver in 25, and the mass in 26. The slider's value belongs to the kind. In a first render the slider eased across the switch, so the new kind showed for a moment at a value of the old one: in 26 a thrombus shrank away under the caption "Akinetic apex without thrombus".
 - Rendered again on October 5, 2026: 13 Right ventricle, with the probability of PH hidden. In mild PH the caption gives the RV size, and in severe RV dilation the free wall and the RV end-diastolic area, in place of the probability. The steps, the length and the score did not change.
-- Added on October 5, 2026, with its chapter: 25 Shunts: ASD, VSD and PFO (21 when added), eight steps in 1:21. It is not rendered yet: the captions and the storyboard were checked from the page. The saline study starts again at each PFO step, so each step shows the bubbles arrive. A chapter title too long for one line on the title card now takes smaller type, and the intro's card stays as it was (`fitTitle` in `video/chapter.js`).
-- Added on October 5, 2026, with its chapter: 20 Infective endocarditis (19 when added), seven steps (1:06). The storyboard and the captions at each hold were checked; the video is not rendered in this commit.
-- Added on October 5, 2026, with its chapter: 26 Cardiac masses and thrombus (21 when added), as steps and a storyboard; it is not rendered yet. Its title takes smaller type on the title card (`fitTitle`).
-- Added on October 5, 2026, with its chapter: 23 Hypertrophic cardiomyopathy (20 when added), not rendered yet. Its score seed is 9322. "Hypertrophic cardiomyopathy" takes 128 px on the title card instead of 156 px (`fitTitle`).
+- Added on October 5, 2026, with its chapter: 25 Shunts: ASD, VSD and PFO (21 when added), eight steps in 1:21. The saline study starts again at each PFO step, so each step shows the bubbles arrive. A chapter title too long for one line on the title card takes smaller type, and the intro's card stays as it was (`fitTitle` in `video/chapter.js`).
+- Added on October 5, 2026, with its chapter: 20 Infective endocarditis (19 when added), seven steps (1:06).
+- Added on October 5, 2026, with its chapter: 26 Cardiac masses and thrombus (21 when added), eleven steps (1:33). Its title takes smaller type on the title card (`fitTitle`).
+- Added on October 5, 2026, with its chapter: 23 Hypertrophic cardiomyopathy (20 when added), ten steps (1:31). Its score seed is 9322. "Hypertrophic cardiomyopathy" takes 128 px on the title card instead of 156 px (`fitTitle`).
+- Added on October 5, 2026, with their chapters: 19 Prosthetic valves, eight steps (1:22), and 22 Constrictive pericarditis (20 when added), nine steps (1:22).
 
 | Chapter | Steps | Length |
 |---|---|---|
@@ -388,8 +390,8 @@ node tools/storyboard.mjs --ch=as                              # one frame of ea
 | 36.6 | 12 Stress echocardiography | The quad screen in the two-chamber view: a normal response, then ischemia in the LAD territory |
 | 45.7 | 14 Aortic stenosis | No stenosis, then severe |
 | 52.6 | 17 Mitral regurgitation | No regurgitation, then severe with LV dysfunction |
-| 59.4 | 19 Pericardial effusion | No pericardial effusion, then tamponade |
-| 66.3 | 20 Cardiac amyloidosis | A normal wall, then relative apical sparing |
+| 59.4 | 21 Pericardial effusion | No pericardial effusion, then tamponade |
+| 66.3 | 24 Cardiac amyloidosis | A normal wall, then relative apical sparing |
 | 73.1 | | End card |
 
 Left out, with the reason:
@@ -399,6 +401,7 @@ Left out, with the reason:
 - 15, 16, 18: the layout of 14 and 17.
 - 07: added after the review.
 - 13: added after the review.
+- 19, 20, 22, 23, 25 and 26: added after the review.
 
 How it is built:
 - `video/reel.js` holds the clips. A chapter clip is a chapter video script with its holds and moves in bars. The clip of Views is a cut of the views video with the nine planes in Probe and body, as in cut B.
@@ -411,6 +414,7 @@ How it is built:
 - Rendered again, all eight clips, on October 4, 2026, after the move to the one heart (#45 to #51): the clips of 12, 15 and 17 show the views cut from the mesh. Against the intro of #37, the clips of 02, 04, 05 and 10 are byte-identical, and those of 12, 15, 17 and 18 changed.
 - Rendered again on October 4, 2026, with the new parasternal long axis: the clips of 02, 04, 17 and 18 (0, 1, 6 and 7). Against the intro before, the other five clips are unchanged (no pixel moves by more than 32 levels); in the clip of 04 the long axis's plane changed among the nine planes as well as in its own views.
 - Rendered again, all nine clips, on October 5, 2026, with the RV chapter: the title card names 20 chapters, the progress line takes the new chapter numbers, and the stress clip follows the clip of Regional wall motion. The score was built again for the new order of the clips. The intro of 19 chapters, its score and its clips are kept in `video/out/old/2026-10-05-pre-rv/`.
+- Rendered again, all nine clips, on October 5, 2026, with the six new chapters: the title card names 26 chapters, and the progress line takes the new numbers of Pericardial effusion (21) and Cardiac amyloidosis (24). The score was built again and is byte-identical to the score in use. The intro of 20 chapters and its clips are kept in `video/out/old/2026-10-05-pre-new-chapters/`.
 
 ```
 python3 tools/score/pulse.py intro video/out/intro.wav
