@@ -655,33 +655,29 @@ function textWidth(el) {
   return r.getBoundingClientRect().width;
 }
 /**
- * Columns of the chapter bar: each as wide as its chapter's name needs (its number where names
- * are hidden), and each part's columns together as wide as the part's name, so that no name is
- * cut short. The two rows share the columns. When every name does not fit, only the open
- * chapter's part keeps its names: the other parts show their chapters' numbers and keep their
- * rule, and a hover on a number shows its title.
+ * Columns of the chapter bar: each as wide as its chapter's name needs, and each part's columns
+ * together as wide as the part's name, so that no name is cut short. The two rows share the
+ * columns. When the names do not all fit, the bar takes the phone's form (is-compact): back, the
+ * open chapter's number and title, which opens the list of all chapters, and next.
  */
 function fitTransport() {
-  const btns = $$('#chapters button[data-go]'), parts = [...$('#groups').children];
-  const cur = CHAPTERS[state.chapter]?.part;
-  for (const mode of ['all', 'part']) {
-    const short = (part) => mode === 'part' && part !== cur;
-    btns.forEach((b) => b.classList.toggle('is-num', short(CHAPTERS[Number(b.dataset.go)].part)));
-    parts.forEach((li) => li.classList.toggle('is-num', short(li.dataset.part)));
-    const need = btns.map((b) => Math.max(textWidth(b.querySelector('.n')), textWidth(b.querySelector('.t'))) + 10);
-    if (!need.some((w) => w > 10)) return;   // the bar is not laid out yet
-    let k = 0;
-    for (const li of parts) {
-      const span = Number(li.style.getPropertyValue('--span')) || 1, sum = need.slice(k, k + span).reduce((a, b) => a + b, 0);
-      const want = li.textContent && !li.classList.contains('is-num') ? textWidth(li) + 16 : 0;   // with its right margin
-      if (want > sum) for (let j = k; j < k + span; j++) need[j] *= want / sum;
-      k += span;
-    }
-    if (mode === 'all' && need.reduce((a, b) => a + b, 0) > $('#chapters').clientWidth) continue;
-    const cols = need.map((w) => `minmax(0, ${w.toFixed(1)}fr)`).join(' ');
-    for (const el of [$('#chapters'), $('#groups')]) if (el.style.gridTemplateColumns !== cols) el.style.gridTemplateColumns = cols;
-    return;
+  const bar = $('.transport'), btns = $$('#chapters button[data-go]'), parts = [...$('#groups').children];
+  const was = bar.classList.contains('is-compact');
+  bar.classList.remove('is-compact');   // measure the row of names
+  const need = btns.map((b) => Math.max(textWidth(b.querySelector('.n')), textWidth(b.querySelector('.t'))) + 10);
+  if (!need.some((w) => w > 10)) { bar.classList.toggle('is-compact', was); return; }   // not laid out (a phone)
+  let k = 0;
+  for (const li of parts) {
+    const span = Number(li.style.getPropertyValue('--span')) || 1, sum = need.slice(k, k + span).reduce((a, b) => a + b, 0);
+    const want = li.textContent ? textWidth(li) + 16 : 0;   // with its right margin
+    if (want > sum) for (let j = k; j < k + span; j++) need[j] *= want / sum;
+    k += span;
   }
+  const compact = need.reduce((a, b) => a + b, 0) > $('#chapters').clientWidth;
+  bar.classList.toggle('is-compact', compact);
+  if (compact) return;
+  const cols = need.map((w) => `minmax(0, ${w.toFixed(1)}fr)`).join(' ');
+  for (const el of [$('#chapters'), $('#groups')]) if (el.style.gridTemplateColumns !== cols) el.style.gridTemplateColumns = cols;
 }
 
 function start() {
