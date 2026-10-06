@@ -36,7 +36,7 @@ const SVI = 41.7;          // mL/m², the stroke volume index: 75 mL at 1.8 m²
 // ---------------------------------------------------------------- the Doppler envelopes
 // The jet's envelope over ejection: v(t) = V g(t / ET), g(u) = sin(π u^q)^p. q puts the peak at
 // the acceleration time (u = 0.5^(1/q) = AT/ET); p is fitted to the jet's VTI and peak velocity, as
-// in chapter 14. The LVOT envelope is symmetric (q = 1).
+// in as.js. The LVOT envelope is symmetric (q = 1).
 const P_LO = 0.1, P_HI = 24;
 const shape = (q, p) => (u) => (u > 0 && u < 1 ? Math.pow(Math.sin(Math.PI * Math.pow(u, q)), p) : 0);
 const memo = new Map();
@@ -128,7 +128,7 @@ function measure(m) {
   v.atet = shown(v.at / v.et, 2);
   v.ieoa = shown(v.eoa / v.bsa, 2);
   // the drawn envelopes: the jet's peak at AT, its fullness fitted to the VTI; the mean gradient
-  // is the mean of 4v² over it (as chapter 14 computes it)
+  // is the mean of 4v² over it (as in as.js)
   v.qA = qOf(v.at / v.et);
   v.pA = fitP(v.qA, v.vtiA / (100 * v.vmax * ET));
   v.pL = fitP(1, v.vtiL / (100 * v.vL * ET));

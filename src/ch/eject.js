@@ -1,7 +1,7 @@
 // Systolic function. LV volumes by the biplane method of disks in the apical four- and
 // two-chamber views: each echo view with its traced border and disks, above the disk model of the
 // same LV, and what foreshortening does to them. The RV side (three measures of RV systolic
-// function: TAPSE, tissue Doppler S′, fractional area change) is hidden: chapter 13 (rv.js) shows
+// function: TAPSE, tissue Doppler S′, fractional area change) is hidden: rv.js shows
 // the RV; the code stays and comes back with SHOW_RV.
 // The text holds the measurements as a diagram, with ▲▼ buttons on the traced volumes (LV) and
 // on TAPSE, S′ and the RV areas (RV), and a switch for the sex: the stroke volume, the LVEF and
@@ -29,7 +29,7 @@ import { BSA } from './pressure.js';
 /** A ▲▼ edit renders again and keeps its button under the pointer (edits.js). */
 const steady = (btn, fn) => holdPlace('#ch-eject .live', btn, fn);
 
-// The RV side, hidden: chapter 13 shows the RV. With true, the Ventricle switch in index.html
+// The RV side, hidden: rv.js shows the RV. With true, the Ventricle switch in index.html
 // (hidden there) shows it again.
 const SHOW_RV = false;
 /** The side shown: the LV, or the RV when SHOW_RV allows it. */
@@ -768,7 +768,7 @@ export default {
   },
   tourEnter(set) { set({ side: 'lv', edv: 120, ef: 60, wall: 9, fore: 0, ejSex: 'M', frame8: 'cine' }); },
   // the LV only: a dilated LV with a reduced EF, then foreshortened views, then back (the RV
-  // steps went with the RV side to chapter 13)
+  // steps went with the RV side to rv.js)
   tourTick(tt, set) {
     if (tt < 5) set({ ef: Math.round(60 - clamp((tt - 1) / 3.5, 0, 1) * 30), edv: Math.round(120 + clamp((tt - 1) / 3.5, 0, 1) * 80) });
     else if (tt < 9.5) set({ ef: 60, edv: 120, fore: Math.round(clamp((tt - 5.5) / 3, 0, 1) * 20) });

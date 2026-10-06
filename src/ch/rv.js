@@ -409,7 +409,7 @@ function titleOf(ctx, w, names) {
   return t;
 }
 
-/** Where the RV's name goes: its open blood 2.5 cm from the tricuspid annulus into the RV (as chapter 18). */
+/** Where the RV's name goes: its open blood 2.5 cm from the tricuspid annulus into the RV (as in tr.js). */
 function rvName(ev, s) {
   const h = hingesOf(ev, 'TricuspidValve');
   if (!h) return null;
