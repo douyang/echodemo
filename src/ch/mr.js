@@ -76,14 +76,24 @@ const P_LO = 0.25, P_HI = 24;
 const DUR = EV.mvo - EV.mvc;                     // ms, mitral closure to mitral opening
 const durOf = (onset) => DUR * (1 - onset);      // ms, the leak, from its onset
 const q2 = (v) => Math.round(v * 50) / 50;
+// The round and the triangular parts peak at different times, so a mix of the two peaks below 1:
+// each shape is divided by its own peak, so that the envelope reaches the printed peak velocity.
+const SHAPE_PEAK = new Map();
 function shapeOf(tri) {
-  return (u) => {
+  const g = (u) => {
     if (u <= 0 || u >= 1) return 0;
     const rnd = Math.pow(Math.sin(Math.PI * u), 0.4);
     const pk = 0.32;
     const tr = u < pk ? Math.pow(u / pk, 0.45) : Math.pow((1 - u) / (1 - pk), 0.9);
     return rnd * (1 - tri) + tr * tri;
   };
+  let top = SHAPE_PEAK.get(tri);
+  if (top === undefined) {
+    top = 0;
+    for (let i = 1; i < 2000; i++) top = Math.max(top, g(i / 2000));
+    SHAPE_PEAK.set(tri, top);
+  }
+  return (u) => g(u) / top;
 }
 const memo = new Map();
 /** The mean of g^p over the leak (cached: the limits and the fit ask often). */
@@ -206,6 +216,13 @@ function shown(s) {
   return lastShown;
 }
 export const gradeOf = (s) => measure(modelAt(s)).grade;
+/** The values as printed at slider position s, for the heart shown (chapter Automated measurements reads the peak). */
+export const valuesAt = (s) => measure(modelAt(s));
+/** The CW envelope of the MR jet for the values v: t ms of the beat -> velocity (m/s, away from the probe). */
+export function mrCw(v) {
+  const g = shapeOf(q2(v.tri)), t0 = EV.mvc + v.onset * (EV.mvo - EV.mvc);
+  return (t) => (v.leak ? v.vmax * Math.pow(g((t - t0) / (EV.mvo - t0)), v.p) : 0);
+}
 
 // the results: their level (the colour of their band), the bold lead of the live sentence, and
 // the line under it in the diagram
@@ -355,14 +372,8 @@ function mrCW(ctx, P, v) {
   panel(ctx, P.x, P.y, P.w, P.h, fit(P.w, 'CW · MITRAL REGURGITATION', 'CW · MR'));
   const bx = inner(P);
   const tri = q2(v.tri), dens = q2(clamp(v.rvol / 60, 0.06, 1)), vs = Math.max(6, Math.ceil(v.vmax + 0.6));
-  const g = shapeOf(tri), p = v.p;
-  const t0 = EV.mvc + v.onset * (EV.mvo - EV.mvc);
-  const fn = (u) => {
-    const tt = (u * 2 * RR) % RR;
-    const w = (tt - t0) / (EV.mvo - t0);
-    return v.leak ? -v.vmax * Math.pow(g(w), p) : 0;
-  };
-  spectral(ctx, bx, { fn, scale: vs, base: 0.06, mode: 'cw', broad: 0.35 + 0.4 * (1 - dens), key: `mrcw|${v.leak}|${v.vmax}|${tri}|${p.toFixed(4)}|${q2(v.onset)}|${dens}|${vs}`, seed: 12 });
+  const env = mrCw(v), fn = (u) => -env((u * 2 * RR) % RR);
+  spectral(ctx, bx, { fn, scale: vs, base: 0.06, mode: 'cw', broad: 0.35 + 0.4 * (1 - dens), key: `mrcw|${v.leak}|${v.vmax}|${tri}|${v.p.toFixed(4)}|${q2(v.onset)}|${dens}|${vs}`, seed: 12 });
   if (dens < 0.95) {
     ctx.save();
     ctx.fillStyle = SC.bg;

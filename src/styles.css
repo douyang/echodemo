@@ -853,6 +853,9 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="masses"] .stage { height: min(64vh, 560px); }
   /* Hypertrophic cardiomyopathy: two echo views beside two CW strips and an M-mode strip */
   html[data-ch="hcm"] .stage { height: min(64vh, 560px); }
+  /* Automated measurements: the echo view or the recording, the heat map's close-up beside its
+     arithmetic, and the measurement on every frame, stacked */
+  html[data-ch="measure"] .stage { height: min(64vh, 560px); }
   /* Study interpretation: the 14 videos, the heat map of the weights and the section, one under the other */
   html[data-ch="ai"] .stage { height: min(70vh, 600px); }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }

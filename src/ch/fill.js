@@ -72,6 +72,9 @@ function measure(raw) {
   return v;
 }
 
+/** The values as printed at slider position f (chapter Automated measurements reads E, A and e′). */
+export const valuesAt = (f) => measure(fillValues(f));
+
 /** The values on screen: the edited nine (fx), or the model's at the slider. */
 function shown(s) {
   if (!s.fx) return measure(fillValues(s.fstate));
@@ -125,7 +128,8 @@ let BANDS = [];
 
 let sheet = null, st = null, setState = null;
 
-function inflow(v) {
+/** Mitral inflow (m/s, toward the probe) for the values v: E from mitral opening, A after the P wave. */
+export function inflow(v) {
   // E from mitral opening, linear deceleration over DT; A after the P wave
   const eUp = 70;
   return (tt) => {
@@ -140,7 +144,8 @@ function inflow(v) {
     return out;
   };
 }
-function tissue(v, eP) {
+/** Annular tissue velocity (m/s, + toward the probe) for e′ of eP cm/s: s′ in systole, e′ and a′ away from the probe. */
+export function tissue(v, eP) {
   return (tt) => {
     const t = ((tt % RR) + RR) % RR;
     if (t > 70 && t < 330) return 0.08 * Math.sin(Math.PI * (t - 70) / 260) ** 0.9;
