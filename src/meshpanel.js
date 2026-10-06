@@ -128,6 +128,8 @@ export class MeshPanel {
     ev.setFore(o.fore || 0);
     ev.setShift(o.shift || 0);
     ev.setCalc(o.calc || {});
+    // o.ivc: the IVC's caliber below the diaphragm, a factor on the model's (echo.js setIvc)
+    ev.setIvc(o.ivc ?? 1);
     const reg = o.regional || null, regKey = reg ? reg.key : '';
     if (regKey !== this.regKey) { ev.setRegional(reg ? reg.scale : null, reg ? reg.peri : null); this.regKey = regKey; }
     ev.noSys = !!o.noSys;
@@ -138,7 +140,7 @@ export class MeshPanel {
     const tms = o.tms ?? 0;
     const c = cycleAt(tms);
     const drive = o.drive ? o.drive(c.drive, c.t) : c.drive;
-    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, ev.periW, ev.periE, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive), o.extraKey || '', o.underKey || '', o.rvReg ? o.rvReg.key : ''].join('|');
+    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, ev.periW, ev.periE, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive), o.extraKey || '', o.underKey || '', o.rvReg ? o.rvReg.key : '', o.ivc ?? 1].join('|');
     if (key !== this.last) {
       ev.frame({ s: c.s, v: c.v, drive, phase: c.phase, t: c.t });
       this.last = key;

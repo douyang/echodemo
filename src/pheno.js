@@ -75,6 +75,8 @@ QUIET.strS = 0;
 QUIET.aorS = 0;
 // no heart of the menu has a mechanical complication of infarction: under a disease heart the MI page starts with none
 QUIET.micS = 0;
+// no heart of the menu is in shock: under a disease heart the shock page starts at the heart's own state
+QUIET.shkS = 0;
 /** The chapter state that heart key starts from ({} for the normal heart). */
 export function presetsFor(key) { return key === 'normal' || !PRESETS[key] ? {} : { ...QUIET, ...PRESETS[key] }; }
 /** Every state key that some heart presets. */
