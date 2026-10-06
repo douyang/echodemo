@@ -541,8 +541,8 @@ function cwMr(ctx, Pn, v) {
     return bx;
   }
   // the MR jet lies beside the LVOT, and a beam between the two records both: the MR envelope,
-  // and inside it the LVOT's, brighter where the two add (as chapter 14 draws the LVOT inside the
-  // aortic jet). The LVOT strip above holds its beam on the LVOT alone.
+  // and inside it the LVOT's, brighter where the two add (as.js draws the LVOT inside the
+  // aortic jet in the same way). The LVOT strip above holds its beam on the LVOT alone.
   const at = (u) => (u * 2 * RR) % RR;
   spectral(ctx, bx, {
     fn: [(u) => -mrAt(v, P, at(u)), (u) => -lvotAt(P, at(u))], gain: [0.8, 1.3], scale: vs, base, mode: 'cw', broad: 0.35,

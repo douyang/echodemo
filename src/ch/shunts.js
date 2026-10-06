@@ -279,7 +279,7 @@ const studyBeat = () => B0 + Math.floor(study.ms / RR);
 // ---------------------------------------------------------------- the figure
 // The views cut from the heart mesh (meshpanel.js), on the heart the page shows. ASD: the RV and
 // the RA at the printed RV basal diameter and RA area (rvGrow, raGrow; meshcal.js rvGrowOf and
-// raAreaWeight, as chapter 13). VSD: the LV at the printed LVEDD (lvSize, meshcal.js lvSizeOf)
+// raAreaWeight, as in rv.js). VSD: the LV at the printed LVEDD (lvSize, meshcal.js lvSizeOf)
 // and the LA at the printed LA volume index (la, laWeight). The defect is a disc in the septum
 // of the printed diameter (gl/shuntsmesh.js). Its middle and axis lie in the plane of the view
 // that measures it, so that view's cut is the printed diameter wide. It is drawn as blood
@@ -439,7 +439,7 @@ function asdSub(ctx, box, v, tt) {
   });
 }
 
-/** Where the RV's name goes: its open blood 2.5 cm from the tricuspid annulus into the RV (as chapter 13). */
+/** Where the RV's name goes: its open blood 2.5 cm from the tricuspid annulus into the RV (as in rv.js). */
 function rvName(ev, s) {
   const h = hingesOf(ev, 'TricuspidValve');
   if (!h) return null;
@@ -484,7 +484,7 @@ function vsdSax(ctx, box, v, tt) {
   });
 }
 
-/** The long axis: the LV at the printed LVEDD, with the calipers of chapter 15, and the LA. */
+/** The long axis: the LV at the printed LVEDD, with the calipers of ar.js, and the LA. */
 function vsdLax(ctx, box, v, tt) {
   const heart = heartOf(st), size = lvSizeOf(heart, v.lvedd), sy = cycleAt(tt).s;
   P_LAX.draw(ctx, box, titleOf(ctx, box.w, ['PARASTERNAL LONG AXIS', 'PLAX']), {
@@ -637,7 +637,7 @@ function vsdCW(ctx, P, v) {
   return bx;
 }
 
-/** CW through the tricuspid valve: the TR jet and the RV systolic pressure (as chapter 13). */
+/** CW through the tricuspid valve: the TR jet and the RV systolic pressure (as in rv.js). */
 function trCW(ctx, P, v) {
   panel(ctx, P.x, P.y, P.w, P.h, fit(P.w, 'CW · TRICUSPID REGURGITATION', 'CW · TR'));
   const bx = inner(P);

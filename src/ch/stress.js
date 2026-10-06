@@ -316,7 +316,7 @@ function stageTitle(S, n, w) {
   return w < 250 ? `${S.short} ${n.dose} · ${hr}` : `${S.up} · ${n.dose} µg/kg/min · ${hr}`;
 }
 
-/** The segment numbers on a view's walls, colored by their score at that stage (as chapter 10). */
+/** The segment numbers on a view's walls, colored by their score at that stage (as in segments.js). */
 function dots(ctx, F, list, sc, small) {
   const bx = F.view.box;
   ctx.save();

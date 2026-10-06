@@ -334,7 +334,7 @@ export async function preparePhenotypes(meshes, anat, turn, VESSELS) {
   // the LV wall, smoothed over 0.7 cm so the septum's two faces and the LV-RV junctions blend
   const G = grid(mpos, null, 0.7);
   const lvMask = new Float32Array(nMyo), laNear = new Float32Array(nMyo), aoNear = new Float32Array(nMyo);
-  // the RV free wall, smoothed as the LV wall is, without the septum's RV face (chapter 13 scales its
+  // the RV free wall, smoothed as the LV wall is, without the septum's RV face (rv.js scales its
   // contraction): the share of RV wall within 0.7 cm, where the wall lies 1.3 cm or more out from
   // the LV cavity's radius (as rvGrow takes the free wall)
   const rvMask = new Float32Array(nMyo);
@@ -402,7 +402,7 @@ export async function buildPhenotype(ctx, key) {
 export const DISEASE = {
   // the left atrium scaled about the mitral valve: by 2 at weight 1, so weight w scales it by 1 + w
   la: { la: 2 },
-  // Pericardial effusion and tamponade (chapter 17). Weights in cm unless noted.
+  // Pericardial effusion and tamponade (peri.js). Weights in cm unless noted.
   // eff, effAnt: the sac out from the heart, 1 cm over the free walls and round the apex, less
   // toward the atrioventricular grooves and none over the atria. eff is where fluid collects
   // first, behind and beside the heart; effAnt is in front of it, filled in a larger effusion.
@@ -430,25 +430,25 @@ export const DISEASE = {
   // wall), negative to thin it.
   lvSize: { dilate: [[-0.3, 0.55], [0, 0.6], [0.2, 0.85], [0.5, 1.0], [0.8, 0.85], [1.0, 0.35], [1.2, 0]], stretch: 0.8 },
   lvWall: { lvAmy: { lv: 1 } },
-  // Tricuspid regurgitation (chapter 16). rvGrow: the RV free wall out from the LV axis, 1 cm at
+  // Tricuspid regurgitation (tr.js). rvGrow: the RV free wall out from the LV axis, 1 cm at
   // weight 1 across the middle of its span, from near the apex to the tricuspid annulus, which
   // widens with it. raGrow: the RA scaled about the tricuspid valve, by 1 + w at weight w, as the
   // LA target scales the LA about the mitral valve; the venae cavae next to it go with it. The
   // valve, the pericardium and the coronaries move with the wall next to them.
   rvGrow: { grow: 'rv' },
   raGrow: { grow: 'ra' },
-  // The right ventricle (chapter 13). rvThick: the RV free wall thicker, its epicardial face out
+  // The right ventricle (rv.js). rvThick: the RV free wall thicker, its epicardial face out
   // from the LV axis by 1 cm at weight 1 where rvGrow moves the wall most; the cavity keeps its
   // size, and the pericardium and the coronaries move with the face next to them.
   rvThick: { grow: 'rvthick' },
-  // Rheumatic mitral stenosis (chapter 14). msValve: open, each leaflet point loses a share of
+  // Rheumatic mitral stenosis (ms.js). msValve: open, each leaflet point loses a share of
   // its swing that grows toward the tips (all of it at the tips at weight 1), so the tips hold
   // a small orifice and the bodies bow into the LV; shut, the valve is the heart's own. mvThick:
   // the leaflets thicker, by 1 mm at the tips and 0.5 mm at the base per unit of weight. The
   // chordae next to the leaflets move with them.
   msValve: { valve: 'ms' },
   mvThick: { valve: 'thick' },
-  // Calcific aortic stenosis (chapter 12). avSten: the cusps stiff, each swinging open by 1 - w of
+  // Calcific aortic stenosis (as.js). avSten: the cusps stiff, each swinging open by 1 - w of
   // its own swing (shut at weight 1); avThick: the cusps thicker, by 1 mm at their bases and
   // 0.5 mm at their free edges per unit of weight.
   avSten: { valve: 'as' },

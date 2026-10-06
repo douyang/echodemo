@@ -400,7 +400,7 @@ a:hover { text-decoration-color: var(--accent); }
 @media (min-width: 561px) and (max-width: 820px) {
   #ch-windows .readouts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-/* chapter 19: a value with its unit wraps in a narrow box (a phone, a tablet's panel); the unit
+/* stress echocardiography: a value with its unit wraps in a narrow box (a phone, a tablet's panel); the unit
    goes to the next line whole */
 #ch-stress .readout dd { white-space: normal; }
 #ch-stress .readout dd small { display: inline-block; white-space: nowrap; }
