@@ -9,6 +9,7 @@ import shift from './ch/shift.js';
 import pressure from './ch/pressure.js';
 import eject from './ch/eject.js';
 import segments from './ch/segments.js';
+import strainPage from './ch/strain.js';
 import fill from './ch/fill.js';
 import asPage from './ch/as.js';
 import arPage from './ch/ar.js';
@@ -50,6 +51,6 @@ export const PARTS = [
 ];
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, periPage, amyloidPage, stressPage, rvPage, constrictPage, hcmPage, shuntsPage, massesPage, measurePage, aiPage, report].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, periPage, amyloidPage, strainPage, stressPage, rvPage, constrictPage, hcmPage, shuntsPage, massesPage, measurePage, aiPage, report].map((c) => [c.key, c]));
 /** The chapters in reading order (order.js). */
 export const CHAPTERS = ORDER.map((k) => BY[k]);

@@ -135,6 +135,27 @@ export const VIDEOS = {
       { set: { culprit: 'lcx' }, track: 'Circumflex', pick: [0, 1], move: 4, hold: 9 },
     ],
   },
+  // 12: GLS from normal function to severe dysfunction (the global pattern, four-chamber view);
+  // the LAD territory akinetic (the regional pattern, two-chamber view); then a follow-up study
+  // during cancer therapy against its baseline: mild, moderate and severe CTRCD, and a new rise in
+  // the cardiac biomarkers alone
+  strain: {
+    pane: 'Speckle tracking',
+    side: false,
+    quant: { strS: 0.005 },
+    steps: [
+      { set: { strTab: 'strain', strPat: 'global', strView: 'a4c', strBio: false, strS: 0 }, track: 'Normal', pick: [0, 1], hold: 7 },
+      { set: { strS: 0.25 }, track: 'Borderline', pick: [1], move: 4, hold: 6 },
+      { set: { strS: 0.38 }, track: 'GLS abnormal', pick: [3, 4], move: 4, hold: 7 },
+      { set: { strS: 0.8 }, track: 'LVEF abnormal', pick: [1, 3], move: 4, hold: 6 },
+      { set: { strPat: 'regional', strView: 'a2c', strS: 0.6 }, cut: true, name: 'The regional pattern: the LAD territory', track: 'LAD territory', pick: [2, 3], move: 4, hold: 8 },
+      { set: { strTab: 'onco', strS: 0 }, cut: true, name: 'Cardio-oncology: baseline and follow-up', track: 'Baseline', line: 'A baseline study and a follow-up study during cancer therapy, side by side.', move: 3, hold: 4 },
+      { set: { strS: 0.5 }, track: 'Mild CTRCD', pick: [0, 1], move: 4, hold: 7 },
+      { set: { strS: 0.78 }, track: 'Moderate CTRCD', pick: [0, 1], move: 4, hold: 7 },
+      { set: { strS: 1 }, track: 'Severe CTRCD', pick: [0, 1], move: 4, hold: 7 },
+      { set: { strS: 0, strBio: true }, cut: true, name: 'A new rise in cardiac biomarkers', track: 'Biomarkers', pick: [1, 2], move: 3, hold: 7 },
+    ],
+  },
   // 10: from normal filling to grade 3
   fill: {
     pane: 'Diastolic function',
