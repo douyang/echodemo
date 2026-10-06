@@ -684,8 +684,6 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .play[aria-pressed="true"] .i-play { display: none; }
 .play[aria-pressed="true"] .i-pause { display: block; }
 .groups {
-  grid-column: 2;
-  grid-row: 1;
   display: grid;
   grid-template-columns: repeat(var(--n-ch, 13), minmax(0, 1fr));
   list-style: none;
@@ -705,11 +703,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.groups li span { color: var(--accent); margin-right: 3px; }
 .groups li.is-cur { color: var(--ink); border-top-color: var(--ink-2); }
 .chapters {
-  grid-column: 2;
-  grid-row: 2;
   position: relative;
   list-style: none;
   margin: 0;
@@ -736,20 +731,43 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .track .line { stroke: var(--rule); stroke-width: 1.2; fill: none; }
 .track .done { stroke: var(--ink); stroke-width: 1.4; fill: none; }
 .track .dot { fill: var(--paper-2); stroke: var(--accent); stroke-width: 2; }
-/* phones: back, the chapter (a tap lists all of them), next, in place of the numbers */
-.pager { display: none; }
+/* the bar's body: back, the row of chapters (on phones, the open chapter), next and the list.
+   The full row shows the chapters only. */
+.pager { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rail { flex: 1; min-width: 0; }
 .pg-step, .pg-cur { touch-action: manipulation; cursor: pointer; }
-.pg-step { flex: none; width: 44px; height: 44px; padding: 0; border: 1px solid var(--rule); border-radius: 50%; background: transparent; color: var(--ink); display: grid; place-items: center; }
+.pg-step { flex: none; width: 44px; height: 44px; padding: 0; border: 1px solid var(--rule); border-radius: 50%; background: transparent; color: var(--ink); display: none; place-items: center; }
 .pg-step svg { width: 16px; height: 16px; }
 .pg-step:disabled { color: var(--ink-3); opacity: 0.4; cursor: default; }
-.pg-cur { flex: 1; min-width: 0; min-height: 44px; display: flex; align-items: center; gap: 9px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 22px; background: var(--paper); color: var(--ink); }
+@media (hover: hover) { .pg-step:not(:disabled):hover { border-color: var(--ink-2); } }
+.pg-cur { flex: 1; min-width: 0; min-height: 44px; display: none; align-items: center; gap: 9px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 22px; background: var(--paper); color: var(--ink); }
 .pg-cur .n { flex: none; font: 600 0.8125rem/1 var(--sans); letter-spacing: 0.08em; color: var(--accent); font-variant-numeric: tabular-nums; }
 .pg-cur .t { flex: 1; min-width: 0; max-height: 2.24em; overflow: hidden; text-align: left; font: 400 0.9375rem/1.12 var(--serif); }
 .pg-cur svg { flex: none; width: 14px; height: 14px; color: var(--ink-2); }
-/* when the chapters' names do not all fit in the row (main.js fitTransport): the phone's back,
-   chapter and next in place of the numbers */
-.transport.is-compact .groups, .transport.is-compact .chapters { display: none; }
-.transport.is-compact .pager { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 640px; }
+/* the strip, when the names do not all fit in the row (main.js fitTransport): the same row
+   slides between back and next, each name at its own width. The edges fade over the padding, so
+   the first and the last name show in full at the ends. A part's name stays at the left edge
+   while its chapters show. main.js measures each name in both weights (data-measure). */
+.transport[data-measure="regular"] .chapters button .t { font-weight: 400; }
+.transport[data-measure="current"] .chapters button .t { font-weight: 500; }
+@media (min-width: 821px) {
+  .transport.is-strip .pg-step { display: grid; }
+  .transport.is-strip .rail {
+    --edge: 28px;
+    padding: 0 var(--edge);
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--edge), #000 calc(100% - var(--edge)), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 var(--edge), #000 calc(100% - var(--edge)), transparent);
+  }
+  .transport.is-strip .rail::-webkit-scrollbar { display: none; }
+  .transport.is-strip .groups, .transport.is-strip .chapters { width: max-content; }
+  .transport.is-strip .groups li { overflow: visible; }
+  /* a sticky offset counts from the strip's padding, the end of the fade */
+  .transport.is-strip .groups li span { position: sticky; left: 0; display: inline-block; vertical-align: top; }
+}
 
 /* ------------------------------------------------------------------ dialog */
 dialog {
@@ -821,15 +839,11 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
     column-gap: 10px;
   }
-  .groups { display: none; }
-  .chapters { grid-row: 1 / span 2; align-self: center; }
-  /* the numbers are 19 px wide here: back, the chapter and next take their place */
-  .chapters { display: none; }
-  .pager { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  /* the numbers would be 19 px wide here: back, the chapter and next take the row's place */
+  .rail, #pg-list { display: none; }
+  .pg-step { display: grid; }
+  .pg-cur { display: flex; }
   .play { width: 38px; height: 38px; }
-  .chapters .t { display: none; }
-  .chapters .n { font-size: 0.75rem; text-align: center; }
-  .chapters button { text-align: center; padding: 6px 0 8px; }
   .split { grid-template-columns: 1fr; grid-template-rows: 40% 60%; }
   /* Views: the planes across the top, the cross-section and the echo side by side under
      them, in a taller figure */
@@ -902,7 +916,6 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .readout dt { letter-spacing: 0.1em; }
   .readout dd { font-size: 1rem; }
   .ch-num { font-size: 2.6rem; }
-  .chapters .n { font-size: 0.6875rem; letter-spacing: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .chapter.is-active { animation: none; }

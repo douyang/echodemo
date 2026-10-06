@@ -335,7 +335,17 @@ $('#chapters').addEventListener('click', (e) => {
   if (b) goChapter(Number(b.dataset.go));
 });
 
-const trackX = (i, w) => ((i + 0.08) / CHAPTERS.length) * w;
+/**
+ * The chapters of the bar and of its list, in order, by their index in CHAPTERS. The row, the
+ * strip, the parts over them and the list all come from it. A chapter left out opens by back and
+ * next and by its address, and the bar then shows no chapter as current.
+ */
+const BAR = CHAPTERS.map((c, i) => i);
+
+// px: each bar chapter's place on the track, under the start of its number. The columns differ
+// in width, so the places come from the buttons (drawTrack).
+let trackXs = [];
+const trackX = (i) => trackXs[i] ?? 0;
 function trackPath(x0, x1) {
   let d = `M${x0.toFixed(1)},6`;
   for (let s = x0 + 18; s < x1; s += 18) d += ` L${Math.min(s, x1).toFixed(1)},${(6 + Math.sin(s * 0.13) * 0.9).toFixed(2)}`;
@@ -344,8 +354,9 @@ function trackPath(x0, x1) {
 function drawTrack() {
   const svg = $('#track');
   const w = svg.clientWidth || 600;
+  trackXs = $$('#chapters button[data-go]').map((b) => b.offsetLeft + 4.5);
   svg.setAttribute('viewBox', `0 0 ${w} 12`);
-  svg.innerHTML = `<path class="line" d="${trackPath(trackX(0, w), trackX(CHAPTERS.length - 1, w))}"/><path class="done"/><circle class="dot" cy="6" r="4.5"/>`;
+  svg.innerHTML = `<path class="line" d="${trackPath(trackX(0), trackX(BAR.length - 1))}"/><path class="done"/><circle class="dot" cy="6" r="4.5"/>`;
   dotX = -1;
   moveDot();
 }
@@ -355,13 +366,17 @@ function moveDot() {
   const svg = $('#track');
   const dot = svg.querySelector('.dot');
   if (!dot) return;
-  const w = svg.clientWidth || 600, i = state.chapter;
-  const f = i < CHAPTERS.length - 1 ? Math.min(1, dotT / CHAPTERS[i].dwell) : 0;
-  const x = trackX(i, w) + (trackX(Math.min(i + 1, CHAPTERS.length - 1), w) - trackX(i, w)) * f;
+  // the open chapter's place in the bar. A chapter outside the bar shows no dot, and the line is
+  // done up to the bar's last chapter before it.
+  const i = state.chapter, k = BAR.indexOf(i), last = BAR.length - 1;
+  const at = k >= 0 ? k : BAR.filter((j) => j < i).length - 1;
+  const f = k >= 0 && k < last ? Math.min(1, dotT / CHAPTERS[i].dwell) : 0;
+  const x = at < 0 ? 0 : trackX(at) + (trackX(Math.min(at + 1, last)) - trackX(at)) * f;
+  dot.style.visibility = k < 0 ? 'hidden' : '';
   if (Math.abs(x - dotX) < 0.3) return;
   dotX = x;
   dot.setAttribute('cx', x.toFixed(1));
-  svg.querySelector('.done').setAttribute('d', trackPath(trackX(0, w), x));
+  svg.querySelector('.done').setAttribute('d', at < 0 ? '' : trackPath(trackX(0), x));
 }
 new ResizeObserver(() => drawTrack()).observe($('#track'));
 
@@ -409,10 +424,11 @@ function showChapter() {
   if (!!state.anim !== autoplay) set({ anim: autoplay });
   $$('.chapter').forEach((a) => a.classList.toggle('is-active', a.id === `ch-${c.key}`));
   $$('.fig').forEach((f) => f.classList.toggle('is-active', f.id === `fig-${c.key}`));
-  $$('#chapters button[data-go]').forEach((b, k) => (k === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
-  $$('#groups li').forEach((li) => li.classList.toggle('is-cur', li.dataset.part === c.part));
+  $$('#chapters button[data-go]').forEach((b) => (Number(b.dataset.go) === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
+  $$('#groups li').forEach((li) => li.classList.toggle('is-cur', BAR.includes(i) && li.dataset.part === c.part));
   fitTransport();
   drawTrack();
+  centerChapter(true);
   $('#panel').scrollTop = 0;
   if (matchMedia('(max-width: 820px)').matches) {
     const top = $('.masthead').offsetHeight;
@@ -583,37 +599,50 @@ function frame(now) {
 function buildTransport() {
   const nav = $('#chapters');
   const track = nav.querySelector('.track');
-  CHAPTERS.forEach((c, i) => {
+  for (const i of BAR) {
+    const c = CHAPTERS[i], n = String(i + 1).padStart(2, '0');
     const li = document.createElement('li');
-    li.innerHTML = `<button type="button" data-go="${i}" title="${esc(c.title)}" aria-label="${String(i + 1).padStart(2, '0')} ${esc(c.title)}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${esc(c.nav || c.title)}</span></button>`;
+    li.innerHTML = `<button type="button" data-go="${i}" title="${esc(c.title)}" aria-label="${n} ${esc(c.title)}"><span class="n">${n}</span><span class="t">${esc(c.nav || c.title)}</span></button>`;
     nav.insertBefore(li, track);
-  });
-  nav.style.setProperty('--n-ch', CHAPTERS.length);
+  }
+  nav.style.setProperty('--n-ch', BAR.length);
   const groups = $('#groups');
-  groups.style.setProperty('--n-ch', CHAPTERS.length);
-  // the parts by name, no numerals. A part of one chapter shows only its rule: the chapter's own
-  // button below names it, and a column is too narrow for the part's name
-  groups.innerHTML = PARTS.map((p) => {
-    const n = CHAPTERS.filter((c) => c.part === p.key).length;
-    return `<li data-part="${p.key}" style="--span: ${n}" title="${esc(p.name)}">${n > 1 ? esc(p.name) : ''}</li>`;
+  groups.style.setProperty('--n-ch', BAR.length);
+  // the parts by name, no numerals, over each run of the bar's chapters in one part. A part of
+  // one chapter shows only its rule: the chapter's own button below names it, and a column is too
+  // narrow for the part's name
+  const runs = [];
+  for (const i of BAR) {
+    const part = CHAPTERS[i].part;
+    if (runs.at(-1)?.part === part) runs.at(-1).n++; else runs.push({ part, n: 1 });
+  }
+  groups.innerHTML = runs.map(({ part, n }) => {
+    const p = PARTS.find((q) => q.key === part);
+    return `<li data-part="${part}" style="--span: ${n}" title="${esc(p?.name ?? '')}">${n > 1 && p ? `<span>${esc(p.name)}</span>` : ''}</li>`;
   }).join('');
   fitTransport();
-  document.fonts?.ready.then(fitTransport);
-  new ResizeObserver(fitTransport).observe($('.transport'));
-  // phones: back, the chapter, next. A tap on the chapter opens the list of all chapters, by part
+  // a new size or font: the form and the columns again, and the open chapter in the strip's middle
+  const refit = () => { if (fitTransport() || (isStrip() && $('#rail').clientWidth !== railW)) centerChapter(false); };
+  document.fonts?.ready.then(refit);
+  new ResizeObserver(refit).observe($('.transport'));
+  bindStrip();
+  // phones: back, the chapter, next. A tap on the chapter opens the list of all chapters, by part.
+  // In the strip, the button at its end opens the same list.
   const list = $('#chlist');
   list.innerHTML = PARTS.map((p) => {
-    const items = CHAPTERS.map((c, i) => [c, i]).filter(([c]) => c.part === p.key);
+    const items = BAR.filter((i) => CHAPTERS[i].part === p.key);
     if (!items.length) return '';
-    return `<li class="chgroup"><h3 class="dlg-sub">${esc(p.name)}</h3><ol>${items.map(([c, i]) => `<li><button type="button" data-go="${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${esc(c.title)}</span></button></li>`).join('')}</ol></li>`;
+    return `<li class="chgroup"><h3 class="dlg-sub">${esc(p.name)}</h3><ol>${items.map((i) => `<li><button type="button" data-go="${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${esc(CHAPTERS[i].title)}</span></button></li>`).join('')}</ol></li>`;
   }).join('');
   $('#pg-prev').addEventListener('click', () => goChapter(state.chapter - 1));
   $('#pg-next').addEventListener('click', () => goChapter(state.chapter + 1));
-  $('#pg-cur').addEventListener('click', () => {
+  const openList = () => {
     openDialog('dlg-chapters');
     const cur = list.querySelector('button[aria-current]');
     if (cur) { cur.scrollIntoView({ block: 'center' }); cur.focus({ preventScroll: true }); }
-  });
+  };
+  $('#pg-cur').addEventListener('click', openList);
+  $('#pg-list').addEventListener('click', openList);
   list.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-go]');
     if (!b) return;
@@ -654,30 +683,86 @@ function textWidth(el) {
   r.selectNodeContents(el);
   return r.getBoundingClientRect().width;
 }
+/** The width of a chapter's number or name, whichever is wider, as drawn. */
+const nameWidth = (b) => Math.max(textWidth(b.querySelector('.n')), textWidth(b.querySelector('.t')));
+const isStrip = () => $('.transport').classList.contains('is-strip');
+let barCols = '';
 /**
  * Columns of the chapter bar: each as wide as its chapter's name needs, and each part's columns
  * together as wide as the part's name, so that no name is cut short. The two rows share the
- * columns. When the names do not all fit, the bar takes the phone's form (is-compact): back, the
- * open chapter's number and title, which opens the list of all chapters, and next.
+ * columns. When the names do not all fit, the row becomes a strip (is-strip) that slides between
+ * back and next, each column at the width of its name. The test allows for any one name in the
+ * open chapter's heavier weight, so the form stays the same from one chapter to the next. Returns
+ * true when the form or the columns change.
  */
 function fitTransport() {
   const bar = $('.transport'), btns = $$('#chapters button[data-go]'), parts = [...$('#groups').children];
-  const was = bar.classList.contains('is-compact');
-  bar.classList.remove('is-compact');   // measure the row of names
-  const need = btns.map((b) => Math.max(textWidth(b.querySelector('.n')), textWidth(b.querySelector('.t'))) + 10);
-  if (!need.some((w) => w > 10)) { bar.classList.toggle('is-compact', was); return; }   // not laid out (a phone)
-  let k = 0;
-  for (const li of parts) {
-    const span = Number(li.style.getPropertyValue('--span')) || 1, sum = need.slice(k, k + span).reduce((a, b) => a + b, 0);
-    const want = li.textContent ? textWidth(li) + 16 : 0;   // with its right margin
-    if (want > sum) for (let j = k; j < k + span; j++) need[j] *= want / sum;
-    k += span;
-  }
-  const compact = need.reduce((a, b) => a + b, 0) > $('#chapters').clientWidth;
-  bar.classList.toggle('is-compact', compact);
-  if (compact) return;
-  const cols = need.map((w) => `minmax(0, ${w.toFixed(1)}fr)`).join(' ');
-  for (const el of [$('#chapters'), $('#groups')]) if (el.style.gridTemplateColumns !== cols) el.style.gridTemplateColumns = cols;
+  bar.dataset.measure = 'regular';
+  const reg = btns.map((b) => nameWidth(b) + 10);
+  bar.dataset.measure = 'current';
+  const cur = btns.map((b) => nameWidth(b) + 10);
+  delete bar.dataset.measure;
+  if (!reg.some((w) => w > 10)) return false;   // the row is hidden (a phone)
+  // a part's name wider than its chapters widens their columns, with its right margin
+  const widen = (need) => {
+    let k = 0;
+    for (const li of parts) {
+      const span = Number(li.style.getPropertyValue('--span')) || 1, sum = need.slice(k, k + span).reduce((a, b) => a + b, 0);
+      const want = li.textContent ? textWidth(li) + 16 : 0;
+      if (want > sum) for (let j = k; j < k + span; j++) need[j] *= want / sum;
+      k += span;
+    }
+    return need;
+  };
+  const k = BAR.indexOf(state.chapter);
+  const need = widen(reg.map((w, j) => (j === k ? cur[j] : w)));
+  const most = widen([...reg]).reduce((a, b) => a + b, 0) + Math.max(...cur.map((w, j) => w - reg[j]));
+  // the row's room in the full form: the bar's content less the Play button and the gap
+  const cs = getComputedStyle(bar);
+  const room = bar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - $('#play').offsetWidth - parseFloat(cs.columnGap);
+  const strip = most > room, was = isStrip();
+  bar.classList.toggle('is-strip', strip);
+  const cols = need.map((w) => (strip ? `${w.toFixed(1)}px` : `minmax(0, ${w.toFixed(1)}fr)`)).join(' ');
+  if (strip === was && cols === barCols) return false;
+  barCols = cols;
+  for (const el of [$('#chapters'), $('#groups')]) el.style.gridTemplateColumns = cols;
+  drawTrack();
+  return true;
+}
+
+// ---------------------------------------------------------------- the strip
+let railW = 0;   // px: the strip's width when it last put the open chapter in its middle
+/** Scroll the strip so that button b's name sits in its middle. glide: a smooth scroll, except with reduced motion. */
+function railTo(b, glide) {
+  const rail = $('#rail'), r = b.getBoundingClientRect(), box = rail.getBoundingClientRect();
+  const left = rail.scrollLeft + r.left + nameWidth(b) / 2 - (box.left + box.width / 2);
+  rail.scrollTo({ left, behavior: glide && !reducedMotion ? 'smooth' : 'auto' });
+}
+/**
+ * The strip: the open chapter in its middle (the ends stop at the first and the last chapter). A
+ * new chapter glides there, and a new layout jumps there.
+ */
+function centerChapter(glide) {
+  const rail = $('#rail'), w = rail.clientWidth;
+  if (!isStrip() || !w) { railW = 0; return; }
+  const b = $(`#chapters button[data-go="${state.chapter}"]`);
+  if (b) railTo(b, glide && w === railW);
+  railW = w;
+}
+/** The strip's own input: a vertical wheel slides it, and a key's focus brings a name out of the fades. */
+function bindStrip() {
+  const rail = $('#rail');
+  rail.addEventListener('wheel', (e) => {
+    if (!isStrip() || e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    rail.scrollLeft += e.deltaY * (e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? rail.clientWidth : 1);
+    e.preventDefault();
+  }, { passive: false });
+  rail.addEventListener('focusin', (e) => {
+    const b = e.target.closest('button[data-go]');
+    if (!b || !isStrip() || !b.matches(':focus-visible')) return;
+    const r = b.getBoundingClientRect(), box = rail.getBoundingClientRect(), edge = parseFloat(getComputedStyle(rail).paddingLeft);
+    if (r.left < box.left + edge || r.left + nameWidth(b) > box.right - edge) railTo(b, true);
+  });
 }
 
 function start() {
