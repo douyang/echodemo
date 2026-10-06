@@ -1420,7 +1420,11 @@ export class EchoView {
       ...sacItems,
       ...wallItems,
       { polys: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, rule: 'evenodd' },
-      { polys: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo },
+      // the papillary muscles and the RV's trabeculations. Their parts overlap: the moderator band
+      // and the RV papillary muscles, and the parts of the LV papillary muscles. The section walk
+      // winds each loop either way, so a nonzero fill left the overlap of two loops of opposite
+      // winding as blood. The union rule fills it as muscle.
+      { polys: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, rule: 'union' },
       { borders: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, spec: 8, closed: true },
       { borders: open.map((L) => L.pts), refs: ref(open), e: DB.myo, spec: 8 },
       { borders: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, spec: 6, closed: true },

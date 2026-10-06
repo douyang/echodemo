@@ -335,21 +335,30 @@ const SUB = 4;
 
 /**
  * Fill polygons at amplitude a, with id tag and shadow factor shf. rings: [start, end) pairs
- * of point indices into RB (raster coordinates), each ring closed.
+ * of point indices into RB (raster coordinates), each ring closed. rule: 'evenodd', 'union'
+ * or nonzero (any other value).
  */
-function fillPolys(G, rings, evenodd, a, tag, shf) {
+function fillPolys(G, rings, rule, a, tag, shf) {
   const { NB, NS, A, ID, SF, COV, HEAD } = G;
   const nsub = NS * SUB;
+  const evenodd = rule === 'evenodd', union = rule === 'union';
   HEAD.fill(-1);
   let nx = 0, kmin = nsub, kmax = -1;
   for (let r = 0; r < rings.length; r += 2) {
     const s0 = rings[r], s1 = rings[r + 1], n = (s1 - s0) >> 1;
     if (n < 3) continue;
+    // union: every ring winds the same way, so two rings that overlap add up and stay filled
+    let sg = 1;
+    if (union) {
+      let ar = 0;
+      for (let i = 0; i < n; i++) { const pi = s0 + 2 * i, qi = s0 + 2 * ((i + 1) % n); ar += RB[pi] * RB[qi + 1] - RB[qi] * RB[pi + 1]; }
+      if (ar < 0) sg = -1;
+    }
     for (let i = 0; i < n; i++) {
       const pi = s0 + 2 * i, qi = s0 + 2 * ((i + 1) % n);
       const ya = RB[pi + 1], yb = RB[qi + 1];
       if (ya === yb) continue;
-      const w = yb > ya ? 1 : -1, lo = w > 0 ? ya : yb, hi = w > 0 ? yb : ya;
+      const up = yb > ya, w = up ? sg : -sg, lo = up ? ya : yb, hi = up ? yb : ya;
       let k0 = Math.ceil((lo + 0.5) * SUB - 0.5), k1 = Math.ceil((hi + 0.5) * SUB - 0.5) - 1;
       if (k0 < 0) k0 = 0;
       if (k1 > nsub - 1) k1 = nsub - 1;
@@ -507,6 +516,8 @@ const MOT = new Float32Array(256 * 6);
  *   { borders: [[x, y]...][], e, spec (dB added at normal incidence), w, refs, closed, all }
  *       surfaces: brighter where the beam meets them head-on; all: draw oblique parts at e too
  *   blood: true on a fill: no id, no motion
+ * rule: nonzero by default; 'evenodd'; 'union': every point inside any ring fills, whichever
+ *   way each ring runs.
  * refs: the same shapes in the reference frame (same point counts): the scatterers move with them.
  * o: { t (ms in the beat: the noise follows it and holds when it holds), gain (dB), q (image
  *      pixels per CSS px; the screen's by default), live (the cine runs), key (the caller: a
@@ -565,7 +576,7 @@ function rasterize(G, items) {
       RBn = 0;
       const rings = [];
       for (const p of it.polys) if (p && p.length > 2) { const s0 = toRaster(G, p, true); rings.push(s0, RBn); }
-      fillPolys(G, rings, it.rule === 'evenodd', amp(it.e), tag, shf);
+      fillPolys(G, rings, it.rule, amp(it.e), tag, shf);
     }
     if (it.lines) {
       const hw = (it.w ?? 0.1) / 2, a = amp(it.e);
