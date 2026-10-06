@@ -472,6 +472,32 @@ export const VIDEOS = {
       { set: { maS: 0.85 }, track: 'Mobile', pick: [0, 1], move: 4, hold: 7 },
     ],
   },
+  // Complications of myocardial infarction: the chapter's tour. The septal rupture grows until the
+  // RV pressure rises; the posteromedial papillary muscle tears, one head and then the whole
+  // muscle; the inferolateral wall ruptures into a pseudoaneurysm, then bleeds into the
+  // pericardium; the akinetic apex turns dyskinetic, then into an aneurysm with a mural thrombus
+  mi: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { micS: 0.005 },
+    steps: [
+      { set: { micCase: 'vsr', micS: 0 }, track: 'No rupture', pick: [0, 1], hold: 6 },
+      { set: { micS: 0.25 }, track: 'Small', pick: [0, 3], move: 3, hold: 7 },
+      { set: { micS: 0.55 }, track: 'Qp/Qs ≥1.5', pick: [1, 4], move: 4, hold: 7 },
+      { set: { micS: 0.9 }, track: 'RVSP ≥50', pick: [2, 3], move: 4, hold: 7 },
+      { set: { micCase: 'pmr', micS: 0 }, track: 'Intact', pick: [0, 1], move: 2, cut: true, hold: 6 },
+      { set: { micS: 0.4 }, track: 'One head', pick: [1, 2], move: 3, hold: 7 },
+      { set: { micS: 0.85 }, track: 'Whole muscle', pick: [3, 4], move: 4, hold: 8 },
+      { set: { micCase: 'fwr', micS: 0 }, track: 'No rupture', pick: [0, 1], move: 2, cut: true, hold: 6 },
+      { set: { micS: 0.4 }, track: 'Pseudoaneurysm', pick: [0, 2], move: 3, hold: 8 },
+      { set: { micS: 0.6 }, track: 'Effusion', pick: [4, 5], move: 3, hold: 6 },
+      { set: { micS: 0.9 }, track: 'Tamponade', pick: [0, 1], move: 4, hold: 7 },
+      { set: { micCase: 'lva', micS: 0 }, track: 'Akinetic', pick: [0, 1], move: 2, cut: true, hold: 6 },
+      { set: { micS: 0.3 }, track: 'Dyskinetic', pick: [0, 1], move: 3, hold: 5 },
+      { set: { micS: 0.75 }, track: 'Aneurysm', pick: [1, 2], move: 4, hold: 7 },
+      { set: { micS: 1 }, track: 'Thrombus', pick: [0, 1], move: 4, hold: 7 },
+    ],
+  },
   // 27–28 Artificial intelligence, one video for the two chapters of part XI. EchoNet-Measurements
   // (its tour): the LV internal diameter, the septum and its map with a second peak, the aortic
   // root and the IVC; then TR, mitral E and E/A, and TAPSE, which loses its DICOM data. EchoPrime:

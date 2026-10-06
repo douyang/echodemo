@@ -471,6 +471,11 @@ export const DISEASE = {
   aoRoot: { ao: 'root' },
   aoAsc: { ao: 'asc' },
   aoCoa: { ao: 'coa' },
+  // Complications of myocardial infarction (chapter mi; src/gl/mimesh.js). miAneu: a true LV
+  // aneurysm at the apex, a wide-mouthed pouch with a thin wall at weight 1. miFlail: a flail
+  // anterior mitral leaflet, a move within the beat (setMotion).
+  miAneu: { mi: 'aneu' },
+  miFlail: { mi: 'flail' },
 };
 /** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {
@@ -481,6 +486,7 @@ export async function buildDisease(ctx, key) {
   if (P.hcm) return (await import('./hcmmesh.js')).buildHcm(ctx, key, P.hcm, { addTarget, grid, nearest });
   if (P.strain) return (await import('./strainmesh.js')).buildStrain(ctx, key, P.strain, { addTarget, grid, nearest });
   if (P.ao) return (await import('./aortamesh.js')).buildAorta(ctx, key, P.ao, { addTarget, grid, nearest });
+  if (P.mi) return (await import('./mimesh.js')).buildMi(ctx, key, P.mi, { addTarget, grid, nearest });
   const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
   /** The move of landmark name at weight 1 and end-diastole (cm). */
   out.shift = (name) => {
