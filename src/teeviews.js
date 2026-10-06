@@ -193,15 +193,18 @@ export function eso(E, y) {
   return { P, T, s };
 }
 
-// ---------------------------------------------------------------- the vessels
+// ---------------------------------------------------------------- the vessels and the appendage
 /**
  * Vertex sets of the myocardium mesh, picked once on its base shape by region (1 LV, 2 RV, 3 LA,
  * 4 RA, 5 aorta, 6 PA, 7 veins) and place: the descending aorta and the aortic arch, the
- * ascending aorta and the venae cavae. A heart's own shape moves the same vertices, so each
- * set follows the heart shown. The mesh's LA has no appendage (a smooth sac): no set for it.
+ * ascending aorta, the venae cavae and the LA appendage. A heart's own shape moves the same
+ * vertices, so each set follows the heart shown. The appendage is the LA's finger (the model's
+ * `laa`, merged into the LA): the LA vertices more than 2 cm from the LA's centroid along the
+ * direction of its farthest vertices (the 2% of them farthest from the centroid).
  */
 function vertexSets(base, region) {
-  const n = region.length, sets = { desc: [], arch: [], asc: [], svc: [], ivc: [] };
+  const n = region.length, sets = { desc: [], arch: [], asc: [], svc: [], ivc: [], laa: [] };
+  const la = [];
   for (let i = 0; i < n; i++) {
     const x = base[3 * i], y = base[3 * i + 1], z = base[3 * i + 2], r = region[i];
     if (r === 5 && z < -3.0 && y < 8.5) sets.desc.push(i);
@@ -209,7 +212,13 @@ function vertexSets(base, region) {
     if (r === 5 && y > 2.6 && y < 8.5 && z > -1.0 && x < 0.5) sets.asc.push(i);
     if (r === 7 && x < -1.8 && y > 2.6 && z > 0.5) sets.svc.push(i);
     if (r === 7 && x < -1.4 && y < -1.6 && z > 0.5) sets.ivc.push(i);
+    if (r === 3) la.push(i);
   }
+  const at = (i) => V3(base[3 * i], base[3 * i + 1], base[3 * i + 2]);
+  const c = la.reduce((a, i) => a.add(at(i)), V3()).multiplyScalar(1 / Math.max(1, la.length));
+  const far = la.map((i) => [i, at(i).distanceTo(c)]).sort((a, b) => b[1] - a[1]).slice(0, Math.max(1, Math.round(la.length * 0.02)));
+  const dir = far.reduce((a, [i]) => a.add(at(i).sub(c)), V3()).normalize();
+  sets.laa = la.filter((i) => at(i).sub(c).dot(dir) > 2.0);
   return sets;
 }
 /** A vessel's centre line from a vertex set: the mean of its vertices in slices along `along` (1 cm). */
@@ -237,7 +246,7 @@ function lineAt(L, y) {
 let SETS = null;
 /**
  * The geometry of the heart shown, for the probe and the labels: landmarks, axes, the esophagus,
- * the vessels, and where the probe lies in the stomach. ev: the chapter's
+ * the vessels, the LA appendage, and where the probe lies in the stomach. ev: the chapter's
  * EchoView (echo.js), whose mesh data and landmarks follow the heart of the Heart menu.
  */
 export function teeAnatomy(ev) {
@@ -255,6 +264,16 @@ export function teeAnatomy(ev) {
   G.ivc = centreLine(ed, SETS.ivc);
   // the arch: the centre of its section at each height, from 9 cm up (it runs front to back there)
   G.archPts = SETS.arch.map((i) => V3(ed[3 * i], ed[3 * i + 1], ed[3 * i + 2]));
+  // the appendage: its centre, its long axis (toward the tip) and the ends of its vertices along it
+  const L = SETS.laa.map((i) => V3(ed[3 * i], ed[3 * i + 1], ed[3 * i + 2]));
+  const lc = L.reduce((a, q) => a.add(q), V3()).multiplyScalar(1 / Math.max(1, L.length));
+  const C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  for (const q of L) { const v = q.clone().sub(lc).toArray(); for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) C[a][b] += v[a] * v[b]; }
+  let ax = lc.clone().sub(G.la).normalize();
+  for (let k = 0; k < 40; k++) { const v = ax.toArray(); ax = V3(...C.map((row) => row[0] * v[0] + row[1] * v[1] + row[2] * v[2])).normalize(); }
+  if (ax.dot(lc.clone().sub(G.la)) < 0) ax.negate();
+  const t = L.map((q) => q.clone().sub(lc).dot(ax));
+  G.laa = { c: lc, axis: ax, mouth: lc.clone().addScaledVector(ax, Math.min(...t)), tip: lc.clone().addScaledVector(ax, Math.max(...t)) };
   G.E = esophagus(pts, G.desc);
   // the transgastric probe: from 9 cm below the LV's middle at the papillary muscles, along the
   // LV's anterior axis, up to where the tip meets the heart (the gastric wall and the diaphragm)
@@ -354,6 +373,13 @@ const POSE = {
     const F = sq(ias.clone().sub(O), n);
     return { O, F, r: rightIn(n, F, S.clone().sub(I)), T };
   },
+  // the LA appendage: the probe 0.75 cm below the appendage's centre, its beam on the appendage
+  // 0.3 cm toward the mouth, tilted up to it (anteflexion), the tip not flexed sideways
+  melaa(G) {
+    const C = G.laa.c.clone().addScaledVector(G.laa.axis, -0.3);
+    const { O, F, T } = onEso(G, G.laa.c.y - 0.75, C);
+    return { O, F, T, direct: true };
+  },
   // the aortic valve, the LVOT and the proximal ascending aorta in long axis: the plane of the
   // root's axis; the aorta to the right of the display
   meavlax(G) {
@@ -418,6 +444,7 @@ export const STD = [
   { key: 'meavsax', hahn: 10, reeves: true, name: 'ME aortic valve short axis', short: 'ME AV SAX', level: 'me', turn: 'right', angle: 30, depth: 10, range: [25, 45], pose: 'meavsax' },
   { key: 'merv', hahn: 11, reeves: true, name: 'ME RV inflow-outflow', short: 'ME RV In-Out', level: 'me', turn: 'right', angle: 55, depth: 12, range: [50, 70], pose: 'merv' },
   { key: 'mebicaval', hahn: 13, reeves: true, name: 'ME bicaval', short: 'ME Bicaval', level: 'me', turn: 'right', angle: 95, depth: 11, range: [90, 110], pose: 'mebicaval' },
+  { key: 'melaa', hahn: 15, reeves: false, name: 'ME left atrial appendage', short: 'ME LAA', level: 'me', turn: 'left', angle: 105, depth: 9, range: [90, 110], pose: 'melaa' },
   // the short axis at 10 degrees: the frame's 90 degrees then holds the apex, the mitral valve and
   // the LA, with the aortic valve out of the plane (at 0, the plane at 90 met the aortic valve)
   { key: 'tgsax', hahn: 17, reeves: true, name: 'TG midpapillary short axis', short: 'TG Mid SAX', level: 'tg', turn: 'mid', angle: 10, depth: 12, range: [0, 20], pose: 'tgsax' },
