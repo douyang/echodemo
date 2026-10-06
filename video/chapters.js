@@ -547,7 +547,8 @@ export const VIDEOS = {
   // Transesophageal echocardiography: the chapter's tour, the 17 views in the order of Hahn 2013. The angle turns within a level
   // and turn of the probe; the level and the turn change at the middle of a move
   tee: {
-    pane: 'Transesophageal views',
+    // no pane name: the figure's own labels name its halves (the probe and plane, and the view)
+    pane: '',
     side: false,
     quant: { teeAngle: 1 },
     steps: [
