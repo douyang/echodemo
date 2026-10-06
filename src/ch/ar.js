@@ -283,7 +283,7 @@ function plax(ctx, box, v, t) {
       deeper: Math.max(0, W8.size),
       names: [['prv', 'RV'], ['plv', 'LV'], ['ao', 'Ao'], ['la', 'LA']],
       over: (c, F, ev) => {
-        // the septum, the LV and the posterior wall, where chapter 18's calipers measure them;
+        // the septum, the LV and the posterior wall, where the calipers of amyloid.js measure them;
         // the LV's caliper 1 mm beside the walls' toward the base
         const K = plaxCalipers(ev, sy);
         if (K) {
