@@ -5,6 +5,7 @@ import { loadModel } from '../model3d.js';
 import { sharedStage } from '../gl/shared.js';
 import { SANS } from '../sketch.js';
 import { reducedMotion } from '../state.js';
+import { freePose as poseOf, controlsFor as movesFor, GENERIC } from '../freeprobe.js';
 
 const PRESETS = {
   nine: ['plax', 'psax_av', 'psax_mv', 'psax_pm', 'a4c', 'a2c', 'a3c', 'sc4c', 'ssn'],
@@ -24,9 +25,6 @@ const fans = new Map();
 let ink = null, labelBoxes = [], tick = 0, down = null, hover = null;   // hover: the view a click on the 3D heart would take
 let freeFan = null, nearFan = null, nearInfo = null;
 const FREE_KEYS = ['prot', 'ptilt', 'prock', 'pslide', 'psweep'];
-// labels for a plane that is not a standard view: any structure lying on it
-const GENERIC = [['lv', 'LV'], ['rv', 'RV'], ['la', 'LA'], ['ra', 'RA'], ['ivs', 'IVS'], ['ias', 'IAS'], ['mv', 'MV'], ['tv', 'TV'], ['av', 'AV'], ['pv', 'PV'],
-  ['ao', 'Ao'], ['mpa', 'PA'], ['apex', 'apex'], ['desc', 'desc Ao'], ['arch', 'arch'], ['ivcl', 'IVC'], ['svc', 'SVC']];
 // A plane is judged by the anatomy it holds: the angle between the planes and how far the
 // view's imaged centre lies off the free plane. Near: within 20 degrees and 3 cm; on it (it
 // settles there when let go): within 10 degrees and 1.5 cm.
@@ -190,25 +188,16 @@ function syncCrossings() {
 }
 
 // ---------------------------------------------------------------- free plane
-const quatOf = (g) => new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(g.r, g.d, g.n));
-
 /**
- * The free plane: the focused view's plane moved as a probe is. Rotate turns it about the
- * beam (clockwise from the probe for +), tilt turns the beam across the plane, rock turns it
- * within the plane (toward screen-right for +); slide and sweep move the probe along and
- * across the plane.
+ * The free plane: the focused view's plane moved as a probe is (freeprobe.js). Rotate turns it
+ * about the beam (clockwise from the probe for +), tilt turns the beam across the plane, rock turns
+ * it within the plane (toward screen-right for +); slide and sweep move the probe along and across
+ * the plane.
  */
 function freePose(s = st) {
   const b = geoms[s.pfocus];
   if (!b) return null;
-  const rad = (x) => (x * Math.PI) / 180;
-  const d = b.d.clone(), r = b.r.clone().applyAxisAngle(d, rad(s.prot)), n = b.n.clone().applyAxisAngle(d, rad(s.prot));
-  d.applyAxisAngle(r, rad(s.ptilt));
-  n.applyAxisAngle(r, rad(s.ptilt));
-  d.applyAxisAngle(n, rad(-s.prock));
-  r.applyAxisAngle(n, rad(-s.prock));
-  const O = b.O.clone().addScaledVector(b.r, s.pslide).addScaledVector(b.n, s.psweep);
-  return { O, d: d.normalize(), r: r.normalize(), n: n.normalize() };
+  return poseOf(b, { rot: s.prot, tilt: s.ptilt, rock: s.prock, slide: s.pslide, across: s.psweep });
 }
 const moved = (s = st) => FREE_KEYS.some((k) => Math.abs(s[k] || 0) > 1e-6);
 // the probe's window; the long- and short-axis views share the parasternal one
@@ -344,17 +333,13 @@ function stepGlide() {
 }
 
 /**
- * The probe controls that put view b's plane where plane g is: the turn of g against b as
- * rotate, tilt and rock (the order freePose applies them), and the probe's shift over the
- * skin as slide and sweep. A shift along b's beam has no control and is left out.
+ * The probe controls that put view b's plane where plane g is (freeprobe.js): the turn of g against
+ * b as rotate, tilt and rock (the order freePose applies them), and the probe's shift over the skin
+ * as slide and sweep, onto g's beam line. A shift along b's beam has no control and is left out.
  */
 function controlsFor(g, b) {
-  const deg = (x) => (x * 180) / Math.PI;
-  const tilt = Math.asin(Math.max(-1, Math.min(1, -b.d.dot(g.n))));
-  const rot = Math.atan2(b.r.dot(g.n), b.n.dot(g.n));
-  const rock = -Math.atan2(b.d.dot(g.r), b.d.dot(g.d));
-  const dO = g.O.clone().sub(b.O);
-  return { prot: deg(rot), ptilt: deg(tilt), prock: deg(rock), pslide: dO.dot(b.r), psweep: dO.dot(b.n) };
+  const c = movesFor(g, b);
+  return { prot: c.rot, ptilt: c.tilt, prock: c.rock, pslide: c.slide, psweep: c.across };
 }
 
 /**
