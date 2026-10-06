@@ -415,6 +415,19 @@ function line(sh, str, x, y, o, gap = 4) {
 }
 /** The first form that fits w px at font o, or the last. */
 const fitText = (sh, forms, w, o) => forms.find((f) => sh.measure(f, o) <= w) ?? forms[forms.length - 1];
+/** Text with a band of the map's paper round its letters, legible over the dots. */
+function halo(sh, t, str, x, y, o) {
+  const ctx = sh.ctx;
+  ctx.save();
+  ctx.font = `${o.weight} ${o.size}px ${o.family}`;
+  ctx.textAlign = o.align || 'left';
+  ctx.lineWidth = 4;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = t.paper2;
+  ctx.strokeText(str, x, y);
+  ctx.restore();
+  sh.text(str, x, y, o);
+}
 
 // row names: the full section names, or the short ones of a narrow figure
 const SHORT = ['LV', 'WM', 'RV', 'LA', 'RA', 'IAS', 'MV', 'AV', 'TV', 'PV', 'Peri', 'Aorta', 'IVC', 'PA', 'PVs'];
@@ -782,10 +795,10 @@ function efPlace(ef) {
   const u = clamp((ef - 10) / 70, 0, 1), th = ((200 + 150 * u) * Math.PI) / 180;
   return [0.5 + 0.42 * Math.cos(th), 0.79 + 0.42 * Math.sin(th)];
 }
-/** A grade's place on its map: the four clusters along an arc, none at the lower left. */
+/** A grade's place on its map: the four clusters along an arc, none at the left, severe at the right. */
 function gradePlace(g) {
-  const th = ((198 + 32 * g) * Math.PI) / 180;
-  return [0.62 + 0.46 * Math.cos(th), 0.82 + 0.46 * Math.sin(th)];
+  const th = ((210 + 33 * g) * Math.PI) / 180;
+  return [0.55 + 0.38 * Math.cos(th), 0.8 + 0.38 * Math.sin(th)];
 }
 const SPREAD = { ef: 0.055, grade: [0.1, 0.07, 0.07, 0.07], stray: 0.22 };
 let LIB = null;
@@ -801,10 +814,11 @@ function library() {
     ef[i] = Math.round(clamp(u < 0.7 ? 62 + 5 * gauss() : u < 0.85 ? 45 + 6 * gauss() : 28 + 7 * gauss(), 10, 80));
     av[i] = pick([0.85, 0.05, 0.04, 0.06]);
     mv[i] = pick([0.72, 0.14, 0.08, 0.06]);
+    // every study stays on its map: one that would fall off it sits at its edge
     const put = (key, [x, y], sd) => {
       const k = r() < STRAY ? SPREAD.stray : sd;
-      pos[key][2 * i] = x + k * gauss();
-      pos[key][2 * i + 1] = y + k * gauss();
+      pos[key][2 * i] = clamp(x + k * gauss(), 0.02, 0.98);
+      pos[key][2 * i + 1] = clamp(y + k * gauss(), 0.02, 0.98);
     };
     put('lv', efPlace(ef[i]), SPREAD.ef);
     put('av', gradePlace(av[i]), SPREAD.grade[av[i]]);
@@ -924,8 +938,27 @@ function drawRetrieval(sh, t) {
   ctx.beginPath();
   ctx.rect(M.x, M.y, side, side);
   ctx.clip();
+  // the circle that holds the k nearest, the query (a cross with a halo of paper), then the k
+  // nearest ringed over it, so that one study near the cross still shows
+  const [qx, qy] = [X(R.N.q[0]), Y(R.N.q[1])], rk = R.N.d[R.first[R.first.length - 1]] * side;
+  ctx.setLineDash([5, 4]);
+  ctx.strokeStyle = t.ink2;
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.arc(qx, qy, Math.max(rk + 3.6, 6), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.lineCap = 'round';
+  for (const [c, lw] of [[t.paper2, 5.5], [t.ink, 2.2]]) {
+    ctx.strokeStyle = c;
+    ctx.lineWidth = lw;
+    ctx.beginPath();
+    ctx.moveTo(qx - 7, qy - 7); ctx.lineTo(qx + 7, qy + 7);
+    ctx.moveTo(qx + 7, qy - 7); ctx.lineTo(qx - 7, qy + 7);
+    ctx.stroke();
+  }
   ctx.strokeStyle = t.ink;
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.1;
   ctx.beginPath();
   for (const i of R.first) {
     const x = X(pos[2 * i]), y = Y(pos[2 * i + 1]);
@@ -933,42 +966,16 @@ function drawRetrieval(sh, t) {
     ctx.arc(x, y, 3.6, 0, Math.PI * 2);
   }
   ctx.stroke();
-  const [qx, qy] = [X(R.N.q[0]), Y(R.N.q[1])], rk = R.N.d[R.first[R.first.length - 1]] * side;
-  ctx.setLineDash([5, 4]);
-  ctx.strokeStyle = t.ink2;
-  ctx.lineWidth = 1.3;
-  ctx.beginPath();
-  ctx.arc(qx, qy, Math.max(rk, 4), 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  // the query: a cross with a halo of paper
-  for (const [c, lw] of [[t.paper, 5.5], [t.ink, 2.2]]) {
-    ctx.strokeStyle = c;
-    ctx.lineWidth = lw;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(qx - 7, qy - 7); ctx.lineTo(qx + 7, qy + 7);
-    ctx.moveTo(qx + 7, qy - 7); ctx.lineTo(qx - 7, qy + 7);
-    ctx.stroke();
-  }
   ctx.restore();
   const qo = { family: SANS, weight: 600, size: 12, color: t.ink };
-  const qw = sh.measure('this heart', qo), right = qx + 12 + qw < M.x + side - 6;
-  ctx.save();
-  ctx.font = `600 12px ${SANS}`;
-  ctx.textAlign = right ? 'left' : 'right';
-  ctx.lineWidth = 4;
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = t.paper2;
-  ctx.strokeText('this heart', right ? qx + 12 : qx - 12, qy - 9);
-  ctx.restore();
-  sh.text('this heart', right ? qx + 12 : qx - 12, qy - 9, { ...qo, align: right ? 'left' : 'right' });
+  const right = qx + 12 + sh.measure('this heart', qo) < M.x + side - 6;
+  halo(sh, t, 'this heart', right ? qx + 12 : qx - 12, qy - 9, { ...qo, align: right ? 'left' : 'right' });
   // the map's name and its caption
   const head = { family: SANS, weight: 600, size: L.wide ? 13 : 12, color: t.ink2 };
   sh.text(`${{ lv: 'Left ventricle', av: 'Aortic valve', mv: 'Mitral valve' }[map]} section`, M.x + 10, M.y + 18, head);
   const cap = { family: SANS, weight: 400, size: L.wide ? 11 : 10, color: t.ink3 };
   const lines = wrap(sh, 'Schematic: 2,000 simulated studies. EchoPrime searches 512 dimensions.', side - 20, cap, 2);
-  lines.forEach((ln, i) => sh.text(ln, M.x + 10, M.y + side - 10 - (lines.length - 1 - i) * (cap.size + 3), cap));
+  lines.forEach((ln, i) => halo(sh, t, ln, M.x + 10, M.y + side - 10 - (lines.length - 1 - i) * (cap.size + 3), cap));
   resultBox(sh, t, L.box, R, !L.wide);
 }
 
@@ -1229,4 +1236,4 @@ export default {
   },
 };
 // TEMP-DEBUG (remove before finishing)
-export const __debug = { cache, TILES };
+export const __debug = { cache, TILES, retrieve, heartValues, library };
