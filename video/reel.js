@@ -26,7 +26,8 @@
 // (video/cuts.js). Holds and moves are in bars. Captions are the chapter's own text: its live
 // text at the step's state, or a sentence from its page.
 import { BEAT, FPS } from './timeline.js';
-import { CHAPTERS } from '../src/chapters.js';
+// MAIN: the main chapters, those of the site's chapter bar (BAR there; BAR here is a bar of the score)
+import { CHAPTERS, BAR as MAIN, numOf } from '../src/chapters.js';
 
 /** The tempo of the score (tools/score/pulse.py). A bar is 8/3 heartbeats, so a clip of 3 bars is 8 heartbeats. */
 export const BPM = 105;
@@ -38,8 +39,9 @@ const TWO = { hold0: 0.75, move: 1, hold1: 1.25 };
 
 export const REEL = {
   key: 'intro',
-  // the title card: the site's name and the start of its description (index.html, meta description)
-  title: { eye: `${CHAPTERS.length} chapters`, name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive guide to echocardiography.' },
+  // the title card: the site's name and the start of its description (index.html, meta description).
+  // It counts the main chapters (the chapter bar), not the bonus chapters.
+  title: { eye: `${MAIN.length} chapters`, name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive guide to echocardiography.' },
   intro: 2,
   outro: 3,
   clips: [
@@ -94,7 +96,12 @@ export const REEL = {
   ],
 };
 
-const num = (ch) => String(CHAPTERS.findIndex((c) => c.key === ch) + 1).padStart(2, '0');
+/** The chapter's number (src/order.js). The intro shows main chapters only. */
+function num(ch) {
+  const n = numOf(ch);
+  if (!/^\d\d$/.test(n)) throw new Error(`intro: ${ch} is not a main chapter`);
+  return n;
+}
 const title = (ch) => CHAPTERS.find((c) => c.key === ch).title;
 /** The chapter's short name in the site's chapter bar (its nav), if it has one. */
 const navOf = (ch) => CHAPTERS.find((c) => c.key === ch).nav;

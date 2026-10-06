@@ -455,7 +455,8 @@ const side = (v, pos, neg) => { const r = Math.round(v); return r ? `${Math.abs(
 
 export default {
   key: 'tee',
-  part: 'tee',
+  // in the part Views, after the transthoracic views (order.js)
+  part: 'views',
   title: 'Transesophageal echocardiography',
   nav: 'TEE',
   dwell: 48,

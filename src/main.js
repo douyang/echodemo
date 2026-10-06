@@ -1,7 +1,7 @@
 // The page engine: chapters, controls, readouts, live sentences, citations, dialogs, tour.
 import { state, set, subscribe, declare, reducedMotion } from './state.js';
 import { REFS } from './refs.js';
-import { CHAPTERS, PARTS, numOf } from './chapters.js';
+import { CHAPTERS, BAR, PARTS, numOf } from './chapters.js';
 import { NORM_TABLES } from './norms.js';
 import { QUIZ } from './quiz.js';
 import { PHENOS, PHENO_STORE, presetsFor, PRESET_KEYS } from './pheno.js';
@@ -23,17 +23,21 @@ const CH = Object.fromEntries(KEYS.map((k, i) => [k, i]));
 
 // a chapter article left out of CHAPTERS (the report and Planes, order.js) stays hidden, its citations unnumbered
 for (const a of $$('article.chapter')) a.hidden = !KEYS.includes(a.id.replace(/^ch-/, ''));
-// every chapter number in the text comes from the order of CHAPTERS: the number in each chapter's
-// header, and each link to a chapter that reads "chapter NN" or "NN Title"
+// every chapter number in the text comes from the order (order.js): the number in each chapter's
+// header, and each link to a chapter. A link reads "chapter NN" or "NN Title", and a link to a bonus
+// chapter "bonus chapter B3" or "B3 Title". A link that starts a sentence starts with a capital.
 for (const a of $$('article.chapter')) {
   const n = numOf(a.id.replace(/^ch-/, '')), el = $('.ch-num', a);
   if (n && el) el.textContent = n;
 }
 for (const a of $$('a[data-go]')) {
-  const n = numOf(a.dataset.go);
+  const n = numOf(a.dataset.go), t = a.textContent;
   if (!n) continue;
-  if (/^[Cc]hapter \d\d$/.test(a.textContent)) a.textContent = a.textContent.replace(/\d\d$/, n);
-  else if (/^\d\d \S/.test(a.textContent)) a.textContent = `${n} ${CHAPTERS[CH[a.dataset.go]].title}`;
+  const m = t.match(/^([Bb]onus c|[Cc])hapter (?:\d\d|B\d)$/);
+  if (m) {
+    const s = `${n.startsWith('B') ? 'bonus chapter' : 'chapter'} ${n}`;
+    a.textContent = /^[BC]/.test(m[1]) ? s[0].toUpperCase() + s.slice(1) : s;
+  } else if (/^(?:\d\d|B\d) \S/.test(t)) a.textContent = `${n} ${CHAPTERS[CH[a.dataset.go]].title}`;
 }
 for (const c of CHAPTERS) if (c.defaults) declare(c.defaults);
 declare({ pheno: 'normal' });   // the heart every chapter shows (pheno.js)
@@ -335,12 +339,10 @@ $('#chapters').addEventListener('click', (e) => {
   if (b) goChapter(Number(b.dataset.go));
 });
 
-/**
- * The chapters of the bar and of its list, in order, by their index in CHAPTERS. The row, the
- * strip, the parts over them and the list all come from it. A chapter left out opens by back and
- * next and by its address, and the bar then shows no chapter as current.
- */
-const BAR = CHAPTERS.map((c, i) => i);
+// BAR (src/chapters.js): the chapters of the bar and of its list, in order, by their index in
+// CHAPTERS. The row, the strip, the parts over them and the list all come from it. It holds the
+// main chapters only. A bonus chapter opens by back and next and by its address, and the bar then
+// shows no chapter as current.
 
 // px: each bar chapter's place on the track, under the start of its number. The columns differ
 // in width, so the places come from the buttons (drawTrack).
@@ -418,6 +420,9 @@ function showChapter() {
   held = false;
   if (active >= 0 && active !== i) CHAPTERS[active].leave?.();
   active = i;
+  // the tour runs through the bar's chapters only: a chapter outside the bar (a bonus chapter)
+  // stops it, and plays its own sequence
+  if (state.playing && !BAR.includes(i)) set({ playing: false });
   // the chapter opens with its own sequence playing. Not during the tour: the tour plays the
   // same steps, and then opens the next chapter.
   const autoplay = !state.playing && ownPlays(c);
@@ -497,7 +502,9 @@ function tourTick(dt) {
   tourT += dt;
   stepTo(c, tourT);
   if (tourT >= c.dwell) {
-    if (i < CHAPTERS.length - 1) { set({ chapter: i + 1 }); return; }
+    // the next chapter of the bar: the tour never opens a bonus chapter
+    const k = BAR.indexOf(i);
+    if (k >= 0 && k < BAR.length - 1) { set({ chapter: BAR[k + 1] }); return; }
     // the end of the tour: it stops, and the last chapter continues with its own sequence
     tourT = c.dwell;
     tourDone = true;
@@ -513,8 +520,8 @@ function pauseTour() {
 }
 function togglePlay() {
   if (state.playing) { pauseTour(); return; }
-  if (tourDone) {
-    // after the end of the tour, the tour starts again at chapter 01
+  if (tourDone || !BAR.includes(state.chapter)) {
+    // after the end of the tour, or from a bonus chapter, the tour starts again at chapter 01
     tourDone = false;
     set({ playing: true, anim: false });
     if (state.chapter === 0) { tourT = 0; dotT = 0; entered = false; } else set({ chapter: 0 });
@@ -600,7 +607,7 @@ function buildTransport() {
   const nav = $('#chapters');
   const track = nav.querySelector('.track');
   for (const i of BAR) {
-    const c = CHAPTERS[i], n = String(i + 1).padStart(2, '0');
+    const c = CHAPTERS[i], n = numOf(c.key);
     const li = document.createElement('li');
     li.innerHTML = `<button type="button" data-go="${i}" title="${esc(c.title)}" aria-label="${n} ${esc(c.title)}"><span class="n">${n}</span><span class="t">${esc(c.nav || c.title)}</span></button>`;
     nav.insertBefore(li, track);
@@ -632,7 +639,7 @@ function buildTransport() {
   list.innerHTML = PARTS.map((p) => {
     const items = BAR.filter((i) => CHAPTERS[i].part === p.key);
     if (!items.length) return '';
-    return `<li class="chgroup"><h3 class="dlg-sub">${esc(p.name)}</h3><ol>${items.map((i) => `<li><button type="button" data-go="${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${esc(CHAPTERS[i].title)}</span></button></li>`).join('')}</ol></li>`;
+    return `<li class="chgroup"><h3 class="dlg-sub">${esc(p.name)}</h3><ol>${items.map((i) => `<li><button type="button" data-go="${i}"><span class="n">${numOf(CHAPTERS[i].key)}</span><span class="t">${esc(CHAPTERS[i].title)}</span></button></li>`).join('')}</ol></li>`;
   }).join('');
   $('#pg-prev').addEventListener('click', () => goChapter(state.chapter - 1));
   $('#pg-next').addEventListener('click', () => goChapter(state.chapter + 1));
@@ -655,6 +662,24 @@ function buildTransport() {
   document.fonts?.ready.then(fitPager);
 }
 
+/**
+ * The bonus chapters (order.js BONUS) as a list at the end of the bar's last chapter: each one's
+ * number, title and kicker (the line under its title), as a link.
+ */
+function buildBonus() {
+  const bonus = CHAPTERS.filter((c, i) => !BAR.includes(i));
+  const last = document.getElementById(`ch-${CHAPTERS[BAR[BAR.length - 1]].key}`);
+  if (!bonus.length || !last) return;
+  const sec = document.createElement('section');
+  sec.className = 'bonus';
+  sec.setAttribute('aria-labelledby', 'bonus-head');
+  sec.innerHTML = `<h3 id="bonus-head">Bonus chapters</h3><ol>${bonus.map((c) => {
+    const kicker = $(`#ch-${c.key} .ch-kicker`)?.textContent.trim() || '';
+    return `<li><a href="#${c.key}" data-go="${c.key}"><span class="n">${numOf(c.key)}</span> <span class="t">${esc(c.title)}</span>${kicker ? ` <span class="k">${esc(kicker)}</span>` : ''}</a></li>`;
+  }).join('')}</ol>`;
+  last.appendChild(sec);
+}
+
 /** The phone bar's title in two lines at most; if it needs more, the short name of the desktop bar. */
 function fitPager() {
   const c = CHAPTERS[state.chapter], t = $('#pg-cur .t');
@@ -662,9 +687,9 @@ function fitPager() {
   if (c.nav && t.clientHeight && (t.scrollHeight > t.clientHeight + 1 || t.scrollWidth > t.clientWidth + 1)) t.textContent = c.nav;
 }
 
-/** The phone bar: the current chapter's number and title, the ends, the list's current row. */
+/** The phone bar: the current chapter's number and title (B3 for a bonus chapter), the ends, the list's current row. */
 function syncPager() {
-  const i = state.chapter, c = CHAPTERS[i], n = String(i + 1).padStart(2, '0');
+  const i = state.chapter, c = CHAPTERS[i], n = numOf(c.key);
   const cur = $('#pg-cur');
   cur.querySelector('.n').textContent = n;
   cur.setAttribute('aria-label', `${n} ${c.title}: list of chapters`);
@@ -769,6 +794,7 @@ function start() {
   const saved = store.get('heart-in-sound-theme');
   if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
   buildTransport();
+  buildBonus();
   fillNorms();
   for (const c of CHAPTERS) c.init?.({ state, set, subscribe, $, $$, cite: (ids) => cite(ids) });
   bindControls();

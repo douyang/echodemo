@@ -24,7 +24,7 @@ import { FPS, BEAT, DISSOLVE, SIZE, layout, segAt, windowsOf, cycleMs } from './
 import { CUTS, caption, WIN_NAME } from './cuts.js';
 import { reelLayout, clipCut, reelTrack, reelDip } from './reel.js';
 import { VIEWS, CODE } from '../src/views.js';
-import { CHAPTERS, PARTS } from '../src/chapters.js';
+import { CHAPTERS, numOf, partOf } from '../src/chapters.js';
 import { Fan, crossing, rgb } from '../src/gl/fans.js';
 import { RR, cycleAt } from '../src/cyclemodel.js';
 import { loadModel } from '../src/model3d.js';
@@ -1061,12 +1061,12 @@ function frame(i) {
  * (video/chapter.js): the chapter's number and part, its title, the first sentence of its dek.
  */
 async function chapterCards(key) {
-  const i = CHAPTERS.findIndex((c) => c.key === key), C = CHAPTERS[i];
+  const C = CHAPTERS.find((c) => c.key === key);
   if (!C) throw new Error(`no chapter ${key}`);
   const doc = new DOMParser().parseFromString(await fetch('index.html').then((r) => r.text()), 'text/html');
   const dek = doc.querySelector(`#ch-${key} .dek`).textContent.replace(/\s+/g, ' ').trim();
-  const part = PARTS.find((p) => p.key === C.part).name;
-  return { eye: `${String(i + 1).padStart(2, '0')} · ${part}`, title: C.title, sub: dek.split(/(?<=[.!?])\s+(?=[A-Z0-9(“"])/)[0], end: 'The Heart by Ultrasound' };
+  const part = partOf(key).name;
+  return { eye: `${numOf(key)} · ${part}`, title: C.title, sub: dek.split(/(?<=[.!?])\s+(?=[A-Z0-9(“"])/)[0], end: 'The Heart by Ultrasound' };
 }
 
 async function init() {
