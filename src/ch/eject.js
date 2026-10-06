@@ -240,7 +240,9 @@ function drawRV(sh, t, W, H, narrow) {
     panel(ctx, x, y, bw, bh, 'M-MODE · TAPSE');
     const bx = { x: x + 8, y: y + 26, w: bw - 16, h: bh - 34 };
     const pxmm = Math.min(bx.h / 40, 4);
-    const y0 = bx.y + bx.h * 0.25;
+    // End-diastole sits low. In systole the annulus moves toward the apex, which is toward the
+    // probe, so the trace rises.
+    const y0 = bx.y + bx.h * 0.75;
     ctx.save();
     // tissue texture bands
     ctx.fillStyle = '#2a3034';
@@ -252,17 +254,17 @@ function drawRV(sh, t, W, H, narrow) {
       const u = i / 200;
       const tt = (u * 2.2 * RR) % RR;
       const c = cycleAt(tt);
-      const yy = y0 + c.s * v.tapse * pxmm;
+      const yy = y0 - c.s * v.tapse * pxmm;
       const xx = bx.x + u * bx.w;
       i ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy);
     }
     ctx.stroke();
     // caliper from end-diastole to peak systole in the first beat
     const xb = bx.x + (EV_ES / (2.2 * RR)) * bx.w;
-    caliper(ctx, xb, y0, xb, y0 + v.tapse * pxmm, { solid: true });
+    caliper(ctx, xb, y0, xb, y0 - v.tapse * pxmm, { solid: true });
     ctx.restore();
     // on a dark box, as on the scanner: the trace runs behind it
-    tagBox(ctx, xb + 6, y0 + v.tapse * pxmm / 2, [`${v.tapse.toFixed(1)} mm`], { size: 11 });
+    tagBox(ctx, xb + 6, y0 - v.tapse * pxmm / 2, [`${v.tapse.toFixed(1)} mm`], { size: 11 });
   }
   // tissue Doppler S′
   {
