@@ -1,12 +1,14 @@
-// Study interpretation: how EchoPrime (Vukadinovic 2026) reads a whole echocardiography study.
-// Study: the 14 videos of a comprehensive study of the heart the page shows, cut from the heart
-// mesh as EchoPrime takes them in (16 frames of 224 × 224 pixels, one beat), each tagged with its
-// view group; the anatomical attention weights of the public code (echoprime.js) as a heat map,
-// 15 report sections by 11 view groups; and, for the chosen section, the share of its weight that
-// the videos present carry, its three heaviest view groups, and its text in the site's own report
-// (ch/report.js). Retrieval: a map of 2,000 simulated earlier studies, placed so that similar
-// studies lie close, with the study of the heart shown, its k nearest studies and what they give.
-// EchoPrime does not run here: the weights are the model's; the videos and the library are the site's.
+// AI interpretation and measurement: EchoPrime (Vukadinovic 2026) reads a whole study, and
+// EchoNet-Measurements (Sahashi 2025) places each caliper and peak. Seven steps (src/aifig.js):
+// the 14 videos of a comprehensive study of the heart the page shows, cut from the heart mesh as
+// EchoPrime takes them in (16 frames of 224 × 224 pixels, one beat), each with its view; the
+// encoder; the anatomical attention weights of the public code (echoprime.js); about 150 task
+// heads; the 18 measurements of EchoNet-Measurements on the heart shown (ch/measure.js); each value
+// checked by its number head (the anchor); and one report. The heads and the anchor are a teaching
+// simulation (aifig.js). Neither model runs here.
+// Two earlier views stay, hidden: Study (the videos, the weights and the share of a section's
+// weight that the videos present carry; SHOW_STUDY) and Retrieval (a map of 2,000 simulated
+// earlier studies, with the k nearest to the heart shown; SHOW_RETRIEVAL).
 import { Sheet, MONO, SANS, rng, clamp } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { cycleAt, mitralV, lvotV, RR, EV } from '../cyclemodel.js';
@@ -17,6 +19,14 @@ import { onPlane, hingesOf, closureOf, blood, cavity, middle, sub, add, mul, dot
 import { VESSELS } from '../views.js';
 import { GROUPS, SECTIONS, W as WEIGHT, coverage, K_PAPER } from '../echoprime.js';
 import { buildReport, sectionTexts } from './report.js';
+import { drawFigure, bind, measureStep, measureDone, valuesOf, reportOf, linesOf, numHeads, valueText, calText, rowOfStep } from '../aifig.js';
+
+// The figure: the seven steps (aifig.js). The two earlier views are hidden; their code and
+// controls stay (data-ai-tab in index.html), and each comes back with its switch.
+const SHOW_STUDY = false;
+const SHOW_RETRIEVAL = false;
+/** The view shown: the seven steps, or an earlier view that is switched on and chosen. */
+const tabOf = (s) => (SHOW_RETRIEVAL && s?.aiTab === 'retrieval' ? 'retrieval' : SHOW_STUDY && s?.aiTab === 'study' ? 'study' : 'steps');
 
 const G = Object.fromEntries(GROUPS.map((g, i) => [g.key, i]));
 /**
@@ -70,7 +80,8 @@ const STILL = 10;         // the frame shown with reduced motion: early diastole
 const cache = {
   state: 'idle',          // idle, loading, ready, failed: the heart model and the view that cuts
   ev: null,               // one offscreen EchoView cuts every video
-  version: -1,            // the version of the heart (model3d.js) that the frames show
+  heart: '',              // the heart (model3d.js pheno key) that the frames show: a heart's shape
+                          // does not change, so a round trip through another heart keeps them
   next: 0,                // the next frame to cut: video × NF + frame
   tiles: TILES.map(() => ({ sheet: null, done: 0, box: null })),
   t0: 0,                  // Date.now() at the first frame of this heart
@@ -104,17 +115,19 @@ function start() {
 const ratio = () => Math.min((typeof window !== 'undefined' && window.devicePixelRatio) || 1, 2);
 
 /** True when every frame of the heart shown is in (or the model failed: nothing will come). */
-function complete() {
+function videosDone() {
   if (cache.state === 'failed') return true;
   if (cache.state !== 'ready') return false;
   const m = cache.ev.model;
-  return m.pheno.key === heartWanted() && cache.version === m.pheno.version && cache.next >= TOTAL;
+  return m.pheno.key === heartWanted() && cache.heart === m.pheno.key && cache.next >= TOTAL;
 }
+/** Every image of the view shown is in: the videos, and for the seven steps the measurements' tiles. */
+const complete = () => videosDone() && (tabOf(st) !== 'steps' || measureDone());
 /** The frames of video i can show: all of them are in, for the heart shown. */
 function shows(i) {
   if (cache.state !== 'ready') return false;
   const m = cache.ev.model;
-  return m.pheno.key === heartWanted() && cache.version === m.pheno.version && cache.tiles[i].done >= NF;
+  return m.pheno.key === heartWanted() && cache.heart === m.pheno.key && cache.tiles[i].done >= NF;
 }
 
 let pumping = false;
@@ -127,14 +140,23 @@ function pump() {
     if (open && fill()) pump();
   });
 }
-/** Cut the next frames for BUDGET ms (at least one). Returns true while frames remain or the heart is still being built. */
+/**
+ * Cut the next video frames for BUDGET ms (at least one); once they are in, work on the
+ * measurements' tiles of the seven steps (aifig.js) for as long. Returns true while work remains.
+ */
 function fill() {
+  const more = fillVideos();
+  if (more || cache.state !== 'ready' || tabOf(st) !== 'steps') return more;
+  return measureStep(BUDGET);
+}
+/** Cut the next frames for BUDGET ms (at least one). Returns true while frames remain or the heart is still being built. */
+function fillVideos() {
   if (cache.state === 'idle') start();
   if (cache.state !== 'ready') return false;     // start() pumps when the model is in
   const m = cache.ev.model;
   if (m.pheno.key !== heartWanted()) return true;   // the model builds the heart: wait for it
-  if (cache.version !== m.pheno.version) {
-    cache.version = m.pheno.version;
+  if (cache.heart !== m.pheno.key) {
+    cache.heart = m.pheno.key;
     cache.next = 0;
     for (const T of cache.tiles) { T.done = 0; T.box = null; }
     cache.t0 = Date.now();
@@ -543,7 +565,7 @@ function tile(sh, t, i, x, y, s, inStudy, sec) {
     ctx.clip(new Path2D(`M${x} ${y}h${s}v${s}h${-s}z`));
     ctx.stroke();
     ctx.restore();
-    const done = cache.state === 'ready' && cache.version === cache.ev.model.pheno.version ? cache.tiles[i].done : 0;
+    const done = cache.state === 'ready' && cache.heart === cache.ev.model.pheno.key ? cache.tiles[i].done : 0;
     ctx.fillStyle = SC.frame;
     ctx.fillRect(x + 6, y + s - 7, s - 12, 2);
     ctx.fillStyle = SC.dim;
@@ -619,6 +641,41 @@ function tile(sh, t, i, x, y, s, inStudy, sec) {
   }
   ctx.restore();
 }
+/**
+ * Video i in a box of w × h px, for the seven steps: the frame of the clock, cut to the box's
+ * shape (more of the top kept, where the probe is), or a placeholder until its frames are in.
+ */
+function videoTile(ctx, i, x, y, w, h) {
+  ctx.save();
+  ctx.fillStyle = SC.bg;
+  ctx.fillRect(x, y, w, h);
+  if (shows(i)) {
+    const f = frameNow(), sw = PX * Math.min(1, w / h), sh = PX * Math.min(1, h / w);
+    const sx = (f % 4) * PX + (PX - sw) / 2, sy = Math.floor(f / 4) * PX + (PX - sh) * 0.35;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(cache.tiles[i].sheet, sx, sy, sw, sh, x, y, w, h);
+  } else {
+    // the sector's outline, and how many frames are in
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.strokeStyle = SC.frame;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + w / 2, y + 2);
+    ctx.arc(x + w / 2, y + 2, h * 1.1, Math.PI / 2 + 0.7, Math.PI / 2 - 0.7, true);
+    ctx.closePath();
+    ctx.stroke();
+    const done = cache.state === 'ready' && cache.heart === cache.ev.model.pheno.key ? cache.tiles[i].done : 0;
+    ctx.fillStyle = SC.frame;
+    ctx.fillRect(x + 4, y + h - 5, w - 8, 2);
+    ctx.fillStyle = SC.dim;
+    ctx.fillRect(x + 4, y + h - 5, ((w - 8) * done) / NF, 2);
+  }
+  ctx.restore();
+}
+
 /** A tag in two lines, for a small tile: at its space ('PLAX', 'Dop'), or after three letters ('Sub-', 'costal'). */
 function tagLines(tag) {
   const i = tag.indexOf(' ');
@@ -1101,10 +1158,34 @@ function resultBox(sh, t, b, R, narrow) {
   notes(`A grade is reported when more than half of the k carry it. ${ep}`);
 }
 
+// ---------------------------------------------------------------- the seven steps
+let stepsHit = [];        // the figure's hit boxes: a section, or a row of a small figure
+let narrowNow = null;     // the figure shows one row (aiRow): its row switch shows
+const stepOf = (s) => clamp(Math.round(s?.aiStep ?? 0), 0, 7);
+const rowOf = (s) => clamp(Math.round(s?.aiRow ?? 0), 0, 2);
+/**
+ * The controls of the view shown (data-ai-tab: the views each serves); the row switch only while
+ * the figure shows one row (data-ai-narrow).
+ */
+function showControls() {
+  const tab = tabOf(st);
+  for (const el of document.querySelectorAll('#ch-ai [data-ai-tab]')) {
+    el.hidden = !el.dataset.aiTab.split(' ').includes(tab) || ('aiNarrow' in el.dataset && !narrowNow);
+  }
+}
+function drawSteps(sh, t) {
+  const S = { sec: secOf(st), step: stepOf(st), two: !!st.aiTwo, row: rowOf(st), heart: heartCase(st) };
+  const { L, hits } = drawFigure(sh, t, S, { video: videoTile });
+  stepsHit = hits;
+  if (narrowNow !== !L.all) { narrowNow = !L.all; showControls(); }
+}
+
 function draw(sh, t) {
   if (!st) return;
-  if (st.aiTab === 'retrieval') drawRetrieval(sh, t);
-  else drawStudy(sh, t);
+  const tab = tabOf(st);
+  if (tab === 'retrieval') drawRetrieval(sh, t);
+  else if (tab === 'study') drawStudy(sh, t);
+  else drawSteps(sh, t);
 }
 
 // ---------------------------------------------------------------- the text
@@ -1171,47 +1252,122 @@ function retrievalText(s) {
   };
 }
 
+// ---------------------------------------------------------------- the seven steps: the text
+const STEP_NAME = ['', 'Sort', 'Encode', 'Weigh', 'Answer', 'Measure', 'Anchor', 'Report'];
+const f2 = (x) => x.toFixed(2);
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+/** The anchor at section sec: a bold lead and the sentence after it. */
+function anchorText(sec, V) {
+  const lines = linesOf(sec), name = IN_TEXT[sec];
+  if (!lines.length) return { lead: `the ${name} section has no measurement`, rest: 'Its heads give the words of the report.' };
+  const moved = lines.filter((o) => V.out[o.key].state === 'moved'), flagged = lines.filter((o) => V.out[o.key].state === 'flagged');
+  if (moved.length) {
+    const o = moved[0], r = V.out[o.key], d = r.dec + 1;
+    return {
+      lead: `the caliper on the ${o.name.toLowerCase()} moves to the peak that agrees with its head`,
+      rest: `A second peak on ${o.m.two.the} puts the caliper at ${calText(r)} ${r.unit}, outside the head's range of ${r.lo.toFixed(d)}–${r.hi.toFixed(d)} ${r.unit}. At the wall's own peak the ${o.name.toLowerCase()} reads ${valueText(o, r)}.`,
+    };
+  }
+  if (flagged.length) return { lead: `${flagged.map((o) => o.name).join(', ')}: no peak agrees with the head`, rest: 'The value is flagged for review.' };
+  const n = lines.length;
+  return { lead: n === 1 ? 'the caliper lies in its head\'s range' : `all ${NUMBER_WORDS[n] || n} calipers lie in their heads' ranges`, rest: n === 1 ? 'The value stays as measured.' : 'Each value stays as measured.' };
+}
+/** The section's sentence in the figure's report, as plain text. */
+const sentenceOf = (V, sec) => reportOf(V)[sec].parts.map((p) => p[0]).join('');
+
+function stepsText(s, cite) {
+  const sec = secOf(s), step = stepOf(s), V = valuesOf(heartCase(s), !!s.aiTwo), name = IN_TEXT[sec];
+  const lines = linesOf(sec), moved = lines.filter((o) => V.out[o.key].state === 'moved');
+  const C1 = cite('vukadinovic2026'), C2 = cite('sahashi2025');
+  const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+  let live;
+  if (step === 1) live = `<b>Sort: the view classifier names the view of each of the ${N_ALL} videos.</b> It sorts B-mode and color Doppler videos into 58 standard views, and the public code groups them into 11 view groups${C1}.`;
+  else if (step === 2) live = `<b>Encode: one video encoder turns each video into 512 numbers.</b> A video transformer (mViT) takes 16 frames of 224 × 224 pixels, from every second frame${C1}.`;
+  else if (step === 3) {
+    const [a, b] = ranked(sec);
+    const rest = b.w >= 0.8 ? ` and ${GROUP_TEXT[GROUPS[b.g].key]} (${f2(b.w)})` : `, with ${GROUP_TEXT[GROUPS[b.g].key]} next (${f2(b.w)})`;
+    live = `<b>Weigh: the ${name} section rests on ${GROUP_TEXT[GROUPS[a.g].key]} (${f2(a.w)})${rest}.</b> For each section, EchoPrime multiplies each video's embedding by the weight of its view group and adds the products${C1}.`;
+  } else if (step === 4) {
+    const heads = numHeads(sec);
+    live = `<b>Answer: about 150 task heads, one for each task of the report.</b> ${heads.length
+      ? `The ${name} section has ${plural(heads.length, 'number head', 'number heads')}${lines.length ? `; the ${heads.find((h) => h !== 'LVEF')} head gives ${lines[0].key === 'ea' ? `${f2(V.out.ea.head)} m/s` : valueText(lines[0], { ...V.out[lines[0].key], value: V.out[lines[0].key].head })}` : ''}.`
+      : `The ${name} section's heads give words, not numbers.`}`;
+  } else if (step === 5) {
+    live = `<b>Measure: one model for each of the 18 measurements.</b> Each point is the weighted center of a heat map, and the calibration stored in the DICOM file converts pixels to centimeters or velocities${C2}.`;
+  } else if (step === 7) {
+    live = `<b>Report: EchoPrime's words, the measured numbers.</b> ${sentenceOf(V, sec)}`;
+  } else {
+    const A = anchorText(sec, V);
+    live = step === 6 ? `<b>Anchor: ${A.lead}.</b> ${A.rest}` : `<b>${cap(SECTIONS[sec].name)}: ${A.lead}.</b> ${A.rest}`;
+  }
+  const r0 = moved.length ? V.out[moved[0].key] : null;
+  return {
+    readouts: [
+      { k: 'Section', v: SECTIONS[sec].name, text: true },
+      { k: 'Measurements', v: String(lines.length) },
+      r0 ? { k: moved[0].name, v: `${calText(r0)} → ${valueText(moved[0], r0).replace(/ \S+$/, '')}`, u: r0.unit, text: false }
+        : { k: 'Anchor', v: lines.length ? 'caliper kept' : 'none', text: true },
+      { k: 'LVEF', v: String(V.ef), u: '%' },
+    ],
+    live,
+  };
+}
+
 // ---------------------------------------------------------------- the tour
-// Study: the LV section, the aortic valve, the IVC; the videos added one by one under the IVC
-// section; the A4C video alone, then the full study again. Retrieval: the LV map with k = 1, 50
-// and 200, then the aortic valve with k = 50.
-const T_SEC = [[0, 0], [4, 7], [8, 12]], T_ADD = [12, 21], T_ONLY = 21, T_FULL = 24;
-const T_RET = [[26, 'lv', 1], [29.5, 'lv', 50], [33, 'lv', 200], [36.5, 'av', 50]];
-const addAt = (tt) => clamp(1 + Math.floor(((tt - T_ADD[0]) / (T_ADD[1] - T_ADD[0])) * N_ALL), 1, N_ALL);
+// Steps 1 to 7, each lit on its row: the left ventricle section, the aortic valve section at step 3
+// and at the end. The septum's map keeps its second peak, so the anchor moves its caliper.
+const TOUR = [
+  [0, 1, 0], [4.5, 2, 0], [9, 3, 0], [12.5, 3, 7], [16, 4, 0], [20.5, 5, 0], [25, 6, 0], [30, 7, 0], [34.5, 7, 7],
+];
 
 // ---------------------------------------------------------------- the chapter
 export default {
   key: 'ai',
   part: 'ai',
-  title: 'Study interpretation',
-  nav: 'AI read',
+  title: 'AI interpretation and measurement',
+  nav: 'AI',
   dwell: 40,
-  defaults: { aiTab: 'study', aiSec: 0, aiN: 14, aiOnly: false, aiMap: 'lv', aiK: 50 },
+  defaults: { aiTab: 'steps', aiSec: 0, aiStep: 0, aiRow: 0, aiTwo: true, aiN: 14, aiOnly: false, aiMap: 'lv', aiK: 50 },
   format: {
     aiSec: (x) => SECTIONS[Math.round(x)]?.name ?? '',
     aiN: (x) => `${Math.round(x)} of 14`,
     aiK: (x) => String(Math.round(x)),
   },
-  watch: ['aiTab', 'aiSec', 'aiN', 'aiOnly', 'aiMap', 'aiK', 'pheno'],
+  watch: ['aiTab', 'aiSec', 'aiStep', 'aiRow', 'aiTwo', 'aiN', 'aiOnly', 'aiMap', 'aiK', 'pheno'],
   figure(fig) {
     const canvas = fig.querySelector('canvas');
     sheet = new Sheet(canvas, (sh, t) => draw(sh, t));
-    // a click on a row of the heat map chooses its section
-    const rowAt = (e) => {
-      if (!hit || !st || st.aiTab === 'retrieval') return -1;
+    const at = (e) => {
       const r = canvas.getBoundingClientRect(), z = sheet.z || 1;
-      const x = (e.clientX - r.left) / z, y = (e.clientY - r.top) / z;
+      return [(e.clientX - r.left) / z, (e.clientY - r.top) / z];
+    };
+    // the seven steps: a click on a column of step 3 or 4, a tile of step 5 or a sentence of step
+    // 7 chooses its section; a tab of a small figure, its row
+    const stepAt = (e) => {
+      if (!st || tabOf(st) !== 'steps') return null;
+      const [x, y] = at(e);
+      return stepsHit.find((h) => x >= h.x0 && x <= h.x1 && y >= h.y0 && y <= h.y1) || null;
+    };
+    // the earlier Study view: a click on a row of the heat map chooses its section
+    const rowAt = (e) => {
+      if (!hit || !st || tabOf(st) !== 'study') return -1;
+      const [x, y] = at(e);
       if (x < hit.x0 || x > hit.x1 || y < hit.y0) return -1;
       const i = Math.floor((y - hit.y0) / hit.rh);
       return i >= 0 && i < SECTIONS.length ? i : -1;
     };
     canvas.addEventListener('click', (e) => {
+      if (!setState) return;
+      const h = stepAt(e);
+      if (h && h.row !== undefined) { if (h.row !== rowOf(st)) setState({ aiRow: h.row }); return; }
+      if (h && h.sec !== undefined) { if (h.sec !== secOf(st)) setState({ aiSec: h.sec }); return; }
       const i = rowAt(e);
-      if (i >= 0 && setState && i !== secOf(st)) setState({ aiSec: i });
+      if (i >= 0 && i !== secOf(st)) setState({ aiSec: i });
     });
     canvas.addEventListener('pointermove', (e) => {
       if (e.pointerType === 'touch') return;
-      canvas.style.cursor = rowAt(e) >= 0 ? 'pointer' : '';
+      canvas.style.cursor = stepAt(e) || rowAt(e) >= 0 ? 'pointer' : '';
     });
     canvas.addEventListener('pointerleave', () => { canvas.style.cursor = ''; });
     return sheet;
@@ -1219,19 +1375,17 @@ export default {
   init({ state, set, subscribe }) {
     st = state;
     setState = set;
-    // the controls of one part of the figure show only with it (data-ai-tab)
-    const tabs = () => {
-      for (const el of document.querySelectorAll('#ch-ai [data-ai-tab]')) el.hidden = el.dataset.aiTab !== (state.aiTab === 'retrieval' ? 'retrieval' : 'study');
-    };
-    tabs();
-    subscribe?.((s, ch) => { if ('aiTab' in ch) tabs(); });
+    bind(heartWanted, () => { redraw(); pump(); }, () => (cache.state === 'ready' ? cache.ev : null));
+    // the controls of the view shown (data-ai-tab); the row switch with a figure of one row
+    showControls();
+    subscribe?.((s, ch) => { if ('aiTab' in ch) showControls(); });
   },
   enter() { open = true; start(); pump(); },
   leave() { open = false; },
   // the heart model loads at idle, before the chapter opens (main.js warms every chapter); the
-  // videos are cut only while the chapter is open
+  // videos and the measurements' tiles are cut only while the chapter is open
   warm() { start(); },
-  // a video page and the tour wait for every frame of the heart shown
+  // a video page and the tour wait for every frame and tile of the heart shown
   ready() {
     if (!complete()) { open = true; pump(); return false; }
     return true;
@@ -1242,40 +1396,28 @@ export default {
   anim(dt) {
     if (!reducedMotion) clock += dt;
     if (!complete() && open) pump();
-    if (st && st.aiTab !== 'retrieval') {
+    // the videos play where they show: the earlier Study view, or the first row of the steps
+    const tab = st ? tabOf(st) : 'steps';
+    if (tab === 'study' || (tab === 'steps' && (narrowNow === false || rowOf(st) === 0))) {
       const f = frameNow();
       if (f !== shownFrame) { shownFrame = f; redraw(); }
     }
   },
   pulse() { return { rr: RR, phase: reducedMotion ? null : ((clock * 1000) % RR) / RR }; },
-  tourEnter(set) { set({ aiTab: 'study', aiSec: 0, aiN: N_ALL, aiOnly: false, aiMap: 'lv', aiK: K_PAPER }); },
+  tourEnter(set) { set({ aiTab: 'steps', aiStep: TOUR[0][1], aiSec: TOUR[0][2], aiTwo: true, aiRow: rowOfStep(TOUR[0][1]) }); },
   tourTick(tt, set) {
-    if (tt < T_ADD[0]) {
-      const sec = T_SEC.filter(([t0]) => tt >= t0).pop()[1];
-      set({ aiTab: 'study', aiSec: sec, aiN: N_ALL, aiOnly: false });
-    } else if (tt < T_ADD[1]) set({ aiTab: 'study', aiSec: 12, aiN: addAt(tt), aiOnly: false });
-    else if (tt < T_FULL) set({ aiTab: 'study', aiSec: 12, aiN: N_ALL, aiOnly: true });
-    else if (tt < T_RET[0][0]) set({ aiTab: 'study', aiSec: 12, aiN: N_ALL, aiOnly: false });
-    else {
-      const [, map, k] = T_RET.filter(([t0]) => tt >= t0).pop();
-      set({ aiTab: 'retrieval', aiMap: map, aiK: k });
-    }
+    const [, step, sec] = TOUR.filter(([t0]) => tt >= t0).pop();
+    set({ aiTab: 'steps', aiStep: step, aiSec: sec, aiTwo: true, aiRow: rowOfStep(step) });
   },
   // the time of the sequence at which tourTick shows this state (its inverse); a state off the
   // sequence starts it from the beginning
   tourAt(s) {
-    if (s.aiTab === 'retrieval') {
-      const k = kOf(s), map = mapOf(s);
-      const at = T_RET.find(([, m, kk]) => m === map && kk === k);
-      return at ? at[0] + 0.01 : undefined;
-    }
-    if (s.aiOnly) return secOf(s) === 12 ? T_ONLY + 0.01 : undefined;
-    const n = clamp(Math.round(s.aiN), 1, N_ALL);
-    if (n < N_ALL) return secOf(s) === 12 ? T_ADD[0] + ((n - 1) / N_ALL) * (T_ADD[1] - T_ADD[0]) + 0.01 : undefined;
-    const at = T_SEC.find(([, sec]) => sec === secOf(s));
-    return at ? at[0] + 0.01 : undefined;
+    if (tabOf(s) !== 'steps' || !s.aiTwo) return undefined;
+    const at = TOUR.find(([, step, sec]) => step === stepOf(s) && sec === secOf(s));
+    return at ? at[0] : undefined;
   },
   text(s, { cite }) {
-    return s.aiTab === 'retrieval' ? retrievalText(s) : studyText(s, cite);
+    const tab = tabOf(s);
+    return tab === 'retrieval' ? retrievalText(s) : tab === 'study' ? studyText(s, cite) : stepsText(s, cite);
   },
 };

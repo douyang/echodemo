@@ -63,12 +63,17 @@ function tube(pts, r0, r1, seg = 16) {
   const N = Math.max(8, Math.round(curve.getLength() / 0.35));
   const fr = curve.computeFrenetFrames(N, false);
   const pos = [], idx = [];
+  // each vertex's ring centre and its distance (cm) along the tube from its first end, for a
+  // change of caliber (echo.js setIvc)
+  const ctr = [], along = [], len = curve.getLength();
   for (let i = 0; i <= N; i++) {
     const c = curve.getPointAt(i / N), r = r0 + (r1 - r0) * (i / N);
     for (let k = 0; k < seg; k++) {
       const a = (k / seg) * Math.PI * 2;
       const p = c.clone().addScaledVector(fr.normals[i], r * Math.cos(a)).addScaledVector(fr.binormals[i], r * Math.sin(a));
       pos.push(p.x, p.y, p.z);
+      ctr.push(c.x, c.y, c.z);
+      along.push((i / N) * len);
     }
   }
   for (let i = 0; i < N; i++) {
@@ -82,6 +87,8 @@ function tube(pts, r0, r1, seg = 16) {
   for (const [i, flip] of [[0, true], [N, false]]) {
     const c = curve.getPointAt(i / N), ci = pos.length / 3;
     pos.push(c.x, c.y, c.z);
+    ctr.push(c.x, c.y, c.z);
+    along.push((i / N) * len);
     for (let k = 0; k < seg; k++) {
       const a = i * seg + k, b = i * seg + ((k + 1) % seg);
       if (flip) idx.push(ci, b, a); else idx.push(ci, a, b);
@@ -92,6 +99,8 @@ function tube(pts, r0, r1, seg = 16) {
   g.setIndex(idx);
   const m = new THREE.Mesh(g);
   m.userData.capFrom = capFrom;
+  m.userData.centers = new Float32Array(ctr);
+  m.userData.along = new Float32Array(along);
   return m;
 }
 

@@ -181,7 +181,9 @@ const ANCHORS = new Map();
  *        cusp, and the vertex on the cusp's other face.
  */
 export function anchorsOf(ev) {
-  const key = `${ev.heart.key}|${ev.heart.version}`;
+  // a chapter's disease (echo.js setDisease) changes the heart's shape, so it has anchors of its own
+  const dx = Object.entries(ev.disease || {}).map(([k, v]) => `${k}:${v}`).sort().join(',');
+  const key = `${ev.heart.key}|${ev.heart.version}${dx ? `|${dx}` : ''}`;
   if (ANCHORS.has(key)) return ANCHORS.get(key);
   const A = { myx: myxAnchor(ev), thr: thrAnchor(ev), pfe: pfeAnchor(ev) };
   ANCHORS.set(key, A);

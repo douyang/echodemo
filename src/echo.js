@@ -416,6 +416,22 @@ class MeshData {
   }
 }
 
+// The IVC's caliber (EchoView.setIvc): within this many cm of the tube's end at the RA the change
+// fades in, so the scaled tube still meets the RA's opening
+export const IVC_TAPER = 0.6;
+/** Each point of the IVC tube md at k times its distance from its ring's centre (abdomen.js userData). */
+function ivcCaliber(md, k) {
+  const C = md.mesh.userData.centers, A = md.mesh.userData.along;
+  md.morph({});
+  md.kI = k;
+  if (!C || !A || k === 1) return;
+  const p = md.pos;
+  for (let i = 0; i < md.count; i++) {
+    const u = Math.min(1, A[i] / IVC_TAPER), f = 1 + (k - 1) * u * u * (3 - 2 * u);
+    for (let j = 3 * i; j < 3 * i + 3; j++) p[j] = C[j] + f * (p[j] - C[j]);
+  }
+}
+
 /**
  * Directions of the three aortic cusps from the root's axis, named by where they lie: the
  * right coronary cusp in front, the non-coronary cusp the more rightward of the other two, the
@@ -699,6 +715,15 @@ export class EchoView {
    */
   setShapes(fn = null) {
     this.shapes = fn;
+  }
+
+  /**
+   * The IVC's caliber below the diaphragm (shock.js): k times the model's, each point of the
+   * IVC tube moved out from its ring's centre (abdomen.js). The change fades in over the first
+   * IVC_TAPER cm from the tube's end at the RA, so the tube still meets the RA. 1: the model's.
+   */
+  setIvc(k = 1) {
+    this.ivcK = k;
   }
 
   /** The probe set back along the beam by cm, past fluid in front of the heart: the plane moves, the heart stays. */
@@ -1154,6 +1179,8 @@ export class EchoView {
     // ASE's parasternal images (2019, Table 2) show none; its hepatic veins go with it, and the
     // aorta and the IVC stay
     const abd = {}, win = this.specOf(this.view).win;
+    // the IVC's caliber (setIvc), set again only when it changes
+    if (this.abd.ivc && (this.abd.ivc.kI ?? 1) !== (this.ivcK ?? 1)) ivcCaliber(this.abd.ivc, this.ivcK ?? 1);
     const skip = win === 'plax' || win === 'psax' ? ['liver', 'mhv', 'rhv'] : [];
     for (const [k, md] of Object.entries(this.abd)) if (!skip.includes(k)) abd[k] = md.section(g);
     // a chapter's own structures under the leaflets (this.extraUnder): it may cut the valve loops

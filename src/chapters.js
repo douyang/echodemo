@@ -29,8 +29,11 @@ import shuntsPage from './ch/shunts.js';
 import endocarditisPage from './ch/endocarditis.js';
 import aortaPage from './ch/aorta.js';
 import massesPage from './ch/masses.js';
+import miPage from './ch/mi.js';
+import shockPage from './ch/shock.js';
 import measurePage from './ch/measure.js';
 import aiPage from './ch/ai.js';
+import teePage from './ch/tee.js';
 import report from './ch/report.js';
 
 import { ORDER, SHOW_REPORT } from './order.js';
@@ -49,11 +52,13 @@ export const PARTS = [
   { key: 'cardiomyopathy', num: 'IX', name: 'Cardiomyopathy' },
   { key: 'congenital', num: 'X', name: 'Congenital' },
   { key: 'masses', num: 'XI', name: 'Masses' },
-  { key: 'ai', num: 'XII', name: 'Artificial intelligence' },
-  ...(SHOW_REPORT ? [{ key: 'report', num: 'XIII', name: 'Report' }] : []),
+  { key: 'acute', num: 'XII', name: 'Acute care' },
+  { key: 'ai', num: 'XIII', name: 'Artificial intelligence' },
+  { key: 'tee', num: 'XIV', name: 'TEE' },
+  ...(SHOW_REPORT ? [{ key: 'report', num: 'XV', name: 'Report' }] : []),
 ];
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, constrictPage, hcmPage, shuntsPage, massesPage, measurePage, aiPage, report].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, constrictPage, hcmPage, shuntsPage, massesPage, miPage, shockPage, measurePage, aiPage, teePage, report].map((c) => [c.key, c]));
 /** The chapters in reading order (order.js). */
 export const CHAPTERS = ORDER.map((k) => BY[k]);

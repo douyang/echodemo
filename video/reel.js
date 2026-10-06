@@ -16,9 +16,9 @@
 //  - AR, MS, TR: the layout of AS and MR.
 // Stress echocardiography, added with its chapter, follows Regional wall motion, as its chapter does:
 // the quad screen of a stress test. The right ventricle (chapter 14), added after the review, has no clip.
-// Study interpretation (chapter 31, EchoPrime) closes the intro, as its part closes the site: the
-// study's videos lit, section by section, by the model's attention weights. Four bars, so that the
-// score's whole four-bar phrases still end on the end card (36 bars).
+// AI interpretation and measurement closes the intro, as its part closes the site: the weights of
+// the LV section, its task heads, then the anchor, which returns the septum's caliper from a second
+// peak. Four bars, so that the score's whole four-bar phrases still end on the end card (36 bars).
 //
 // A clip has ch (the chapter's key) and bars (its length in bars of the score). A chapter clip has
 // a video in the shape of video/chapters.js. The clip of Views has a cut of the views video
@@ -85,10 +85,10 @@ export const REEL = {
       { set: { amyS: 0 }, pick: [2], hold: TWO.hold0 },
       { set: { amyS: 0.9 }, name: 'Relative apical sparing', line: 'The septum measures {IVSd} mm. {s2}', move: TWO.move, hold: TWO.hold1 },
     ] } },
-    { ch: 'ai', bars: 4, video: { pane: 'EchoPrime', side: false, discrete: ['aiSec', 'aiN'], steps: [
-      { set: { aiTab: 'study', aiSec: 0, aiN: 14, aiOnly: false }, hold: 1 },
-      { set: { aiSec: 7 }, move: 0.75, hold: 1 },
-      { set: { aiSec: 12 }, move: 0.5, hold: 0.75 },
+    { ch: 'ai', bars: 4, video: { pane: 'EchoPrime and EchoNet-Measurements', side: false, discrete: ['aiSec', 'aiStep', 'aiRow'], steps: [
+      { set: { aiTab: 'steps', aiStep: 3, aiSec: 0, aiRow: 0, aiTwo: true }, hold: 1 },
+      { set: { aiStep: 4 }, move: 0.75, hold: 1 },
+      { set: { aiStep: 6, aiRow: 2 }, move: 0.5, hold: 0.75 },
     ] } },
   ],
 };
