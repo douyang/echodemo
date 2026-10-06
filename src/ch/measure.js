@@ -924,8 +924,8 @@ const toBox = (bx, q) => [bx.x + (q[0] / DW) * bx.w, bx.y + (q[1] / DH) * bx.h];
 function dStrip(ctx, P, D, right) {
   panel(ctx, P.x, P.y, P.w, P.h, titleOf(ctx, P.w, D.title, right));
   if (D.mode === 'mm') {
-    // the annulus's echo over two beats, with the probe at the top: rv.js's trace, but toward
-    // the probe in systole (rv.js draws it moving away)
+    // the annulus's echo over two beats, with the probe at the top: toward the probe in systole,
+    // as rv.js's trace moves
     const bx = { x: P.x + 6, y: P.y + 24, w: P.w - 40, h: P.h - 30 };
     ctx.save();
     ctx.fillStyle = '#20262a';

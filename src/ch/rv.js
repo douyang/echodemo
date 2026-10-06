@@ -10,15 +10,22 @@
 // for the notch. An edit stores the measurements in rvx; the slider then marks a band of their
 // result and does not change them. A move of the slider or of the load, Play, the tour or a
 // heart's preset clears rvx, and the values follow the slider again.
+// Acute pulmonary embolism (the third load, 'pe'): an acute pressure load on a thin RV (ESC 2019,
+// Figure 3). The RV dilates, its function falls and the septum flattens, while the free wall stays
+// thin and the TR velocity stays modest. At the end come the specific signs: McConnell's sign and
+// the 60/60 sign. In McConnell's sign the mid free wall is akinetic, and the apex moves as the
+// heart's own; gl/rvpemesh.js moves the free wall by third. The grade names are ESC terms; the
+// page gives no risk class.
 import { Sheet, clamp, MONO } from '../sketch.js';
-import { panel, spectral, vscale, SC, caliper } from '../scope.js';
+import { panel, spectral, vscale, SC, caliper, tagBox } from '../scope.js';
 import { RR, EV, mitralV, cycleAt } from '../cyclemodel.js';
 import { rapEstimate } from '../norms.js';
 import { tracks, bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit, waveLetter } from '../sev.js';
 import { cal } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
-import { rvGrowOf, raAreaWeight, raAreaMin, sepOf, sepEsOf, rvThickOf, rvWallOwn, rvSepAdd, lvBasalAt, rvFacAt, rvTapseOwn, RV_TAPSE } from '../meshcal.js';
+import { rvGrowOf, raAreaWeight, raAreaMin, sepOf, sepEsOf, rvThickOf, rvWallOwn, rvSepAdd, lvBasalAt, rvFacAt, rvTapseOwn, RV_TAPSE, rvPeAt } from '../meshcal.js';
 import { blood, cavity, onPlane, hingesOf, middle, sub, add, mul, dot, unit, perp } from '../meshjet.js';
+import { rvLevels, rvShares, freeWall, wallLevels } from '../gl/rvpemesh.js';
 import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
 import { cue } from '../music.js';
 import { numOf } from '../order.js';
@@ -32,7 +39,7 @@ const FRAME = 'rvFrame';
 const EDITS = 'rvx';
 const AR = 3.1;      // cm, the model's aortic root, for the sign "PA diameter > aortic root"
 const FLAT = 1.1;    // the eccentricity index above which the septum is called flat (Humbert 2022 Table 10)
-const LOADS = ['pressure', 'volume'];
+const LOADS = ['pressure', 'volume', 'pe'];
 // Hidden, with their code kept: the calculator in the text (#rv-calc, the ▲▼ buttons) and the
 // ESC/ERS 2022 echocardiographic probability of PH (its readout, its live sentence, and the prose
 // section and key point in index.html). Each comes back with its flag here and with the hidden
@@ -94,6 +101,35 @@ const TRACKS = {
     prv: [1.5, 1.5, 1.6, 1.7, 1.8],
     rvotV: [0.95, 1.15, 1.3, 1.4, 1.45],
   }),
+  // Acute pulmonary embolism (ESC 2019, Figure 3). The RV dilates (rvb), and the septum flattens
+  // more at end-systole than at end-diastole. TAPSE (kT) falls below 16 mm and S′ below 9.5 cm/s.
+  // The free wall stays at 4 mm, under the 5 mm of hypertrophy (Rudski 2010). The TR velocity
+  // rises to 3.3 m/s (44 mmHg), under the 3.8 m/s and 60 mmHg beyond acute overload. The RVOT
+  // acceleration time falls below 60 ms, with a mid-systolic notch. The IVC distends and collapses
+  // less. gB, gM and gA are the free wall's motion shares by third (gl/rvpemesh.js). The base
+  // falls with the annulus (kT), the middle falls to none, and the apex keeps its own motion
+  // (McConnell 1996). eda only sets the end-systolic area of the hidden calculator.
+  pe: tracks(STOPS, {
+    trv: [2.3, 2.5, 2.8, 3.1, 3.3],
+    ivc: [1.6, 1.8, 2.1, 2.3, 2.4],
+    coll: [60, 55, 45, 35, 25],
+    acct: [130, 112, 88, 63, 52],
+    nd: [0, 0, 0.3, 0.8, 1],
+    rvb: [3.4, 4.0, 4.4, 4.7, 4.9],
+    wall: [4.0, 4.0, 4.0, 4.0, 4.0],
+    kT: [1, 0.97, 0.82, 0.68, 0.6],
+    gB: [1, 0.97, 0.82, 0.68, 0.6],
+    gM: [1, 0.85, 0.55, 0.28, 0],
+    gA: [1, 1, 1, 1, 1],
+    sPrime: [13, 12.5, 10.5, 9, 8],
+    eda: [18, 22, 26, 29, 31],
+    ra: [16, 17, 19, 21, 23],
+    eiD: [1.0, 1.03, 1.08, 1.15, 1.2],
+    eiS: [1.0, 1.08, 1.2, 1.32, 1.4],
+    pa: [2.2, 2.3, 2.5, 2.6, 2.7],
+    prv: [1.5, 1.6, 1.8, 2.0, 2.1],
+    rvotV: [0.95, 0.85, 0.72, 0.6, 0.5],
+  }),
 };
 
 /**
@@ -114,7 +150,9 @@ function facOf(heart, load, s) {
  * The model at slider position s under load on heart: its measurements before rounding. The RV
  * free wall and the RA are at least the heart's own (the amyloid heart's wall is 7.5 mm thick).
  * TAPSE is the image's annulus travel (kTe of the heart's own) and FAC the image's; S′ follows
- * TAPSE from the normal heart's track.
+ * TAPSE from the normal heart's track. Acute PE takes the annulus's travel as a pressure load
+ * does. Its FAC and the free wall's inward motion by third (wb, wm, wa: mm) come from the image
+ * (meshcal.js rvPeAt).
  */
 function modelAt(s, load, heart) {
   const m = TRACKS[load](s);
@@ -122,10 +160,11 @@ function modelAt(s, load, heart) {
   m.load = load;
   m.wall = Math.max(m.wall, rvWallOwn(heart));
   m.ra = Math.max(m.ra, raAreaMin(heart));
-  m.kTe = annulusOf(heart, load, m.kT);
+  m.kTe = annulusOf(heart, load === 'pe' ? 'pressure' : load, m.kT);
   m.tapse = rvTapseOwn(heart) * m.kTe;
   m.sPrime *= m.tapse / (RV_TAPSE.normal * m.kT);
-  m.fac = facOf(heart, load, s);
+  if (load === 'pe') { const w = rvPeAt(heart, s); Object.assign(m, { fac: w.fac, wb: w.base, wm: w.mid, wa: w.apex }); }
+  else m.fac = facOf(heart, load, s);
   m.esa = m.eda * (1 - m.fac / 100);
   m.notch = m.nd >= 0.5 ? 'yes' : 'no';
   return m;
@@ -257,11 +296,33 @@ function measure(raw, heart) {
   // the page's grade: the RV systolic pressure under a pressure load (Mukherjee 2025 Figure 5),
   // the RV basal diameter under a volume load
   v.grade = GNAME[v.load === 'pressure' ? v.g.rvsp : v.g.rvb];
+  if (v.load === 'pe') peGrade(v);
   return v;
 }
 
+// Acute pulmonary embolism. The grades use ESC 2019 terms: RV dilation, RV dysfunction and the
+// specific signs. RV dilation is an RV basal diameter above 4.0 cm (Mukherjee 2025, Table 1). RV
+// dysfunction is an RV/LV ratio of 1.0 or more with a TAPSE below 16 mm. ESC 2019 links these two
+// findings most often to an unfavorable prognosis. McConnell's sign on the image: the mid free
+// wall moves inward less than 1 mm (McConnell 1996: -0.2 ± 0.8 mm in acute PE). It also moves
+// less than a quarter of its own motion at a normal load. The apex moves at least 80% as far as
+// its own. The amyloid heart's mid wall moves only 0.8 mm at a normal load. There the quarter
+// keeps the sign off until the load stills the wall. The 60/60 sign: an RVOT acceleration time
+// below 60 ms with a TR gradient below 60 mmHg (ESC 2019; Kurzyna 2002 used ≤).
+const AKINETIC = 1;
+const PE_GRADES = ['normal', 'RV dilation', 'RV dysfunction', 'specific signs'];
+function peGrade(v) {
+  for (const k of ['wb', 'wm', 'wa']) v[k] = round(v[k], 1);
+  const own = rvPeAt(v.heart, 0);
+  v.mcc = v.wm < AKINETIC && v.wm <= 0.25 * round(own.mid, 1) && v.wa >= 0.8 * round(own.apex, 1);
+  v.s6060 = v.acct < 60 && v.grad < 60;
+  v.dil = v.rvb > 4.0;
+  v.dys = v.rvlv >= 1 && v.tapse < 16;
+  v.grade = PE_GRADES[v.mcc || v.s6060 ? 3 : v.dys ? 2 : v.dil ? 1 : 0];
+}
+
 const heartOf = (s) => s.pheno || 'normal';
-const loadOf = (s) => (s[LOAD] === 'volume' ? 'volume' : 'pressure');
+const loadOf = (s) => (LOADS.includes(s[LOAD]) ? s[LOAD] : 'pressure');
 /** The values on screen, from the store: the edited measurements (rvx), or the model's at the slider. */
 function shownOf(s) {
   const heart = heartOf(s);
@@ -285,7 +346,7 @@ export const gradeOf = (x, load = 'pressure') => measure(modelAt(x, load, 'norma
 
 let sheet = null, st = null, setState = null;
 const beat = new Beat(RR);
-const BANDS_OF = { pressure: [], volume: [] };
+const BANDS_OF = { pressure: [], volume: [], pe: [] };
 
 // ---------------------------------------------------------------- the figure
 // The RV-focused four-chamber view and the short axis at the papillary muscles cut from the heart
@@ -308,8 +369,29 @@ function meshOf(v, tt) {
   return {
     disease: { rvGrow: rvGrowOf(heart, v.rvb - rvSepAdd(heart, wD)), raGrow: raAreaWeight(heart, v.ra), rvThick: rvThickOf(heart, v.wall) },
     motion: { sep: wD + (wS - wD) * sy },
-    ...rvMotion(heart, v),
+    ...(v.load === 'pe' ? peMotion(heart, v) : rvMotion(heart, v)),
   };
+}
+// Acute PE: each myocardium vertex's level along the RV (gl/rvpemesh.js), loaded with the views
+let levels = null;
+const loadLevels = () => rvLevels().then((L) => { levels = L; redraw(); }).catch(() => {});
+/**
+ * The RV's own motion under acute PE. rvT is the tricuspid valve's travel. rvReg holds the track's
+ * free wall shares at the base, middle and apex, in place of rvK. The valve travels the model's
+ * TAPSE before rounding (kTe), as meshcal.js rvPeAt was measured. So the FAC and the wall's motion
+ * on the image follow the slider smoothly. The printed TAPSE is that travel to the millimeter. An
+ * edited TAPSE (the hidden calculator) moves the valve itself. rvK 1 keeps the RV's trabeculations
+ * at the heart's own motion.
+ */
+function peMotion(heart, v) {
+  const own = rvTapseOwn(heart), model = round(own * v.kTe, 0) === v.tapse;
+  return { rvT: clamp(model ? v.kTe : v.tapse / own, 0.3, 1.15), rvK: 1, rvReg: levels ? rvShares(levels, v.gB, v.gM, v.gA) : null };
+}
+/** Under acute PE a view waits for the levels, as a mesh panel waits for its model (meshpanel.js). */
+function waiting(ctx, box, title) {
+  loadLevels();
+  panel(ctx, box.x, box.y, box.w, box.h, title);
+  note(ctx, { x: box.x + 4, y: box.y + 22, w: box.w - 30, h: box.h - 26 }, 'loading the heart model', 'top');
 }
 /** The RV's own motion for the values v on heart: the tricuspid valve's travel (rvT) and the free wall's (rvK). */
 function rvMotion(heart, v) {
@@ -338,17 +420,63 @@ function rvName(ev, s) {
 }
 
 function a4c(ctx, box, v, tt) {
-  const M = meshOf(v, tt);
-  MESH.draw(ctx, box, titleOf(ctx, box.w, ['APICAL FOUR-CHAMBER, RV FOCUSED', 'A4C, RV FOCUSED', 'A4C RV']), {
-    tms: tt, disease: M.disease, motion: M.motion, rvK: M.rvK, rvT: M.rvT,
+  const M = meshOf(v, tt), pe = v.load === 'pe', title = titleOf(ctx, box.w, ['APICAL FOUR-CHAMBER, RV FOCUSED', 'A4C, RV FOCUSED', 'A4C RV']);
+  if (pe && !levels) return waiting(ctx, box, title);
+  MESH.draw(ctx, box, title, {
+    tms: tt, disease: M.disease, motion: M.motion, rvK: M.rvK, rvT: M.rvT, rvReg: M.rvReg,
     // deeper as the RA grows (its length as the root of its area, 5 cm at 19.7 cm²)
     deeper: Math.max(0, 5 * (Math.sqrt(v.ra / 19.7) - 1)),
     names: [['lv', 'LV', 'apex', 0.45], [rvName, 'RV'], ['la', 'LA'], ['ra', 'RA']],
     // a narrow panel keeps the image clear: the RV's size and wall only (the readouts give the rest)
-    lines: box.w < 260
+    lines: pe ? peLines(box, v) : box.w < 260
       ? [`RV ${v.rvb.toFixed(1)} cm`, `wall ${v.wall.toFixed(1)} mm`]
       : [`RV base ${v.rvb.toFixed(1)} cm`, [`RV wall ${v.wall.toFixed(1)} mm`, `wall ${v.wall.toFixed(1)} mm`], [`RA area ${v.ra} cm²`, `RA ${v.ra} cm²`], `FAC ${v.fac}%`],
+    over: pe ? (c, F, ev) => peWall(c, F, ev, v, tt) : undefined,
   });
+}
+
+/**
+ * The four-chamber view's box under acute PE. A wide panel gives the RV's size, the RV/LV ratio,
+ * the wall and the FAC. A narrow panel gives the size, the ratio and the free wall's inward motion
+ * at the base, middle and apex (mm). It adds McConnell's sign when it holds. A wide panel writes
+ * the motion beside the wall instead (peWall).
+ */
+const peLines = (box, v) => (box.w < 260
+  ? [`RV ${v.rvb.toFixed(1)} cm`, `RV/LV ${v.rvlv.toFixed(2)}`, [`base ${v.wb.toFixed(1)} mid ${v.wm.toFixed(1)} apex ${v.wa.toFixed(1)}`, `B ${v.wb.toFixed(1)} M ${v.wm.toFixed(1)} A ${v.wa.toFixed(1)}`], ...(v.mcc ? ['McConnell'] : [])]
+  : [`RV base ${v.rvb.toFixed(1)} cm`, `RV/LV ${v.rvlv.toFixed(2)}`, [`RV wall ${v.wall.toFixed(1)} mm`, `wall ${v.wall.toFixed(1)} mm`], `FAC ${v.fac}%`]);
+
+/**
+ * The free wall's motion by third on the four-chamber view under acute PE (gl/rvpemesh.js
+ * freeWall). At the middle of each third, a ring marks the wall at end-diastole. A dot marks the
+ * same wall now, and a line joins them. A wide panel writes the printed inward motion at
+ * end-systole beside each ring, outside the wall. The image's move reaches that value there
+ * (meshcal.js rvPeAt). Under the mid wall's value, the panel names McConnell's sign when it holds.
+ */
+function peWall(c, F, ev, v, tt) {
+  const fw = freeWall(ev, cycleAt(tt).s);
+  if (!fw) return;
+  const vals = [v.wb, v.wm, v.wa], wide = F.box.w >= 260;
+  c.save();
+  c.fillStyle = SC.cal;
+  c.strokeStyle = SC.cal;
+  c.lineWidth = 1.2;
+  wallLevels(fw).forEach((w, i) => {
+    if (!w) return;
+    const [x0, y0] = F.P(w.P0), [x1, y1] = F.P(w.P);
+    c.beginPath();
+    c.arc(x0, y0, 3.4, 0, 2 * Math.PI);
+    c.moveTo(x0, y0);
+    c.lineTo(x1, y1);
+    c.stroke();
+    c.beginPath();
+    c.arc(x1, y1, 2, 0, 2 * Math.PI);
+    c.fill();
+    if (!wide) return;
+    // the label 0.8 cm out from the wall at end-diastole, kept in the image
+    const [lx, ly] = F.P(add(w.P0, mul(w.n0, -0.8)));
+    tagBox(c, lx, ly, [`${vals[i].toFixed(1)} mm`, ...(i === 1 && v.mcc ? ['McConnell'] : [])], { size: 10, align: lx < x0 ? 'right' : 'left', bounds: F.view.box });
+  });
+  c.restore();
 }
 
 // the eccentricity index's two diameters on the short axis (Mukherjee 2025 Table 2): D1 across
@@ -377,8 +505,9 @@ function chord(P, Q, side) {
 function psax(ctx, box, v, tt) {
   const M = meshOf(v, tt), sy = cycleAt(tt).s;
   const title = titleOf(ctx, box.w, [`PSAX · LVEI ${v.eiD.toFixed(2)} ED · ${v.eiS.toFixed(2)} ES`, `PSAX · EI ${v.eiD.toFixed(2)} / ${v.eiS.toFixed(2)}`, `EI ${v.eiD.toFixed(2)}/${v.eiS.toFixed(2)}`]);
+  if (v.load === 'pe' && !levels) return waiting(ctx, box, title);
   MESH_PM.draw(ctx, box, title, {
-    tms: tt, disease: M.disease, motion: M.motion, rvK: M.rvK, rvT: M.rvT, names: [['rv', 'RV']],
+    tms: tt, disease: M.disease, motion: M.motion, rvK: M.rvK, rvT: M.rvT, rvReg: M.rvReg, names: [['rv', 'RV']],
     over: (c, F, ev) => {
       const an = ev.anchors(sy), lv = onPlane(ev, an.lv), rv = onPlane(ev, an.rv);
       const P = cavity(ev, blood(ev, lv));
@@ -428,7 +557,11 @@ function trCW(ctx, P, v) {
   const X = (ms) => bx.x + (ms / (2 * RR)) * bx.w;
   const xp = X(TR_PEAK), yp = y0 + v.trv * k;
   caliper(ctx, xp - 14, yp, xp + 14, yp, { solid: true });
-  note(ctx, bx, [`peak ${v.trv.toFixed(1)} m/s · 4V² ${v.grad} + RAP ${v.rap} = RVSP ${v.rvsp} mmHg`, `peak ${v.trv.toFixed(1)} m/s · RVSP ${v.rvsp} mmHg`, `${v.trv.toFixed(1)} m/s · RVSP ${v.rvsp}`], 'top');
+  // acute PE: the TR gradient, which the 60/60 sign reads (ESC 2019), and the sign when it holds
+  const sign = v.s6060 ? ' · 60/60 sign' : '', short = v.s6060 ? ' · 60/60' : '';
+  note(ctx, bx, v.load === 'pe'
+    ? [`peak ${v.trv.toFixed(1)} m/s · 4V² ${v.grad} mmHg${sign}`, `peak ${v.trv.toFixed(1)} m/s · ${v.grad} mmHg${short}`, `${v.trv.toFixed(1)} m/s · ${v.grad} mmHg${short}`, `${v.grad} mmHg${short}`]
+    : [`peak ${v.trv.toFixed(1)} m/s · 4V² ${v.grad} + RAP ${v.rap} = RVSP ${v.rvsp} mmHg`, `peak ${v.trv.toFixed(1)} m/s · RVSP ${v.rvsp} mmHg`, `${v.trv.toFixed(1)} m/s · RVSP ${v.rvsp}`], 'top');
   return bx;
 }
 
@@ -473,15 +606,20 @@ function rvotPW(ctx, P, v) {
   ctx.lineTo(X(T0 + acct), yc);
   ctx.stroke();
   ctx.restore();
-  note(ctx, bx, [`AccT ${acct} ms${v.notch === 'yes' ? ' · mid-systolic notch' : ''}`, `AccT ${acct} ms${v.notch === 'yes' ? ' · notch' : ''}`], 'bottom');
+  const forms = [`AccT ${acct} ms${v.notch === 'yes' ? ' · mid-systolic notch' : ''}`, `AccT ${acct} ms${v.notch === 'yes' ? ' · notch' : ''}`];
+  // acute PE: the 60/60 sign when it holds (ESC 2019)
+  note(ctx, bx, v.s6060 ? [`${forms[0]} · 60/60 sign`, `${forms[1]} · 60/60`, `AccT ${acct} ms · 60/60`] : forms, 'bottom');
   return bx;
 }
 
-/** M-mode through the lateral tricuspid annulus: its excursion toward the apex. */
+/**
+ * M-mode through the lateral tricuspid annulus: its excursion toward the apex. The apical view puts
+ * the probe at the top, so the annulus rises on the screen in systole and falls in diastole.
+ */
 function tapseMM(ctx, P, v) {
   panel(ctx, P.x, P.y, P.w, P.h, fit(P.w, 'M-MODE · TAPSE', 'TAPSE'));
   const bx = { x: P.x + 6, y: P.y + 24, w: P.w - 12, h: P.h - 30 };
-  const pxmm = Math.min(bx.h / 40, 4), y0 = bx.y + bx.h * 0.22;
+  const pxmm = Math.min(bx.h / 40, 4), y0 = bx.y + bx.h * 0.78;
   ctx.save();
   ctx.fillStyle = '#20262a';
   ctx.fillRect(bx.x, bx.y, bx.w, bx.h);
@@ -489,12 +627,12 @@ function tapseMM(ctx, P, v) {
   ctx.lineWidth = 2.2;
   ctx.beginPath();
   for (let i = 0; i <= 220; i++) {
-    const u = i / 220, y = y0 + cycleAt((u * 2 * RR) % RR).s * v.tapse * pxmm;
+    const u = i / 220, y = y0 - cycleAt((u * 2 * RR) % RR).s * v.tapse * pxmm;
     i ? ctx.lineTo(bx.x + u * bx.w, y) : ctx.moveTo(bx.x + u * bx.w, y);
   }
   ctx.stroke();
   const xb = bx.x + (EV.avc / (2 * RR)) * bx.w;
-  caliper(ctx, xb, y0, xb, y0 + v.tapse * pxmm, { solid: true });
+  caliper(ctx, xb, y0, xb, y0 - v.tapse * pxmm, { solid: true });
   ctx.restore();
   note(ctx, bx, [`TAPSE ${v.tapse} mm`, `${v.tapse} mm`], 'bottom');
   return bx;
@@ -611,6 +749,7 @@ const txt = (el, s) => { if (el && el.textContent !== s) el.textContent = s; };
 const LEAD = {
   pressure: { normal: 'Normal RV systolic pressure', mild: 'Mild pulmonary hypertension', moderate: 'Moderate pulmonary hypertension', severe: 'Severe pulmonary hypertension' },
   volume: { normal: 'Normal RV size', mild: 'Mild RV dilation', moderate: 'Moderate RV dilation', severe: 'Severe RV dilation' },
+  pe: { normal: 'No signs of RV overload', 'RV dilation': 'RV dilation', 'RV dysfunction': 'RV dysfunction', 'specific signs': 'RV dysfunction with specific signs' },
 };
 const PROB = ['low', 'intermediate', 'high'];
 
@@ -877,18 +1016,71 @@ function liveOf(v, s, cite) {
   return `<b>${LEAD[v.load][v.grade]}.</b>${s0}${s1}${s2}${s3}${s4}${trac}${ed.length ? ` Edited values: ${ed.map((k) => NAME[k]).join(', ')}.` : ''}`;
 }
 
+/** The bold lead under acute PE: the grade, and with the specific signs, the signs that hold. */
+function peLead(v) {
+  if (v.grade !== 'specific signs') return LEAD.pe[v.grade];
+  const signs = [v.mcc && "McConnell's sign", v.s6060 && 'the 60/60 sign'].filter(Boolean).join(' and ');
+  return v.dys ? `RV dysfunction with ${signs}` : signs[0].toUpperCase() + signs.slice(1);
+}
+/** Below, at or above a cut-off, at the decimals d. */
+const rel = (x, cut, d = 0) => `${x < cut ? 'below' : x > cut ? 'above' : 'at'} ${cut.toFixed(d)}`;
+/**
+ * The live sentences under acute PE. The result comes first, in bold. Then come the RV's size, its
+ * wall, its function and the free wall's motion by third. The Doppler of the 60/60 sign follows,
+ * then the septum and the IVC. The video picks the sentences by their places.
+ */
+function peLiveOf(v, s, cite) {
+  const E = cite('konstantinides2019'), M = cite('mukherjee2025'), R = cite('rudski2010'), Mc = cite('mcconnell1996'), K = cite('konstantinides2019,kurzyna2002');
+  const w = (k) => wordOf(k, v.g[k]);
+  const s0 = ` The RV basal diameter is ${fmt(v.rvb, 1)} cm (${w('rvb')})${M}, and the RV/LV ratio ${v.rvlv.toFixed(2)}, ${v.rvlv >= 1 ? '1.0 or more' : 'below 1.0'}${E}.`;
+  const s1 = v.g.wall === 0
+    ? ` The RV free wall is ${fmt(v.wall, 1)} mm, thinner than 5 mm: an acutely loaded RV dilates before it thickens${R}.`
+    : ` The RV free wall is ${fmt(v.wall, 1)} mm, thicker than 5 mm, a wall that an acute load does not produce: chronic thromboembolic or other pulmonary hypertension, or a cardiomyopathy, should be considered${cite('konstantinides2019,mukherjee2025')}.`;
+  const s2 = ` TAPSE is ${v.tapse} mm, ${rel(v.tapse, 16)} mm, and S′ ${fmt(v.sPrime, 1)} cm/s, ${rel(v.sPrime, 9.5, 1)} cm/s, the cut-offs of the ESC guideline${E}; FAC is ${v.fac}% (${w('fac')})${M}.`;
+  // the free wall by third, against the heart's own at a normal load (s 0)
+  const own = rvPeAt(v.heart, 0), o = [own.base, own.mid, own.apex].map((x) => round(x, 1));
+  const ref = o[0] === v.wb && o[1] === v.wm && o[2] === v.wa ? '' : `, against ${fmt(o[0], 1)}, ${fmt(o[1], 1)} and ${fmt(o[2], 1)} mm at a normal load`;
+  const s3 = ` The free wall moves inward ${fmt(v.wb, 1)} mm at the base, ${fmt(v.wm, 1)} mm in the middle and ${fmt(v.wa, 1)} mm at the apex${ref}${v.mcc ? `: the mid free wall is akinetic while the apex keeps its normal motion, McConnell's sign${Mc}` : ''}.`;
+  const s4 = v.s6060
+    ? ` The RVOT acceleration time is ${v.acct} ms${v.notch === 'yes' ? ', with a mid-systolic notch,' : ''} and the TR gradient ${v.grad} mmHg (a peak velocity of ${fmt(v.trv, 1)} m/s): both are below 60, the 60/60 sign${K}.`
+    : ` The RVOT acceleration time is ${v.acct} ms${v.notch === 'yes' ? ', with a mid-systolic notch,' : ''} and the TR gradient ${v.grad} mmHg (a peak velocity of ${fmt(v.trv, 1)} m/s); the 60/60 sign needs both below 60${K}.`;
+  const s5 = ` The LV eccentricity index is ${v.eiD.toFixed(2)} at end-diastole and ${v.eiS.toFixed(2)} at end-systole: the septum is ${PATTERN[v.pat]}${M}. The IVC is ${fmt(v.ivc, 1)} cm and collapses ${v.coll}% with a sniff, so the estimated RA pressure is ${v.rap} mmHg${M}.`;
+  const ed = s[EDITS] ? editedOf(s[EDITS]) : [];
+  return `<b>${peLead(v)}.</b>${s0}${s1}${s2}${s3}${s4}${s5}${ed.length ? ` Edited values: ${ed.map((k) => NAME[k]).join(', ')}.` : ''}`;
+}
+
+/**
+ * The readouts under acute PE, a row each: the RV's size, its function and the septum, the
+ * Doppler, and the signs with the IVC. Flags: the ESC cut-offs for RV/LV, TAPSE and S′, and the
+ * ASE bands for the rest.
+ */
+const peReadouts = (v) => [
+  { k: 'RV basal diameter', v: fmt(v.rvb, 1), u: 'cm', flag: v.g.rvb > 0 },
+  { k: 'RV/LV', v: v.rvlv.toFixed(2), flag: v.rvlv >= 1 },
+  { k: 'RV free wall', v: fmt(v.wall, 1), u: 'mm', flag: v.g.wall > 0 },
+  { k: 'TAPSE', v: fmt(v.tapse), u: 'mm', flag: v.tapse < 16 },
+  { k: 'RV S′', v: fmt(v.sPrime, 1), u: 'cm/s', flag: v.sPrime < 9.5 },
+  { k: 'LVEI, ED / ES', v: `${v.eiD.toFixed(2)} / ${v.eiS.toFixed(2)}`, text: true, flag: v.pat !== 'none' },
+  { k: 'TR velocity', v: fmt(v.trv, 1), u: 'm/s', flag: v.g.trv > 0 },
+  { k: 'TR gradient', v: fmt(v.grad), u: 'mmHg', flag: v.g.trv > 0 },
+  { k: 'RVOT AccT', v: fmt(v.acct), u: 'ms', flag: v.g.acct > 0 },
+  { k: '60/60 sign', v: v.s6060 ? 'present' : 'absent', text: true, flag: v.s6060 },
+  { k: "McConnell's sign", v: v.mcc ? 'present' : 'absent', u: `mid ${fmt(v.wm, 1)} mm`, text: true, flag: v.mcc },
+  { k: 'IVC, collapse', v: fmt(v.ivc, 1), u: `cm · ${v.coll}%`, flag: v.rap > 3 },
+];
+
 const rvPage = {
   key: 'rv',
   part: 'function',
   title: 'Right ventricle',
   nav: 'RV',
-  dwell: 26,
+  dwell: 39,
   defaults: { rvS: 0.5, rvLoad: 'pressure', rvFrame: 'cine', [EDITS]: null },
   format: {
     rvS: (x, s) => {
       const load = s ? (s[EDITS] ? s[EDITS].load : loadOf(s)) : 'pressure';
       const g = s?.[EDITS] ? shown(s).grade : gradeOf(x, load);
-      return g === 'normal' ? 'normal' : `${g} ${load === 'pressure' ? 'PH' : 'dilation'}`;
+      return g === 'normal' || load === 'pe' ? g : `${g} ${load === 'pressure' ? 'PH' : 'dilation'}`;
     },
   },
   watch: ['rvS', 'rvLoad', 'rvFrame', EDITS, 'pheno'],
@@ -906,7 +1098,8 @@ const rvPage = {
       const load = loadOf(s);
       if (load === painted) return;
       painted = load;
-      paintBands(host, BANDS_OF[load], { normal: 0, mild: 1, moderate: 2, severe: 3 }, { moderate: 'mod.' });
+      if (load === 'pe') paintBands(host, BANDS_OF.pe, Object.fromEntries(PE_GRADES.map((g, i) => [g, i])), { 'RV dilation': 'dilation', 'RV dysfunction': 'dysfunction', 'specific signs': 'signs' });
+      else paintBands(host, BANDS_OF[load], { normal: 0, mild: 1, moderate: 2, severe: 3 }, { moderate: 'mod.' });
     };
     paint(state);
     if (SHOW_CALC) buildDiagram(document.getElementById('rv-calc'));
@@ -918,25 +1111,27 @@ const rvPage = {
     });
   },
   // on the way in and out, the next drawing sets the baseline: no flash for changes made elsewhere
-  enter() { fresh = true; freeLive(); MESH.start(); MESH_PM.start(); },
+  enter() { fresh = true; freeLive(); MESH.start(); MESH_PM.start(); loadLevels(); },
   leave() { fresh = true; freeLive(); },
   // the heart model and the RV's targets load at idle, before the chapter opens (main.js warms every chapter)
-  warm() { MESH.start(); MESH_PM.start(); },
+  warm() { MESH.start(); MESH_PM.start(); loadLevels(); },
   pulse: () => beat.pulse(),
   anim(dt, s, set) {
     playSeverity(dt, s, set, KEY, BANDS_OF[loadOf(s)]);
     if (beat.tick(dt, (s[FRAME] || 'cine') === 'cine') && sheet) sheet.dirty = true;
   },
-  // the sequence: pressure overload from normal to severe, then volume overload
+  // the sequence: pressure overload from normal to severe, then volume overload, then acute PE
   tourEnter(set) { set({ rvS: 0, rvLoad: 'pressure', rvFrame: 'cine', [EDITS]: null }); },
   tourTick(tt, set) {
     if (tt < 13) set({ rvLoad: 'pressure', rvS: Math.round(clamp((tt - 1) / 11, 0, 1) * 200) / 200 });
-    else set({ rvLoad: 'volume', rvS: Math.round(clamp((tt - 14) / 11, 0, 1) * 200) / 200 });
+    else if (tt < 26) set({ rvLoad: 'volume', rvS: Math.round(clamp((tt - 14) / 11, 0, 1) * 200) / 200 });
+    else set({ rvLoad: 'pe', rvS: Math.round(clamp((tt - 27) / 11, 0, 1) * 200) / 200 });
   },
   // the time of the sequence at which tourTick shows this state (its inverse): the sequence continues from it
-  tourAt(s) { return loadOf(s) === 'volume' ? 14 + s.rvS * 11 : 1 + s.rvS * 11; },
+  tourAt(s) { return { pressure: 1, volume: 14, pe: 27 }[loadOf(s)] + s.rvS * 11; },
   text(s, { cite }) {
     const v = shown(s);
+    if (v.load === 'pe') return { readouts: peReadouts(v), live: peLiveOf(v, s, cite), extra: () => renderDiagram(s, v) };
     return {
       readouts: [
         { k: 'RV basal diameter', v: fmt(v.rvb, 1), u: 'cm', flag: v.g.rvb > 0 },
