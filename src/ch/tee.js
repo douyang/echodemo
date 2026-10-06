@@ -33,6 +33,7 @@ const INFO = {
   meavsax: { shows: 'Aortic valve, RA, LA, upper atrial septum, RVOT, pulmonic valve', move: 'Turn to the left to center the aorta, advance and rotate to 25–45°; slight anteflexion may be needed' },
   merv: { shows: 'Aortic valve, RA, LA, upper atrial septum, tricuspid valve, RVOT, pulmonic valve', move: 'From the aortic valve short-axis view, advance slightly and rotate to 50–70°' },
   mebicaval: { shows: 'LA, RA and its appendage, atrial septum, SVC, IVC', move: 'From the two-chamber view at 90–110°, turn to the right' },
+  melaa: { shows: 'LA appendage, left upper pulmonary vein', move: 'From the two-chamber view at 90–110°, turn to the left; advancing or anteflexing the probe may open the appendage' },
   tgsax: { shows: 'LV at the mid level, both papillary muscles, RV at the mid level', move: 'Advance into the stomach and anteflex against the gastric wall; angle 0–20°' },
   tg2c: { shows: 'LV, mitral valve, LA and LA appendage', move: 'From the midpapillary view, rotate to 90–110°' },
   daosax: { shows: 'Descending aorta, left thorax, azygos and hemiazygos veins, intercostal arteries', move: 'From the transgastric views, turn to the left at 0–10° and withdraw to just above the diaphragm' },
@@ -44,13 +45,12 @@ const INFO = {
 const TOUR = [...STD].sort((a, b) => a.hahn - b.hahn);
 // A slot of the switches with no standard view: what the guideline shows there
 const EMPTY = {
-  'me|left': 'Turned to the left at 90–110°, the probe shows the LA appendage (view 15) and then the left pulmonary veins. The heart model has no LA appendage, so the figure shows no view here.',
   'ue|left': 'No standard view lies at this turn of the probe in the upper esophagus.',
   'tg|right': 'Turned to the right in the stomach, the plane passes through the RV (views 19, 20 and 23). The figure does not show these views.',
 };
 // the structures named on the echo image, when they lie in the plane (echo.js drawLabels)
 const LABELS = [['la', 'LA'], ['ra', 'RA'], ['lv', 'LV'], ['rv', 'RV'], ['mv', 'MV'], ['tv', 'TV'], ['av', 'AV'], ['pv', 'PV'],
-  ['ias', 'IAS'], ['lvot', 'LVOT'], ['rvot', 'RVOT'], ['teeAsc', 'Asc Ao'], ['teeDesc', 'Desc Ao'], ['teeArch', 'Arch'], ['teeSvc', 'SVC'], ['teeIvc', 'IVC'], ['rpa', 'RPA'], ['mpa', 'PA']];
+  ['ias', 'IAS'], ['lvot', 'LVOT'], ['rvot', 'RVOT'], ['teeLaa', 'LAA'], ['teeAsc', 'Asc Ao'], ['teeDesc', 'Desc Ao'], ['teeArch', 'Arch'], ['teeSvc', 'SVC'], ['teeIvc', 'IVC'], ['rpa', 'RPA'], ['mpa', 'PA']];
 const SNAP = 6;          // degrees: a drag that stops this near a view's angle (or in its range) snaps to it
 const JUMP = 700;        // ms: the probe moves to a new level or turn, or across a jump of the angle, in this time
 const STEP_MAX = 8;      // degrees: a larger change of the angle at once is a jump; a smaller one shows at once
@@ -104,7 +104,8 @@ function target(s) {
 // ---------------------------------------------------------------- echo labels
 /**
  * Label points of the vessels on plane g: where each vessel's centre line (teeviews.js) meets the
- * plane, nearest the sector's centre line; for the arch, the middle of its vertices near the plane.
+ * plane, nearest the sector's centre line; for the arch, the middle of its vertices near the plane;
+ * for the LA appendage, a point in its lumen.
  */
 function vesselAnchors(g) {
   const out = {};
@@ -120,6 +121,8 @@ function vesselAnchors(g) {
   };
   const pick = { teeAsc: G.asc, teeDesc: G.desc, teeSvc: G.svc, teeIvc: G.ivc };
   for (const [k, L] of Object.entries(pick)) { const P = meet(L); if (P) out[k] = P; }
+  // the appendage: its label inside the lumen, 0.4 cm from its centre toward the mouth
+  out.teeLaa = G.laa.c.clone().addScaledVector(G.laa.axis, -0.4);
   const near = G.archPts.filter((q) => Math.abs(q.clone().sub(g.O).dot(g.n)) < 0.5);
   if (near.length > 8) out.teeArch = near.reduce((a, q) => a.add(q), new THREE.Vector3()).multiplyScalar(1 / near.length);
   return out;
