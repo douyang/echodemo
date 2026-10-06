@@ -79,7 +79,9 @@ function dilAt(x, heart) {
 // dilates. From 0.56 the dilated root holds the cusps apart, and the jet is central. From 0.645 the
 // flap runs down the anterior sinus to the annulus. The right coronary cusp loses its support and
 // prolapses, and the jet is eccentric. From 0.78 the flap's lower part is free. It prolapses through
-// the valve in diastole, and the jet runs beside it. Each change takes 0.05 of the slider.
+// the valve in diastole, and the jet runs beside it. Each change takes 0.05 of the slider. The
+// readouts and the live text name the new mechanism from the middle of its change (0.67 and 0.805),
+// where it has the larger share of the picture.
 const DIS = { art: 0.18, flap: 0.36, dil: 0.48, ar: 0.56, pro: 0.645, eff: 0.78 };
 const DIS_GRADES = ['no flap', 'reverberation', 'flap', 'flap and AR', 'flap, AR and effusion'];
 // the root fully dilated: the sinuses and the ascending aorta, L-L at end-diastole (cm)
@@ -114,7 +116,7 @@ function disAt(x, heart) {
   // the mechanisms' shares, and the flap: where it joins the anterior wall, and its free part
   const toCusp = smooth((x - DIS.pro) / 0.05), toFlap = smooth((x - DIS.eff) / 0.05);
   v.mw = k >= 3 ? { dil: 1 - toCusp, cusp: toCusp * (1 - toFlap), flap: toFlap } : { dil: 0, cusp: 0, flap: 0 };
-  v.mech = k < 3 ? null : x < DIS.pro ? 'dil' : x < DIS.eff ? 'cusp' : 'flap';
+  v.mech = k < 3 ? null : x < DIS.pro + 0.025 ? 'dil' : x < DIS.eff + 0.025 ? 'cusp' : 'flap';
   v.hP = HP.top + (HP.low - HP.top) * toCusp;
   v.free = toFlap;
   return v;
@@ -1447,7 +1449,7 @@ const aortaPage = {
       live = liveDil(v, cite);
     } else if (v.type === 'dis') {
       readouts = [
-        { k: 'Flap', v: !v.flap ? (v.artifact ? 'reverberation' : 'none') : v.free >= 0.5 ? 'prolapses' : v.hP <= HP.low + 0.05 ? 'to the annulus' : 'mobile flap', text: true, flag: v.flap },
+        { k: 'Flap', v: !v.flap ? (v.artifact ? 'reverberation' : 'none') : v.mech === 'flap' ? 'prolapses' : v.mech === 'cusp' ? 'to the annulus' : 'mobile flap', text: true, flag: v.flap },
         { k: 'AR mechanism', v: v.mech ? MECH[v.mech] : '–', text: true, flag: v.vc > 0 },
         { k: 'AR vena contracta', v: v.vc > 0 ? fmt(v.vc, 2) : '–', u: v.vc > 0 ? 'cm' : '', flag: v.vc > 0 },
         { k: 'AR grade', v: v.ar, text: true, flag: v.vc > 0 },
