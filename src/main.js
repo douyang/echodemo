@@ -410,6 +410,7 @@ function showChapter() {
   $$('.fig').forEach((f) => f.classList.toggle('is-active', f.id === `fig-${c.key}`));
   $$('#chapters button[data-go]').forEach((b, k) => (k === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
   $$('#groups li').forEach((li) => li.classList.toggle('is-cur', li.dataset.part === c.part));
+  fitTransport();
   drawTrack();
   $('#panel').scrollTop = 0;
   if (matchMedia('(max-width: 820px)').matches) {
@@ -583,7 +584,7 @@ function buildTransport() {
   const track = nav.querySelector('.track');
   CHAPTERS.forEach((c, i) => {
     const li = document.createElement('li');
-    li.innerHTML = `<button type="button" data-go="${i}" aria-label="${String(i + 1).padStart(2, '0')} ${esc(c.title)}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${esc(c.nav || c.title)}</span></button>`;
+    li.innerHTML = `<button type="button" data-go="${i}" title="${esc(c.title)}" aria-label="${String(i + 1).padStart(2, '0')} ${esc(c.title)}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${esc(c.nav || c.title)}</span></button>`;
     nav.insertBefore(li, track);
   });
   nav.style.setProperty('--n-ch', CHAPTERS.length);
@@ -655,20 +656,31 @@ function textWidth(el) {
 /**
  * Columns of the chapter bar: each as wide as its chapter's name needs (its number where names
  * are hidden), and each part's columns together as wide as the part's name, so that no name is
- * cut short. The two rows share the columns.
+ * cut short. The two rows share the columns. When every name does not fit, only the open
+ * chapter's part keeps its names: the other parts show their chapters' numbers and keep their
+ * rule, and a hover on a number shows its title.
  */
 function fitTransport() {
-  const need = $$('#chapters button[data-go]').map((b) => Math.max(textWidth(b.querySelector('.n')), textWidth(b.querySelector('.t'))) + 10);
-  if (!need.some((w) => w > 10)) return;   // the bar is not laid out yet
-  let k = 0;
-  for (const li of $('#groups').children) {
-    const span = Number(li.style.getPropertyValue('--span')) || 1, sum = need.slice(k, k + span).reduce((a, b) => a + b, 0);
-    const want = li.textContent ? textWidth(li) + 16 : 0;   // with its right margin
-    if (want > sum) for (let j = k; j < k + span; j++) need[j] *= want / sum;
-    k += span;
+  const btns = $$('#chapters button[data-go]'), parts = [...$('#groups').children];
+  const cur = CHAPTERS[state.chapter]?.part;
+  for (const mode of ['all', 'part']) {
+    const short = (part) => mode === 'part' && part !== cur;
+    btns.forEach((b) => b.classList.toggle('is-num', short(CHAPTERS[Number(b.dataset.go)].part)));
+    parts.forEach((li) => li.classList.toggle('is-num', short(li.dataset.part)));
+    const need = btns.map((b) => Math.max(textWidth(b.querySelector('.n')), textWidth(b.querySelector('.t'))) + 10);
+    if (!need.some((w) => w > 10)) return;   // the bar is not laid out yet
+    let k = 0;
+    for (const li of parts) {
+      const span = Number(li.style.getPropertyValue('--span')) || 1, sum = need.slice(k, k + span).reduce((a, b) => a + b, 0);
+      const want = li.textContent && !li.classList.contains('is-num') ? textWidth(li) + 16 : 0;   // with its right margin
+      if (want > sum) for (let j = k; j < k + span; j++) need[j] *= want / sum;
+      k += span;
+    }
+    if (mode === 'all' && need.reduce((a, b) => a + b, 0) > $('#chapters').clientWidth) continue;
+    const cols = need.map((w) => `minmax(0, ${w.toFixed(1)}fr)`).join(' ');
+    for (const el of [$('#chapters'), $('#groups')]) if (el.style.gridTemplateColumns !== cols) el.style.gridTemplateColumns = cols;
+    return;
   }
-  const cols = need.map((w) => `minmax(0, ${w.toFixed(1)}fr)`).join(' ');
-  for (const el of [$('#chapters'), $('#groups')]) if (el.style.gridTemplateColumns !== cols) el.style.gridTemplateColumns = cols;
 }
 
 function start() {

@@ -707,6 +707,10 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 }
 .groups li span { color: var(--accent); margin-right: 3px; }
 .groups li.is-cur { color: var(--ink); border-top-color: var(--ink-2); }
+/* when every name does not fit (main.js fitTransport), the parts other than the open chapter's
+   keep their rule and show their chapters' numbers only */
+.groups li.is-num { color: transparent; }
+.chapters button.is-num .t { display: none; }
 .chapters {
   grid-column: 2;
   grid-row: 2;
