@@ -1,20 +1,23 @@
-// Myocardial strain and cardio-oncology, in two tabs. Strain: one slider runs from normal LV
-// function to severe dysfunction. A switch sets the pattern: global (every segment loses function
-// together, the shortening along the long axis first) or regional (the LAD territory first). The
-// three apical views are cut from the heart mesh, with the region of interest of speckle tracking
-// (src/straintrack.js). It is the myocardial midline from base to base, in the six segments of each
-// view, each colored by its strain. Beside the views are the strain curves of the chosen view
-// through one beat, the 18-segment bull's-eye with GLS, and the arithmetic of global strain. A click
-// on a view chooses it. Cardio-oncology: a baseline study and a follow-up study during cancer
-// therapy, side by side. One slider runs from no change to severe dysfunction, and a switch adds a
-// new rise in cardiac biomarkers. The result follows the ESC 2022 definitions of cancer
-// therapy-related cardiac dysfunction (Lyon 2022, Table 3).
+// Strain, in two tabs. Strain: one slider runs from normal LV function to severe dysfunction. A
+// switch sets the pattern: global (every segment loses function together, the shortening along the
+// long axis first), regional (the LAD territory first) or apical sparing (the basal and mid
+// segments lose their shortening along the axis while the apical segments keep theirs, the pattern
+// of cardiac amyloidosis). The three apical views are cut from the heart mesh, with the region of
+// interest of speckle tracking (src/straintrack.js). It is the myocardial midline from base to
+// base, in the six segments of each view, each colored by its strain. Beside the views are the
+// strain curves of the chosen view through one beat, the 18-segment bull's-eye with GLS, and the
+// arithmetic of global strain. On the apical-sparing pattern the arithmetic adds the relative apical
+// LS (Phelan 2012). A click on a view chooses it. Cardio-oncology, a subtopic: a baseline study and
+// a follow-up study during cancer therapy, side by side. One slider runs from no change to severe
+// dysfunction, and a switch adds a new rise in cardiac biomarkers. The result follows the ESC 2022
+// definitions of cancer therapy-related cardiac dysfunction (Lyon 2022, Table 3).
 //
 // The LV's motion is the chapter's model (src/gl/strainmesh.js). Every number the page prints is
 // measured on the mesh along the model's tracks (src/straincal.js). The tracking gives each
 // segment's strain and each view's midline; chapter 09's biplane method of disks gives the LVEF.
-// The strain curves and the region of interest are found on the mesh as they are drawn. The patient
-// and the numbers are illustrative.
+// The relative apical LS comes from the segments as the bull's-eye prints them. The strain curves
+// and the region of interest are found on the mesh as they are drawn. The patient and the numbers
+// are illustrative.
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, SC } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
@@ -48,12 +51,13 @@ const segOf = (view, k) => {
 };
 // the LAD territory of the 18-segment model (gl/strainmesh.js ladOf)
 const isLad = (wall, level) => wall === 'anterior' || wall === 'anteroseptal' || (wall === 'inferoseptal' && level === 2);
-const DIS = ['strA', 'strB', 'strD', 'strR', 'strZ'];
+const DIS = ['strA', 'strB', 'strD', 'strR', 'strZ', 'strP', 'strQ'];
 
 // ---------------------------------------------------------------- the values
 const heartOf = (s) => s.pheno || 'normal';
 const tabOf = (s) => (s[TAB] === 'onco' ? 'onco' : 'strain');
-const trackOf = (s) => (tabOf(s) === 'onco' ? 'onco' : s[PAT] === 'regional' ? 'regional' : 'global');
+const PATTERNS = ['global', 'regional', 'apical'];
+const trackOf = (s) => (tabOf(s) === 'onco' ? 'onco' : PATTERNS.includes(s[PAT]) ? s[PAT] : 'global');
 const bioOf = (s) => s[BIO] === true;
 
 // GLS (Thomas 2025): normal more negative than -18%, borderline -16% to -18%, abnormal less
@@ -79,8 +83,24 @@ function study(heart, track, x) {
   const gls = rnd((views[0] + views[1] + views[2]) / 3, 1);
   const edv = rnd(m.edv), esv = rnd(m.esv), ef = rnd((100 * (edv - esv)) / edv);
   const segs = m.segs.map((v) => rnd(v));
-  return { heart, track, x, segs, len0, len1, views, gls, edv, esv, ef, gb: glsBand(gls), eb: efBand(ef) };
+  return { heart, track, x, segs, len0, len1, views, gls, edv, esv, ef, gb: glsBand(gls), eb: efBand(ef), ...apicalLs(segs) };
 }
+
+/**
+ * The relative apical LS of the segments as the bull's-eye prints them (whole %): the mean apical
+ * strain divided by the sum of the mean basal and mean mid strain, without the signs (Phelan 2012).
+ * Each level has six segments, so the ratio is that of the levels' sums, and it equals the ratio
+ * that the bull's-eye's numbers give. The means print to 0.01%: their arithmetic then gives the same
+ * ratio at nearly every state.
+ */
+function apicalLs(segs) {
+  const sum = [0, 0, 0];
+  segs.forEach((x, i) => { sum[segOf('a4c', i % 6).level] += x; });
+  const den = Math.abs(sum[0]) + Math.abs(sum[1]);
+  return { lev: sum.map((x) => rnd(x / 6, 2)), relaps: den > 0 ? rnd(Math.abs(sum[2]) / den, 2) : NaN };
+}
+// Phelan 2012: a relative apical LS of 1.0 or more, relative apical sparing
+const RELAPS_CUT = 1;
 const GRADES = ['normal', 'GLS borderline', 'GLS abnormal', 'LVEF mildly abnormal', 'LVEF moderately abnormal', 'LVEF severely abnormal'];
 const strainGrade = (v) => (v.eb ? GRADES[2 + v.eb] : GRADES[v.gb]);
 
@@ -449,7 +469,7 @@ function bullsEye(sh, P, segs, gls, title, o = {}) {
  */
 function arithmetic(sh, P, k, v) {
   const ctx = sh.ctx, i = VIEWS.indexOf(k), L0 = v.len0[i].toFixed(2), L1 = v.len1[i].toFixed(2), vs = v.views.map((x) => neg(x));
-  panel(ctx, P.x, P.y, P.w, P.h, fit(P.w, 'GLOBAL STRAIN · WHOLE MIDLINE', 'GLOBAL STRAIN'));
+  panel(ctx, P.x, P.y, P.w, P.h, v.track === 'apical' ? fit(P.w, 'GLS · RELATIVE APICAL LS', 'GLS · APICAL LS') : fit(P.w, 'GLOBAL STRAIN · WHOLE MIDLINE', 'GLOBAL STRAIN'));
   const crit = ['more negative than −18%', '−16% to −18%', 'less negative than −16%'][v.gb];
   // a line: [text, color, weight]; a gap: null
   const A = [[`${VNAME[k]} midline`, t0(), 600], [`L0 = ${L0} cm  end-diastole`, SC.cal], [`L  = ${L1} cm  AVC`, SC.cal], [`(L − L0) ÷ L0 = (${L1} − ${L0}) ÷ ${L0}`, SC.cal], [`= ${vs[i]}%`, '#ffffff', 600]];
@@ -460,7 +480,18 @@ function arithmetic(sh, P, k, v) {
   const C = [[`GLS = (${vs.join(' ')}) ÷ 3`, SC.cal], [`    = ${neg(v.gls)}%`, '#ffffff', 600], [`${GLS_WORD[v.gb]}: ${crit}`, v.gb ? '#ff8f7a' : SC.dim]];
   const C2 = [[`GLS = mean of 3 = ${neg(v.gls)}%`, '#ffffff', 600], [`${GLS_WORD[v.gb]}: ${crit}`, v.gb ? '#ff8f7a' : SC.dim]];
   const C1 = [[`GLS = mean of 3 views = ${neg(v.gls)}% · ${GLS_WORD[v.gb]}`, '#ffffff', 600]];
-  const layouts = [[...A, null, ...B, null, ...C], [...A2, null, ...B, null, ...C2], [...A2, null, ...C2], [...A1, ...C1]];
+  let layouts = [[...A, null, ...B, null, ...C], [...A2, null, ...B, null, ...C2], [...A2, null, ...C2], [...A1, ...C1]];
+  if (v.track === 'apical') {
+    // the relative apical LS from the bull's-eye's levels, and the cut-off of Phelan 2012
+    const [b, m, a] = v.lev.map((x) => Math.abs(x).toFixed(2)), r = fmt(v.relaps, 2), over = v.relaps >= RELAPS_CUT;
+    const cut = [over ? '≥1.0: relative apical sparing' : '<1.0: below the cut-off', over ? '#ff8f7a' : SC.dim];
+    const D = [['Relative apical LS', t0(), 600], ['apical ÷ (basal + mid)', SC.cal], [`= ${a} ÷ (${b} + ${m})`, SC.cal], [`= ${r}`, '#ffffff', 600], cut];
+    const D2 = [['Relative apical LS', t0(), 600], [`${a} ÷ (${b} + ${m}) = ${r}`, '#ffffff', 600], cut];
+    const D1 = [[`Apical LS ${a} ÷ (${b} + ${m}) = ${r} · ${over ? '≥1.0' : '<1.0'}`, over ? '#ff8f7a' : '#ffffff', 600]];
+    const D0 = [[`Apical LS ${a} ÷ (${b} + ${m}) = ${r}`, '#ffffff', 600]];
+    // a low panel (a phone) keeps GLS and the ratio, without the chosen view's arithmetic
+    layouts = [[...A2, null, ...C2, null, ...D], [...A2, null, ...C2, null, ...D2], [...A1, ...C1, null, ...D], [...A1, ...C1, null, ...D2], [...A1, ...C1, ...D1], [...C1, ...D1], [...C1, ...D0]];
+  }
   const top = P.y + 26, room = P.w - 20;
   ctx.save();
   ctx.textBaseline = 'alphabetic';
@@ -676,31 +707,55 @@ const others = (k) => VIEWS.filter((x) => x !== k);
 const range = (xs) => { const lo = Math.min(...xs), hi = Math.max(...xs); return lo === hi ? `${sgn(lo)}%` : `${sgn(lo)}% to ${sgn(hi)}%`; };
 // a disease heart moves its LV walls by the chapter's model, not by its own disease
 const HEART_NAME = { amyloid: 'amyloid', icm: 'ischemic', barlow: 'Barlow', bav: 'bicuspid' };
+// the amyloid chapter, named as main.js names a link: "chapter 25", or "bonus chapter B3"
+const AMYLOID = () => { const n = numOf('amyloid'); return `<a href="#amyloid" data-go="amyloid">${n.startsWith('B') ? 'bonus chapter' : 'chapter'} ${n}</a>`; };
 function heartNote(v) {
   if (!HEART_NAME[v.heart]) return '';
   if (v.heart === 'icm' && v.track === 'regional') return ' The heart shown is the ischemic heart, with its old LAD infarct: at the end of the regional pattern, its LAD territory is akinetic and the other segments are hypokinetic, as in its own disease.';
-  const own = v.heart === 'amyloid' && v.tab !== 'onco' ? ` Its own pattern, relative apical sparing, is in chapter ${numOf('amyloid')}.` : '';
-  return ` The heart shown is the ${HEART_NAME[v.heart]} heart: the figure moves its LV walls by the chapter's model of strain, not by its own disease.${own}`;
+  if (v.heart === 'amyloid' && v.track === 'apical') return ' The heart shown is the amyloid heart: the figure moves its LV walls by the chapter\'s model of strain, here in the apical-sparing pattern of its own disease.';
+  const own = v.heart === 'amyloid' && v.tab !== 'onco' ? ` Its own pattern, relative apical sparing, shows under Apical sparing, and its diagnosis is in ${AMYLOID()}.` : '';
+  // a heart whose apex reads clearly less than the normal heart's at normal function: the ratio rises less
+  let apex = '';
+  if (v.track === 'apical') {
+    const a0 = study(v.heart, 'apical', 0).lev[2], n0 = study('normal', 'apical', 0).lev[2];
+    if (a0 - n0 > 3) apex = ` On this heart the apical segments average ${neg(a0)}% at normal function, against ${neg(n0)}% on the normal heart, so the relative apical LS rises less.`;
+  }
+  return ` The heart shown is the ${HEART_NAME[v.heart]} heart: the figure moves its LV walls by the chapter's model of strain, not by its own disease.${own}${apex}`;
 }
+
+/** A lead in the middle of a sentence: its first letter in lower case. */
+const lower = (s) => `${s[0].toLowerCase()}${s.slice(1)}`;
 
 function liveStrain(v, s, cite) {
   const T = cite('thomas2025'), L = cite('lang2015'), V = cite('voigt2015');
   const k = VIEWS.includes(s[VIEW]) ? s[VIEW] : 'a4c', i = VIEWS.indexOf(k), [o1, o2] = others(k);
-  const regional = v.track === 'regional';
+  const regional = v.track === 'regional', apical = v.track === 'apical';
   const lad = [], rest = [];
   VIEWS.forEach((key, vi) => { for (let j = 0; j < 6; j++) { const g = segOf(key, j); (isLad(g.wall, g.level) ? lad : rest).push(v.segs[vi * 6 + j]); } });
   const ladLow = regional && Math.max(...lad) > Math.min(...rest) + 6;
-  const lead = ladLow ? `Reduced strain in the LAD territory; ${LEAD_STRAIN[v.grade][0].toLowerCase()}${LEAD_STRAIN[v.grade].slice(1)}` : LEAD_STRAIN[v.grade];
+  const spared = apical && v.relaps >= RELAPS_CUT;
+  const lead = ladLow ? `Reduced strain in the LAD territory; ${lower(LEAD_STRAIN[v.grade])}` : spared ? `Relative apical sparing, ${lower(LEAD_STRAIN[v.grade])}` : LEAD_STRAIN[v.grade];
   const s0 = ` The midline of the ${VLONG[k]} view measures ${v.len0[i].toFixed(2)} cm at end-diastole and ${v.len1[i].toFixed(2)} cm at end-systole, a global strain of ${neg(v.views[i])}% for that view${V}.`;
   const s1 = ` The ${VLONG[o1]} and ${VLONG[o2]} views give ${neg(v.views[VIEWS.indexOf(o1)])}% and ${neg(v.views[VIEWS.indexOf(o2)])}%, and GLS, the mean of the three, is ${neg(v.gls)}%: ${GLS_WORD[v.gb]}${v.gb === 0 ? ', more negative than −18%' : v.gb === 1 ? ', from −16% to −18%' : ', less negative than −16%'}${T}.`;
-  const s2 = ladLow
+  let s2 = ladLow
     ? ` The seven segments of the LAD territory read ${range(lad)}, and the other eleven ${range(rest)}.`
     : ` The 18 segments read ${range(v.segs)}.`;
+  if (apical) {
+    // the relative apical LS from the levels as the bull's-eye prints them (Phelan 2012)
+    const [b, m, a] = v.lev, P = cite('phelan2012');
+    s2 = ` The six basal segments average ${neg(b, 2)}%, the six mid segments ${neg(m, 2)}% and the six apical segments ${neg(a, 2)}%.`
+      + ` The relative apical LS, apical ÷ (basal + mid) without the signs, is ${Math.abs(a).toFixed(2)} ÷ (${Math.abs(b).toFixed(2)} + ${Math.abs(m).toFixed(2)}) = ${fmt(v.relaps, 2)}, ${spared ? 'at or above' : 'below'} the cut-off of 1.0${P}.`
+      + (spared ? ` In the original study, a value of 1.0 or more distinguished cardiac amyloidosis from hypertrophic cardiomyopathy and aortic stenosis${P}.` : '');
+  }
   const s3 = ` The LVEF by the biplane method is ${v.ef}%, ${efWord(v.ef)} for a woman (${v.ef > 74 ? 'above 74%' : EF_RANGE[v.eb]})${L}.`;
-  const early = v.gb > 0 && v.eb === 0 ? ` GLS can fall while the LVEF stays normal, as it does early in cancer therapy${T}.` : '';
-  const pos = regional && Math.max(...lad) > 0 ? ' A segment with positive strain lengthens in systole.' : '';
+  const early = !apical && v.gb > 0 && v.eb === 0 ? ` GLS can fall while the LVEF stays normal, as it does early in cancer therapy${T}.` : '';
+  // the diagnosis, and the caveat that the amyloid chapter states
+  const amy = spared ? ` The diagnosis of cardiac amyloidosis is in ${AMYLOID()}. Apical sparing also occurs without amyloidosis: a multicenter study found it in 32% of patients in whom amyloidosis was suspected and then excluded, and in 6% of healthy individuals${cite('cotella2024')}.` : '';
+  const pos = Math.max(...(regional ? lad : apical ? v.segs : [-1])) > 0 ? ' A segment with positive strain lengthens in systole.' : '';
   const note = heartNote(v);
-  return `<b>${lead}.</b>${s0}${s1}${s2}${s3}${early}${pos}${note}`;
+  // the apical-sparing pattern: the LVEF before the levels, so that the levels, the ratio, the study
+  // and the diagnosis read in order
+  return apical ? `<b>${lead}.</b>${s0}${s1}${s3}${s2}${amy}${pos}${note}` : `<b>${lead}.</b>${s0}${s1}${s2}${s3}${early}${amy}${pos}${note}`;
 }
 
 function liveOnco(v, s, cite) {
@@ -764,9 +819,9 @@ function viewAt(e) {
 const strainPage = {
   key: 'strain',
   part: 'function',
-  title: 'Myocardial strain and cardio-oncology',
+  title: 'Strain',
   nav: 'Strain',
-  dwell: 26,
+  dwell: 33,
   defaults: { strS: 0.35, strTab: 'strain', strPat: 'global', strBio: false, strView: 'a4c' },
   format: {
     strS: (x, s) => { if (!s) return ''; const g = gradeAt(x, s); return LABEL[g] || g; },
@@ -806,17 +861,20 @@ const strainPage = {
     }
   },
   // the sequence: the global pattern from normal to severe dysfunction (four-chamber view); the
-  // regional pattern (two-chamber view, the anterior wall); then cardio-oncology to severe CTRCD
+  // regional pattern (two-chamber view, the anterior wall); apical sparing (four-chamber view);
+  // then cardio-oncology to severe CTRCD
   tourEnter(set) { set({ strTab: 'strain', strPat: 'global', strS: 0, strView: 'a4c', strBio: false }); },
   tourTick(tt, set) {
     if (tt < 10) set({ strTab: 'strain', strPat: 'global', strView: 'a4c', strS: Math.round(clamp((tt - 1) / 8, 0, 1) * 200) / 200 });
     else if (tt < 17) set({ strTab: 'strain', strPat: 'regional', strView: 'a2c', strS: Math.round(clamp((tt - 10) / 6.5, 0, 1) * 200) / 200 });
-    else set({ strTab: 'onco', strBio: false, strS: Math.round(clamp((tt - 17) / 8, 0, 1) * 200) / 200 });
+    else if (tt < 24) set({ strTab: 'strain', strPat: 'apical', strView: 'a4c', strS: Math.round(clamp((tt - 17) / 6.5, 0, 1) * 200) / 200 });
+    else set({ strTab: 'onco', strBio: false, strS: Math.round(clamp((tt - 24) / 8, 0, 1) * 200) / 200 });
   },
   // the time of the sequence at which tourTick shows this state (its inverse)
   tourAt(s) {
-    if (tabOf(s) === 'onco') return 17 + s.strS * 8;
+    if (tabOf(s) === 'onco') return 24 + s.strS * 8;
     if (s.strPat === 'regional') return 10 + s.strS * 6.5;
+    if (s.strPat === 'apical') return 17 + s.strS * 6.5;
     return 1 + s.strS * 8;
   },
   text(s, { cite }) {
@@ -833,6 +891,7 @@ const strainPage = {
         { k: 'GLS', v: neg(v.gls), u: '%', flag: v.gb > 0 },
         { k: 'A4C · A2C · A3C', v: v.views.map((x) => neg(x)).join(' · '), u: '%', text: true },
         { k: 'LVEF', v: fmt(v.ef), u: '%', flag: v.eb > 0 },
+        ...(v.track === 'apical' ? [{ k: 'Relative apical LS', v: fmt(v.relaps, 2), flag: v.relaps >= RELAPS_CUT }] : []),
       ];
     return {
       readouts,

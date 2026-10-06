@@ -37,8 +37,9 @@ const PRESETS = {
     side: 'lv', edv: 72, ef: 54, wall: 16, tapse: 15, sPrime: 9, fac: 35,
     rvLoad: 'pressure', rvS: 0.25,
     fstate: 3, periS: 0.25, amyS: 1, caseId: 'amyloid',
-    // strain: the global pattern at the heart's LVEF of 54% (GLS -11.5%)
-    strS: 0.56,
+    // strain: the apical-sparing pattern, its own disease's, at the heart's LVEF of 54% (GLS -12.0%,
+    // relative apical LS 2.32)
+    strPat: 'apical', strS: 0.755,
   },
   icm: {
     pv: 'hfref', sv: 45, trV: 3.1,

@@ -6,7 +6,7 @@
 // valves, the atria and the aortic root follow the base, and points that lie together move
 // together. Near the apex the model's own motion stays, as its wall thickens there along the axis.
 // The model's own motion across the long axis stays too; on the LV wall the chapter scales it.
-// phenomesh.js builds five targets through its DISEASE table. The chapter weights them within the
+// phenomesh.js builds seven targets through its DISEASE table. The chapter weights them within the
 // beat (echo.js setMotion), each in proportion to the systolic weight s of the cycle model:
 //   strA, weight s: takes away the model's own motion that the chapter sets.
 //   strB, weight s x kT: the LV wall's own motion, but along the axis away from the apex.
@@ -15,6 +15,10 @@
 //     the 18-segment model (Voigt 2015). With it, the LAD segments shorten and thicken by q of the
 //     rest, and the segments basal to them move less.
 //   strZ, weight a x s: takes away the amyloid heart's own systolic change that the chapter sets.
+//   strP, weight s x p: takes away the share of strD that belongs to the basal and mid levels
+//     (spareOf). The apical segments keep their shortening along the axis and the others lose it:
+//     the pattern of apical sparing.
+//   strQ, weight s x u: takes away the same levels' share of strB, the wall's motion across the axis.
 // Each target leaves the landmarks where they are (shift is zero), so the view planes do not move.
 // The fields are found on the normal heart's mesh, as Regional wall motion finds its segments. So a
 // vertex keeps them whatever heart is shown.
@@ -52,6 +56,12 @@ export function ladOf(h, th) {
   const apical = 1 - smooth((h - APICAL + LBLEND) / (2 * LBLEND));
   return Math.max(band(60, 180), band(180, SEPT_END) * apical);
 }
+// The apical-sparing pattern: the basal and mid levels' share of the LV's motion, none below level
+// SPARE0 and all of it from SPARE1 up. On the normal heart the apical segments of the three apical
+// views end at levels 0.22 to 0.26, and the mid segments at 0.60 to 0.66 (src/straintrack.js).
+export const SPARE0 = 0.2, SPARE1 = 0.4;
+/** The basal and mid levels' share of the wall at level h. */
+export const spareOf = (h) => smooth((h - SPARE0) / (SPARE1 - SPARE0));
 /** The profile of the shortening at level h. */
 export function profileOf(h) {
   const x = clamp(h, 0, 1) * (LEVELS.length - 1), i = Math.min(LEVELS.length - 2, Math.floor(x)), f = x - i;
@@ -59,7 +69,7 @@ export function profileOf(h) {
 }
 
 /**
- * Build target key of kind ('A', 'B', 'D', 'R' or 'Z') on the meshes. ctx: phenomesh.js
+ * Build target key of kind ('A', 'B', 'D', 'R', 'Z', 'P' or 'Q') on the meshes. ctx: phenomesh.js
  * preparePhenotypes; H: helpers of phenomesh.js { addTarget, grid, nearest }.
  */
 export async function buildStrain(ctx, key, kind, H) {
@@ -78,7 +88,7 @@ function slicer(ms = 12) {
   };
 }
 
-/** The five targets on every mesh, found once for all five keys. */
+/** The seven targets on every mesh, found once for all seven keys. */
 function fieldsOf(ctx, H) {
   if (!ctx.strain) ctx.strain = build(ctx, H);
   return ctx.strain;
@@ -114,16 +124,18 @@ async function build(ctx, H) {
   // The field along the axis (cm, toward the apex negative), as the shortening below level h: all
   // of the LV, and the LAD's share, on a grid of levels and angles; above the mitral valve it fades.
   const NH = 241, H0 = -0.2, DH = 0.01, NT = 72;
-  const cum = new Float32Array(NH), cumLad = new Float32Array(NH * NT);
+  const cum = new Float32Array(NH), cumLad = new Float32Array(NH * NT), cumSp = new Float32Array(NH);
   for (let i = 1; i < NH; i++) {
     const h = H0 + i * DH, hm = h - DH / 2;
     const inLv = hm > 0 && hm < 1 ? DH : 0;
     cum[i] = cum[i - 1] + inLv * profileOf(hm);
+    cumSp[i] = cumSp[i - 1] + inLv * profileOf(hm) * spareOf(hm);
     for (let j = 0; j < NT; j++) cumLad[i * NT + j] = cumLad[(i - 1) * NT + j] + inLv * profileOf(hm) * ladOf(hm, j * 5);
   }
   const fade = (h) => (h <= 1 ? 1 : 1 - smooth(((h - 1) * Lax) / FADE));
   const lookup = (h) => { const x = clamp((h - H0) / DH, 0, NH - 1.001), i = Math.floor(x); return [i, x - i]; };
   const fieldAll = (h) => { const [i, f] = lookup(h); return EPS * Lax * (cum[i] + (cum[i + 1] - cum[i]) * f) * fade(h); };
+  const fieldSp = (h) => { const [i, f] = lookup(h); return EPS * Lax * (cumSp[i] + (cumSp[i + 1] - cumSp[i]) * f) * fade(h); };
   // near the axis the angle means little: the LAD's share blends to its mean round the axis
   const meanLad = new Float32Array(NH);
   for (let i = 0; i < NH; i++) { let s = 0; for (let j = 0; j < NT; j++) s += cumLad[i * NT + j]; meanLad[i] = s / NT; }
@@ -150,7 +162,7 @@ async function build(ctx, H) {
   const lvFade = (h) => 1 - smooth((h - 1) / 0.06);
 
   const SYS = (mesh, name) => { const i = mesh.morphTargetDictionary[name]; return i === undefined ? null : mesh.geometry.morphAttributes.position[i].array; };
-  const targets = { A: {}, B: {}, D: {}, R: {}, Z: {} };
+  const targets = { A: {}, B: {}, D: {}, R: {}, Z: {}, P: {}, Q: {} };
   for (const [name, mesh] of Object.entries(meshes)) {
     const S = SYS(mesh, 'systole');
     if (!S) continue;
@@ -158,7 +170,7 @@ async function build(ctx, H) {
     const valve = /Valve$/.test(name), chord = /Chordae$/.test(name);
     const pos = mesh.geometry.attributes.position.array, n = pos.length / 3;
     const col = mesh.geometry.attributes.color;
-    const T = { A: new Float32Array(3 * n), B: new Float32Array(3 * n), D: new Float32Array(3 * n), R: new Float32Array(3 * n), Z: new Float32Array(3 * n) };
+    const T = { A: new Float32Array(3 * n), B: new Float32Array(3 * n), D: new Float32Array(3 * n), R: new Float32Array(3 * n), Z: new Float32Array(3 * n), P: new Float32Array(3 * n), Q: new Float32Array(3 * n) };
     for (let i = 0; i < n; i++) {
       if ((i & 511) === 0) await tick();
       const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
@@ -173,6 +185,7 @@ async function build(ctx, H) {
       // b: the share of the motion along the axis that the field sets (none at the apex)
       const b = valve || chord ? 1 : smooth((c.h - CAP0) / (CAP1 - CAP0));
       const fa = fieldAll(h), fl = fieldLad(h, c.th2, c.r2), lad = w ? ladOf(c.h, c.th2) : 0;
+      const fs = fieldSp(h), sp = w ? spareOf(c.h) : 0;
       const an = S[3 * i] * Z.x + S[3 * i + 1] * Z.y + S[3 * i + 2] * Z.z;
       const aa = SA ? SA[3 * i] * Z.x + SA[3 * i + 1] * Z.y + SA[3 * i + 2] * Z.z : 0;
       for (let k = 0; k < 3; k++) {
@@ -184,11 +197,13 @@ async function build(ctx, H) {
         T.D[3 * i + k] = b * fa * zk;
         T.R[3 * i + k] = -(b * fl * zk + w * lad * P);
         T.Z[3 * i + k] = -(b * aa * zk + w * PA);
+        T.P[3 * i + k] = -b * fs * zk;
+        T.Q[3 * i + k] = -w * sp * P;
       }
     }
     for (const k of Object.keys(targets)) targets[k][name] = T[k];
   }
-  last = { targets, coords, fieldAll, fieldLad, mvc };
+  last = { targets, coords, fieldAll, fieldLad, fieldSp, mvc };
   return last;
 }
 /** The fields of the last build, for the checks. */
