@@ -137,9 +137,10 @@ export const VIDEOS = {
     ],
   },
   // 12: GLS from normal function to severe dysfunction (the global pattern, four-chamber view);
-  // the LAD territory akinetic (the regional pattern, two-chamber view); then a follow-up study
-  // during cancer therapy against its baseline: mild, moderate and severe CTRCD, and a new rise in
-  // the cardiac biomarkers alone
+  // the LAD territory akinetic (the regional pattern, two-chamber view); relative apical sparing
+  // (the apical-sparing pattern, four-chamber view); then a follow-up study during cancer therapy
+  // against its baseline: mild, moderate and severe CTRCD, and a new rise in the cardiac biomarkers
+  // alone
   strain: {
     pane: 'Speckle tracking',
     side: false,
@@ -150,6 +151,7 @@ export const VIDEOS = {
       { set: { strS: 0.38 }, track: 'GLS abnormal', pick: [3, 4], move: 4, hold: 7 },
       { set: { strS: 0.8 }, track: 'LVEF abnormal', pick: [1, 3], move: 4, hold: 6 },
       { set: { strPat: 'regional', strView: 'a2c', strS: 0.6 }, cut: true, name: 'The regional pattern: the LAD territory', track: 'LAD territory', pick: [2, 3], move: 4, hold: 8 },
+      { set: { strPat: 'apical', strView: 'a4c', strS: 0.6 }, cut: true, track: 'Apical sparing', pick: [4, 7], move: 4, hold: 12 },
       { set: { strTab: 'onco', strS: 0 }, cut: true, name: 'Cardio-oncology: baseline and follow-up', track: 'Baseline', line: 'A baseline study and a follow-up study during cancer therapy, side by side.', move: 3, hold: 4 },
       { set: { strS: 0.5 }, track: 'Mild CTRCD', pick: [0, 1], move: 4, hold: 7 },
       { set: { strS: 0.78 }, track: 'Moderate CTRCD', pick: [0, 1], move: 4, hold: 7 },

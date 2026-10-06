@@ -489,6 +489,8 @@ export const DISEASE = {
   strD: { strain: 'D' },
   strR: { strain: 'R' },
   strZ: { strain: 'Z' },
+  strP: { strain: 'P' },
+  strQ: { strain: 'Q' },
   // Diseases of the aorta (chapter aorta; src/gl/aortamesh.js). aoRoot: the sinuses of Valsalva
   // wider, aoAsc: the tubular ascending aorta wider, each 1 cm out from the aorta's centre line at
   // weight 1. aoCoa: coarctation, the isthmus 1 cm narrower all round at weight 1.
