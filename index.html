@@ -204,7 +204,7 @@
     </figure>
     <figure class="fig" id="fig-ai">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">How EchoPrime reads a study. Study: a grid of 14 echocardiography videos of the heart shown, each one beat of 16 frames of 224 × 224 pixels cut from the heart model, three of them with color Doppler, each tagged with its view group; a heat map of EchoPrime's anatomical attention weights, 15 report sections by 11 view groups, where a click on a row chooses the section; the chosen section's weights on the videos, with the share of the section's weight that the videos present carry, its three heaviest view groups and the section's text from the site's report. Retrieval: a two-dimensional map of 2,000 simulated earlier studies, colored by LVEF or valve grade, with the study shown, its k most similar studies, the mean of their LVEFs or the count of each grade, and the grade reported when more than half of them carry it.</figcaption>
+      <figcaption class="sr-only">How EchoPrime and EchoNet-Measurements read one study of the heart shown, in seven steps. EchoPrime: the 14 videos of the study, cut from the heart model, each tagged with its view; one video encoder that turns each video into 512 numbers; the public attention weights, a column for each of the 15 report sections and a row for each video, with the chosen section's column lit; and about 150 task heads, ten for each section, with the number heads marked and one head's value. EchoNet-Measurements: the nine B-mode measurements, each on its view at the frame that it reports, with its heat maps and its caliper, and the nine Doppler and M-mode measurements on eight recordings, each with its value and a check against its head. Then each measurement of the chosen section on a scale with its head's value and range and the caliper's value: with a second peak on its heat map, the septum's caliper falls outside the range, and the anchor moves its end to the peak that agrees. Last, the report for the heart, with the words in a serif face and the measured numbers in blue. A click on a column, a tile or a sentence chooses a section; on a small screen, one row shows at a time.</figcaption>
     </figure>
     <figure class="fig" id="fig-report" hidden>
       <div class="sheet-host" id="report-host"></div>
@@ -1133,36 +1133,49 @@
     </article>
 
     <article class="chapter" id="ch-ai">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">27</span><div><h2 class="ch-title">Study interpretation</h2><p class="ch-kicker">EchoPrime: views, anatomical attention and retrieval</p></div></div>
-      <p class="dek" data-part="dek">A comprehensive study holds many videos from many views. EchoPrime sorts each video by view, weights the views for each section of the report, and drafts each section from the most similar earlier studies.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">27</span><div><h2 class="ch-title">AI interpretation and measurement</h2><p class="ch-kicker">EchoPrime and EchoNet-Measurements: views, weights, task heads and calipers</p></div></div>
+      <p class="dek" data-part="dek">A comprehensive study holds many videos from many views, and dozens of measurements. EchoPrime reads every video and drafts each section of the report; EchoNet-Measurements places each caliper and peak, and converts it with the calibration stored in the image.</p>
       <div class="controls">
-        <div class="control">
+        <!-- hidden: the earlier views Study and Retrieval (SHOW_STUDY, SHOW_RETRIEVAL in src/ch/ai.js) -->
+        <div class="control" hidden>
           <span class="label">Figure</span>
           <div class="seg" role="group" aria-label="Part of the model" data-key="aiTab">
-            <button type="button" data-val="study">Study</button><button type="button" data-val="retrieval">Retrieval</button>
+            <button type="button" data-val="steps">Seven steps</button><button type="button" data-val="study">Study</button><button type="button" data-val="retrieval">Retrieval</button>
           </div>
         </div>
-        <div class="control" data-ai-tab="study">
+        <div class="control" data-ai-tab="steps" data-ai-narrow hidden>
+          <span class="label">Row</span>
+          <div class="seg" role="group" aria-label="Row of the figure" data-key="aiRow">
+            <button type="button" data-val="0">EchoPrime</button><button type="button" data-val="1">Measurements</button><button type="button" data-val="2">Anchor, report</button>
+          </div>
+        </div>
+        <div class="control" data-ai-tab="steps study">
           <label for="aiSec">Section <output data-for="aiSec"></output></label>
           <input type="range" id="aiSec" data-key="aiSec" min="0" max="14" step="1">
         </div>
-        <div class="control" data-ai-tab="study">
+        <div class="control" data-ai-tab="steps">
+          <span class="label">Two-peaked map</span>
+          <div class="seg" role="group" aria-label="A second peak on the heat map of the septum" data-key="aiTwo">
+            <button type="button" data-val="false">Off</button><button type="button" data-val="true">On</button>
+          </div>
+        </div>
+        <div class="control" data-ai-tab="study" hidden>
           <label for="aiN">Videos in the study <output data-for="aiN"></output></label>
           <input type="range" id="aiN" data-key="aiN" min="1" max="14" step="1">
         </div>
-        <div class="control" data-ai-tab="study">
+        <div class="control" data-ai-tab="study" hidden>
           <span class="label">A4C only</span>
           <div class="seg" role="group" aria-label="Only the apical four-chamber video" data-key="aiOnly">
             <button type="button" data-val="false">Off</button><button type="button" data-val="true">On</button>
           </div>
         </div>
-        <div class="control" data-ai-tab="retrieval">
+        <div class="control" data-ai-tab="retrieval" hidden>
           <span class="label">Section</span>
           <div class="seg" role="group" aria-label="Section searched" data-key="aiMap">
             <button type="button" data-val="lv">LV</button><button type="button" data-val="av">Aortic valve</button><button type="button" data-val="mv">Mitral valve</button>
           </div>
         </div>
-        <div class="control" data-ai-tab="retrieval">
+        <div class="control" data-ai-tab="retrieval" hidden>
           <label for="aiK">Similar studies, k <output data-for="aiK"></output></label>
           <input type="range" id="aiK" data-key="aiK" min="1" max="200" step="1">
         </div>
@@ -1176,36 +1189,58 @@
         <h3>How EchoPrime reads a study</h3>
         <p>EchoPrime was trained on 12,124,168 echocardiography videos and the text of their reports, from 275,442 studies of 108,913 patients at Cedars-Sinai Medical Center<span class="cite" data-ref="vukadinovic2026"></span>. It has four parts:</p>
         <ul>
+        <li><b>View classifier.</b> A network trained on 77,426 videos labeled by sonographers sorts B-mode and color Doppler videos into 58 standard views, with a one-versus-rest AUC of 0.997 on 4,000 test videos. The public code groups the views into 11 view groups and reads each video's first frame.</li>
         <li><b>Video encoder.</b> A video transformer (mViT) turns each video, 16 frames of 224 × 224 pixels taken from every second frame, into an embedding of 512 numbers.</li>
         <li><b>Text encoder.</b> A language model pretrained on medical text (PubMedBERT) turns a report into an embedding of the same size. The two encoders were trained together, so that a video and the report of its own study have similar embeddings (contrastive learning).</li>
-        <li><b>View classifier.</b> A network trained on 77,426 videos labeled by sonographers sorts B-mode and color Doppler videos into 58 standard views, with a one-versus-rest AUC of 0.997 on 4,000 test videos. The public code groups the views into 11 view groups and reads each video's first frame.</li>
         <li><b>Anatomical attention.</b> For each of the 15 sections of the report, each view group has a weight that sets how much its videos count. The weights were learned by multiple instance learning: the model sees each study as a set of videos with one report, and learns which videos inform each section.</li>
         </ul>
-        <p>For each section, EchoPrime multiplies each video's embedding by the weight of its view group, adds the products and normalizes the sum. This gives one study embedding for each section. EchoPrime then finds the earlier studies whose embeddings lie closest to it. A number, such as the LVEF, is the mean of the 50 closest studies; a finding enters the report when more than half of them carry it<span class="cite" data-ref="vukadinovic2026"></span>. In the public code, the wording of each section comes from the closest earlier report that has that section.</p>
+        <p>For each section, EchoPrime multiplies each video's embedding by the weight of its view group, adds the products and normalizes the sum. This gives one study embedding for each section<span class="cite" data-ref="vukadinovic2026"></span>.</p>
         <h3>The attention weights</h3>
-        <p>The study in the figure holds 14 videos of the heart chosen at the top of the page, cut from the same heart model as the other chapters. Each tile is the size of one EchoPrime input and carries its view group. The heat map gives the 165 weights of the public code: a row for each section and a column for each view group, with 1.0 the largest weight in each row. A row shows where EchoPrime looks for that section. The IVC section rests on the subcostal view (1.00), with the suprasternal view next (0.27). The aortic valve rests on the apical five-chamber view (1.00) and parasternal long-axis color Doppler (0.99).</p>
-        <p>The slider adds the videos in the order of a standard examination. For each section, the figure gives the share of the section's attention weight that the videos present carry: a measure of this site, not an output of EchoPrime. Without the subcostal views, the IVC section keeps 39% of its weight; with the apical four-chamber video alone, the LV section keeps 10%. Yet in 2,172 studies with a single apical four-chamber video, EchoPrime performed across all tasks about as well as with full studies<span class="cite" data-ref="vukadinovic2026"></span>. The weights show how EchoPrime mixes the videos that it has; they do not show which videos a finding needs.</p>
-        <h3>Retrieval</h3>
-        <p>The Retrieval view draws the search on a map. Each dot is a simulated earlier study, placed so that similar studies lie close together and colored by its LVEF or its valve grade; the cross is the study of the heart shown. EchoPrime searches 512 dimensions; the map has two, and its studies are made by this site. The slider sets k, the number of closest studies. With k = 1 the result is the value of one study. As k grows, the estimate steadies but takes in studies less like the query, so a value far from the usual range moves toward the middle of the library. EchoPrime uses k = 50, the best trade-off between performance and run time in its development<span class="cite" data-ref="vukadinovic2026"></span>.</p>
+        <p>The public code holds 165 weights: for each of the 15 sections, a weight for each of the 11 view groups, with 1.0 the largest weight of a section. A section's weights show where EchoPrime looks for it. The IVC section rests on the subcostal view (1.00), with the suprasternal view next (0.27). The aortic valve rests on the apical five-chamber view (1.00) and parasternal long-axis color Doppler (0.99).</p>
+        <p>In 2,172 studies with a single apical four-chamber video, EchoPrime performed across all tasks about as well as with full studies<span class="cite" data-ref="vukadinovic2026"></span>. The weights show how EchoPrime mixes the videos that it has; they do not show which videos a finding needs.</p>
+        <h3>Retrieval and task heads</h3>
+        <p>The published model drafts each section by retrieval. For each section, EchoPrime finds the earlier studies whose embeddings lie closest to the study's own. A number, such as the LVEF, is the mean of the 50 closest studies; a finding enters the report when more than half of them carry it. The authors chose k = 50 as the best trade-off between performance and run time<span class="cite" data-ref="vukadinovic2026"></span>. In the public code, the wording of each section comes from the closest earlier report that has that section.</p>
+        <p>Recent versions, in development and not yet published, replace retrieval with about 150 task heads, one for each task of the report. Their number heads anchor the measurements and adjust them.</p>
+        <h3>Measurement by deep learning</h3>
+        <p>Manual measurement takes time, and it varies from one sonographer to the next<span class="cite" data-ref="sahashi2025"></span>. The first video model of LV function, EchoNet-Dynamic, segmented the LV in apical four-chamber videos with a Dice coefficient of 0.92 and estimated the LVEF over several beats, with a mean absolute error of 4.1% in internal and 6.0% in external validation<span class="cite" data-ref="ouyang2020"></span>. EchoNet-LVH measured the parasternal long axis: the septum with a mean absolute error of 1.2 mm, the LV diameter with 2.4 mm and the posterior wall with 1.4 mm<span class="cite" data-ref="duffy2022"></span>.</p>
+        <p>Deep learning can also guide the acquisition itself. Eight nurses with no experience in ultrasonography, guided by a deep learning algorithm, each scanned 30 patients; their studies were of diagnostic quality for LV size, LV function and pericardial effusion in 237 of 240 patients (98.8%), and for RV size in 222 (92.5%)<span class="cite" data-ref="narang2021"></span>.</p>
+        <h3>How EchoNet-Measurements measures</h3>
+        <p>EchoNet-Measurements was trained on 877,983 measurements that sonographers and cardiologists made in routine practice, in 155,215 studies of 78,037 patients at Cedars-Sinai Medical Center. It has a separate segmentation model (DeepLabv3) for each of 18 measurements<span class="cite" data-ref="sahashi2025"></span>:</p>
+        <ul>
+        <li><b>Nine B-mode measurements.</b> The septum, the LV internal diameter and the posterior wall; the LA diameter; the RV basal diameter; the aortic root and the ascending aorta; the pulmonary artery; and the IVC.</li>
+        <li><b>Nine Doppler and M-mode measurements.</b> The peak velocities of TR, the aortic valve, MR and the LVOT; septal and lateral e′; the mitral E velocity and E/A; and TAPSE.</li>
+        </ul>
+        <p>A model does not draw a line. It outputs a heat map for each point it looks for: two for a caliper, its two ends, and one for a Doppler peak. In the public code, each point is the weighted center of its heat map. The distance between the two ends, in pixels, times the pixel size that the DICOM file stores gives centimeters. For a Doppler peak, the distance from the baseline, times the velocity per pixel that the file stores, gives the velocity. A B-mode model measures every frame of the video, and the frames with the largest and the smallest LV diameter mark end-diastole and end-systole.</p>
+        <p>Two failures follow from this design. A heat map with two peaks, for example on the septum and on an RV trabeculation, puts the point between them, on neither structure, and the wall measures wrong. An export to a common video format drops the calibration: the points remain, but the model cannot give a number.</p>
+        <h3>What the figure shows</h3>
+        <p>The figure follows one study of the heart chosen at the top of the page through both models, in seven steps. The first row is EchoPrime: the 14 videos of the study, cut from the same heart model as the other chapters, each the size of one EchoPrime input and tagged with its view (1); the encoder (2); the 165 weights of the public code, as each video receives them (3); and the task heads (4). The second row is EchoNet-Measurements (5): the nine B-mode clips, each at the frame that it reports, and the Doppler and M-mode recordings of the other chapters, each with its heat maps and its caliper or peak. The third row checks each value against its number head (6) and joins the two models in one report (7). A click on a column of step 3, a tile of step 5 or a sentence of step 7 chooses a section of the report.</p>
+        <p>The task heads and the anchor are a simulation. Each head's value is the value that this site measures on the heart shown, and its range is that value ± 10%: a band chosen for the figure, not an error of the model. A caliper inside the range stays. Outside it, the caliper's end moves to the heat map's peak that agrees with the head; with no such peak, the value is flagged for review. The <i>Two-peaked map</i> switch adds a second peak on an RV trabeculation to the septum's heat map: on the normal heart the caliper reads 1.3 cm, and the anchor returns it to 0.9 cm. The words of the report are the site's own report for the heart shown. Neither model processed these images.</p>
         <h3>Performance</h3>
         <p>Across 17 classification and 11 regression tasks, the mean AUC of EchoPrime was 0.92 at Cedars-Sinai and, in external validation, 0.89 at Stanford Healthcare, 0.85 at Beth Israel Deaconess Medical Center (MIMIC), 0.86 at Chang Gung Memorial Hospital and 0.88 at Kaiser Permanente. The mean absolute error of the LVEF was 4.79 percentage points in the internal test set and 4.14 to 6.46 at the external sites, against 6.23 to 10.37 for EchoCLIP. For 98% of the test studies, the correct report was among the 10 that EchoPrime matched most closely to the videos<span class="cite" data-ref="vukadinovic2026"></span>.</p>
         <p>In paired studies of the same patient in which the cardiologist noted no significant change, EchoPrime agreed with the cardiologists with a balanced accuracy (the mean of sensitivity and specificity) of 0.89; two cardiologists agreed with a balanced accuracy of 0.82<span class="cite" data-ref="vukadinovic2026"></span>.</p>
+        <p>The agreement of EchoNet-Measurements with sonographers was given as a coverage probability: the share of paired measurements that differ by less than an acceptable difference, set for each measurement from published intraobserver variability. Across the 18 measurements, the mean coverage probability was 0.796 in held-out studies at Cedars-Sinai and 0.839 in external studies at Stanford Healthcare, and the mean relative difference was 0.120 and 0.096. Run end to end on 2,103 later studies at Cedars-Sinai, the model had a mean coverage probability of 0.803 and a mean relative difference of 0.108. Performance was consistent across age, sex, atrial fibrillation, obesity and machine vendor. The models also measured images of another vendor, video recorded from a scanner's screen, stress studies and teaching videos<span class="cite" data-ref="sahashi2025"></span>.</p>
+        <p>Agreement was higher for the Doppler measurements than for the linear ones. The authors attribute this to the greater freedom of a linear measurement: there are more frames to choose from, and the caliper's place is more subjective. Two cardiologists reviewed 180 images on which the AI and the sonographer differed most (the top 10% of differences). They preferred the sonographer's measurement in 50.6%, preferred the AI's in 11.1%, and found both acceptable in 30.0%; in 8.3% the image was too noisy or blurred to measure<span class="cite" data-ref="sahashi2025"></span>.</p>
         <h3>Limits</h3>
         <ul>
-        <li>All data were collected retrospectively, and the model was trained on the studies of one center<span class="cite" data-ref="vukadinovic2026"></span>.</li>
+        <li>Each model was trained on the studies of one center. All the data of EchoPrime were collected retrospectively<span class="cite" data-ref="vukadinovic2026"></span>. EchoNet-Measurements learns from its center's sonographers: their conventions and their errors.</li>
         <li>Spectral Doppler and M-mode recordings are still images, and the video encoder takes videos, so they were left out of training. The authors point to models that measure on the images directly for these values<span class="cite" data-ref="vukadinovic2026,sahashi2025"></span>.</li>
         <li>Retrieval reuses earlier reports: the wording of a section comes from a report that already exists, and a rare finding is found only when similar studies are in the library.</li>
-        <li>Performance varied by site, with a mean AUC from 0.85 to 0.92<span class="cite" data-ref="vukadinovic2026"></span>.</li>
-        <li>Images unlike the training data, such as those of another vendor or the simulated images of this site, may be read wrongly. EchoPrime did not process the images on this page.</li>
+        <li>Performance of EchoPrime varied by site, with a mean AUC from 0.85 to 0.92<span class="cite" data-ref="vukadinovic2026"></span>.</li>
+        <li>A measurement model measures a single image. On a poor image, a sonographer can use the clinical context and the frames around it; the model cannot<span class="cite" data-ref="sahashi2025"></span>.</li>
+        <li>Image quality changes accuracy. An image-quality model removed low-quality videos and Doppler images before the end-to-end measurement<span class="cite" data-ref="sahashi2025"></span>.</li>
+        <li>The 18 measurements are not all of a comprehensive study: the velocity time integral, the PISA radius and the LA volume are not yet measured<span class="cite" data-ref="sahashi2025"></span>.</li>
+        <li>Each measurement model measures one thing in the view it expects. The right view, the right beat and the calibration stored in the file all come before the measurement.</li>
+        <li>Images unlike the training data, such as those of another vendor or the simulated images of this site, may be read wrongly. Neither model processed the images on this page.</li>
         </ul>
         <h3>Prospective trials</h3>
         <p>In the first blinded randomized trial of AI in echocardiography, each study received an initial LVEF from AI or from a sonographer, and a cardiologist, blind to the source, gave the final LVEF. Of 3,769 studies screened, 274 were excluded for poor image quality. The cardiologist changed the LVEF by more than 5% in 16.8% of the AI group and 27.2% of the sonographer group (difference −10.4%, 95% CI −13.2% to −7.7%); AI was non-inferior and superior (P &lt; 0.001 for both). The cardiologists could not tell the two sources apart<span class="cite" data-ref="he2023"></span>.</p>
         <p>The AI ECHO INSIGHT trial tests whole preliminary reports. In 1,200 earlier studies from one US health system, 1,000 consecutive studies and 200 with moderate or greater valve disease, a preliminary report drafted by AI, by a cardiologist or by a sonographer is finalized by a blinded cardiologist. The primary outcome is the rate of substantial change between the preliminary and the final report<span class="cite" data-ref="lee2026"></span>. The results are not yet published.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>EchoPrime sorts each video of a study by view, turns it into an embedding, and weights the videos by view group for each of the 15 sections of the report.</li>
-        <li>Each section draws on the most similar earlier studies: a number is the mean of the 50 closest, and a finding is reported when more than half of them carry it.</li>
+        <li>EchoPrime sorts each video of a study by view, turns it into an embedding of 512 numbers, and weights the videos by view group for each of the 15 sections of the report.</li>
+        <li>The published model drafts each section from the most similar earlier studies: a number is the mean of the 50 closest, and a finding is reported when more than half of them carry it.</li>
         <li>The attention weights show how the model mixes the views, not which views a finding needs: with one apical four-chamber video, performance was similar across tasks.</li>
+        <li>EchoNet-Measurements has one segmentation model for each of 18 measurements. Each point is the weighted center of a heat map, so a map with two peaks puts the point between them, on neither structure.</li>
         <li>In a blinded randomized trial, cardiologists changed an AI-first LVEF less often than a sonographer-first LVEF. A trial of whole AI-drafted reports is under way.</li>
         </ol>
       </div>

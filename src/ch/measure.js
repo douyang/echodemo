@@ -1346,3 +1346,36 @@ const measurePage = {
   },
 };
 export default measurePage;
+
+// ---------------------------------------------------------------- for the AI chapter
+// Chapter 'ai' (src/aifig.js) shows all 18 measurements at once while this chapter is hidden
+// (SHOW_MEASURE in src/order.js). It reads the measurements, their values and their marks
+// through these exports. They change nothing that this chapter draws, and they read no state.
+export { B, D, SITE, siteValue, dopplerOf, regionOf, DW, DH, DEEPER, OFF, blob, centerMark };
+
+/** Load the heart model for the views that measure, as warm() does, without this chapter's state. */
+export function loadViews() {
+  return scanner().then((S) => { SCAN = S; return S; });
+}
+
+/** Cut the next frames of each view's beat on the heart now built, for up to ms: true while frames remain. */
+export function warmViews(ms = 8) {
+  if (!SCAN) return true;
+  const t0 = performance.now();
+  for (const v of ['plax', ...Object.keys(CALIPERS)]) {
+    while (sampleNext(v)) if (performance.now() - t0 >= ms) return true;
+  }
+  return false;
+}
+
+/**
+ * B-mode measurement m (an entry of B) at the frame that its clip reports, on the heart now cut:
+ * the site's ends and the two-peaked map's ends, the second peak, both lengths (cm), the clip
+ * frame, its time in the beat (ms) and the heart. Null while the mesh loads.
+ */
+export function reportedFrame(m) {
+  const T = traceOf(m);
+  if (!T || T.at < 0 || !T.frames[T.at]) return null;
+  const P = SCAN.model.pheno;
+  return { ...T.frames[T.at], at: T.at, tms: phaseOf(T.at) * FRAME, px: T.px, heart: P.key, version: P.version };
+}
