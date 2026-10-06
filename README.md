@@ -367,7 +367,7 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 - Rendered again on October 4, 2026, with the new parasternal long axis (the plane through the aortic root): 02, 13, 17 and 18, each with the frames its layout gives. 12 and 15 were not rendered again: the new LV diameter tables move their LV by at most 0.2 mm in the normal heart, less than a pixel.
 - Rendered again on October 5, 2026, with the RV chapter: 09, which shows the LV only (four steps, 0:39), and 10, 11, 12 and 14 to 20, whose numbers changed. 13 Right ventricle is new. Before the render, the scores of the ten renumbered chapters were built again; each is byte-identical to the score in use. 09 and 13 have new scores. The videos before are kept in `video/out/old/2026-10-05-pre-rv/`.
 - Rendered on October 5, 2026, with the six new chapters: 19 Prosthetic valves, 20 Infective endocarditis, 22 Constrictive pericarditis, 23 Hypertrophic cardiomyopathy, 25 Shunts: ASD, VSD and PFO, and 26 Cardiac masses and thrombus. 21 Pericardial effusion and 24 Cardiac amyloidosis were rendered again for their new numbers. Their scores were built again, and each is byte-identical to the score in use. The videos before are kept in `video/out/old/2026-10-05-pre-new-chapters/`.
-- A step that switches the kind changes every key at the middle of its move (`cut` in `video/chapters.js`): the pattern and the tab in 12, the load in 14, the valve in 21, the disease in 23, constriction to restrictive cardiomyopathy in 25, the defect and the maneuver in 28, and the mass in 29. The slider's value belongs to the kind. In a first render the slider eased across the switch, so the new kind showed for a moment at a value of the old one: in 29 a thrombus shrank away under the caption "Akinetic apex without thrombus".
+- A step that switches the kind changes every key at the middle of its move (`cut` in `video/chapters.js`): the pattern and the tab in 12, the load in 14, the case in 15, the valve in 21, the disease in 23, constriction to restrictive cardiomyopathy in 25, the defect and the maneuver in 28, and the mass in 29. The slider's value belongs to the kind. In a first render the slider eased across the switch, so the new kind showed for a moment at a value of the old one: in 29 a thrombus shrank away under the caption "Akinetic apex without thrombus".
 - Rendered again on October 5, 2026: 13 Right ventricle, with the probability of PH hidden. In mild PH the caption gives the RV size, and in severe RV dilation the free wall and the RV end-diastolic area, in place of the probability. The steps, the length and the score did not change.
 - Rendered again on October 5–6, 2026, after the review fixes of #67: the 20 videos whose views are cut from the mesh (02, 05, 09 to 26). The coronary arteries show only in the coronary-origins view, and the posterior mitral leaflet opens as one straight leaflet. 23 Hypertrophic cardiomyopathy shows the new apical three-chamber jets and the MR and LVOT envelopes in one CW strip. 25 Shunts gains the three steps of the LA pressure tab and lasts 1:50 (1:21 before). The other lengths did not change. Each video measures −14.8 to −14.9 LUFS, with its moov atom before the media data. 01, 03, 06, 07 and 08 draw no mesh view and were not rendered again.
 - Added on October 6, 2026, with chapters 27 and 28: one video for the two (`video/chapter.html?ch=ai`), the first video of several chapters. A video's `chapters` lists them and a step's `ch` names its chapter; the title card gives the numbers 27–28 and the video's own title, Artificial intelligence. Across the move into the first EchoPrime step the figure dips to the page: the measurement figure fades out over the first half of the move, and EchoPrime fades in over the second. A caption line can quote the live sentence's bold lead (`{b}`). The score has seed 9328. The retrieval steps show the Barlow heart and then the bicuspid heart; the page builds both hearts before the first frame.
@@ -378,6 +378,8 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 - Added on October 5, 2026, with its chapter: 23 Hypertrophic cardiomyopathy (20 when added), ten steps (1:31). Its score seed is 9322. "Hypertrophic cardiomyopathy" takes 128 px on the title card instead of 156 px (`fitTitle`).
 - Added on October 5, 2026, with their chapters: 19 Prosthetic valves, eight steps (1:22), and 22 Constrictive pericarditis (20 when added), nine steps (1:22).
 - Added on October 6, 2026, with its chapter: 12 Myocardial strain and cardio-oncology, ten steps (1:33). Its score seed is 9329. The steps switch the pattern and the tab with `cut`, as the slider's value belongs to each.
+- Added on October 6, 2026, with its chapter: 15 Left ventricular assist devices, ten steps (1:33). Its score seed is 9330. The steps switch the case with `cut`: a working pump, RV failure, de novo AR and an obstruction of the outflow graft.
+- Added on October 6, 2026, with its chapter: 23 Diseases of the aorta, eleven steps (1:48). Its score seed is 9331. The steps switch the disease with `cut`: dilation, dissection and coarctation.
 
 | Chapter | Steps | Length |
 |---|---|---|
@@ -395,7 +397,7 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 | 12 Myocardial strain and cardio-oncology | Normal, borderline and abnormal GLS with a normal LVEF, then an abnormal LVEF (global pattern, four-chamber view); the LAD territory akinetic (regional pattern, two-chamber view); a follow-up study against its baseline: no change, mild, moderate and severe CTRCD, then a new rise in cardiac biomarkers alone | 1:33 |
 | 13 Stress echocardiography | Normal response; ischemia in the LAD, RCA and circumflex territories; ischemia in two territories; scar; viable myocardium with a biphasic response | 1:06 |
 | 14 Right ventricle | A normal RV; mild, moderate and severe pulmonary hypertension, then the septum at end-systole; a normal RV again; moderate and severe RV dilation by a volume load, then the septum at end-diastole; acute pulmonary embolism with RV dilation, RV dysfunction, McConnell's sign and the 60/60 sign | 1:57 |
-| 15 Left ventricular assist devices | A working pump at 4,700, 5,300 and 5,900 rpm, then a suction event at 6,200 rpm; RV failure at 6,200 rpm, then at 4,600 rpm; de novo AR at 4,700 and 6,000 rpm; an obstruction of the outflow graft at 4,700 rpm, then no change at 6,100 rpm | 1:32 |
+| 15 Left ventricular assist devices | A working pump at 4,700, 5,300 and 5,900 rpm, then a suction event at 6,200 rpm; RV failure at 6,200 rpm, then at 4,600 rpm; de novo AR at 4,700 and 6,000 rpm; an obstruction of the outflow graft at 4,700 rpm, then no change at 6,100 rpm | 1:33 |
 | 16 Aortic stenosis | The eight grade bands, none to classical low-flow, low-gradient stenosis; then the bicuspid heart with severe stenosis | 1:06 |
 | 17 Aortic regurgitation | None to severe with LV dysfunction | 0:48 |
 | 18 Mitral stenosis | None to severe; severe at a heart rate of 110/min | 0:48 |
@@ -406,7 +408,7 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 | 23 Diseases of the aorta | Dilation: normal, dilated, an aneurysm, then 5.5 cm or more; dissection: no flap, a reverberation, a flap, then AR and an effusion; coarctation: not significant, then significant | 1:48 |
 | 24 Pericardial effusion | No pericardial effusion to tamponade | 0:48 |
 | 25 Constrictive pericarditis | A normal pericardium; a thick pericardium; constriction; all three Mayo Clinic criteria; annulus reversus; restrictive cardiomyopathy from normal to grade 3 | 1:22 |
-| 26 Hypertrophic cardiomyopathy | A normal wall; a septum of 14 mm; 16 mm without obstruction, then end-diastole; obstruction at rest, then severe; latent obstruction at rest, then with Valsalva and its SAM; severe obstruction with Valsalva | 1:31 |
+| 26 Hypertrophic cardiomyopathy | A normal wall; a septum of 14 mm; 16 mm without obstruction, then end-diastole; obstruction at rest, then severe; latent obstruction at rest, then with Valsalva and its SAM; severe obstruction with Valsalva | 1:32 |
 | 27 Cardiac amyloidosis | A normal wall to relative apical sparing | 0:48 |
 | 28 Shunts: ASD, VSD and PFO | No ASD, a small and a significant ASD; a restrictive and a significant VSD, then RVSP ≥50%; the saline study, Valsalva only, then at rest; the LA pressure across a restrictive atrial communication at 8, 18 and 28 mmHg | 1:50 |
 | 29 Cardiac masses and thrombus | No mass; a left atrial myxoma, then its prolapse and obstruction; an akinetic apex, then a mural, a protruding and a mobile LV thrombus, then an enhancing agent; a sessile, then a mobile papillary fibroelastoma | 1:33 |
@@ -421,7 +423,7 @@ node tools/storyboard.mjs --ch=as                              # one frame of ea
 
 ## The intro
 
-`video/out/intro.mp4` introduces the series in 80 seconds: a title card, one clip from each of nine chapters, and the end card. A review of the chapter videos and the views video picked the clips. Each clip is the most striking and most useful moment of its part of the site. No two clips teach the same lesson or show the same layout. Planes is archived since the review: the clip of Views takes the time of both clips, with the nine planes in its Probe and body pane. The clips follow the chapter order, so since the reorder (#32) the clip of Views comes before the clip of Cycle. All eight clips were rendered again on October 4, 2026, for the new chapter numbers and the rebuilt heart. Stress echocardiography came in with its chapter (then 19) as the last clip. Its chapter is now 12, and its clip follows the clip of Regional wall motion.
+`video/out/intro.mp4` introduces the series in 89 seconds: a title card, one clip from each of ten chapters, and the end card. A review of the chapter videos and the views video picked the clips. Each clip is the most striking and most useful moment of its part of the site. No two clips teach the same lesson or show the same layout. Planes is archived since the review: the clip of Views takes the time of both clips, with the nine planes in its Probe and body pane. The clips follow the chapter order, so since the reorder (#32) the clip of Views comes before the clip of Cycle. All eight clips were rendered again on October 4, 2026, for the new chapter numbers and the rebuilt heart. Stress echocardiography came in with its chapter (then 19) as the last clip. Its chapter is now 13, and its clip follows the clip of Regional wall motion. Study interpretation (31) closes the intro, as its part closes the site.
 
 | Start (s) | Chapter | Clip |
 |---|---|---|
@@ -435,7 +437,8 @@ node tools/storyboard.mjs --ch=as                              # one frame of ea
 | 52.6 | 19 Mitral regurgitation | No regurgitation, then severe with LV dysfunction |
 | 59.4 | 24 Pericardial effusion | No pericardial effusion, then tamponade |
 | 66.3 | 27 Cardiac amyloidosis | A normal wall, then relative apical sparing |
-| 73.1 | | End card |
+| 73.1 | 31 Study interpretation | The study's videos lit by EchoPrime's attention weights: the LV, aortic valve and IVC sections |
+| 82.3 | | End card |
 
 Left out, with the reason:
 - 01, 03, 08: diagrams. The valve clips show Doppler in use.
@@ -450,7 +453,7 @@ Left out, with the reason:
 
 How it is built:
 - `video/reel.js` holds the clips. A chapter clip is a chapter video script with its holds and moves in bars. The clip of Views is a cut of the views video with the nine planes in Probe and body, as in cut B.
-- Each clip renders on its own page: `video/chapter.html?reel=k`, or `video/index.html?reel=k` for Views. The page draws the progress line of the intro, which names the nine chapters and runs on the time of the whole.
+- Each clip renders on its own page: `video/chapter.html?reel=k`, or `video/index.html?reel=k` for Views. The page draws the progress line of the intro, which names the ten chapters and runs on the time of the whole.
 - The score is *Bright pulse* at 105 BPM (`tools/score/pulse.py intro`, seed 9300). A bar is 8/3 heartbeats, so a clip of 3 bars is 8 heartbeats. Each cut falls on a bar line.
 - The clips are the windows of the score. The bass starts at the second clip, and the pluck and the pad brighten clip by clip.
 - At each cut the panes and the caption dip to the frame for 0.4 s. The progress line stays.
@@ -466,8 +469,8 @@ How it is built:
 
 ```
 python3 tools/score/pulse.py intro video/out/intro.wav
-node tools/render-video.mjs --reel --jobs=3 --audio=auto       # the nine clips, three at a time, joined in order
-node tools/render-video.mjs --reel --clips=0,4 --audio=auto    # clips 0 and 4 again, joined with the seven clips kept in video/out
+node tools/render-video.mjs --reel --jobs=3 --audio=auto       # the ten clips, three at a time, joined in order
+node tools/render-video.mjs --reel --clips=0,4 --audio=auto    # clips 0 and 4 again, joined with the eight clips kept in video/out
 node tools/render-video.mjs --reel --stills=7,42.5             # PNG stills at those times of the intro
 ```
 
