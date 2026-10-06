@@ -27,6 +27,7 @@ import hcmPage from './ch/hcm.js';
 import prostheticPage from './ch/prosthetic.js';
 import shuntsPage from './ch/shunts.js';
 import endocarditisPage from './ch/endocarditis.js';
+import aortaPage from './ch/aorta.js';
 import massesPage from './ch/masses.js';
 import measurePage from './ch/measure.js';
 import aiPage from './ch/ai.js';
@@ -43,15 +44,16 @@ export const PARTS = [
   { key: 'hemodynamics', num: 'IV', name: 'Hemodynamics' },
   { key: 'function', num: 'V', name: 'Function' },
   { key: 'valves', num: 'VI', name: 'Valves' },
-  { key: 'pericardium', num: 'VII', name: 'Pericardium' },
-  { key: 'cardiomyopathy', num: 'VIII', name: 'Cardiomyopathy' },
-  { key: 'congenital', num: 'IX', name: 'Congenital' },
-  { key: 'masses', num: 'X', name: 'Masses' },
-  { key: 'ai', num: 'XI', name: 'Artificial intelligence' },
-  ...(SHOW_REPORT ? [{ key: 'report', num: 'XII', name: 'Report' }] : []),
+  { key: 'aorta', num: 'VII', name: 'Aorta' },
+  { key: 'pericardium', num: 'VIII', name: 'Pericardium' },
+  { key: 'cardiomyopathy', num: 'IX', name: 'Cardiomyopathy' },
+  { key: 'congenital', num: 'X', name: 'Congenital' },
+  { key: 'masses', num: 'XI', name: 'Masses' },
+  { key: 'ai', num: 'XII', name: 'Artificial intelligence' },
+  ...(SHOW_REPORT ? [{ key: 'report', num: 'XIII', name: 'Report' }] : []),
 ];
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, constrictPage, hcmPage, shuntsPage, massesPage, measurePage, aiPage, report].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, constrictPage, hcmPage, shuntsPage, massesPage, measurePage, aiPage, report].map((c) => [c.key, c]));
 /** The chapters in reading order (order.js). */
 export const CHAPTERS = ORDER.map((k) => BY[k]);

@@ -317,6 +317,27 @@ export const VIDEOS = {
       { set: { ieS: 0.9 }, track: 'Severe MR', pick: [4, 5, 6], move: 4, hold: 7 },
     ],
   },
+  // diseases of the aorta: the root and the ascending aorta from normal to 6.0 cm; the dissection
+  // from no flap through the reverberation to the flap with AR and an effusion; the coarctation
+  // from a mild narrowing to a significant one (the chapter's tour)
+  aorta: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { aorS: 0.005 },
+    steps: [
+      { set: { aorType: 'dil', aorS: 0 }, name: 'Normal aortic root and ascending aorta', track: 'Normal', pick: [0, 1], hold: 6 },
+      { set: { aorS: 0.42 }, track: 'Dilated', pick: [0, 3], move: 4, hold: 6 },
+      { set: { aorS: 0.6 }, track: 'Aneurysm', pick: [3, 4], move: 4, hold: 7 },
+      { set: { aorS: 0.92 }, track: '≥5.5 cm', pick: [0, 3], move: 4, hold: 7 },
+      { set: { aorType: 'dis', aorS: 0.05 }, track: 'No flap', pick: [0, 1], move: 3, cut: true, hold: 5 },
+      { set: { aorS: 0.27 }, track: 'Reverberation', pick: [0, 1], move: 3, hold: 8 },
+      { set: { aorS: 0.45 }, track: 'Flap', pick: [0, 1, 2], move: 3, hold: 8 },
+      { set: { aorS: 0.66 }, track: 'Flap and AR', pick: [3, 4], move: 4, hold: 6 },
+      { set: { aorS: 0.9 }, track: 'Effusion', pick: [5, 6], move: 4, hold: 7 },
+      { set: { aorType: 'coa', aorS: 0.2 }, track: 'Not significant', pick: [0, 1], move: 3, cut: true, hold: 7 },
+      { set: { aorS: 0.8 }, track: 'Significant', pick: [1, 2], move: 4, hold: 8 },
+    ],
+  },
   peri: {
     pane: '2D and Doppler',
     side: false,
