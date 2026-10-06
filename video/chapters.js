@@ -229,6 +229,25 @@ export const VIDEOS = {
       { set: { rvS: 0.9 }, name: "McConnell's sign and the 60/60 sign", track: 'Signs', pick: [3, 4], move: 4, hold: 9 },
     ],
   },
+  // lvad: a working pump, from partial unloading to suction. RV failure at a high speed, then at a
+  // lower one. De novo AR at a low and a high speed. An obstruction that does not change with speed.
+  lvad: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { vadS: 0.005 },
+    steps: [
+      { set: { vadS: 0.0625, vadCase: 'pump' }, track: 'Partial', pick: [0, 1, 2], hold: 7 },
+      { set: { vadS: 0.4375 }, track: 'Unloaded', pick: [1, 4], move: 4, hold: 7 },
+      { set: { vadS: 0.8125 }, track: 'Excessive', pick: [1, 3], move: 4, hold: 6 },
+      { set: { vadS: 1 }, track: 'Suction', pick: [0, 4], move: 3, hold: 7 },
+      { set: { vadS: 1, vadCase: 'rvf' }, track: 'RV failure', pick: [3, 4], move: 3, cut: true, hold: 7 },
+      { set: { vadS: 0 }, track: 'Lower speed', pick: [1, 6], move: 4, hold: 6 },
+      { set: { vadS: 0.0625, vadCase: 'ar' }, track: 'AR', pick: [1, 2], move: 3, cut: true, hold: 6 },
+      { set: { vadS: 0.875 }, track: 'AR, high speed', pick: [2, 6], move: 4, hold: 7 },
+      { set: { vadS: 0.0625, vadCase: 'obst' }, track: 'Obstruction', pick: [1, 5], move: 3, cut: true, hold: 7 },
+      { set: { vadS: 0.9375 }, track: 'No change', pick: [0, 7], move: 4, hold: 7 },
+    ],
+  },
   tr: {
     pane: '2D and Doppler',
     side: false,
