@@ -271,9 +271,18 @@ function labelTrack() { if (!CLIP) trackEls.forEach((w, i) => { w.lab.textConten
  */
 function sizeReelTrack() {
   if (!CLIP) return;
-  const gap = 14, need = trackEls.map((w) => w.lab.scrollWidth);
-  const spare = (LAY.track.w - gap * (trackEls.length - 1) - need.reduce((a, b) => a + b, 0)) / trackEls.length;
-  if (spare < 8) throw new Error('the intro\'s chapter names do not fit on the progress line');
+  const gap = 14, room = LAY.track.w - gap * (trackEls.length - 1), widths = () => trackEls.map((w) => w.lab.scrollWidth);
+  // names too long for the line: the longest takes its chapter's short name (its nav), as the
+  // site's chapter bar does, until every name fits
+  let need = widths();
+  while ((room - need.reduce((a, b) => a + b, 0)) / trackEls.length < 8) {
+    const i = need.map((w, j) => [w, j]).filter(([, j]) => RL.clips[j].nav && trackEls[j].lab.textContent !== RL.clips[j].nav)
+      .sort((a, b) => b[0] - a[0])[0]?.[1];
+    if (i === undefined) throw new Error('the intro\'s chapter names do not fit on the progress line');
+    trackEls[i].lab.textContent = RL.clips[i].nav;
+    need = widths();
+  }
+  const spare = (room - need.reduce((a, b) => a + b, 0)) / trackEls.length;
   let x = 0;
   trackEls.forEach((w, i) => {
     Object.assign(w.el.style, { left: `${x.toFixed(1)}px`, width: `${(need[i] + spare).toFixed(1)}px` });
