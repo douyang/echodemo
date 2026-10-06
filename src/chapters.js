@@ -1,4 +1,4 @@
-// The twenty-six chapters in reading order (order.js), grouped into ten parts.
+// The chapters in reading order (order.js), grouped into parts.
 import pulse from './ch/pulse.js';
 import image from './ch/image.js';
 import windows from './ch/windows.js';
@@ -26,6 +26,8 @@ import prostheticPage from './ch/prosthetic.js';
 import shuntsPage from './ch/shunts.js';
 import endocarditisPage from './ch/endocarditis.js';
 import massesPage from './ch/masses.js';
+import measurePage from './ch/measure.js';
+import aiPage from './ch/ai.js';
 import report from './ch/report.js';
 
 import { ORDER, SHOW_REPORT } from './order.js';
@@ -43,10 +45,11 @@ export const PARTS = [
   { key: 'cardiomyopathy', num: 'VIII', name: 'Cardiomyopathy' },
   { key: 'congenital', num: 'IX', name: 'Congenital' },
   { key: 'masses', num: 'X', name: 'Masses' },
-  ...(SHOW_REPORT ? [{ key: 'report', num: 'XI', name: 'Report' }] : []),
+  { key: 'ai', num: 'XI', name: 'Artificial intelligence' },
+  ...(SHOW_REPORT ? [{ key: 'report', num: 'XII', name: 'Report' }] : []),
 ];
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, periPage, amyloidPage, stressPage, rvPage, constrictPage, hcmPage, shuntsPage, massesPage, report].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, periPage, amyloidPage, stressPage, rvPage, constrictPage, hcmPage, shuntsPage, massesPage, measurePage, aiPage, report].map((c) => [c.key, c]));
 /** The chapters in reading order (order.js). */
 export const CHAPTERS = ORDER.map((k) => BY[k]);

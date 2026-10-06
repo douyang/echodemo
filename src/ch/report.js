@@ -176,6 +176,28 @@ export function buildReport(caseId, sex) {
     ['RV systolic pressure', `${rvsp} mmHg`, '', ''],
   ];
 
+  // the findings in plain text, one for each section of a report as EchoPrime names them
+  // (echoprime.js SECTIONS); the findings below, and sectionTexts, take them from here
+  const lvHead = `${lvSize === 'normal' ? 'Normal size' : `${cap(lvSize)} dilated`} (LV end-diastolic diameter ${f1(c.lvidd)} cm; end-diastolic volume index ${f0(edvi)} mL/m²). ${wallHi ? 'Wall thickness is increased' : 'Wall thickness is normal'} (interventricular septum ${f1(c.ivs)} cm, inferolateral wall ${f1(c.pw)} cm); ${geo}. ${lvFun === 'normal' ? 'Normal' : cap(lvFun)} systolic function: LVEF ${ef}% by the biplane method of disks; global longitudinal strain ${String(c.gls).replace('-', '−')}% (${gls}).`;
+  const lvTail = `${c.lvText ? `${c.lvText} ` : ''}${diaText}`;
+  const texts = {
+    lv: `${lvHead} ${lvTail}`,
+    wm: c.wm === 'none' ? 'No regional wall motion abnormality.' : `${cap(c.wm)}.`,
+    rv: `${langRV(c.rvb)}${c.rvText ? ` ${c.rvText}` : ''} RV systolic function is ${rvFun} (TAPSE ${f0(c.tapse)} mm, RV S′ ${f1(c.sPrime)} cm/s).`,
+    la: `${la === 'normal' ? 'Normal size' : `${cap(la)} dilated`} (LA volume index ${f0(c.lavi)} mL/m²).`,
+    ra: c.raText || 'Normal size.',
+    ias: 'The atrial septum is intact by color Doppler.',
+    mv: c.mv.text,
+    av: c.av.text,
+    tv: `${c.trText} Peak TR velocity ${f1(c.tr)} m/s; estimated RV systolic pressure ${rvsp} mmHg.`,
+    pv: 'The pulmonic valve is normal in structure. Trace pulmonic regurgitation.',
+    peri: c.periText || 'No pericardial effusion.',
+    aorta: c.aortaText || 'The aortic root and proximal ascending aorta are normal in size.',
+    ivc: `Diameter ${f1(c.ivcD)} cm, with ${c.ivcCollapse ? 'more' : 'less'} than 50% collapse on sniff. Estimated RA pressure ${rap} mmHg.`,
+    pa: 'The main pulmonary artery is normal in size.',
+    pveins: `Pulmonary vein flow is ${c.sd >= 1 ? 'systolic' : 'diastolic'} predominant (S/D ${f1(c.sd)}).`,
+  };
+
   const html = `
     <div class="sheet">
       <h2>Transthoracic echocardiogram</h2>
@@ -193,23 +215,33 @@ export function buildReport(caseId, sex) {
       <h3>Summary statement</h3>
       <ol class="impression">${sum.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
       <h3>Findings</h3>
-      <div class="finding"><p><b>Left ventricle.</b> ${lvSize === 'normal' ? 'Normal size' : `${cap(lvSize)} dilated`} (LV end-diastolic diameter ${f1(c.lvidd)} cm; end-diastolic volume index ${f0(edvi)} mL/m²). ${wallHi ? 'Wall thickness is increased' : 'Wall thickness is normal'} (interventricular septum ${f1(c.ivs)} cm, inferolateral wall ${f1(c.pw)} cm); ${geo}. ${lvFun === 'normal' ? 'Normal' : cap(lvFun)} systolic function: LVEF ${ef}% by the biplane method of disks; global longitudinal strain ${String(c.gls).replace('-', '−')}% (${gls}). ${c.wm === 'none' ? 'No regional wall motion abnormality.' : `${cap(c.wm)}.`}${c.lvText ? ` ${esc(c.lvText)}` : ''} ${diaText}</p>${GO('eject')}</div>
-      <div class="finding"><p><b>Right ventricle.</b> ${langRV(c.rvb)}${c.rvText ? ` ${esc(c.rvText)}` : ''} RV systolic function is ${rvFun} (TAPSE ${f0(c.tapse)} mm, RV S′ ${f1(c.sPrime)} cm/s).</p>${GO('eject')}</div>
-      <div class="finding"><p><b>Left atrium.</b> ${la === 'normal' ? 'Normal size' : `${cap(la)} dilated`} (LA volume index ${f0(c.lavi)} mL/m²).</p>${GO('fill')}</div>
-      <div class="finding"><p><b>Right atrium.</b> ${esc(c.raText || 'Normal size.')}</p><span></span></div>
-      <div class="finding"><p><b>Aortic valve.</b> ${esc(c.av.text)}</p>${GO('as')}</div>
-      <div class="finding"><p><b>Mitral valve.</b> ${esc(c.mv.text)}</p>${GO('mr')}</div>
-      <div class="finding"><p><b>Tricuspid valve.</b> ${esc(c.trText)} Peak TR velocity ${f1(c.tr)} m/s; estimated RV systolic pressure ${rvsp} mmHg.</p>${GO('pressure')}</div>
-      <div class="finding"><p><b>Pulmonic valve.</b> The pulmonic valve is normal in structure. Trace pulmonic regurgitation.</p><span></span></div>
-      <div class="finding"><p><b>Aorta.</b> ${esc(c.aortaText || 'The aortic root and proximal ascending aorta are normal in size.')}</p><span></span></div>
-      <div class="finding"><p><b>Inferior vena cava.</b> Diameter ${f1(c.ivcD)} cm, with ${c.ivcCollapse ? 'more' : 'less'} than 50% collapse on sniff. Estimated RA pressure ${rap} mmHg.</p>${GO('ivc')}</div>
-      <div class="finding"><p><b>Pericardium.</b> ${esc(c.periText || 'No pericardial effusion.')}</p><span></span></div>
+      <div class="finding"><p><b>Left ventricle.</b> ${esc(lvHead)} ${esc(texts.wm)} ${esc(lvTail)}</p>${GO('eject')}</div>
+      <div class="finding"><p><b>Right ventricle.</b> ${esc(texts.rv)}</p>${GO('eject')}</div>
+      <div class="finding"><p><b>Left atrium.</b> ${esc(texts.la)}</p>${GO('fill')}</div>
+      <div class="finding"><p><b>Right atrium.</b> ${esc(texts.ra)}</p><span></span></div>
+      <div class="finding"><p><b>Aortic valve.</b> ${esc(texts.av)}</p>${GO('as')}</div>
+      <div class="finding"><p><b>Mitral valve.</b> ${esc(texts.mv)}</p>${GO('mr')}</div>
+      <div class="finding"><p><b>Tricuspid valve.</b> ${esc(texts.tv)}</p>${GO('pressure')}</div>
+      <div class="finding"><p><b>Pulmonic valve.</b> ${esc(texts.pv)}</p><span></span></div>
+      <div class="finding"><p><b>Aorta.</b> ${esc(texts.aorta)}</p><span></span></div>
+      <div class="finding"><p><b>Inferior vena cava.</b> ${esc(texts.ivc)}</p>${GO('ivc')}</div>
+      <div class="finding"><p><b>Pericardium.</b> ${esc(texts.peri)}</p><span></span></div>
       <h3>Measurements</h3>
       <div class="table-wrap"><table class="vt"><thead><tr><th>Measurement</th><th class="num">Value</th><th>Normal (${sex === 'F' ? 'women' : 'men'})</th><th>Grade</th></tr></thead>
         <tbody>${rows.map(([k, v, n, g]) => `<tr class="${g && !/^normal|^$/.test(g) ? 'hit' : ''}"><td>${k}</td><td class="num">${v}</td><td>${n}</td><td>${g === 'below' ? 'below range' : g}</td></tr>`).join('')}</tbody></table></div>
       <p class="sign">Report status: draft. Interpreting physician: not applicable (example report). Critical findings: none.</p>
     </div>`;
-  return { html, ef, band, lap, rvsp, rap, geo, lvSize, B, c, sum, rows };
+  return { html, ef, band, lap, rvsp, rap, geo, lvSize, B, c, sum, rows, texts };
+}
+
+/**
+ * The findings of case caseId (a key of CASES) for sex ('M' or 'F') as plain text, by the 15
+ * sections of a report as EchoPrime names them ({ lv, wm, ..., pveins }, echoprime.js SECTIONS):
+ * the sentences of buildReport's findings, with wall motion apart from the LV, and three
+ * sentences that the report does not print (atrial septum, pulmonary artery, pulmonary veins).
+ */
+export function sectionTexts(caseId, sex) {
+  return buildReport(caseId, sex).texts;
 }
 
 function rng(key, sex) {

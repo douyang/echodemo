@@ -15,7 +15,9 @@
 //           (a mass, a valve, a defect or a disease) whose slider value means another thing
 //   hold    beats on the step
 //   name, line   the caption; by default the chapter's live sentence at the step's state: its
-//           bold lead, then the rest. pick: which sentences of the rest (0 = the first)
+//           bold lead, then the rest. pick: which sentences of the rest (0 = the first). A line
+//           of the video's own quotes the chapter: {b} the bold lead, {s0} a sentence of the
+//           rest, {LVEF} the readout of that name
 //   track   the step's name on the progress line (by default its caption name)
 // A video: pane (the figure pane's name), zoom (the figure is laid out for a box `zoom` times
 // smaller and drawn larger), side (the measurements pane; false for none), sub (the title
@@ -23,6 +25,9 @@
 // number that moves, as its slider has: the figure sees the values the site shows), presets,
 // discrete (numbers that change at the middle of a move, as text does: a control with set values).
 // A step's pheno names the heart (src/pheno.js); the 2D views draw its valves.
+// A video of several chapters: chapters (their keys, in the order shown), title (the title
+// card's), pane (an object: the pane name of each chapter) and a step's ch (the chapter it shows;
+// by default the first). The video's key names it; the figure dips to the page between chapters.
 import { BEAT, FPS } from './timeline.js';
 
 const STEP = { move: 3, hold: 5 };
@@ -399,6 +404,40 @@ export const VIDEOS = {
       { set: { maUea: true }, name: 'With an enhancing agent', track: 'Agent', pick: [2], move: 2, hold: 6 },
       { set: { maType: 'pfe', maUea: false, maS: 0.25 }, track: 'Sessile', pick: [0, 1], move: 2, cut: true, hold: 6 },
       { set: { maS: 0.85 }, track: 'Mobile', pick: [0, 1], move: 4, hold: 7 },
+    ],
+  },
+  // 27–28 Artificial intelligence, one video for the two chapters of part XI. EchoNet-Measurements
+  // (its tour): the LV internal diameter, the septum and its map with a second peak, the aortic
+  // root and the IVC; then TR, mitral E and E/A, and TAPSE, which loses its DICOM data. EchoPrime:
+  // the weights of the LV, aortic valve and IVC sections and the four-chamber video alone; then
+  // retrieval: the LVEF of the Barlow heart from its closest study and from the 50 closest (k eases
+  // from 1 to 50), its mitral valve, and the aortic valve of the bicuspid heart
+  ai: {
+    chapters: ['measure', 'ai'],
+    title: 'Artificial intelligence',
+    pane: { measure: 'EchoNet-Measurements', ai: 'EchoPrime' },
+    side: false,
+    quant: { aiK: 1 },
+    discrete: ['emB', 'emD', 'aiSec', 'aiN'],
+    steps: [
+      { ch: 'measure', set: { emTab: 'bmode', emB: 1, emD: 0, emTwo: false, emRaw: false, pheno: 'normal' }, track: 'LVID', hold: 7 },
+      { ch: 'measure', set: { emB: 0 }, track: 'Septum', line: 'The septum is reported at end-diastole, the frame of the largest LV diameter.', move: 3, hold: 6 },
+      { ch: 'measure', set: { emTwo: true }, track: 'Two peaks', move: 2, hold: 7 },
+      { ch: 'measure', set: { emTwo: false, emB: 5 }, track: 'Aortic root', line: 'EchoNet-Measurements has one model for each of its 18 measurements; the aortic root model finds the two ends of the root.', move: 3, hold: 6 },
+      { ch: 'measure', set: { emB: 8 }, track: 'IVC', move: 3, hold: 6 },
+      { ch: 'measure', set: { emTab: 'doppler', emD: 0 }, track: 'TR', move: 3, hold: 6 },
+      { ch: 'measure', set: { emD: 6 }, track: 'E/A', move: 3, hold: 6 },
+      { ch: 'measure', set: { emD: 7 }, track: 'TAPSE', move: 3, hold: 6 },
+      { ch: 'measure', set: { emRaw: true }, track: 'No DICOM', move: 2, hold: 6 },
+      { ch: 'ai', set: { aiTab: 'study', aiSec: 0, aiN: 14, aiOnly: false, aiMap: 'lv', aiK: 50 }, name: 'Left ventricle section', track: 'LV',
+        line: '{b} Each video counts by the weight of its view group in this section.', move: 4, hold: 7 },
+      { ch: 'ai', set: { aiSec: 7 }, name: 'Aortic valve section', track: 'Aortic valve', line: '{b}', move: 3, hold: 6 },
+      { ch: 'ai', set: { aiSec: 12 }, name: 'Inferior vena cava section', track: 'IVC', line: '{b}', move: 3, hold: 6 },
+      { ch: 'ai', set: { aiOnly: true }, name: 'One apical four-chamber video', track: 'A4C only', line: '{b} {s0}', move: 2, hold: 7 },
+      { ch: 'ai', set: { aiTab: 'retrieval', aiOnly: false, aiMap: 'lv', aiK: 1, pheno: 'barlow' }, track: 'k = 1', move: 3, cut: true, hold: 6 },
+      { ch: 'ai', set: { aiK: 50 }, track: 'k = 50', line: "{s0} This heart's LVEF is {This heart}%.", move: 4, hold: 7 },
+      { ch: 'ai', set: { aiMap: 'mv' }, name: 'Mitral valve, the 50 closest studies', track: 'Mitral valve', line: '{b} {s0}', move: 2, hold: 7 },
+      { ch: 'ai', set: { aiMap: 'av', pheno: 'bav' }, name: 'Aortic valve, the 50 closest studies', track: 'Aortic valve', line: '{b} {s0}', move: 3, cut: true, hold: 7 },
     ],
   },
 };

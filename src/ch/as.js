@@ -157,6 +157,16 @@ function shown(s) {
   return lastShown;
 }
 export const gradeOf = (s) => measure(modelAt(s)).grade;
+/** The values as printed at slider position s (chapter Automated measurements reads the peaks). */
+export const valuesAt = (s) => measure(modelAt(s));
+/**
+ * The CW envelopes through the LVOT and the valve for the values v, in m/s at t ms of the beat:
+ * jet(t), the aortic jet, and lvot(t), the LVOT, both over one ejection from aortic opening.
+ */
+export function cwEnvelopes(v) {
+  const gA = shape(v.qA, v.pA), gL = shape(1, v.pL), T = v.et * 1000;
+  return { jet: (t) => v.vmax * gA((t - EV.avo) / T), lvot: (t) => v.vL * gL((t - EV.avo) / T) };
+}
 
 // the results: their level (the colour of their band), the short name of the band, the bold
 // lead of the live sentence, and the line under it in the diagram
@@ -308,9 +318,9 @@ function avCW(ctx, P, v) {
   const bx = inner(P), narrow = bx.w < 300, base = narrow ? 0.15 : 0.07;
   const vs = Math.max(4, Math.ceil(v.vmax + 0.6));
   const gA = shape(v.qA, v.pA), gL = shape(1, v.pL), T = v.et * 1000;
-  const at = (u) => ((u * 2 * RR) % RR - EV.avo) / T;
+  const E = cwEnvelopes(v), at = (u) => (u * 2 * RR) % RR;
   spectral(ctx, bx, {
-    fn: [(u) => -v.vmax * gA(at(u)), (u) => -v.vL * gL(at(u))], gain: [0.75, 1.35], scale: vs, base, mode: 'cw', broad: 0.45,
+    fn: [(u) => -E.jet(at(u)), (u) => -E.lvot(at(u))], gain: [0.75, 1.35], scale: vs, base, mode: 'cw', broad: 0.45,
     key: `ascw|${v.vmax}|${v.vL}|${v.qA.toFixed(3)}|${v.pA.toFixed(3)}|${v.pL.toFixed(3)}|${T.toFixed(1)}|${vs}|${base}`, seed: 3,
   });
   vscale(ctx, bx, vs, base, 1);

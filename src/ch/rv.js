@@ -403,22 +403,30 @@ function psax(ctx, box, v, tt) {
   });
 }
 
+// The CW trace through the tricuspid valve, which chapter Automated measurements draws too: the
+// jet from tricuspid closure to opening, its peak in the middle, and the inflow in diastole.
+const TR_DUR = EV.mvo + 10 - EV.mvc;
+/** The CW velocity (m/s, + toward the probe) at t ms of the beat, for a TR jet of peak trv m/s. */
+export function trCwAt(t, trv) {
+  const w = (t - EV.mvc) / TR_DUR;
+  if (w > 0 && w < 1) return -trv * Math.pow(Math.sin(Math.PI * w), 0.45);
+  return mitralV(t - 6, 0.5, 0.4, 200);
+}
+/** The trace's velocity scale (m/s) and baseline (0 top .. 1 bottom), and the time of the jet's peak (ms). */
+export const trCwScale = (trv) => Math.max(3, Math.ceil(trv + 0.6));
+export const TR_BASE = 0.28, TR_PEAK = EV.mvc + TR_DUR / 2;
+
 /** CW through the tricuspid valve: the TR jet away from the probe in systole, the inflow in diastole. */
 function trCW(ctx, P, v) {
   panel(ctx, P.x, P.y, P.w, P.h, fit(P.w, 'CW · TRICUSPID REGURGITATION', 'CW · TR'));
   const bx = inner(P);
-  const base = 0.28, vs = Math.max(3, Math.ceil(v.trv + 0.6));
-  const DUR = EV.mvo + 10 - EV.mvc;
-  const fn = (u) => {
-    const t = (u * 2 * RR) % RR, w = (t - EV.mvc) / DUR;
-    if (w > 0 && w < 1) return -v.trv * Math.pow(Math.sin(Math.PI * w), 0.45);
-    return mitralV(t - 6, 0.5, 0.4, 200);
-  };
+  const base = TR_BASE, vs = trCwScale(v.trv);
+  const fn = (u) => trCwAt((u * 2 * RR) % RR, v.trv);
   spectral(ctx, bx, { fn, scale: vs, base, mode: 'cw', broad: 0.4, key: `rvtr|${v.trv}|${vs}`, seed: 43 });
   vscale(ctx, bx, vs, base, 1);
   const k = (bx.h * (1 - base)) / vs, y0 = bx.y + base * bx.h;
   const X = (ms) => bx.x + (ms / (2 * RR)) * bx.w;
-  const xp = X(EV.mvc + DUR / 2), yp = y0 + v.trv * k;
+  const xp = X(TR_PEAK), yp = y0 + v.trv * k;
   caliper(ctx, xp - 14, yp, xp + 14, yp, { solid: true });
   note(ctx, bx, [`peak ${v.trv.toFixed(1)} m/s · 4V² ${v.grad} + RAP ${v.rap} = RVSP ${v.rvsp} mmHg`, `peak ${v.trv.toFixed(1)} m/s · RVSP ${v.rvsp} mmHg`, `${v.trv.toFixed(1)} m/s · RVSP ${v.rvsp}`], 'top');
   return bx;

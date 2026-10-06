@@ -6,6 +6,7 @@
 // function: the LV's systolic and diastolic function, its regional wall motion and stress
 // echocardiography, which tests that motion, then the right ventricle; then the valves by valve as in
 // the ASE report (Taub 2025), each stenosis before its regurgitation, the pericardium and amyloid.
+// Artificial intelligence comes last: a model that reads a whole study draws on every chapter before it.
 
 // The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come back
 // as the last chapter, in a part of its own, when this is true. The Normal values table opens from it.
@@ -17,7 +18,7 @@ export const SHOW_PLANES = false;
 
 export const ORDER = [
   'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'cycle', 'loop', 'ivc', 'pressure',
-  'eject', 'fill', 'segments', 'stress', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'prosthetic', 'endocarditis', 'peri', 'constrict', 'hcm', 'amyloid', 'shunts', 'masses', ...(SHOW_REPORT ? ['report'] : []),
+  'eject', 'fill', 'segments', 'stress', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'prosthetic', 'endocarditis', 'peri', 'constrict', 'hcm', 'amyloid', 'shunts', 'masses', 'measure', 'ai', ...(SHOW_REPORT ? ['report'] : []),
 ];
 
 /** A chapter's number as the page prints it ("08"); '' for a chapter that is not shown. */
