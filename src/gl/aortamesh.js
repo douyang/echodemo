@@ -171,6 +171,26 @@ function lsaOf(L, ist, ctx) {
 }
 
 /**
+ * What the three targets share, kept on ctx: the grids of the aorta's wall and of every
+ * myocardium vertex; each vertex's nearest point on the centre line; and the six myocardium
+ * vertices nearest each point of the pericardium and the coronary arteries. The last two fill in
+ * as the builds reach each point, so a point is searched once for all three targets.
+ */
+function sharedOf(ctx, H) {
+  if (ctx.aortaShared) return ctx.aortaShared;
+  const { meshes, REG, mpos, nMyo } = ctx;
+  const S = { G5: H.grid(mpos, (i) => REG[i] === 5, 0.8), G: H.grid(mpos, null, 1.0), foot: new Float64Array(5 * nMyo), footOk: new Uint8Array(nMyo), nb: {} };
+  for (const name of ['Pericardium', 'Coronaries']) {
+    const mesh = meshes[name];
+    if (!mesh) continue;
+    const n = mesh.geometry.attributes.position.count;
+    S.nb[name] = { i: new Int32Array(6 * n), d2: new Float64Array(6 * n), m: new Int8Array(n).fill(-1) };
+  }
+  ctx.aortaShared = S;
+  return S;
+}
+
+/**
  * Build target key of kind ('root', 'asc' or 'coa') on the meshes. ctx: phenomesh.js
  * preparePhenotypes; H: helpers of phenomesh.js { addTarget, grid, nearest }.
  */
@@ -180,6 +200,7 @@ export async function buildAorta(ctx, key, kind, H) {
   const L = centreLine(ctx);
   const ist = isthmusOf(L);
   const lsa = kind === 'coa' ? lsaOf(L, ist, ctx) : null;
+  const S = sharedOf(ctx, H);
   const ed = new Float32Array(mpos.length);
   if (kind === 'coa') {
     if (ist) {
@@ -197,38 +218,46 @@ export async function buildAorta(ctx, key, kind, H) {
       }
     }
   } else {
-    const G5 = H.grid(mpos, (i) => REG[i] === 5, 0.8);
+    const { G5, foot, footOk } = S;
     for (let i = 0; i < nMyo; i++) {
       if ((i & 255) === 0) await tick();
       const x = mpos[3 * i], y = mpos[3 * i + 1], z = mpos[3 * i + 2];
+      // the centre line first: a vertex where the profile is zero does not move, and needs no
+      // search for the wall next to it
+      const o = 5 * i;
+      if (!footOk[i]) { const q = nearestOn(L, x, y, z); foot[o] = q.s; foot[o + 1] = q.d; foot[o + 2] = q.c[0]; foot[o + 3] = q.c[1]; foot[o + 4] = q.c[2]; footOk[i] = 1; }
+      const pr = profile(kind, foot[o]);
+      if (pr <= 0) continue;
       let follow = 1;
       if (REG[i] !== 5) {
-        const q = H.nearest(G5, x, y, z, 1, NEAR[1]);
-        if (!q.length) continue;
-        follow = 1 - smooth((Math.sqrt(q[0][1]) - NEAR[0]) / (NEAR[1] - NEAR[0]));
+        const w = H.nearest(G5, x, y, z, 1, NEAR[1]);
+        if (!w.length) continue;
+        follow = 1 - smooth((Math.sqrt(w[0][1]) - NEAR[0]) / (NEAR[1] - NEAR[0]));
       }
-      const q = nearestOn(L, x, y, z);
-      const p = profile(kind, q.s) * follow;
-      if (p <= 0 || q.d < 1e-6) continue;
-      const k = p / q.d;
-      ed[3 * i] = (x - q.c[0]) * k; ed[3 * i + 1] = (y - q.c[1]) * k; ed[3 * i + 2] = (z - q.c[2]) * k;
+      const p = pr * follow, d = foot[o + 1];
+      if (p <= 0 || d < 1e-6) continue;
+      const k = p / d;
+      ed[3 * i] = (x - foot[o + 2]) * k; ed[3 * i + 1] = (y - foot[o + 3]) * k; ed[3 * i + 2] = (z - foot[o + 4]) * k;
     }
   }
   H.addTarget(meshes.Myocardium, `dx_${key}`, ed);
   // the pericardium and the coronary arteries go with the wall next to them, as phenomesh.js buildGrow does
-  const G = H.grid(mpos, null, 1.0);
   for (const name of ['Pericardium', 'Coronaries']) {
-    const mesh = meshes[name];
+    const mesh = meshes[name], N = S.nb[name];
     if (!mesh) continue;
     const p = mesh.geometry.attributes.position.array, n = p.length / 3;
     const e2 = new Float32Array(p.length);
     for (let j = 0; j < n; j++) {
       if ((j & 127) === 0) await tick();
-      const nb = H.nearest(G, p[3 * j], p[3 * j + 1], p[3 * j + 2], 6, 2.5);
+      if (N.m[j] < 0) {
+        const nb = H.nearest(S.G, p[3 * j], p[3 * j + 1], p[3 * j + 2], 6, 2.5);
+        nb.forEach(([i, d2], q) => { N.i[6 * j + q] = i; N.d2[6 * j + q] = d2; });
+        N.m[j] = nb.length;
+      }
       let wsum = 0;
       const acc = [0, 0, 0];
-      for (const [i, d2] of nb) {
-        const w = 1 / (d2 + 0.02);
+      for (let q = 0; q < N.m[j]; q++) {
+        const i = N.i[6 * j + q], w = 1 / (N.d2[6 * j + q] + 0.02);
         wsum += w;
         for (let k = 0; k < 3; k++) acc[k] += w * ed[3 * i + k];
       }

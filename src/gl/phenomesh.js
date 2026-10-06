@@ -89,23 +89,47 @@ export function grid(pos, keep, cell) {
   }
   return { g, cell, pos };
 }
-/** The k nearest points of grid G to (x, y, z) within rMax: [[index, d2], ...]. */
+/**
+ * The k nearest points of grid G to (x, y, z) within rMax: [[index, d2], ...], nearest first.
+ * The search visits the cells in rings round the point's own cell and stops when no farther ring
+ * can hold a nearer point: a point in ring r lies more than r - 1 cells away. Points at the same
+ * distance keep the order of a scan of every cell (dx, then dy, then dz, each from -reach), so
+ * the list is the one that scan gives.
+ */
 export function nearest(G, x, y, z, k, rMax) {
   const { g, cell, pos } = G;
   const cx = Math.floor(x / cell), cy = Math.floor(y / cell), cz = Math.floor(z / cell);
-  const reach = Math.ceil(rMax / cell);
-  const best = [];
-  for (let dx = -reach; dx <= reach; dx++) for (let dy = -reach; dy <= reach; dy++) for (let dz = -reach; dz <= reach; dz++) {
-    const list = g.get(cellKey(cx + dx, cy + dy, cz + dz));
-    if (!list) continue;
-    for (const i of list) {
-      const ex = pos[3 * i] - x, ey = pos[3 * i + 1] - y, ez = pos[3 * i + 2] - z, d2 = ex * ex + ey * ey + ez * ez;
-      if (d2 > rMax * rMax) continue;
-      if (best.length < k) { best.push([i, d2]); best.sort((a, b) => a[1] - b[1]); }
-      else if (d2 < best[k - 1][1]) { best[k - 1] = [i, d2]; best.sort((a, b) => a[1] - b[1]); }
+  const reach = Math.ceil(rMax / cell), side = 2 * reach + 1;
+  const best = [];   // [index, d2, place in the scan], by d2, then by the place
+  for (let r = 0; r <= reach; r++) {
+    const lim = (r - 1) * cell - 1e-7;
+    if (best.length === k && lim > 0 && best[k - 1][1] < lim * lim) break;
+    for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) {
+      // the cells of ring r: all dz on its sides in dx or dy, the two ends in dz between them
+      const step = r === 0 || dx === -r || dx === r || dy === -r || dy === r ? 1 : 2 * r;
+      for (let dz = -r; dz <= r; dz += step) {
+        const list = g.get(cellKey(cx + dx, cy + dy, cz + dz));
+        if (!list) continue;
+        const at = (((dx + reach) * side + dy + reach) * side + dz + reach) * 16777216;
+        for (let j = 0; j < list.length; j++) {
+          const i = list[j];
+          const ex = pos[3 * i] - x, ey = pos[3 * i + 1] - y, ez = pos[3 * i + 2] - z, d2 = ex * ex + ey * ey + ez * ez;
+          if (d2 > rMax * rMax) continue;
+          const o = at + j;
+          if (best.length === k) {
+            const w = best[k - 1];
+            if (d2 > w[1] || (d2 === w[1] && o > w[2])) continue;
+            best.pop();
+          }
+          let m = best.length;
+          best.push(null);
+          while (m > 0 && (best[m - 1][1] > d2 || (best[m - 1][1] === d2 && best[m - 1][2] > o))) { best[m] = best[m - 1]; m--; }
+          best[m] = [i, d2, o];
+        }
+      }
     }
   }
-  return best;
+  return best.map((b) => [b[0], b[1]]);
 }
 /** Vertex normals of an indexed triangle mesh at positions pos. */
 function normals(pos, index) {
