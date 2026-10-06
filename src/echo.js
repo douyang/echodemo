@@ -219,6 +219,13 @@ export function viewGeometry(anat, key) {
       // screen-right square to the beam and to the axis, toward the patient's left
       r = new THREE.Vector3().crossVectors(Z, d).normalize();
       if (r.dot(X) < 0) r.negate();
+      // turn: the sector turns in its plane by this many degrees toward screen-right, the probe
+      // where it lies (negative: toward the RV, as for the RV-focused short axis)
+      if (spec.turn) {
+        const nt = new THREE.Vector3().crossVectors(d, r).normalize(), a = THREE.MathUtils.degToRad(spec.turn);
+        d.applyAxisAngle(nt, a);
+        r.applyAxisAngle(nt, a);
+      }
       break;
     }
     case 'sc4c': {
