@@ -47,6 +47,7 @@ SEEDS['PROSTHETIC'] = 9324                        # prosthetic valves (chapter 1
 SEEDS['SHUNTS'] = 9325                            # shunts: ASD, VSD and PFO (chapter 21): the number set for it
 SEEDS['ENDOCARDITIS'] = 9326                      # infective endocarditis: a seed of its own, 9326
 SEEDS['MASSES'] = 9327                            # cardiac masses and thrombus: the number set for it
+SEEDS['AORTA'] = 9331                             # diseases of the aorta (chapter 21): the number set for it
 SEEDS['AI'] = 9328                                # artificial intelligence: one video for chapters 27 and 28
 SEEDS['INTRO'] = 9300                             # the intro (video/reel.js): 93 and chapter 00
 PROG = ['C', 'Am', 'F', 'G']

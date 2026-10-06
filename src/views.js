@@ -29,6 +29,10 @@ export const VIEWS = {
     labels: [['mv', 'MV'], ['la', 'LA'], ['plv', 'LV']] }),
   plax_asc: V({ win: 'plax', short: 'PLAX', name: 'Parasternal long axis, proximal ascending aorta', lab: 'PLAX_Proximal_Ascending_Aorta', plane: 'plax_asc', depth: 16,
     labels: [['asc', 'ascending Ao'], ['av', 'AV'], ['lv', 'LV'], ['la', 'LA']] }),
+  // the same plane zoomed on the aortic root and the proximal ascending aorta (chapter Diseases of
+  // the aorta); not in ORDER, so chapter 04 does not list it
+  plax_root: V({ win: 'plax', short: 'PLAX', name: 'Parasternal long axis, zoomed aortic root and ascending aorta', lab: null, plane: 'plax_asc', depth: 16, zoom: { at: 'ao', w: 10 },
+    labels: [['av', 'AV'], ['ao', 'Ao'], ['lvot', 'LVOT']] }),
   rv_in: V({ win: 'plax', short: 'RVIT', name: 'RV inflow', lab: 'PLAX_RV_inflow', plane: 'rv_in', depth: 16,
     labels: [['rv', 'RV'], ['tv', 'TV'], ['ra', 'RA'], ['ivc', 'IVC']] }),
   rv_out: V({ win: 'plax', short: 'RVOT', name: 'RV outflow', lab: 'PLAX_RV_outflow', plane: 'rv_out', depth: 13,
@@ -94,6 +98,9 @@ export const VIEWS = {
     labels: [['liver', 'liver'], ['ivcl', 'IVC'], ['hv', 'hepatic vein'], ['ra', 'RA']] }),
   sc_aorta: V({ win: 'sub', short: 'SC', name: 'Subcostal abdominal aorta', lab: 'Subcostal_Abdominal_Aorta', plane: 'sc_aorta', depth: 18, angle: 76, near: 1.6,
     labels: [['liver', 'liver'], ['abdao', 'abdominal Ao'], ['celiac', 'celiac trunk'], ['sma', 'SMA']] }),
+  // the same plane zoomed on the abdominal aorta (chapter Diseases of the aorta); not in ORDER
+  sc_aorta_z: V({ win: 'sub', short: 'SC', name: 'Subcostal abdominal aorta, zoomed', lab: null, plane: 'sc_aorta', depth: 18, angle: 76, near: 1.6, zoom: { at: 'abdao', w: 10 },
+    labels: [['abdao', 'abdominal Ao'], ['celiac', 'celiac trunk'], ['sma', 'SMA']] }),
   // ---- suprasternal
   ssn: V({ win: 'ssn', short: 'SSN', name: 'Suprasternal aortic arch', lab: 'SSN_aortic_arch', plane: 'ssn', depth: 16, angle: 76, near: 1.5,
     labels: [['asc', 'ascending Ao'], ['arch', 'arch'], ['desc', 'descending Ao'], ['rpa', 'RPA']] }),

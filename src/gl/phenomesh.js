@@ -458,6 +458,12 @@ export const DISEASE = {
   // mitral leaflet toward the septum, a move within the beat (setMotion).
   hcmSep: { hcm: 'septum' },
   hcmSam: { hcm: 'sam' },
+  // Diseases of the aorta (chapter aorta; src/gl/aortamesh.js). aoRoot: the sinuses of Valsalva
+  // wider, aoAsc: the tubular ascending aorta wider, each 1 cm out from the aorta's centre line at
+  // weight 1. aoCoa: coarctation, the isthmus 1 cm narrower all round at weight 1.
+  aoRoot: { ao: 'root' },
+  aoAsc: { ao: 'asc' },
+  aoCoa: { ao: 'coa' },
 };
 /** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {
@@ -466,6 +472,7 @@ export async function buildDisease(ctx, key) {
   if (P.grow) return buildGrow(ctx, key, P.grow);
   if (P.valve) return buildValve(ctx, key, P.valve);
   if (P.hcm) return (await import('./hcmmesh.js')).buildHcm(ctx, key, P.hcm, { addTarget, grid, nearest });
+  if (P.ao) return (await import('./aortamesh.js')).buildAorta(ctx, key, P.ao, { addTarget, grid, nearest });
   const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
   /** The move of landmark name at weight 1 and end-diastole (cm). */
   out.shift = (name) => {
