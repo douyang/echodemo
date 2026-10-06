@@ -472,6 +472,30 @@ export const VIDEOS = {
       { set: { maS: 0.85 }, track: 'Mobile', pick: [0, 1], move: 4, hold: 7 },
     ],
   },
+  // shock: the chapter's tour. Each case from a normal heart to its severe form: hypovolemic,
+  // cardiogenic, tamponade, acute pulmonary embolism and distributive; the calipers at
+  // end-diastole and the LVOT at midsystole
+  shock: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { shkS: 0.005 },
+    steps: [
+      { set: { shkCase: 'hypo', shkS: 0, shkFrame: 'cine' }, track: 'Normal', pick: [0, 1], hold: 6 },
+      { set: { shkS: 0.5 }, track: 'Small LV', pick: [0, 2], move: 4, hold: 7 },
+      { set: { shkS: 0.9 }, track: 'Low output', pick: [4, 5], move: 4, hold: 7 },
+      { set: { shkFrame: 'ed' }, name: 'End-diastole: the calipers', track: 'Calipers', pick: [0, 1], move: 2, hold: 6 },
+      { set: { shkCase: 'cardio', shkS: 0.3, shkFrame: 'cine' }, track: 'Reduced EF', pick: [0], move: 3, cut: true, hold: 6 },
+      { set: { shkS: 0.8 }, track: 'Cardiogenic', pick: [0, 1], move: 4, hold: 7 },
+      { set: { shkCase: 'tamp', shkS: 0.4 }, track: 'Effusion', pick: [1], move: 3, cut: true, hold: 6 },
+      { set: { shkS: 0.6 }, track: 'RA collapse', pick: [2, 3], move: 4, hold: 7 },
+      { set: { shkS: 0.9 }, track: 'Tamponade', pick: [2, 3], move: 4, hold: 8 },
+      { set: { shkCase: 'pe', shkS: 0.55 }, track: 'RV/LV >1', pick: [1, 2], move: 3, cut: true, hold: 7 },
+      { set: { shkS: 0.95 }, track: 'McConnell', pick: [3], move: 4, hold: 7 },
+      { set: { shkFrame: 'ms' }, name: 'Midsystole: the LVOT diameter', track: 'LVOT', pick: [5], move: 2, hold: 6 },
+      { set: { shkCase: 'dist', shkS: 0.55, shkFrame: 'cine' }, track: 'EF >70%', pick: [0], move: 3, cut: true, hold: 6 },
+      { set: { shkS: 1 }, track: 'High output', pick: [3, 4], move: 4, hold: 7 },
+    ],
+  },
   // 27–28 Artificial intelligence, one video for the two chapters of part XI. EchoNet-Measurements
   // (its tour): the LV internal diameter, the septum and its map with a second peak, the aortic
   // root and the IVC; then TR, mitral E and E/A, and TAPSE, which loses its DICOM data. EchoPrime:

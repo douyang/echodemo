@@ -186,6 +186,10 @@
       </div>
       <figcaption class="sr-only">Buttons for the apical four-, two- and three-chamber views. Dobutamine stress echocardiography as a quad screen: the chosen view at rest, at low dose, at peak and in recovery, each cut from the heart model and beating at the heart rate of its stage, with the segment numbers on its walls colored by their wall motion score. Beside it, the response of each of the 17 segments on a bull's-eye, and the protocol: the dobutamine dose in 3-minute stages, atropine, and the heart rate against its target.</figcaption>
     </figure>
+    <figure class="fig" id="fig-shock">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">A focused cardiac ultrasound of a patient in shock, from a normal heart to the severe form of the case chosen: hypovolemic, cardiogenic, tamponade, acute pulmonary embolism or distributive. Five views cut from the heart model: the parasternal long axis with the LV diameter at end-diastole and the LVOT diameter at midsystole, the parasternal short axis with the pericardial effusion, the apical four-chamber view with the RV and LV basal diameters and McConnell's sign, the subcostal four-chamber view with the RA and RV collapse of tamponade, and the subcostal IVC with its diameter, its collapse with a sniff and the estimated RA pressure. Pulsed-wave Doppler in the LV outflow tract at the heart rate of the case, with one beat's VTI traced, the stroke volume and the cardiac output.</figcaption>
+    </figure>
     <figure class="fig" id="fig-shunts">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Shunts from none to large, for a secundum atrial septal defect, a perimembranous ventricular septal defect or a patent foramen ovale. Atrial septal defect: a subcostal view of the atrial septum with the defect, its caliper and the left-to-right color jet; an RV-focused apical four-chamber view with the RV and RA size; pulsed-wave Doppler in the RV and LV outflow tracts with their VTIs and diameters for Qp/Qs; and the continuous-wave TR jet with the RV systolic pressure. Ventricular septal defect: a short-axis view at the aortic valve with the defect just below the valve at about 11 o'clock and its jet into the RV; a parasternal long-axis view with the LV diameter; continuous-wave Doppler through the defect with its peak velocity, gradient and the RV systolic pressure; and the two outflow tracts for Qp/Qs. Patent foramen ovale: an apical four-chamber view during an agitated saline study, with the right heart opacified and bubbles crossing into the left atrium, and the number of bubbles in the left atrium beat by beat, at rest and after Valsalva release. LA pressure: a subcostal view of a restrictive 5-mm atrial communication with its left-to-right color jet; the LA and RA pressures over two beats, with their means; and continuous-wave Doppler across the septum, whose peak velocity and traced envelope, with the RA pressure, give the peak and mean LA pressure.</figcaption>
@@ -2094,6 +2098,112 @@
         <li>Dobutamine increases in 3-minute stages from 5 to 40 µg/kg/min, with atropine if needed, until the heart rate reaches 85% of the age-predicted maximum.</li>
         <li>Abnormalities in more than one territory, at a low heart rate or that persist into recovery indicate severe or multivessel disease.</li>
         <li>A dysfunctional segment that improves at low dose is viable. A biphasic response best predicts recovery of function after revascularization.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Acute care -->
+    <article class="chapter" id="ch-shock">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">30</span><div><h2 class="ch-title">Shock</h2><p class="ch-kicker">Focused cardiac ultrasound of the hypotensive patient</p></div></div>
+      <p class="dek" data-part="dek">In a patient in shock, a focused cardiac ultrasound (FoCUS) at the bedside sorts the cause by its pattern: the size and contraction of the ventricles, the pericardium and the IVC. The LVOT VTI adds the stroke volume and the cardiac output.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="shkS">Severity <output data-for="shkS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="shkS" data-key="shkS" min="0" max="1" step="0.005">
+          <div class="grades" id="shk-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Case</span>
+          <div class="seg" role="group" aria-label="Type of shock" data-key="shkCase">
+            <button type="button" data-val="hypo">Hypovolemic</button><button type="button" data-val="cardio">Cardiogenic</button><button type="button" data-val="tamp">Tamponade</button><button type="button" data-val="pe">Pulmonary embolism</button><button type="button" data-val="dist">Distributive</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Frame</span>
+          <div class="seg" role="group" aria-label="Frame" data-key="shkFrame">
+            <button type="button" data-val="cine">Cine</button><button type="button" data-val="ed">End-diastole</button><button type="button" data-val="ms">Midsystole</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Focused cardiac ultrasound</h3>
+        <p>FoCUS is a simplified echocardiogram that the treating clinician performs, most often in emergency and critical care medicine, to answer time-sensitive questions<span class="cite" data-ref="via2014"></span>. The ASE defines it as an adjunct to the physical examination that recognizes specific signs of a narrow list of diagnoses in specific clinical settings<span class="cite" data-ref="spencer2013"></span>. It is not equivalent to a diagnostic echocardiogram, and a patient with a new abnormal finding is referred for a comprehensive study<span class="cite" data-ref="spencer2013"></span>.</p>
+        <ul>
+        <li>In the emergency department, its goals include a pericardial effusion, the global systolic function, marked enlargement of the RV or the LV, and the intravascular volume<span class="cite" data-ref="labovitz2010"></span>.</li>
+        <li>Users who are not echocardiographers have detected LV and RV enlargement and dysfunction, pericardial effusion and the IVC size accurately. For LV systolic dysfunction, sensitivities of 73–100% and specificities of 64–96% have been shown<span class="cite" data-ref="spencer2013"></span>.</li>
+        <li>The parasternal and subcostal views are preferred. Apical views are harder to optimize: foreshortening can overestimate the LVEF, and a modified view can suggest RV dilatation that is not there<span class="cite" data-ref="spencer2013"></span>. The figure shows the parasternal long and short axes, the apical four-chamber view, and the subcostal four-chamber and IVC views.</li>
+        <li>FoCUS grades by eye rather than by measurement: LV function as normal, reduced or severely reduced, and an effusion or the RV as normal, large or very large<span class="cite" data-ref="spencer2013"></span>. Color and spectral Doppler are not generally required<span class="cite" data-ref="spencer2013"></span>; the aortic VTI is part of the point-of-care evaluation of shock<span class="cite" data-ref="vincent2013"></span>.</li>
+        <li>FoCUS is unlikely to detect aortic dissection, hypertrophic cardiomyopathy, regional wall-motion abnormalities, an LV aneurysm or thrombus, cardiac masses, RV hypertrophy or vegetations<span class="cite" data-ref="spencer2013"></span>.</li>
+        <li>The Society of Critical Care Medicine suggests critical care ultrasonography to guide the management of septic and cardiogenic shock<span class="cite" data-ref="diazgomez2025"></span>. The RUSH examination frames the bedside study of shock as the pump, the tank and the pipes<span class="cite" data-ref="perera2010"></span>.</li>
+        </ul>
+        <h3>Four mechanisms of shock</h3>
+        <p>Shock has four mechanisms, which can coexist: hypovolemia, cardiogenic factors, obstruction (pulmonary embolism, tamponade or tension pneumothorax) and distributive factors such as sepsis or anaphylaxis<span class="cite" data-ref="vincent2013"></span>. The first three lower the cardiac output. In distributive shock the vascular resistance falls and the output is typically high, but myocardial depression can lower it<span class="cite" data-ref="vincent2013"></span>. In a trial of more than 1600 patients in shock, 62% had septic shock, 16% cardiogenic, 16% hypovolemic, 4% other distributive and 2% obstructive shock<span class="cite" data-ref="vincent2013"></span>. In adults the systolic pressure is typically below 90 mmHg or the mean pressure below 70 mmHg, with tachycardia, and the blood lactate is above 1.5 mmol/L<span class="cite" data-ref="vincent2013"></span>.</p>
+        <p>For undifferentiated hypotension, the main value of FoCUS is to show whether the shock is cardiogenic<span class="cite" data-ref="labovitz2010"></span>. Each mechanism has its echo pattern<span class="cite" data-ref="vincent2013"></span>:</p>
+        <ul>
+        <li><b>Hypovolemic:</b> small cardiac chambers with normal or high contractility.</li>
+        <li><b>Cardiogenic:</b> large ventricles with poor contractility.</li>
+        <li><b>Obstructive:</b> in tamponade, a pericardial effusion, small ventricles and a dilated IVC; in pulmonary embolism, a dilated RV and a small LV.</li>
+        <li><b>Distributive:</b> normal cardiac chambers with, usually, preserved contractility.</li>
+        </ul>
+        <p>A bedside algorithm starts from the cardiac output. A normal or high output suggests distributive shock. With a low output, a low central venous pressure suggests hypovolemia, and a high one a cardiogenic or obstructive cause<span class="cite" data-ref="vincent2013"></span>. The text under the figure applies it with the minute distance and the RA pressure estimated from the IVC.</p>
+        <h3>Hypovolemic shock</h3>
+        <ul>
+        <li>A hyperdynamic LV can point to hypovolemia, and also to sepsis or a massive pulmonary embolism<span class="cite" data-ref="labovitz2010"></span>.</li>
+        <li>In 139 patients having coronary bypass surgery, 39 had episodes of LV cavity obliteration at end-systole on TEE. In 31 of them (80%) the end-diastolic area had fallen by more than 10%: obliteration often goes with low filling, but not always<span class="cite" data-ref="leung1994"></span>.</li>
+        <li>A small IVC that collapses suggests an RA pressure below 3 mmHg and hypovolemia<span class="cite" data-ref="mukherjee2025"></span>. With a low intravascular volume, the IVC changes more with breathing<span class="cite" data-ref="labovitz2010"></span>. <a href="#ivc" data-go="ivc">Chapter 07</a> estimates the RA pressure from the IVC. In a patient on positive pressure ventilation, its collapse cannot be used<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li>In a patient in shock, a collapsed IVC should prompt an ultrasound of the peritoneal cavity for abdominal hemorrhage<span class="cite" data-ref="labovitz2010"></span>.</li>
+        </ul>
+        <h3>Cardiogenic shock</h3>
+        <ul>
+        <li>The LV is large and contracts poorly<span class="cite" data-ref="vincent2013"></span>. FoCUS sorts the global function into normal or minimally impaired, and depressed<span class="cite" data-ref="labovitz2010"></span>; <a href="#eject" data-go="eject">chapter 09</a> measures the LVEF. Poor but detectable LV function indicates a need for inotropes or mechanical support<span class="cite" data-ref="labovitz2010"></span>.</li>
+        <li>The figure grades the LVEF of a man: normal 52–72%, mildly abnormal 41–51%, moderately abnormal 30–40% and severely abnormal below 30%. The LV diastolic diameter of men is normal at 42–58 mm<span class="cite" data-ref="lang2015"></span>.</li>
+        <li>In 6957 patients in a cardiac ICU, the LVOT VTI was the strongest echo predictor of death in hospital, with an odds ratio of 0.912 for each centimeter higher. A classification tree found a VTI below 16 cm the most important predictor<span class="cite" data-ref="jentzer2022"></span>.</li>
+        </ul>
+        <h3>Obstructive shock: tamponade</h3>
+        <ul>
+        <li>Tamponade is a clinical diagnosis: fluid in the sac with hypotension, tachycardia, pulsus paradoxus and distended neck veins<span class="cite" data-ref="labovitz2010"></span>. The hemodynamic effect of an effusion is beyond the scope of FoCUS<span class="cite" data-ref="spencer2013"></span>; <a href="#peri" data-go="peri">chapter 24</a> grades it.</li>
+        <li>An effusion measured at end-diastole is small below 10 mm, moderate at 10–20 mm, large above 20 mm and very large above 25 mm<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>RA collapse that lasts more than a third of the cardiac cycle is nearly 100% sensitive and specific for clinical tamponade. RV diastolic collapse comes with moderate rises of the pericardial pressure, when the cardiac output has fallen by about 20% but the blood pressure has not<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>The LV is small in systole and diastole, and its walls look thick. IVC plethora is expected in more than 90% of patients: an IVC wider than 2.1 cm with less than 50% collapse in inspiration reflects the raised venous pressure<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>Hypotension is a late sign, and moderate and severe tamponade usually bring tachycardia. In a hypovolemic patient, tamponade can occur at intracardiac pressures below 10 mmHg, and the right heart can collapse earlier<span class="cite" data-ref="klein2013"></span>.</li>
+        </ul>
+        <h3>Obstructive shock: acute pulmonary embolism</h3>
+        <ul>
+        <li>A hemodynamically significant embolus dilates the RV beyond the LV, an RV/LV ratio above 1:1, and impairs its function. The LV can be underfilled and hyperdynamic<span class="cite" data-ref="labovitz2010"></span>. <a href="#rv" data-go="rv">Chapter 14</a> grades the RV under acute PE.</li>
+        <li>Even on a comprehensive echocardiogram, RV enlargement and RV dysfunction are insensitive: 29% and 51%, and 52–56% together. FoCUS can support the diagnosis but cannot exclude it, and a high RV/LV ratio is not specific for an embolus<span class="cite" data-ref="labovitz2010"></span>.</li>
+        <li>McConnell's sign is an akinetic mid free wall with normal motion at the apex. In 85 patients with RV dysfunction, it had a sensitivity of 77% and a specificity of 94% for acute pulmonary embolism<span class="cite" data-ref="mcconnell1996"></span>.</li>
+        <li>In 188 patients with acute PE, 61 (32%) had an LVOT VTI of 15 cm or less. A low VTI went with death or cardiac arrest in hospital (odds ratio 6) and with shock or a need for reperfusion (odds ratio 23.3)<span class="cite" data-ref="yuriditsky2020"></span>.</li>
+        </ul>
+        <h3>Distributive shock</h3>
+        <ul>
+        <li>The chambers are normal and contract normally or more, and the output is typically high<span class="cite" data-ref="vincent2013"></span>.</li>
+        <li>The ACC defines a hyperdynamic LVEF as one above 70%. In 2867 ICU patients, the 324 with a hyperdynamic LVEF had a higher 28-day mortality, with an odds ratio of 1.38<span class="cite" data-ref="paonessa2015"></span>.</li>
+        <li>In 103 emergency patients with undifferentiated hypotension, a hyperdynamic LV (in that study, an EF above 55%) had a sensitivity of 33% and a specificity of 94% for sepsis<span class="cite" data-ref="jones2005"></span>.</li>
+        </ul>
+        <h3>Stroke volume and cardiac output</h3>
+        <p>The stroke volume is the LVOT area × the LVOT VTI: 0.785 × d² × VTI, with the diameter d in cm<span class="cite" data-ref="zoghbi2017"></span>. <a href="#pressure" data-go="pressure">Chapter 08</a> measures both. The cardiac output is the stroke volume × the heart rate.</p>
+        <p>The VTI is the stroke distance, and it does not depend on body size. The minute distance, the VTI × the heart rate, is normally 9.7–20.5 m/min, and a value outside that range confirms a suspected low or high output<span class="cite" data-ref="goldman2001"></span>. In shock, the trend after an intervention such as a fluid challenge, 300–500 mL over 20–30 minutes, matters more than the absolute output<span class="cite" data-ref="vincent2013"></span>.</p>
+        <h3>Fluid responsiveness</h3>
+        <ul>
+        <li>Passive leg raising is another test of fluid responsiveness. Its effect is transient, so it needs a device that responds fast<span class="cite" data-ref="vincent2013"></span>.</li>
+        <li>In 24 spontaneously breathing ICU patients, a rise of 12.5% or more in the echocardiographic stroke volume with leg raising predicted a rise of 15% or more after 500 mL of saline. Its sensitivity was 77% and its specificity 100%<span class="cite" data-ref="lamia2007"></span>.</li>
+        <li>In a meta-analysis of 21 studies and 991 patients, a rise in the cardiac output of 10 ± 2% or more with leg raising had a pooled sensitivity of 85% and specificity of 91%<span class="cite" data-ref="monnet2016"></span>.</li>
+        <li>Whatever the test, a gray zone remains in which the response to fluid is hard to predict<span class="cite" data-ref="vincent2013"></span>.</li>
+        </ul>
+        <h3>The figure</h3>
+        <p>The five views are cut from the heart model. The switch picks the case, and the slider takes the same normal heart to the severe form of that case. The LV's size and contraction, the right heart and the septum, the effusion with the RA and RV collapse, and the IVC's caliber are targets on the model. The page prints what the images measure: the LV diameter on the long axis, the biplane LVEF, the basal diameters of the RV and the LV, the effusion on the short axis, the IVC at end-expiration and with the sniff, and the LVOT in midsystole. The heart rate rises with severity in every case, and systole shortens with it<span class="cite" data-ref="boudoulas1981"></span>. The heart rate and the VTI are values of the model. The patient and the numbers are illustrative.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>FoCUS is a focused bedside exam of the LV and RV size and function, the pericardium and the IVC. It does not replace a comprehensive echocardiogram.</li>
+        <li>Small chambers with high contractility suggest hypovolemia; large ventricles that contract poorly, a cardiogenic cause; normal chambers with preserved contractility, distributive shock.</li>
+        <li>Obstruction shows as an effusion with small ventricles and a dilated IVC in tamponade, or as a dilated RV with a small LV in pulmonary embolism.</li>
+        <li>The stroke volume is 0.785 × the LVOT diameter² × the VTI. The minute distance, VTI × heart rate, is normally 9.7–20.5 m/min.</li>
         </ol>
       </div>
       <div class="quiz"></div>
