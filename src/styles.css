@@ -364,6 +364,7 @@ a:hover { text-decoration-color: var(--accent); }
 .prose ol.steps li { counter-increment: step; position: relative; padding-left: 1.7em; }
 .prose ol.steps li::before { content: counter(step); position: absolute; left: 0; top: 0; font: 500 0.875rem/1.7 var(--mono); color: var(--accent); }
 .prose strong, .prose b { font-weight: 600; }
+.prose .disclosure { font-size: 0.875rem; color: var(--ink-2); border-top: 1px solid var(--rule, currentColor); padding-top: 0.6em; }
 .prose .eq {
   display: block;
   margin: 0.2em 0 0.9em;

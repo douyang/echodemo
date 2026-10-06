@@ -186,6 +186,10 @@
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Infective endocarditis from a normal mitral valve to a large vegetation with leaflet perforation and severe regurgitation: the parasternal long-axis view zoomed on the valves, with the vegetation on the atrial side of the anterior mitral leaflet and a caliper on its maximal length; the apical three-chamber view with the color jet through the perforation; continuous-wave Doppler through the mitral valve; pulmonary vein flow; and the measurements against their cut-offs.</figcaption>
     </figure>
+    <figure class="fig" id="fig-ai">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">How EchoPrime reads a study. Study: a grid of 14 echocardiography videos of the heart shown, each tagged with its view group; a heat map of EchoPrime's anatomical attention weights, 15 report sections by 11 view groups; the chosen section's row lights the videos by their weights, with the share of the section's weight that the videos present carry and the section's text from the site's report. Retrieval: a two-dimensional map of simulated earlier studies, colored by LVEF or valve grade, with the study shown, its k most similar studies, the mean of their values and the count of each finding.</figcaption>
+    </figure>
     <figure class="fig" id="fig-report" hidden>
       <div class="sheet-host" id="report-host"></div>
       <figcaption class="sr-only">A structured echocardiography report built from the values on this page.</figcaption>
@@ -1038,6 +1042,88 @@
         <li>A left atrial myxoma is usually attached by a stalk to the fossa ovalis. A large one prolapses into the LV in diastole and can obstruct the mitral valve.</li>
         <li>An LV thrombus lies in a segment with abnormal wall motion, most often the apex after an anterior infarction. It should be seen in two views; with an enhancing agent it shows as a filling defect.</li>
         <li>A papillary fibroelastoma is a small mass on the downstream side of a valve, most often the aortic side of the aortic valve. Its mobility predicts embolism.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Artificial intelligence -->
+    <article class="chapter" id="ch-ai">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">27</span><div><h2 class="ch-title">Study interpretation</h2><p class="ch-kicker">EchoPrime: views, anatomical attention and retrieval</p></div></div>
+      <p class="dek" data-part="dek">A comprehensive study holds many videos from many views. EchoPrime sorts each video by view, weights the views for each section of the report, and drafts each section from the most similar earlier studies.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Figure</span>
+          <div class="seg" role="group" aria-label="Part of the model" data-key="aiTab">
+            <button type="button" data-val="study">Study</button><button type="button" data-val="retrieval">Retrieval</button>
+          </div>
+        </div>
+        <div class="control" data-ai-tab="study">
+          <label for="aiSec">Section <output data-for="aiSec"></output></label>
+          <input type="range" id="aiSec" data-key="aiSec" min="0" max="14" step="1">
+        </div>
+        <div class="control" data-ai-tab="study">
+          <label for="aiN">Videos in the study <output data-for="aiN"></output></label>
+          <input type="range" id="aiN" data-key="aiN" min="1" max="14" step="1">
+        </div>
+        <div class="control" data-ai-tab="study">
+          <span class="label">A4C only</span>
+          <div class="seg" role="group" aria-label="Only the apical four-chamber video" data-key="aiOnly">
+            <button type="button" data-val="false">Off</button><button type="button" data-val="true">On</button>
+          </div>
+        </div>
+        <div class="control" data-ai-tab="retrieval">
+          <span class="label">Section</span>
+          <div class="seg" role="group" aria-label="Section searched" data-key="aiMap">
+            <button type="button" data-val="lv">LV</button><button type="button" data-val="av">Aortic valve</button><button type="button" data-val="mv">Mitral valve</button>
+          </div>
+        </div>
+        <div class="control" data-ai-tab="retrieval">
+          <label for="aiK">Similar studies, k <output data-for="aiK"></output></label>
+          <input type="range" id="aiK" data-key="aiK" min="1" max="200" step="1">
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Models that read echocardiograms</h3>
+        <p>The first deep learning models for echocardiography each did one task. A convolutional network classified still frames by view<span class="cite" data-ref="madani2018"></span>, and a pipeline of separate networks identified the view, segmented the chambers, measured them and detected several diseases<span class="cite" data-ref="zhang2018"></span>. Later models learned from whole videos and from many tasks at once. PanEcho, trained on 1.2 million videos from 32,265 studies, performed 18 diagnostic classification tasks with a median AUC of 0.91, and estimated the LVEF with a mean absolute error of 4.2% in internal and 4.5% in external validation<span class="cite" data-ref="holste2025"></span>.</p>
+        <p>A vision–language model learns from the cardiologist's report as well as from the images. EchoCLIP was trained on echocardiography images paired with report text<span class="cite" data-ref="christensen2024"></span>; it reads one image at a time and up to 77 tokens of text<span class="cite" data-ref="vukadinovic2026"></span>. EchoPrime reads every video of a study and up to 512 tokens of its report.</p>
+        <h3>How EchoPrime reads a study</h3>
+        <p>EchoPrime was trained on 12,124,168 echocardiography videos and the text of their reports, from 275,442 studies of 108,913 patients at Cedars-Sinai Medical Center<span class="cite" data-ref="vukadinovic2026"></span>. It has four parts:</p>
+        <ul>
+        <li><b>Video encoder.</b> A video transformer (mViT) turns each video, 16 frames of 224 × 224 pixels taken from every second frame, into an embedding of 512 numbers.</li>
+        <li><b>Text encoder.</b> A language model pretrained on medical text (PubMedBERT) turns a report into an embedding of the same size. The two encoders were trained together, so that a video and the report of its own study have similar embeddings (contrastive learning).</li>
+        <li><b>View classifier.</b> A network trained on 77,426 videos labeled by sonographers sorts B-mode and color Doppler videos into 58 standard views, with a one-versus-rest AUC of 0.997 on 4,000 test videos. The public code groups the views into 11 view groups and reads each video's first frame.</li>
+        <li><b>Anatomical attention.</b> For each of the 15 sections of the report, each view group has a weight that sets how much its videos count. The weights were learned by multiple instance learning: the model sees each study as a set of videos with one report, and learns which videos inform each section.</li>
+        </ul>
+        <p>For each section, EchoPrime multiplies each video's embedding by the weight of its view group, adds the products and normalizes the sum. This gives one study embedding for each section. EchoPrime then finds the earlier studies whose embeddings lie closest to it. A number, such as the LVEF, is the mean of the 50 closest studies; a finding enters the report when more than half of them carry it<span class="cite" data-ref="vukadinovic2026"></span>. In the public code, the wording of each section comes from the closest earlier report that has that section.</p>
+        <h3>The attention weights</h3>
+        <p>The study in the figure holds 14 videos of the heart chosen at the top of the page, cut from the same heart model as the other chapters. Each tile is the size of one EchoPrime input and carries its view group. The heat map gives the 165 weights of the public code: a row for each section and a column for each view group, with 1.0 the largest weight in each row. A row shows where EchoPrime looks for that section. The IVC section rests on the subcostal view (1.00), with the suprasternal view next (0.27). The aortic valve rests on the apical five-chamber view (1.00) and parasternal long-axis color Doppler (0.99).</p>
+        <p>The slider adds the videos in the order of a standard examination. For each section, the figure gives the share of the section's attention weight that the videos present carry: a measure of this site, not an output of EchoPrime. Without the subcostal views, the IVC section keeps 39% of its weight; with the apical four-chamber video alone, the LV section keeps 10%. Yet in 2,172 studies with a single apical four-chamber video, EchoPrime performed across all tasks about as well as with full studies<span class="cite" data-ref="vukadinovic2026"></span>. The weights show how EchoPrime mixes the videos that it has; they do not show which videos a finding needs.</p>
+        <h3>Retrieval</h3>
+        <p>The Retrieval view draws the search on a map. Each dot is a simulated earlier study, placed so that similar studies lie close together and colored by its LVEF or its valve grade; the cross is the study of the heart shown. EchoPrime searches 512 dimensions; the map has two, and its studies are made by this site. The slider sets k, the number of closest studies. With k = 1 the result is the value of one study. As k grows, the estimate steadies but takes in studies less like the query, so a value far from the usual range moves toward the middle of the library. EchoPrime uses k = 50, the best trade-off between performance and run time in its development<span class="cite" data-ref="vukadinovic2026"></span>.</p>
+        <h3>Performance</h3>
+        <p>Across 17 classification and 11 regression tasks, the mean AUC of EchoPrime was 0.92 at Cedars-Sinai and, in external validation, 0.89 at Stanford Healthcare, 0.85 at Beth Israel Deaconess Medical Center (MIMIC), 0.86 at Chang Gung Memorial Hospital and 0.88 at Kaiser Permanente. The mean absolute error of the LVEF was 4.79 percentage points in the internal test set and 4.14 to 6.46 at the external sites, against 6.23 to 10.37 for EchoCLIP. For 98% of the test studies, the correct report was among the 10 that EchoPrime matched most closely to the videos<span class="cite" data-ref="vukadinovic2026"></span>.</p>
+        <p>In paired studies of the same patient in which the cardiologist noted no significant change, EchoPrime agreed with the cardiologists with a balanced accuracy (the mean of sensitivity and specificity) of 0.89; two cardiologists agreed with a balanced accuracy of 0.82<span class="cite" data-ref="vukadinovic2026"></span>.</p>
+        <h3>Limits</h3>
+        <ul>
+        <li>All data were collected retrospectively, and the model was trained on the studies of one center<span class="cite" data-ref="vukadinovic2026"></span>.</li>
+        <li>Spectral Doppler and M-mode recordings are still images, and the video encoder takes videos, so they were left out of training. The authors point to models that measure on the images directly for these values<span class="cite" data-ref="vukadinovic2026,sahashi2025"></span>.</li>
+        <li>Retrieval reuses earlier reports: the wording of a section comes from a report that already exists, and a rare finding is found only when similar studies are in the library.</li>
+        <li>Performance varied by site, with a mean AUC from 0.85 to 0.92<span class="cite" data-ref="vukadinovic2026"></span>.</li>
+        <li>Images unlike the training data, such as those of another vendor or the simulated images of this site, may be read wrongly. EchoPrime did not process the images on this page.</li>
+        </ul>
+        <h3>Prospective trials</h3>
+        <p>In the first blinded randomized trial of AI in echocardiography, each study received an initial LVEF from AI or from a sonographer, and a cardiologist, blind to the source, gave the final LVEF. Of 3,769 studies screened, 274 were excluded for poor image quality. The cardiologist changed the LVEF by more than 5% in 16.8% of the AI group and 27.2% of the sonographer group (difference −10.4%, 95% CI −13.2% to −7.7%); AI was non-inferior and superior (P &lt; 0.001 for both). The cardiologists could not tell the two sources apart<span class="cite" data-ref="he2023"></span>.</p>
+        <p>The AI ECHO INSIGHT trial tests whole preliminary reports. In 1,200 earlier studies from one US health system, 1,000 consecutive studies and 200 with moderate or greater valve disease, a preliminary report drafted by AI, by a cardiologist or by a sonographer is finalized by a blinded cardiologist. The primary outcome is the rate of substantial change between the preliminary and the final report<span class="cite" data-ref="lee2026"></span>. The results are not yet published.</p>
+        <p class="disclosure">Disclosure: EchoPrime and EchoNet-Measurements were developed at Cedars-Sinai Medical Center. Cedars-Sinai licensed EchoPrime exclusively to InVision, and some EchoPrime investigators hold equity in InVision. The author of this site is a senior author of both papers.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>EchoPrime sorts each video of a study by view, turns it into an embedding, and weights the videos by view group for each of the 15 sections of the report.</li>
+        <li>Each section draws on the most similar earlier studies: a number is the mean of the 50 closest, and a finding is reported when more than half of them carry it.</li>
+        <li>The attention weights show how the model mixes the views, not which views a finding needs: with one apical four-chamber video, performance was similar across tasks.</li>
+        <li>In a blinded randomized trial, cardiologists changed an AI-first LVEF less often than a sonographer-first LVEF. A trial of whole AI-drafted reports is under way.</li>
         </ol>
       </div>
       <div class="quiz"></div>
