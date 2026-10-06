@@ -18,17 +18,17 @@
 // about the annulus's tangent, so its free edge points into the left atrium. The chordae next to
 // it go with it. It is a move within the beat (echo.js setMotion), as hcmmesh.js builds hcmSam.
 //
-// Two lesions drawn on the plane in each frame, as the septal defects of gl/shuntsmesh.js:
+// Two lesions drawn on the plane in each frame, as blood over the walls (echo.js setShapes):
 //
-// The ventricular septal rupture: a disc through the apical septum, its middle and axis in the
-// plane of the view that measures it, drawn as blood over the septum (echo.js setShapes).
+// The ventricular septal rupture: a ragged hole through the thinned apical septum of the view that
+// measures it, built from that view's own section (see the septal rupture below).
 //
-// The pseudoaneurysm: a neck through the inferolateral wall (a disc, as the septal rupture) and a
-// sac outside the wall. The sac on the plane is a circle round a point beyond the epicardium,
-// bounded by the heart's outer surface where the circle reaches it, so it runs on behind the
-// intact wall next to the neck (Gatewood 1980). Its wall is the pericardium, drawn bright, with a
-// layer of thrombus inside its far side. The neck and the sac exist only on the plane of the view;
-// the 3D heart does not show them.
+// The pseudoaneurysm: a neck through the inferolateral wall (a disc, as gl/shuntsmesh.js cuts a
+// septal defect) and a sac outside the wall. The sac on the plane is a circle round a point beyond
+// the epicardium, bounded by the heart's outer surface where the circle reaches it, so it runs on
+// behind the intact wall next to the neck (Gatewood 1980). Its wall is the pericardium, drawn
+// bright, with a layer of thrombus inside its far side. The neck and the sac exist only on the
+// plane of the view; the 3D heart does not show them.
 
 import { DB } from '../bmode.js';
 import { wallFrame, planeOf, cutOf, axisOnPlane, throughWall } from './shuntsmesh.js';
@@ -125,33 +125,274 @@ export function sitesOf(model) {
 }
 
 // ---------------------------------------------------------------- the septal rupture
-const VSR = new WeakMap();   // each view's cut of the rupture in its last frame
+// The rupture and the infarcted septum round it are drawn on the plane of the measuring view in
+// each frame, from that frame's section, so they move with the septum. Lines square to the septum,
+// VSR_STEP apart along it, give its LV face and its RV face: where each line enters the septum's
+// wall and leaves it. A line leaves into the RV's cavity only below the RV's apex, and on the five
+// hearts that apex lies 1.5 to 3.2 mm from the site's middle (sitesOf), toward the apex. So the
+// rupture's apical edge meets the RV face VSR_GAP below the RV's apex, a larger rupture reaches
+// farther toward the base, and the whole rupture opens into the RV's cavity.
+// The septum is thinned from its LV face, from the RV's apex to VSR_ZONE below it (farther when the
+// rupture reaches farther), to VSR_THIN[0] of its thickness but no more than VSR_THIN[1] cm thick.
+// The thinning fades out over VSR_FADE[0] toward the base and VSR_FADE[1] toward the apex, and
+// before the lines leave the LV's cavity at the apex. Its LV face is a little uneven (VSR_UNEVEN).
+// Each edge of the rupture is the end of the thinned septum: half an ellipse from the LV face to the
+// RV face, VSR_END of the thinned septum's half thickness long, ragged by up to VSR_RAG between its
+// tip and the faces. The two tips lie dMm apart, and the caliper joins them. The RV's trabeculae
+// stay. One that met the septum inside the rupture now ends at the rupture's RV side.
+const VSR_STEP = 0.04, VSR_GAP = 0.3, VSR_THIN = [0.5, 0.55], VSR_ZONE = 1.6, VSR_FADE = [1.2, 1.6], VSR_END = 0.8, VSR_RAG = 0.14;
+// the lines run from VSR_SPAN[0] to VSR_SPAN[1] cm along the septum from its middle 6 mm below the
+// RV's apex
+const VSR_SPAN = [-3.6, 2.8];
+// cm: how uneven the thinned LV face is
+const VSR_UNEVEN = 0.025;
+// the blood runs this far past the LV face and the RV face (cm), so no edge of the wall stays
+const VSR_PAST = [0.05, 0.04];
+// a line leaves into the RV where the RV's cavity beyond the septum is at least this wide (cm)
+const VSR_OPEN = 0.1;
+const VSR = new WeakMap();   // each view's rupture in its last frame
+
+/** The closed wall loops of the view's section as segments [a, b] (plane cm). */
+function wallSegments(ev) {
+  const segs = [];
+  for (const W of ev.last.tissue) {
+    if (!W.closed || W.pts.length < 3) continue;
+    const P = W.pts;
+    for (let i = 0; i < P.length; i++) segs.push([P[i], P[(i + 1) % P.length]]);
+  }
+  return segs;
+}
 /**
- * The shapes of a septal rupture of diameter dMm on a view (echo.js setShapes): the disc through
- * the apical septum as blood. Its middle and axis lie in the plane of view key (the measuring
- * view), so that plane cuts it dMm wide. The cut opens the LV into the RV through the septum and
- * stops 1.5 mm into the blood on each side (shuntsmesh.js throughWall).
+ * The septum on the line q + s a: the wall interval { lv, rv } (s of the LV face and the RV face)
+ * nearest s = mid (the one round s = 0, or else nearest it, when mid is null). gap: the cavity
+ * beyond it, and open when that is at least VSR_OPEN wide with more wall beyond: the RV, not the
+ * outside of the heart. lvGap: the cavity before it (the LV's), 0 when no wall lies before it.
+ * Null when the line meets no wall. Along a line a point lies in a wall between the 1st and 2nd
+ * crossing, the 3rd and 4th, and so on (echo.js draws the walls even-odd).
+ */
+function septumLine(segs, q, a, mid) {
+  const c = [];
+  for (const [p, r] of segs) {
+    const ex = r[0] - p[0], ey = r[1] - p[1], den = a[0] * ey - a[1] * ex;
+    if (Math.abs(den) < 1e-12) continue;
+    const wx = p[0] - q[0], wy = p[1] - q[1], u = (wx * a[1] - wy * a[0]) / den;
+    if (u >= 0 && u < 1) c.push((wx * ey - wy * ex) / den);
+  }
+  c.sort((x, y) => x - y);
+  let best = null, bd = Infinity;
+  for (let i = 0; i + 1 < c.length; i += 2) {
+    const m = (c[i] + c[i + 1]) / 2;
+    const d = mid === null ? (c[i] <= 0 && c[i + 1] >= 0 ? -1 : Math.abs(m)) : Math.abs(m - mid);
+    const gap = i + 2 < c.length ? c[i + 2] - c[i + 1] : 0;
+    if (d < bd) { bd = d; best = { lv: c[i], rv: c[i + 1], gap, open: gap >= VSR_OPEN, lvGap: i >= 2 ? c[i] - c[i - 1] : 0 }; }
+  }
+  return best;
+}
+/**
+ * The septum's lines on the view's plane round frame f (the site, wallFrame): o, a point of the
+ * septum's middle about 6 mm below the RV's apex; a, square to the septum toward the RV; t, along
+ * it toward the apex; lines [{ tau, lv, rv, gap, open, lvGap }] at tau from VSR_SPAN[0] to
+ * VSR_SPAN[1] along t from o (null where a line meets no wall); tip, the tau of the RV's apex on the
+ * RV face; T, the septum's thickness in the centimetre below it. Null when the plane shows no
+ * septum there.
+ */
+function septumOn(ev, g, f, a0) {
+  const vx = f.C[0] - g.O.x, vy = f.C[1] - g.O.y, vz = f.C[2] - g.O.z;
+  const p0 = [vx * g.r.x + vy * g.r.y + vz * g.r.z, vx * g.d.x + vy * g.d.y + vz * g.d.z];
+  const Z = ev.anat.axis, toBase = [g.r.dot(Z), g.d.dot(Z)];
+  const segs = wallSegments(ev);
+  // the lines through o + tau t along a, followed from tau = 0 outward, each line's septum the wall
+  // interval nearest the last one's middle
+  const follow = (o, a, t, taus) => {
+    const out = taus.map(() => null), k0 = taus.indexOf(0);
+    for (const [from, step] of [[k0, 1], [k0 - 1, -1]]) {
+      let mid = step > 0 ? null : out[k0] ? (out[k0].lv + out[k0].rv) / 2 : null;
+      for (let k = from; k >= 0 && k < taus.length; k += step) {
+        const L = septumLine(segs, add(o, mul(t, taus[k])), a, mid);
+        if (L) { out[k] = { tau: taus[k], ...L }; mid = (L.lv + L.rv) / 2; }
+      }
+    }
+    return out;
+  };
+  // the RV's apex: from tau = 0 toward the apex while the lines open into the RV, or else toward
+  // the base to the first line that does; its index, or -1
+  const tipOf = (lines, taus) => {
+    let k = taus.indexOf(0);
+    if (lines[k] && lines[k].open) { while (k + 1 < lines.length && lines[k + 1] && lines[k + 1].open) k++; }
+    else { while (k > 0 && !(lines[k] && lines[k].open)) k--; }
+    return lines[k] && lines[k].open ? k : -1;
+  };
+  const range = (a, b, step) => { const out = []; for (let k = Math.round(a / step); k <= Math.round(b / step); k++) out.push(k ? k * step : 0); return out; };
+  // first along the view's axis a0 from the site: the RV's apex, and the septum's own direction,
+  // the line through the middles of the lines below it
+  let t0 = perp(a0);
+  if (t0[0] * toBase[0] + t0[1] * toBase[1] > 0) t0 = mul(t0, -1);
+  const taus0 = range(-3, 1.5, 0.1), first = follow(p0, a0, t0, taus0), k1 = tipOf(first, taus0);
+  if (k1 < 0) return null;
+  const tip0 = taus0[k1];
+  let n = 0, st = 0, sm = 0, stt = 0, stm = 0, o = null;
+  for (const L of first) {
+    if (!L || !L.open || L.tau > tip0 - 0.2 || L.tau < tip0 - 2) continue;
+    const m = (L.lv + L.rv) / 2;
+    n++; st += L.tau; sm += m; stt += L.tau * L.tau; stm += L.tau * m;
+    if (!o || Math.abs(L.tau - (tip0 - 0.6)) < Math.abs(o.tau - (tip0 - 0.6))) o = { tau: L.tau, m };
+  }
+  if (!o) return null;
+  const beta = n > 3 && n * stt - st * st > 1e-9 ? clamp((n * stm - st * sm) / (n * stt - st * st), -0.6, 0.6) : 0;
+  const t = unit(add(t0, mul(a0, beta)));
+  let a = perp(t);
+  if (a[0] * a0[0] + a[1] * a0[1] < 0) a = mul(a, -1);
+  // then square to the septum, from its middle below the RV's apex
+  const O = add(p0, add(mul(t0, o.tau), mul(a0, o.m)));
+  const taus = range(VSR_SPAN[0], VSR_SPAN[1], VSR_STEP), lines = follow(O, a, t, taus), k = tipOf(lines, taus);
+  if (k < 0) return null;
+  // the apex to 1 µm, between the last line that opens into the RV and the next
+  let lo = taus[k], hi = lo + VSR_STEP, mid = (lines[k].lv + lines[k].rv) / 2;
+  for (let i = 0; i < 9; i++) {
+    const m = (lo + hi) / 2, L = septumLine(segs, add(O, mul(t, m)), a, mid);
+    if (L && L.open) { lo = m; mid = (L.lv + L.rv) / 2; } else hi = m;
+  }
+  const Ts = lines.filter((L) => L && L.open && L.tau <= lo - 0.1 && L.tau >= lo - 1.1).map((L) => L.rv - L.lv).sort((x, y) => x - y);
+  if (!Ts.length) return null;
+  return { o: O, a, t, lines, tip: lo, T: Ts[Math.floor(Ts.length / 2)] };
+}
+/** The septum's faces at tau, between its lines: { lv, rv, gap }, or null. */
+function facesAt(S, tau) {
+  const x = (tau - VSR_SPAN[0]) / VSR_STEP, k = Math.floor(x), f = x - k;
+  const A = S.lines[k], B = S.lines[k + 1];
+  if (!A || !B) return A || B || null;
+  return { lv: A.lv + (B.lv - A.lv) * f, rv: A.rv + (B.rv - A.rv) * f, gap: A.gap + (B.gap - A.gap) * f };
+}
+// the ragged outline of an edge: a step into the rupture (cm) at the angle th of its half ellipse
+// (0 at the LV face, pi/2 at the tip, pi at the RV face) for an edge e long. None at the faces and
+// at the tip, and no point nearer the other edge than the tip, so the tips stay the narrowest
+// place and the caliper between them reads the diameter.
+function rag(th, k, e) {
+  const n = 0.55 * Math.sin(5 * th + 1.9 * k + 0.4) + 0.3 * Math.sin(9 * th + 2.7 * k + 1.7) + 0.15 * Math.sin(17 * th + 4.1 * k);
+  return Math.min(VSR_RAG * Math.sin(2 * th) ** 2 * n, 0.8 * e * (1 - Math.sin(th)));
+}
+
+/**
+ * The rupture of diameter d (cm) in septum S: the blood (plane cm), the outline of the hole alone,
+ * the caliper between the two tips, and the waist's middle, its span along a, and points in the LV
+ * and the RV beside it. With d = 0, only the thinned septum.
+ */
+function ruptureOn(S, d) {
+  const { o, a, t } = S, P = (s, tau) => add(o, add(mul(a, s), mul(t, tau)));
+  const Tn = Math.min(VSR_THIN[0] * S.T, VSR_THIN[1]), e = (VSR_END * Tn) / 2;
+  // the apical edge's tip, and the basal edge's tip d below it along the septum
+  const up = S.tip - VSR_GAP - e;
+  let dn = up - d;
+  const core = [Math.min(d > 0 ? dn - e : Infinity, S.tip - VSR_ZONE), S.tip];
+  // toward the apex the thinning fades out before the lines leave the LV's cavity (the apex)
+  let lvEnd = core[1];
+  for (const L of S.lines) if (L && L.tau > core[1] && L.tau <= lvEnd + VSR_STEP * 1.5 && L.lvGap >= 0.3) lvEnd = L.tau;
+  const fade = [VSR_FADE[0], Math.max(0.2, Math.min(VSR_FADE[1], lvEnd - core[1] - 0.1))];
+  const w = (tau) => (tau < core[0] ? 1 - smooth((core[0] - tau) / fade[0]) : tau > core[1] ? 1 - smooth((tau - core[1]) / fade[1]) : 1);
+  // the LV face, thinned: the septum keeps Tn at full weight, and never less than Tn. The infarct's
+  // endocardium is a little uneven, by up to VSR_UNEVEN where it is thinned in full
+  const lvT = (tau) => {
+    const F = facesAt(S, tau);
+    if (!F) return null;
+    const k = w(tau), un = VSR_UNEVEN * k * (0.6 * Math.sin(7.3 * tau + 0.8) + 0.4 * Math.sin(17.9 * tau + 2.3));
+    return F.lv + Math.min(k * Math.max(0, S.T - Tn) + un, Math.max(0, F.rv - F.lv - Tn));
+  };
+  const top = Math.min(VSR_SPAN[1], core[1] + fade[1]), bot = Math.max(VSR_SPAN[0], core[0] - fade[0]);
+  const face = (from, to) => {
+    const out = [], n = Math.max(2, Math.ceil(Math.abs(to - from) / VSR_STEP));
+    for (let i = 0; i <= n; i++) {
+      const tau = from + ((to - from) * i) / n, s = lvT(tau);
+      if (s !== null) out.push(P(s, tau));
+    }
+    return out;
+  };
+  // back along the LV face, VSR_PAST into the LV where the septum is thinned
+  const back = () => {
+    const out = [], n = Math.max(2, Math.ceil((top - bot) / VSR_STEP));
+    for (let i = 0; i <= n; i++) {
+      const tau = bot + ((top - bot) * i) / n, F = facesAt(S, tau);
+      if (F) out.push(P(F.lv - VSR_PAST[0] * Math.min(1, 4 * w(tau)), tau));
+    }
+    return out;
+  };
+  if (!(d > 0)) return { blood: [...face(top, bot), ...back()] };
+  // an edge: half an ellipse from the thinned LV face to the RV face, its tip at tau0, its ends at
+  // tau0 + side * e; side 1 for the apical edge, -1 for the basal one
+  const edge = (tau0, side, k) => {
+    const te = tau0 + side * e, F = facesAt(S, te), sL = lvT(te);
+    if (!F || sL === null) return null;
+    const c = (sL + F.rv) / 2, h = (F.rv - sL) / 2, pts = [];
+    for (let i = 0; i <= 24; i++) {
+      const th = (Math.PI * i) / 24;
+      pts.push([c - h * Math.cos(th), te - side * (e * Math.sin(th) + rag(th, k, e))]);
+    }
+    return { pts, tip: [c, tau0], te };
+  };
+  // the tips d apart: the basal tip moves until they are (the septum's middle bends a little)
+  let U = edge(up, 1, 0), D = edge(dn, -1, 1);
+  for (let i = 0; i < 4 && U && D; i++) {
+    const ds = U.tip[0] - D.tip[0];
+    dn = up - Math.sqrt(Math.max(0, d * d - ds * ds));
+    D = edge(dn, -1, 1);
+  }
+  if (!U || !D) return { blood: [...face(top, bot), ...back()] };
+  const toP = (q) => P(q[0], q[1]);
+  const rvFace = [];
+  for (let i = 0, n = Math.max(2, Math.ceil((U.te - D.te) / VSR_STEP)); i <= n; i++) {
+    const tau = U.te - ((U.te - D.te) * i) / n, F = facesAt(S, tau);
+    if (F) rvFace.push(P(F.rv + VSR_PAST[1], tau));
+  }
+  const hole = [...U.pts.map(toP), ...rvFace, ...D.pts.slice().reverse().map(toP)];
+  const blood = [...face(top, U.te), ...hole, ...face(D.te, bot), ...back()];
+  // the waist: the middle of the two tips, and the hole's span along a through it
+  const tc = (up + dn) / 2, sw = (U.tip[0] + D.tip[0]) / 2, F = facesAt(S, tc), sL = lvT(tc);
+  if (!F || sL === null) return { blood };
+  const span = [sL - sw - VSR_PAST[0], F.rv - sw + VSR_PAST[1]];
+  const mid = P(sw, tc);
+  return {
+    blood,
+    hole: [...hole, P(lvT(D.te) - 0.1, D.te), P(lvT(U.te) - 0.1, U.te)],
+    cal: [toP(D.tip), toP(U.tip)],
+    mid, span, lv: P(sL - 0.5, tc), rv: P(F.rv + Math.max(0.05, F.gap / 2), tc),
+  };
+}
+
+/**
+ * The shapes of a septal rupture of diameter dMm on a view (echo.js setShapes), at the site of
+ * the apical septum on the plane of view key (the measuring view): the thinned septum and the
+ * rupture as blood. With no rupture, the thinned septum alone.
  */
 export function vsrShapes(dMm, key) {
   return (g, ev) => {
     VSR.delete(ev);
-    if (!(dMm > 0)) return null;
     const site = sitesOf(ev.model).vsr, P = planeOf(ev, key);
-    if (!P) return null;
-    const f = wallFrame(ev, site, P, 0.6);
-    const axis = axisOnPlane(g, f.N);
-    const cut = throughWall(ev, cutOf(g, f.C, f.N, dMm / 20, 1.4), axis);
-    if (!cut) return null;
-    VSR.set(ev, { cut, f, axis });
-    return [{ polys: [cut.poly], e: DB.blood, blood: true }];
+    if (!P || !ev.last) return null;
+    const f = wallFrame(ev, site, P, 0.6), a0 = axisOnPlane(g, f.N);
+    const S = a0 ? septumOn(ev, g, f, a0) : null;
+    if (!S) return null;
+    const R = ruptureOn(S, dMm > 0 ? dMm / 10 : 0);
+    if (R.hole) {
+      const cut = { poly: R.hole, c: R.mid, p0: R.mid, span: R.span };
+      VSR.set(ev, { cut, f, axis: S.a, cal: R.cal, blood: R.blood, lv: R.lv, rv: R.rv });
+    }
+    return [{ polys: [R.blood], e: DB.blood, blood: true }];
   };
 }
-/** The septal rupture that view ev drew in its last frame: { cut, f, axis }, or undefined. */
+/**
+ * The septal rupture that view ev drew in its last frame: { cut, f, axis, cal, blood, lv, rv }, or
+ * undefined. cut: { poly, the hole; c and p0, the waist's middle; span, the hole along axis from
+ * there }; cal, the caliper; blood, the hole and the thinned septum; lv and rv, points in the
+ * cavities beside the waist.
+ */
 export const vsrOf = (ev) => VSR.get(ev);
 
-/** The width of a cut across its axis, through its middle: the caliper [a, b] (plane cm), or null. */
+/**
+ * The width of a cut across its axis, through its middle: the caliper [a, b] (plane cm), or null.
+ * A septal rupture carries its own (vsrOf: between the tips of its edges).
+ */
 export function widthOf(D) {
   if (!D || !D.axis) return null;
+  if (D.cal) return D.cal;
   const t = perp(D.axis), c = D.cut.c, P = D.cut.poly;
   let lo = Infinity, hi = -Infinity;
   for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
