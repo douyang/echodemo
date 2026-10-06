@@ -2580,6 +2580,33 @@
           <input type="range" id="teeAngle" data-key="teeAngle" min="0" max="180" step="1">
           <div class="grades" id="tee-views" aria-hidden="true"></div>
         </div>
+        <div class="toggles">
+          <label class="check"><input type="checkbox" data-key="teeFree"> Free probe</label>
+        </div>
+        <div class="free" id="tee-free" hidden>
+          <p class="free-head"><span>Free probe, from the position above</span> <output id="tee-free-state"></output></p>
+          <div class="row2">
+            <div class="control">
+              <label for="teeAdv">Advance <output data-for="teeAdv"></output></label>
+              <input type="range" id="teeAdv" data-key="teeAdv" min="-20" max="20" step="0.1">
+            </div>
+            <div class="control">
+              <label for="teeRot">Turn <output data-for="teeRot"></output></label>
+              <input type="range" id="teeRot" data-key="teeRot" min="-180" max="180" step="1">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="control">
+              <label for="teeFlex">Anteflex <output data-for="teeFlex"></output></label>
+              <input type="range" id="teeFlex" data-key="teeFlex" min="-90" max="90" step="1">
+            </div>
+            <div class="control">
+              <label for="teeLat">Side flex <output data-for="teeLat"></output></label>
+              <input type="range" id="teeLat" data-key="teeLat" min="-60" max="60" step="1">
+            </div>
+          </div>
+          <div class="control free-reset"><button type="button" class="chip" id="tee-free-reset">Back to the starting position</button></div>
+        </div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
@@ -2604,8 +2631,9 @@
         <p>The LA appendage is the primary target in the search for a cardiac source of embolus<span class="cite" data-ref="hahn2013"></span>. TEE detects LA appendage thrombus with a sensitivity of 100% and a specificity of 99%. Thrombi smaller than 2 mm can be missed<span class="cite" data-ref="hahn2013"></span>. The ACUTE trial randomized 1222 patients with atrial fibrillation of more than two days. One group had cardioversion guided by TEE; the other had 3 weeks of warfarin before cardioversion<span class="cite" data-ref="klein2001"></span>. Embolic events did not differ: 0.8% with TEE and 0.5% with warfarin (P = 0.50). Hemorrhagic events were fewer with TEE: 2.9% and 5.5% (P = 0.03)<span class="cite" data-ref="klein2001"></span>. The mean time to cardioversion was 3.0 days with TEE and 30.6 days with warfarin<span class="cite" data-ref="klein2001"></span>.</p>
         <p>For the atrial septum, agitated saline is injected into a vein. More than three bubbles in the left heart within three beats of right heart opacification are most consistent with a patent foramen ovale<span class="cite" data-ref="hahn2013"></span>. <a href="#shunts" data-go="shunts">Chapter 28</a> shows the shunts.</p>
         <h3>The interactive figure</h3>
-        <p>The left pane shows the heart model from the patient's left. The esophagus lies behind the LA, with the probe at its level and its imaging plane. The right pane shows the echo image that the plane cuts from the same mesh, in the guideline's orientation. The Level and Turn switches move the probe, and the slider rotates the plane from 0° to 180°. When the slider stops near the angle of a view, it snaps to that view. Between two views of one level and turn, the probe moves from one view's position to the other's. Play steps through the views in the guideline's order.</p>
-        <p>The esophagus is placed from landmarks of the mesh. It runs behind the LA and to the right of the descending aorta, and then through the hiatus to the stomach under the LV. For each heart of the Heart menu, it lies on the back wall of that heart's LA. The LA appendage is a finger of the model's LA, and the appendage view looks along it from below. In this model, the probe is retroflexed and flexed to the right to show the four-chamber plane at 5°. The text under the readouts gives the flexion.</p>
+        <p>The left pane shows the heart model from the patient's left. The esophagus lies behind the LA, with the probe at its level and its imaging plane. The right pane shows the echo image that the plane cuts from the same mesh, in the guideline's orientation. The Level and Turn switches move the probe, and the slider rotates the plane from 0° to 180°. When the slider stops near the angle of a view, it snaps to that view. Between two views of one level and turn, the probe moves from one view's position to the other's. Play steps through the views in the guideline's order. An icon in the top right corner of the image shows the angle. Its needle turns in a half circle from 0° at the left, through 90° at the bottom, to 180° at the right.</p>
+        <p>The Free probe switch releases the probe from the positions of the views. Four sliders then move the probe from the position that the controls gave. They advance or withdraw it along the esophagus, turn it, ante- or retroflex it, and flex it to the side. With the probe free, the multiplane angle turns the plane about the beam, and the probe does not move. The panel names the standard view nearest the plane, with the difference in degrees and centimeters. The button under the sliders returns the probe to its starting position.</p>
+        <p>The esophagus is placed from landmarks of the mesh. It runs behind the LA and to the right of the descending aorta, and then through the hiatus to the stomach under the LV. For each heart of the Heart menu, it lies on the back wall of that heart's LA. The LA appendage is a finger of the model's LA, and the appendage view looks along it from below. In this model, the probe is retroflexed and flexed to the right to show the four-chamber plane at 5°. The text under the readouts gives the flexion. The mesh's descending aorta ends a little above the hiatus, so for the aortic views the probe lies behind the LA, where the aorta crosses the whole sector.</p>
         <h3>Key points</h3>
         <ol class="steps">
         <li>The probe is advanced or withdrawn, turned right or left, and flexed; the imaging plane rotates electronically from 0° to 180°<span class="cite" data-ref="hahn2013"></span>.</li>
