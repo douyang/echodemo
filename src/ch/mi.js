@@ -431,13 +431,17 @@ function vsrView(ctx, box, v, tt) {
     over: (c, F, ev) => {
       const D = vsrOf(ev);
       if (!D || !D.axis) return;
-      const O = D.cut.c, dir = D.axis;
-      const RV = chamber(ev, add(O, mul(dir, 1.1)), 0.8), LV = chamber(ev, sub(O, mul(dir, 1.1)), 0.8);
+      const dir = D.axis;
+      // the cavities from points beside the rupture's waist (gl/mimesh.js): the RV's from its
+      // own blood, so it is the RV's apex and not the space outside the heart beyond it
+      const R0 = cavity(ev, D.rv), RV = R0.length >= 12 ? R0 : null, LV = chamber(ev, D.lv, 0.8);
       const a = vsrFlow(cycleAt(tt).t);
       const q = Math.PI * (v.d / 20) ** 2 * v.vmax * 100;
-      // the convergence zone, in the LV within a radius that grows with the rupture
-      const O1 = add(D.cut.p0, mul(dir, (D.cut.span || [0, 0])[0]));
-      const near = LV ? clipConvex(LV, circle(O1, 0.6 + 0.05 * v.d)) : null;
+      // the convergence zone, in the LV within a radius that grows with the rupture, and in the
+      // thinned septum's share of the LV
+      const O1 = add(D.cut.p0, mul(dir, (D.cut.span || [0, 0])[0])), C = circle(O1, 0.6 + 0.05 * v.d);
+      const cl = (P) => { const Q = P ? clipConvex(P, C) : []; return Q.length > 2 ? Q : null; };
+      const near = joined(cl(LV), cl(D.blood));
       colorBox(c, F, [cutJet(c, F, D, { q, va: VA, vc: v.d / 10, jl: 1.4 + 2.2 * (v.d / 10), jw: 0.3 + 0.7 * (v.d / 10), a, clip: RV, pclip: near && near.length > 2 ? near : LV })]);
       barFor(c, F, -VA, VA);
       const K = widthOf(D);
