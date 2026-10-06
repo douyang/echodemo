@@ -67,13 +67,17 @@ let st = null, setState = null, lastMeas = '', on = false, bodyKey = null;
 // ---------------------------------------------------------------- the free probe
 // Five sliders move the probe from the current view (freeprobe.js): rotate, tilt and rock, in
 // degrees; slide along the marker and slide across the plane, in cm. The panel names the standard
-// view nearest the moved plane by the measure of the transesophageal free probe (ch/tee.js): the
-// angle between the beams, the angle between the markers, and how far the probe lies from that
-// view's beam line. Within ON the panel names the plane as that view, and a drag that stops there
-// settles the probe on it, as the free plane of Planes (archived) did.
+// view nearest the moved plane, with the measure of the transesophageal free probe (ch/tee.js):
+// the angle between the beams, the angle between the markers, and how far the probe lies from
+// that view's beam line. Within ON the panel names the plane as that view, and a drag that stops
+// there settles the probe on it, as the free plane of Planes (archived) did.
 const FREE_KEYS = ['wRot', 'wTilt', 'wRock', 'wSlide', 'wAcross'];
 const REST = { wRot: 0, wTilt: 0, wRock: 0, wSlide: 0, wAcross: 0 };
-const ON = { deg: 5, cm: 0.5 }, NEAR = { deg: 20, cm: 2 };
+// on a view: beam and marker within 5 degrees, the probe within 0.5 cm of its beam line; near
+// one: the planes within 15 degrees, and the middle of the view's image within 2.5 cm of the plane
+const ON = { deg: 5, cm: 0.5 }, NEAR = { plane: 15, cm: 2.5 };
+// the probe's window: the long- and short-axis views share the parasternal one
+const SITE = { plax: 'parasternal', psax: 'parasternal', apical: 'apical', sub: 'subcostal', ssn: 'suprasternal' };
 /** The sliders away from rest; moved: so, with the free probe on. */
 const away = (s) => FREE_KEYS.some((k) => Math.abs(s[k] || 0) > 1e-6);
 const moved = (s) => !!s.wfree && away(s);
@@ -87,23 +91,28 @@ function freeGeom(s) {
 }
 
 /**
- * The standard view nearest plane g: of the views with a plane of their own (Planes' list) and the
- * starting view, the one with the least score, the larger angle plus 10 degrees a cm (ch/tee.js).
- * on: within ON; near: within NEAR.
+ * The standard view nearest plane g, of the starting view and the views with a plane of their own
+ * (Planes' list) in the probe's window. The score counts the angle between the planes in full, the
+ * larger of the beam and marker angles at half, and 5 degrees a cm of the probe's distance. The
+ * transesophageal score (the larger angle and 10 degrees a cm) named the RV outflow for the long
+ * axis turned 90 degrees: in this model the short-axis probes lie 3 to 4 cm from the long-axis
+ * probe. on: within ON; near: within NEAR, where off is how far the middle of the view's image (half
+ * its depth along its beam) lies from plane g.
  */
 function nearestView(s, g) {
   if (!g) return null;
   let best = null;
-  for (const k of [s.view, ...PLANE_VIEWS]) {
+  for (const k of [s.view, ...PLANE_VIEWS.filter((j) => SITE[VIEWS[j].win] === SITE[VIEWS[s.view].win])]) {
     const h = echo.geoms[k];
     if (!h) continue;
-    const q = poseGap(g, h), score = Math.max(q.beam, q.marker) + 10 * q.cm;
-    if (!best || score < best.score) best = { k, ...q, score };
+    const q = poseGap(g, h), plane = (Math.acos(Math.min(1, Math.abs(g.n.dot(h.n)))) * 180) / Math.PI;
+    const off = Math.abs(h.O.clone().addScaledVector(h.d, VIEWS[k].depth / 2).sub(g.O).dot(g.n));
+    const score = plane + Math.max(q.beam, q.marker) / 2 + 5 * q.cm;
+    if (!best || score < best.score) best = { k, ...q, plane, off, score };
   }
   if (best) {
-    const deg = Math.max(best.beam, best.marker);
-    best.on = deg <= ON.deg && best.cm <= ON.cm;
-    best.near = deg <= NEAR.deg && best.cm <= NEAR.cm;
+    best.on = Math.max(best.beam, best.marker) <= ON.deg && best.cm <= ON.cm;
+    best.near = best.plane <= NEAR.plane && best.off <= NEAR.cm;
   }
   return best;
 }
@@ -147,8 +156,16 @@ function movesText(s) {
   return out.join(', ');
 }
 const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-/** The gap to the nearest view, short: "11° · 5° · 0.4 cm" (beam, marker, probe). */
-const gapShort = (nb) => `${Math.round(nb.beam)}° · ${Math.round(nb.marker)}° · ${nb.cm.toFixed(1)} cm`;
+/**
+ * The panel's line for the view the probe is on or nearest: "near SAX MV · 29° · 29° · 3.8 cm" (the
+ * beam, the marker, the probe). A narrow panel breaks it at a dot, never inside a name or a value.
+ */
+function nearLine(nb, mv) {
+  const nb0 = (t) => t.replace(/ /g, '\u00a0');
+  const head = nb0(`${nb.on ? 'on' : nb.near ? 'near' : 'nearest'} ${CODE[nb.k]}`);
+  if (nb.on && !mv) return head;
+  return [head, `${Math.round(nb.beam)}°`, `${Math.round(nb.marker)}°`, nb0(`${nb.cm.toFixed(1)} cm`)].join(' · ');
+}
 
 /**
  * The echo settings of the moved plane: the starting view's sector, depth and near field, without
@@ -204,7 +221,7 @@ function paintFree(s) {
     box.classList.toggle('is-near', !!(nb && nb.near && !nb.on));
   }
   const out = document.getElementById('w-free-state');
-  if (out) out.textContent = !nb ? '' : nb.on ? (mv ? `on ${CODE[nb.k]} · ${gapShort(nb)}` : `on ${CODE[nb.k]}`) : `${nb.near ? 'near' : 'nearest'} ${CODE[nb.k]} · ${gapShort(nb)}`;
+  if (out) out.textContent = nb ? nearLine(nb, mv) : '';
   if (lab) lab.textContent = !mv ? VIEWS[s.view].name : nb && nb.on ? VIEWS[nb.k].name : 'Free probe';
 }
 
@@ -240,13 +257,14 @@ function freeText(s, cite) {
     readouts.push({ k: 'Shows', v: INFO[s.view].shows, text: true });
     readouts.push({ k: 'Recorded in this view', v: INFO[s.view].acquire, text: true });
   } else if (nb) {
-    readouts.push({ k: at ? 'View' : 'Nearest view', v: `${CODE[nb.k]}: beam ${Math.round(nb.beam)}°, marker ${Math.round(nb.marker)}°, probe ${nb.cm.toFixed(1)} cm`, text: true });
+    readouts.push({ k: at ? 'View' : 'Nearest view', v: `${CODE[nb.k]}: plane ${Math.round(nb.plane)}°, beam ${Math.round(nb.beam)}°, marker ${Math.round(nb.marker)}°, probe ${nb.cm.toFixed(1)} cm`, text: true });
     if (at) readouts.push({ k: 'Shows', v: INFO[at].shows, text: true });
   }
   let live = '<b>Free probe.</b> ';
   if (!mv) live = `<b>${VIEWS[s.view].name}.</b> The sliders move the probe from this view, and the three panes follow it. `;
   else if (at) live = `<b>${VIEWS[at].name}.</b> The probe lies within ${ON.deg}° and ${ON.cm} cm of this view, so the panel names it. A drag that stops here settles the probe on the view. `;
-  else if (nb) live += `The nearest standard view is ${VIEWS[nb.k].name} (${CODE[nb.k]}). The beam lies ${Math.round(nb.beam)}° from that view's beam, and the marker ${Math.round(nb.marker)}° from its marker. The probe lies ${nb.cm.toFixed(1)} cm from its beam line. `;
+  else if (nb && nb.near && nb.marker >= 150) live += `The plane is that of ${CODE[nb.k]} with the marker turned the other way, so the image shows ${CODE[nb.k]} mirrored. `;
+  else if (nb) live += `The nearest view of the ${SITE[VIEWS[s.view].win]} window is ${VIEWS[nb.k].name} (${CODE[nb.k]}). Its plane lies ${Math.round(nb.plane)}° from the probe's plane, and the middle of its image ${nb.off.toFixed(1)} cm off it. Its beam lies ${Math.round(nb.beam)}° from the probe's beam, and its marker ${Math.round(nb.marker)}° from the probe's marker. The probe lies ${nb.cm.toFixed(1)} cm from its beam line. `;
   live += `<span class="note">Probe movements as the ASE guideline defines them${cite('mitchell2019')}.</span>`;
   return { readouts, live };
 }
@@ -688,6 +706,8 @@ async function enter() {
   showPlane(false, true);
   paintFree(st);
   paintOutputs();
+  // a free probe turned on before the 3D view was ready: its readouts render again with the planes
+  if (st.wfree) setState({ wGeo: `${echo.heart ? echo.heart.key : ''}:${echo.heart ? echo.heart.version : 0}:${freeVer}` });
   liverTo(1);
   pLiver.t0 = 0;
   stepLiver();

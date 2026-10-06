@@ -445,6 +445,7 @@ a:hover { text-decoration-color: var(--accent); }
 #w-free .free-head output { flex-basis: 100%; min-height: 1.3em; }
 @container (max-width: 310px) {
   #w-free .control label { flex-direction: column; align-items: flex-start; gap: 3px; }
+  #w-free .free-head output { min-height: 2.6em; }
 }
 .control label, .control .label {
   display: flex;
