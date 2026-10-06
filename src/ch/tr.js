@@ -246,7 +246,8 @@ const redraw = () => { if (sheet) sheet.dirty = true; };
 // RV focused (ASE 2015: the RV basal diameter is measured there): in the standard four-chamber
 // sector a dilated RV's free wall falls outside the sector from an RV basal diameter of 4.5 cm
 const MESH = new MeshPanel('a4c_rv', { diseases: ['rvGrow', 'raGrow'], redraw });
-const MESH_PM = new MeshPanel('psax_pm', { diseases: ['rvGrow', 'sep'], redraw });
+// the short axis with its sector turned toward the RV (views.js psax_pm_rv), so the dilated RV shows whole
+const MESH_PM = new MeshPanel('psax_pm_rv', { diseases: ['rvGrow', 'sep'], redraw });
 
 /**
  * The jet on the mesh view at systolic weight s: from where the tricuspid leaflets meet, into the

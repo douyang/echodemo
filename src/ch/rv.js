@@ -350,8 +350,10 @@ const BANDS_OF = { pressure: [], volume: [], pe: [] };
 
 // ---------------------------------------------------------------- the figure
 // The RV-focused four-chamber view and the short axis at the papillary muscles cut from the heart
-// mesh (meshpanel.js): the heart the page shows; its RV free wall out to the printed RV basal
-// diameter less what the septum's shift adds (rvGrow, meshcal.js rvGrowOf and rvSepAdd), its wall
+// mesh (meshpanel.js). The short axis turns its sector toward the RV and opens it to 90 degrees
+// (views.js psax_pm_rv), so a dilated RV's crescent shows whole beside the LV. Both show the
+// heart the page shows: its RV free wall out to the printed RV basal diameter less what the
+// septum's shift adds (rvGrow, meshcal.js rvGrowOf and rvSepAdd), its wall
 // at the printed thickness (rvThick, rvThickOf), its RA at the printed area (raGrow,
 // raAreaWeight), and the septum at the printed eccentricity index at end-diastole and at
 // end-systole, moving between them with the systolic weight (sep, sepOf and sepEsOf). The
@@ -360,7 +362,7 @@ const BANDS_OF = { pressure: [], volume: [], pe: [] };
 // image's (meshcal.js rvFacAt and its slopes), so the cine shows the printed FAC.
 const redraw = () => { if (sheet) sheet.dirty = true; };
 const MESH = new MeshPanel('a4c_rv', { diseases: ['rvGrow', 'raGrow', 'rvThick', 'sep'], rv: true, redraw });
-const MESH_PM = new MeshPanel('psax_pm', { diseases: ['rvGrow', 'rvThick', 'sep'], rv: true, redraw });
+const MESH_PM = new MeshPanel('psax_pm_rv', { diseases: ['rvGrow', 'rvThick', 'sep'], rv: true, redraw });
 
 /** The mesh weights for the values v at time tt (ms) of the beat. */
 function meshOf(v, tt) {

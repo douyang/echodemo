@@ -397,6 +397,9 @@ function plax(ctx, box, v, c, o) {
 }
 
 function psax(ctx, box, v, c, o) {
+  // in acute PE the sector turns toward the dilated RV (views.js psax_pm_rv), so its crescent
+  // shows whole; the other cases keep the short axis centred on the LV
+  PANELS.psax.setView(st[CASE] === 'pe' ? 'psax_pm_rv' : VIEW.psax);
   PANELS.psax.draw(ctx, box, titleOf(ctx, box.w, titles(c, 'PARASTERNAL SHORT AXIS', 'PSAX')), {
     tms: c.tc, ...viewOpts('psax', o),
     names: [['rv', 'RV'], [inBlood('lv'), 'LV']],

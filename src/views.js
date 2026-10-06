@@ -2,8 +2,9 @@
 // annotation classes (the `lab` field). Each view is a plane through the heart model.
 //
 // plane: how viewGeometry() builds the plane; aim: the landmark the beam points at; level, slide:
-// the parasternal short-axis level and whether the probe slides to it (echo.js); zoom: magnified
-// box around a landmark (width in cm); labels: structures to name.
+// the parasternal short-axis level and whether the probe slides to it (echo.js); turn: degrees the
+// sector turns in its plane (echo.js); zoom: magnified box around a landmark (width in cm);
+// labels: structures to name.
 
 export const WINDOWS = [
   { key: 'plax', name: 'Parasternal long', probe: 'Left sternal border, 3rd–4th intercostal space' },
@@ -60,6 +61,10 @@ export const VIEWS = {
     labels: [['rv', 'RV'], ['ivs', 'IVS'], ['lv', 'LV'], ['mv', 'MV']] }),
   psax_pm: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, papillary muscle level', lab: 'PSAX_(level_of_papillary_muscles)', plane: 'psax', level: -0.24, depth: 14,
     labels: [['rv', 'RV'], ['ivs', 'IVS'], ['lv', 'LV'], ['antw', 'anterior'], ['infw', 'inferior'], ['latw', 'lateral']] }),
+  // the RV chapter's short axis at the papillary muscles: the sector turns 16 degrees toward the
+  // RV and opens to 90 degrees, so the RV's crescent shows whole beside the LV
+  psax_pm_rv: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, papillary muscle level, RV focused', lab: null, plane: 'psax', level: -0.24, depth: 14, angle: 90, turn: -16,
+    labels: [['rv', 'RV'], ['ivs', 'IVS'], ['lv', 'LV']] }),
   psax_ap: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, apical level', lab: 'PSAX_(level_of_apex)', plane: 'psax', level: -1.6, slide: true, depth: 14,
     labels: [['lv', 'LV'], ['antw', 'anterior']] }),
   // ---- apical
