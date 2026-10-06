@@ -186,6 +186,10 @@
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Infective endocarditis from a normal mitral valve to a large vegetation with leaflet perforation and severe regurgitation: the parasternal long-axis view zoomed on the valves, with the vegetation on the atrial side of the anterior mitral leaflet and a caliper on its maximal length; the apical three-chamber view with the color jet through the perforation; continuous-wave Doppler through the mitral valve; pulmonary vein flow; and the measurements against their cut-offs.</figcaption>
     </figure>
+    <figure class="fig" id="fig-measure">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Automated measurement by EchoNet-Measurements. B-mode: the view of the chosen measurement, cut from the heart model, with a heat map on each end of the caliper, the caliper and its length on each frame, and a trace of the measurement over three beats with end-diastole and end-systole marked. Doppler: the spectral or M-mode recording of the chosen measurement, with a heat map on the peak and the conversion from pixels to velocity or distance.</figcaption>
+    </figure>
     <figure class="fig" id="fig-ai">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">How EchoPrime reads a study. Study: a grid of 14 echocardiography videos of the heart shown, each tagged with its view group; a heat map of EchoPrime's anatomical attention weights, 15 report sections by 11 view groups; the chosen section's row lights the videos by their weights, with the share of the section's weight that the videos present carry and the section's text from the site's report. Retrieval: a two-dimensional map of simulated earlier studies, colored by LVEF or valve grade, with the study shown, its k most similar studies, the mean of their values and the count of each finding.</figcaption>
@@ -1048,6 +1052,73 @@
     </article>
 
     <!-- ======================================================== Artificial intelligence -->
+    <article class="chapter" id="ch-measure">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">27</span><div><h2 class="ch-title">Automated measurements</h2><p class="ch-kicker">EchoNet-Measurements: calipers and peaks from heat maps</p></div></div>
+      <p class="dek" data-part="dek">A report holds dozens of measurements, each a caliper or a peak that a sonographer places by hand. EchoNet-Measurements places them with one deep learning model for each measurement, and converts the points to centimeters and velocities with the calibration stored in the image.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Image</span>
+          <div class="seg" role="group" aria-label="Kind of image" data-key="emTab">
+            <button type="button" data-val="bmode">B-mode</button><button type="button" data-val="doppler">Doppler and M-mode</button>
+          </div>
+        </div>
+        <div class="control" data-em-tab="bmode">
+          <label for="emB">Measurement <output data-for="emB"></output></label>
+          <input type="range" id="emB" data-key="emB" min="0" max="8" step="1">
+        </div>
+        <div class="control" data-em-tab="doppler">
+          <label for="emD">Measurement <output data-for="emD"></output></label>
+          <input type="range" id="emD" data-key="emD" min="0" max="7" step="1">
+        </div>
+        <div class="control" data-em-tab="bmode">
+          <span class="label">Two-peaked map</span>
+          <div class="seg" role="group" aria-label="A heat map with two peaks" data-key="emTwo">
+            <button type="button" data-val="false">Off</button><button type="button" data-val="true">On</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">No DICOM data</span>
+          <div class="seg" role="group" aria-label="The image without its DICOM calibration" data-key="emRaw">
+            <button type="button" data-val="false">Off</button><button type="button" data-val="true">On</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>Measurement by deep learning</h3>
+        <p>Manual measurement takes time, and it varies from one sonographer to the next<span class="cite" data-ref="sahashi2025"></span>. The first video model of LV function, EchoNet-Dynamic, segmented the LV in apical four-chamber videos with a Dice coefficient of 0.92 and estimated the LVEF over several beats, with a mean absolute error of 4.1% in internal and 6.0% in external validation<span class="cite" data-ref="ouyang2020"></span>. EchoNet-LVH measured the parasternal long axis: the septum with a mean absolute error of 1.2 mm, the LV diameter with 2.4 mm and the posterior wall with 1.4 mm<span class="cite" data-ref="duffy2022"></span>.</p>
+        <p>Deep learning can also guide the acquisition itself. Eight nurses with no experience in ultrasonography, guided by a deep learning algorithm, each scanned 30 patients; their studies were of diagnostic quality for LV size, LV function and pericardial effusion in 237 of 240 patients (98.8%), and for RV size in 222 (92.5%)<span class="cite" data-ref="narang2021"></span>.</p>
+        <h3>How EchoNet-Measurements measures</h3>
+        <p>EchoNet-Measurements was trained on 877,983 measurements that sonographers made in 155,215 studies at Cedars-Sinai Medical Center from 2011 to 2023. It has a separate segmentation model (DeepLabv3) for each of 18 measurements<span class="cite" data-ref="sahashi2025"></span>:</p>
+        <ul>
+        <li><b>Nine B-mode measurements.</b> The septum, the LV internal diameter and the posterior wall; the LA diameter; the RV basal diameter; the aortic root and the ascending aorta; the pulmonary artery; and the IVC.</li>
+        <li><b>Nine Doppler and M-mode measurements.</b> The peak velocities of TR, the aortic valve, MR and the LVOT; septal and lateral e′; the mitral E velocity and E/A; and TAPSE.</li>
+        </ul>
+        <p>A model does not draw a line. It outputs a heat map for each point it looks for: two for a caliper, its two ends, and one for a Doppler peak. In the public code, each point is the weighted center of its heat map. The distance between the two ends, in pixels, times the pixel size that the DICOM file stores gives centimeters. For a Doppler peak, the distance from the baseline, times the velocity per pixel that the file stores, gives the velocity. A B-mode model measures every frame of the video, and the frames with the largest and the smallest LV diameter mark end-diastole and end-systole.</p>
+        <h3>What the figure shows</h3>
+        <p>The heat maps in the figure are drawn on the site's own caliper points; EchoNet-Measurements did not process these images. The <i>Two-peaked map</i> switch splits one heat map into two peaks, for example at the septum and at an RV trabeculation. The weighted center then falls between the peaks, on neither structure, and the wall measures wrong. The <i>No DICOM data</i> switch removes the calibration, as an export to a common video format does: the points remain, but the model cannot give a number.</p>
+        <h3>Performance</h3>
+        <p>The agreement with sonographers was given as a coverage probability, the probability that the AI value falls within a preset limit of the sonographer's value, and as the mean relative difference. Across all 18 measurements, the mean coverage probability was 0.796 in held-out studies at Cedars-Sinai and 0.839 in external studies at Stanford Healthcare, and the mean relative difference 0.120 and 0.096. Run end to end on 2,103 later studies at Cedars-Sinai, the model had a mean coverage probability of 0.803 and a mean relative difference of 0.108. Performance was consistent across age, sex, atrial fibrillation, obesity and ultrasound machine vendor<span class="cite" data-ref="sahashi2025"></span>.</p>
+        <h3>Limits</h3>
+        <ul>
+        <li>The models were trained at one center, which can carry the habits of its laboratory<span class="cite" data-ref="sahashi2025"></span>.</li>
+        <li>Image quality changes accuracy: low-quality images had larger errors, and an image-quality model removed poor videos and Doppler images before measurement<span class="cite" data-ref="sahashi2025"></span>.</li>
+        <li>The models learn from sonographers' measurements, so they copy the conventions of those measurements, and their errors.</li>
+        <li>Each model measures one thing in the view it expects. The right view, the right beat and the calibration stored in the file all come before the measurement.</li>
+        </ul>
+        <p class="disclosure">Disclosure: EchoPrime and EchoNet-Measurements were developed at Cedars-Sinai Medical Center. Cedars-Sinai licensed EchoPrime exclusively to InVision, and some EchoPrime investigators hold equity in InVision. The author of this site is a senior author of both papers.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>EchoNet-Measurements has one segmentation model for each of 18 measurements: 9 in B-mode and 9 in Doppler and M-mode.</li>
+        <li>A model outputs a heat map for each point. The point is the weighted center of its map, and the calibration stored in the DICOM file converts the points to centimeters or velocities.</li>
+        <li>A heat map with two peaks puts the point between them, on neither structure.</li>
+        <li>The agreement with sonographers held in external validation and when the model ran on whole studies.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
     <article class="chapter" id="ch-ai">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">27</span><div><h2 class="ch-title">Study interpretation</h2><p class="ch-kicker">EchoPrime: views, anatomical attention and retrieval</p></div></div>
       <p class="dek" data-part="dek">A comprehensive study holds many videos from many views. EchoPrime sorts each video by view, weights the views for each section of the report, and drafts each section from the most similar earlier studies.</p>

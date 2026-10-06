@@ -26,6 +26,7 @@ import prostheticPage from './ch/prosthetic.js';
 import shuntsPage from './ch/shunts.js';
 import endocarditisPage from './ch/endocarditis.js';
 import massesPage from './ch/masses.js';
+import measurePage from './ch/measure.js';
 import aiPage from './ch/ai.js';
 import report from './ch/report.js';
 
@@ -49,6 +50,6 @@ export const PARTS = [
 ];
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, periPage, amyloidPage, stressPage, rvPage, constrictPage, hcmPage, shuntsPage, massesPage, aiPage, report].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, periPage, amyloidPage, stressPage, rvPage, constrictPage, hcmPage, shuntsPage, massesPage, measurePage, aiPage, report].map((c) => [c.key, c]));
 /** The chapters in reading order (order.js). */
 export const CHAPTERS = ORDER.map((k) => BY[k]);
