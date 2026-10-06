@@ -707,6 +707,10 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 }
 .groups li span { color: var(--accent); margin-right: 3px; }
 .groups li.is-cur { color: var(--ink); border-top-color: var(--ink-2); }
+/* when every name does not fit (main.js fitTransport), the parts other than the open chapter's
+   keep their rule and show their chapters' numbers only */
+.groups li.is-num { color: transparent; }
+.chapters button.is-num .t { display: none; }
 .chapters {
   grid-column: 2;
   grid-row: 2;
@@ -841,6 +845,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="pressure"] .stage { height: min(64vh, 560px); }
   /* Right ventricle: two echo views beside three Doppler and M-mode strips */
   html[data-ch="rv"] .stage { height: min(64vh, 560px); }
+  /* Left ventricular assist devices: two echo views and the ramp plot beside four Doppler and M-mode strips */
+  html[data-ch="lvad"] .stage { height: min(64vh, 560px); }
   /* Constrictive pericarditis: the four-chamber view and tissue Doppler above two strips with breathing */
   html[data-ch="constrict"] .stage { height: min(64vh, 560px); }
   /* Prosthetic valves: two echo views beside the CW and PW Doppler strips */

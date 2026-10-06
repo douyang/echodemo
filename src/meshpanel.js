@@ -123,7 +123,8 @@ export class MeshPanel {
     ev.periW = o.peri?.w ?? 0.15;
     ev.periE = o.peri?.e ?? 8;
     ev.setLvSys(o.lvK ?? 1, this.mask);
-    ev.setRvSys(o.rvK ?? 1, this.rvMask, o.rvT ?? 1);
+    // o.rvReg: { key, S }, the RV free wall's motion share at each vertex (gl/rvpemesh.js), in place of o.rvK
+    ev.setRvSys(o.rvK ?? 1, this.rvMask, o.rvT ?? 1, o.rvReg ? o.rvReg.S : null);
     ev.setFore(o.fore || 0);
     ev.setShift(o.shift || 0);
     ev.setCalc(o.calc || {});
@@ -137,7 +138,7 @@ export class MeshPanel {
     const tms = o.tms ?? 0;
     const c = cycleAt(tms);
     const drive = o.drive ? o.drive(c.drive, c.t) : c.drive;
-    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, ev.periW, ev.periE, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive), o.extraKey || '', o.underKey || ''].join('|');
+    const key = [tms, `${w}x${h}`, JSON.stringify(disease), JSON.stringify(o.motion || {}), o.standoff || 0, o.deeper || 0, ev.sac, ev.periStill, ev.periW, ev.periE, o.lvK ?? 1, o.rvK ?? 1, o.rvT ?? 1, o.fore || 0, o.shift || 0, JSON.stringify(o.calc || {}), regKey, ev.noSys, ev.model.pheno.version, JSON.stringify(drive), o.extraKey || '', o.underKey || '', o.rvReg ? o.rvReg.key : ''].join('|');
     if (key !== this.last) {
       ev.frame({ s: c.s, v: c.v, drive, phase: c.phase, t: c.t });
       this.last = key;

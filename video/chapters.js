@@ -114,7 +114,7 @@ export const VIDEOS = {
     ],
   },
   // 08: a dilated LV with a low EF, foreshortening, then the RV
-  // 09: the LV only (the RV went to chapter 13)
+  // 09: the LV only (the RV went to chapter 14)
   eject: {
     pane: 'Volumes and function',
     quant: { edv: 1, ef: 1, fore: 1 },
@@ -133,6 +133,27 @@ export const VIDEOS = {
       { set: { culprit: 'lad' }, track: 'LAD', pick: [0, 1], move: 4, hold: 9 },
       { set: { culprit: 'rca' }, track: 'RCA', pick: [0, 1], move: 4, hold: 9 },
       { set: { culprit: 'lcx' }, track: 'Circumflex', pick: [0, 1], move: 4, hold: 9 },
+    ],
+  },
+  // 12: GLS from normal function to severe dysfunction (the global pattern, four-chamber view);
+  // the LAD territory akinetic (the regional pattern, two-chamber view); then a follow-up study
+  // during cancer therapy against its baseline: mild, moderate and severe CTRCD, and a new rise in
+  // the cardiac biomarkers alone
+  strain: {
+    pane: 'Speckle tracking',
+    side: false,
+    quant: { strS: 0.005 },
+    steps: [
+      { set: { strTab: 'strain', strPat: 'global', strView: 'a4c', strBio: false, strS: 0 }, track: 'Normal', pick: [0, 1], hold: 7 },
+      { set: { strS: 0.25 }, track: 'Borderline', pick: [1], move: 4, hold: 6 },
+      { set: { strS: 0.38 }, track: 'GLS abnormal', pick: [3, 4], move: 4, hold: 7 },
+      { set: { strS: 0.8 }, track: 'LVEF abnormal', pick: [1, 3], move: 4, hold: 6 },
+      { set: { strPat: 'regional', strView: 'a2c', strS: 0.6 }, cut: true, name: 'The regional pattern: the LAD territory', track: 'LAD territory', pick: [2, 3], move: 4, hold: 8 },
+      { set: { strTab: 'onco', strS: 0 }, cut: true, name: 'Cardio-oncology: baseline and follow-up', track: 'Baseline', line: 'A baseline study and a follow-up study during cancer therapy, side by side.', move: 3, hold: 4 },
+      { set: { strS: 0.5 }, track: 'Mild CTRCD', pick: [0, 1], move: 4, hold: 7 },
+      { set: { strS: 0.78 }, track: 'Moderate CTRCD', pick: [0, 1], move: 4, hold: 7 },
+      { set: { strS: 1 }, track: 'Severe CTRCD', pick: [0, 1], move: 4, hold: 7 },
+      { set: { strS: 0, strBio: true }, cut: true, name: 'A new rise in cardiac biomarkers', track: 'Biomarkers', pick: [1, 2], move: 3, hold: 7 },
     ],
   },
   // 10: from normal filling to grade 3
@@ -206,7 +227,8 @@ export const VIDEOS = {
     ],
   },
   // 13: pressure overload from a normal RV to severe PH, and the septum at end-systole; then
-  // volume overload, and the septum at end-diastole
+  // volume overload, and the septum at end-diastole; then acute PE, from RV dilation to its
+  // specific signs. Fourteen steps share the progress line, so its names are short.
   rv: {
     pane: '2D and Doppler',
     side: false,
@@ -219,9 +241,32 @@ export const VIDEOS = {
       { set: { rvFrame: 'es' }, name: 'End-systole: the septum flattens', track: 'End-systole', pick: [3], move: 2, hold: 5 },
       { set: { rvS: 0, rvFrame: 'cine' }, name: 'A normal RV again', track: 'Back', line: '', move: 3, hold: 2 },
       { set: { rvLoad: 'volume' }, name: 'Volume overload', track: 'Volume', line: 'The same RV under a volume load: an atrial septal defect, or significant TR or PR.', move: 1, hold: 3 },
-      { set: { rvS: 0.5 }, name: 'Moderate RV dilation', track: 'Moderate dilation', pick: [0, 2], move: 4, hold: 6 },
-      { set: { rvS: 0.85 }, name: 'Severe RV dilation', track: 'Severe dilation', pick: [0, 1], move: 4, hold: 7 },
+      { set: { rvS: 0.5 }, name: 'Moderate RV dilation', track: 'Moderate', pick: [0, 2], move: 4, hold: 6 },
+      { set: { rvS: 0.85 }, name: 'Severe RV dilation', track: 'Severe', pick: [0, 1], move: 4, hold: 7 },
       { set: { rvFrame: 'ed' }, name: 'End-diastole: the septum flattens', track: 'End-diastole', pick: [3], move: 2, hold: 6 },
+      { set: { rvS: 0, rvLoad: 'pe', rvFrame: 'cine' }, name: 'Acute pulmonary embolism', track: 'Acute PE', line: 'The same RV under an acute pressure load: a pulmonary embolism.', move: 3, cut: true, hold: 3 },
+      { set: { rvS: 0.42 }, name: 'RV dilation', track: 'Dilation', pick: [0, 1], move: 4, hold: 6 },
+      { set: { rvS: 0.68 }, name: 'RV dysfunction', track: 'Dysfunction', pick: [0, 2], move: 4, hold: 6 },
+      { set: { rvS: 0.9 }, name: "McConnell's sign and the 60/60 sign", track: 'Signs', pick: [3, 4], move: 4, hold: 9 },
+    ],
+  },
+  // lvad: a working pump, from partial unloading to suction. RV failure at a high speed, then at a
+  // lower one. De novo AR at a low and a high speed. An obstruction that does not change with speed.
+  lvad: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { vadS: 0.005 },
+    steps: [
+      { set: { vadS: 0.0625, vadCase: 'pump' }, track: 'Partial', pick: [0, 1, 2], hold: 7 },
+      { set: { vadS: 0.4375 }, track: 'Unloaded', pick: [1, 4], move: 4, hold: 7 },
+      { set: { vadS: 0.8125 }, track: 'Excessive', pick: [1, 3], move: 4, hold: 6 },
+      { set: { vadS: 1 }, track: 'Suction', pick: [0, 4], move: 3, hold: 7 },
+      { set: { vadS: 1, vadCase: 'rvf' }, track: 'RV failure', pick: [3, 4], move: 3, cut: true, hold: 7 },
+      { set: { vadS: 0 }, track: 'Lower speed', pick: [1, 6], move: 4, hold: 6 },
+      { set: { vadS: 0.0625, vadCase: 'ar' }, track: 'AR', pick: [1, 2], move: 3, cut: true, hold: 6 },
+      { set: { vadS: 0.875 }, track: 'AR, high speed', pick: [2, 6], move: 4, hold: 7 },
+      { set: { vadS: 0.0625, vadCase: 'obst' }, track: 'Obstruction', pick: [1, 5], move: 3, cut: true, hold: 7 },
+      { set: { vadS: 0.9375 }, track: 'No change', pick: [0, 7], move: 4, hold: 7 },
     ],
   },
   tr: {
@@ -270,6 +315,27 @@ export const VIDEOS = {
       { set: { ieS: 0.56, ieFrame: 'cine' }, track: 'Mild MR', pick: [3, 4], move: 4, hold: 6 },
       { set: { ieS: 0.7 }, track: 'Moderate MR', pick: [4], move: 4, hold: 6 },
       { set: { ieS: 0.9 }, track: 'Severe MR', pick: [4, 5, 6], move: 4, hold: 7 },
+    ],
+  },
+  // diseases of the aorta: the root and the ascending aorta from normal to 6.0 cm; the dissection
+  // from no flap through the reverberation to the flap with AR and an effusion; the coarctation
+  // from a mild narrowing to a significant one (the chapter's tour)
+  aorta: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { aorS: 0.005 },
+    steps: [
+      { set: { aorType: 'dil', aorS: 0 }, name: 'Normal aortic root and ascending aorta', track: 'Normal', pick: [0, 1], hold: 6 },
+      { set: { aorS: 0.42 }, track: 'Dilated', pick: [0, 3], move: 4, hold: 6 },
+      { set: { aorS: 0.6 }, track: 'Aneurysm', pick: [3, 4], move: 4, hold: 7 },
+      { set: { aorS: 0.92 }, track: '≥5.5 cm', pick: [0, 3], move: 4, hold: 7 },
+      { set: { aorType: 'dis', aorS: 0.05 }, track: 'No flap', pick: [0, 1], move: 3, cut: true, hold: 5 },
+      { set: { aorS: 0.27 }, track: 'Reverberation', pick: [0, 1], move: 3, hold: 8 },
+      { set: { aorS: 0.45 }, track: 'Flap', pick: [0, 1, 2], move: 3, hold: 8 },
+      { set: { aorS: 0.66 }, track: 'Flap and AR', pick: [3, 4], move: 4, hold: 6 },
+      { set: { aorS: 0.9 }, track: 'Effusion', pick: [5, 6], move: 4, hold: 7 },
+      { set: { aorType: 'coa', aorS: 0.2 }, track: 'Not significant', pick: [0, 1], move: 3, cut: true, hold: 7 },
+      { set: { aorS: 0.8 }, track: 'Significant', pick: [1, 2], move: 4, hold: 8 },
     ],
   },
   peri: {
