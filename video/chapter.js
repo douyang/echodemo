@@ -60,8 +60,9 @@ const V = CLIP ? clipVideo(CLIP.k) : VIDEOS[KEY];
 if (!V) throw new Error(`no video for chapter ${KEY}`);
 /**
  * The chapters on screen: the video's own, or, for a video of several chapters (its `chapters`),
- * each in turn. A step's `ch` names its chapter (by default the first); the figure of the next
- * chapter dissolves in across the move into its first step.
+ * each in turn. A step's `ch` names its chapter (by default the first). Across the move into a
+ * chapter's first step the figure dips to the page: the old figure fades out over the first half,
+ * the new one fades in over the second.
  */
 const SHOWN = CLIP ? [KEY] : (V.chapters || [KEY]);
 const CH = Object.fromEntries(SHOWN.map((k) => {

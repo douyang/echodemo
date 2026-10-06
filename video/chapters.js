@@ -23,6 +23,9 @@
 // number that moves, as its slider has: the figure sees the values the site shows), presets,
 // discrete (numbers that change at the middle of a move, as text does: a control with set values).
 // A step's pheno names the heart (src/pheno.js); the 2D views draw its valves.
+// A video of several chapters: chapters (their keys, in the order shown), title (the title
+// card's), pane (an object: the pane name of each chapter) and a step's ch (the chapter it shows;
+// by default the first). The video's key names it; the figure dips to the page between chapters.
 import { BEAT, FPS } from './timeline.js';
 
 const STEP = { move: 3, hold: 5 };
