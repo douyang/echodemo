@@ -12,7 +12,7 @@
 // before it.
 
 // The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come back
-// as the last chapter, in a part of its own, when this is true. The Normal values table opens from it.
+// as the last main chapter, in a part of its own, when this is true. The Normal values table opens from it.
 export const SHOW_REPORT = false;
 // Planes is archived: its module and markup stay (index.html, #ch-planes, #fig-planes) and come
 // back after Views when this is true. Views shows the nine standard planes in its Probe and body
