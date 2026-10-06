@@ -637,7 +637,7 @@ export class EchoView {
   }
 
   /**
-   * The RV's own contraction by k (1 the heart's own, 0 none; chapter 13 sets it from the FAC):
+   * The RV's own contraction by k (1 the heart's own, 0 none; rv.js sets it from the FAC):
    * every systolic target of the RV free wall scales by k, through mask, each wall vertex's share
    * of RV free wall (model3d.js rvMask), and the RV's trabeculations (the papillary mesh's region
    * 2) with it. It adds to setLvSys. kT scales the systolic travel of the tricuspid valve and its

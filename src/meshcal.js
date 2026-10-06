@@ -113,7 +113,7 @@ export function lvWeights(heart, edv, esv, wallMm) {
 
 /**
  * The dx_lvSize weight that gives heart key's LV the fraction ratio of its own EDV, with its own
- * wall (chapter 19: the smaller cavity with dobutamine).
+ * wall (stress.js: the smaller cavity with dobutamine).
  */
 export function lvSizeFor(heart, ratio) {
   const T = LV[heart] || LV.normal, own = LV_WL.indexOf(0);
@@ -121,8 +121,8 @@ export function lvSizeFor(heart, ratio) {
   return invert(LV_SZ, col, ratio * col[LV_SZ.indexOf(0)]);
 }
 
-// The LV diameters in the parasternal long axis (chapters 14, 15, 17 and 25), measured as chapter
-// 24's calipers measure them (echo.js caliperLine): square to the LV's long axis through the point
+// The LV diameters in the parasternal long axis (as.js, ar.js, mr.js and shunts.js), measured as
+// amyloid.js's calipers measure them (echo.js caliperLine): square to the LV's long axis through the point
 // 30% of the way from the LV's middle to the mitral valve, from the septum to the posterior
 // wall. d: LVIDd (mm) at end-diastole by size weight (LV_SZ); s: LVIDs (mm) at end-systole by
 // size and contraction k (LV_K).
@@ -189,7 +189,7 @@ export function lvByEf(heart, size, ef) {
   return lvWeights(heart, edv, edv * (1 - ef / 100), T.wall[1]);
 }
 
-// ---------------------------------------------------------------- the right heart (chapter 16)
+// ---------------------------------------------------------------- the right heart (tr.js)
 // rvGrow (phenomesh.js DISEASE) on the four-chamber view at end-diastole: b, the RV basal
 // diameter (cm: the widest the RV cavity is in its basal third, parallel to the annulus), and ta,
 // the tricuspid annulus (cm, hinge to hinge), by weight. raGrow: the RA volume as a ratio to the
@@ -242,7 +242,7 @@ export function sepOf(heart, ei) {
   return invert(SEP_W, EI[heart] || EI.normal, ei);
 }
 
-// ---------------------------------------------------------------- the mitral valve (chapter 14)
+// ---------------------------------------------------------------- the mitral valve (ms.js)
 // msValve and mvThick (phenomesh.js DISEASE) with the valve held open in mid-diastole: area, the
 // orifice (cm²) seen along the valve's axis, the open area inside the leaflets that planimetry at
 // the tips traces, by thickening weight (mm at the tips, MS_TH) and then by msValve weight (MS_W);
@@ -285,7 +285,7 @@ export function msArea(heart, ms, thick) {
 /** The leaflets' own thickness near the tips (mm) on heart key. */
 export const mvOwnThick = (heart) => (MSV[heart] || MSV.normal).own;
 
-// ---------------------------------------------------------------- the aortic valve (chapter 12)
+// ---------------------------------------------------------------- the aortic valve (as.js)
 // avSten and avThick (phenomesh.js DISEASE) with the valve open in mid-systole: area, the orifice
 // (cm²) seen along the root's axis, the open area inside the cusps that planimetry traces, by
 // thickening weight (mm at the cusps' bases, AS_TH) and then by avSten weight (AS_W); shift, how
@@ -345,7 +345,7 @@ export function foreOffset(view, f, size = 0) {
   return invert(FORE_D.slice(0, n), row.slice(0, n), f);
 }
 
-// ---------------------------------------------------------------- the right ventricle (chapter 13)
+// ---------------------------------------------------------------- the right ventricle (rv.js)
 // rvThick (phenomesh.js DISEASE) on the RV-focused four-chamber view at end-diastole: the RV free
 // wall's thickness (mm) on the line of the RV basal diameter, linear in the weight on every heart.
 // own: at weight 0, the mean of rvGrow 0 and 1 (rvGrow changes it by less than 0.2 mm); per: mm
@@ -418,11 +418,11 @@ export function raAreaWeight(heart, area) { return invert(RA_W, RA_AREA[heart] |
 /** The smallest RA area (cm²) that heart key shows. */
 export const raAreaMin = (heart) => (RA_AREA[heart] || RA_AREA.normal)[0];
 
-// ---------------------------------------------------------------- the right ventricle's function (chapter 13)
+// ---------------------------------------------------------------- the right ventricle's function (rv.js)
 // The tricuspid valve's travel toward the apex in systole on the RV-focused four-chamber view (mm)
 // at the heart's own motion: the image's TAPSE. echo.js setRvSys scales it by kT.
 export const RV_TAPSE = { normal: 19.89, amyloid: 12.06, icm: 14.9, barlow: 19.88, bav: 19.95 };
-// The RV's FAC (%) on that view along each load's track of chapter 13, at s = 0, 0.1, ... 1, with
+// The RV's FAC (%) on that view along each load's track in rv.js, at s = 0, 0.1, ... 1, with
 // that track's kT (as rv.js annulusOf) and kr; and dFAC/dkr and dFAC/dkT there: [fac, by kr, by
 // kT]. The RV is traced as the union of the traces from four starts past the tricuspid hinges (the
 // RV landmark, and 1.5, 2.5 and 3.5 cm from the hinges' middle toward the apex), each start but
@@ -458,8 +458,8 @@ export function rvFacAt(heart, load, s) {
 /** The image's TAPSE (mm) at the heart's own motion on heart key. */
 export const rvTapseOwn = (heart) => RV_TAPSE[heart] || RV_TAPSE.normal;
 
-// ---------------------------------------------------------------- acute pulmonary embolism (chapter 13)
-// The RV on the RV-focused four-chamber view along chapter 13's 'pe' track, at s = 0, 0.05, ... 1.
+// ---------------------------------------------------------------- acute pulmonary embolism (rv.js)
+// The RV on the RV-focused four-chamber view along the 'pe' track of rv.js, at s = 0, 0.05, ... 1.
 // Each heart moves with that track's TAPSE and its free wall's motion by third (gl/rvpemesh.js).
 // A row: [FAC %, then the free wall's inward motion (mm) from end-diastole to end-systole at the
 // middles of the basal, mid and apical thirds]. FAC is traced as RV_FAC is. The motion is measured
