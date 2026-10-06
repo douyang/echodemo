@@ -192,7 +192,7 @@
     </figure>
     <figure class="fig" id="fig-ai">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">How EchoPrime reads a study. Study: a grid of 14 echocardiography videos of the heart shown, each tagged with its view group; a heat map of EchoPrime's anatomical attention weights, 15 report sections by 11 view groups; the chosen section's row lights the videos by their weights, with the share of the section's weight that the videos present carry and the section's text from the site's report. Retrieval: a two-dimensional map of simulated earlier studies, colored by LVEF or valve grade, with the study shown, its k most similar studies, the mean of their values and the count of each finding.</figcaption>
+      <figcaption class="sr-only">How EchoPrime reads a study. Study: a grid of 14 echocardiography videos of the heart shown, each one beat of 16 frames of 224 × 224 pixels cut from the heart model, three of them with color Doppler, each tagged with its view group; a heat map of EchoPrime's anatomical attention weights, 15 report sections by 11 view groups, where a click on a row chooses the section; the chosen section's weights on the videos, with the share of the section's weight that the videos present carry, its three heaviest view groups and the section's text from the site's report. Retrieval: a two-dimensional map of 2,000 simulated earlier studies, colored by LVEF or valve grade, with the study shown, its k most similar studies, the mean of their LVEFs or the count of each grade, and the grade reported when more than half of them carry it.</figcaption>
     </figure>
     <figure class="fig" id="fig-report" hidden>
       <div class="sheet-host" id="report-host"></div>

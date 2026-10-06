@@ -63,7 +63,9 @@ const pctOf = (x) => (x > 0 && x < 0.01 ? '<1' : x > 0.99 && x < 1 - 1e-9 ? '>99
 // The frames are cut a few at a time on the page's animation frames, so the page stays
 // responsive, in the order of the study; a video shows when all its frames are in.
 const PX = 224, NF = 16, TOTAL = N_ALL * NF;
-const BUDGET = 22;        // ms of cutting per animation frame (at least one frame): under the 50 ms of a long task
+// a video page (video/chapter.js) cuts in larger slices: it waits for the frames, and no one scrolls it
+const VIDEO = typeof location !== 'undefined' && location.pathname.includes('/video/');
+const BUDGET = VIDEO ? 250 : 22;   // ms of cutting per animation frame, at least one frame; on the page, under a long task (50 ms)
 const STILL = 10;         // the frame shown with reduced motion: early diastole, the valves open
 const cache = {
   state: 'idle',          // idle, loading, ready, failed: the heart model and the view that cuts
@@ -143,7 +145,7 @@ function fill() {
   // Date.now(): a video page holds performance.now() still while it loads (video/chapter.html)
   const t0 = Date.now();
   let n = 0;
-  while (cache.next < TOTAL && (n === 0 || (n < 6 && Date.now() - t0 < BUDGET))) {
+  while (cache.next < TOTAL && (n === 0 || (n < (VIDEO ? 64 : 6) && Date.now() - t0 < BUDGET))) {
     try { cut(cache.next); } catch (err) { console.error('ai: a frame failed', err); }
     cache.next++;
     n++;
@@ -475,12 +477,12 @@ function studyLayout(sh, W, H) {
   const wide = W >= 640 && W >= H * 1.05;
   if (wide) {
     const pad = 14, gap = 18;
-    const lw = Math.round((W - 2 * pad - gap) * 0.55);
-    const left = { x: pad, y: pad, w: lw, h: H - 2 * pad - 18 };
-    const right = { x: pad + lw + gap, y: pad, w: W - 2 * pad - gap - lw, h: H - 2 * pad };
-    // four columns, unless three give tiles a tenth larger
+    const left = { x: pad, y: pad, w: Math.round((W - 2 * pad - gap) * 0.55), h: H - 2 * pad - 18 };
+    // four columns, unless three give tiles a tenth larger; the heat map and the box take the
+    // width that the grid leaves
     const g3 = gridIn(left, [3], 8), g4 = gridIn(left, [4], 8);
     const grid = g3.s > 1.1 * g4.s ? g3 : g4;
+    const right = { x: pad + grid.w + gap, y: pad, w: W - 2 * pad - gap - grid.w, h: H - 2 * pad };
     const hs = heatSize(sh, right.w, false);
     const rh = clamp(Math.floor((right.h * 0.6 - hs.title - hs.head) / 15), 11, 21);
     const heat = { x: right.x, y: right.y, w: right.w, h: hs.title + hs.head + 15 * rh, rh, ...hs };
@@ -559,19 +561,34 @@ function tile(sh, t, i, x, y, s, inStudy, sec) {
   ctx.beginPath();
   ctx.rect(x, y, s, s);
   ctx.clip();
+  // the view group's tag, as the scanner prints its text; on a video not in the study, in the page's ink
+  const lines = two ? tagLines(GROUPS[T.g].tag) : [GROUPS[T.g].tag], lh = fs + 1.5;
   if (!inStudy) {
-    // not acquired: the video dims into the paper
+    // not acquired: the video dims into the paper, and says so under its tag
     ctx.save();
     ctx.globalAlpha = 0.72;
     ctx.fillStyle = t.paper;
     ctx.fillRect(x, y, s, s);
     ctx.restore();
+    const top = y + 6 + lines.length * lh, mid = (top + y + s) / 2;
     const o = { family: SANS, weight: 500, size: fs, align: 'center', color: t.ink2 };
-    if (sh.measure('not acquired', o) <= s - 6) sh.text('not acquired', x + s / 2, y + s / 2 + fs * 0.35, o);
-    else { sh.text('not', x + s / 2, y + s / 2 - 1, o); sh.text('acquired', x + s / 2, y + s / 2 + fs + 1, o); }
+    const f2 = Math.min(fs, (y + s - top - 3) / 2.1);
+    if (sh.measure('not acquired', o) <= s - 6) sh.text('not acquired', x + s / 2, mid + fs * 0.35, o);
+    else if (f2 >= 7) {
+      sh.text('not', x + s / 2, mid - 0.15 * f2, { ...o, size: f2 });
+      sh.text('acquired', x + s / 2, mid + 0.95 * f2, { ...o, size: f2 });
+    } else {
+      // too small for the words: the tile is struck through
+      ctx.save();
+      ctx.strokeStyle = t.ink2;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x + 5, y + s - 5);
+      ctx.lineTo(x + s - 5, top);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
-  // the view group's tag, as the scanner prints its text; on a video not in the study, in the page's ink
-  const lines = two ? tagLines(GROUPS[T.g].tag) : [GROUPS[T.g].tag], lh = fs + 1.5;
   ctx.font = `500 ${fs}px ${MONO}`;
   if (inStudy) {
     ctx.fillStyle = 'rgba(8,10,12,0.72)';
@@ -764,7 +781,7 @@ function sectionBox(sh, t, b, side, sec, groups, narrow) {
     y = tops(b.x, share(b) + 16, b.w, false) + 18;
   }
   // the section's text in the site's own report for this heart: not EchoPrime's output
-  const txt = sectionTexts(heartCase(), 'M')[SECTIONS[sec].key] || '';
+  const txt = textsOf(heartCase(st))[SECTIONS[sec].key] || '';
   const lab = { family: SANS, weight: 600, size: narrow ? 10 : 11, color: t.ink3 };
   const body = { family: SANS, weight: 400, size: narrow ? 11 : 12.5, color: t.ink2 };
   const lh = body.size + 4, n = Math.floor((b.y + b.h - (y + lab.size + 6)) / lh);
@@ -844,8 +861,14 @@ function library() {
 }
 
 const HEARTS = ['normal', 'amyloid', 'icm', 'barlow', 'bav'];
-/** The case of the site's report for the heart shown (ch/report.js has one for each heart). */
-const heartCase = () => (HEARTS.includes(heartWanted()) ? heartWanted() : 'normal');
+/** The case of the site's report for the heart of state s (ch/report.js has one for each heart). */
+const heartCase = (s) => (HEARTS.includes(s?.pheno) ? s.pheno : 'normal');
+const TEXTS = new Map();
+/** The site's report for heart key, by section (ch/report.js sectionTexts), made once. */
+function textsOf(key) {
+  if (!TEXTS.has(key)) TEXTS.set(key, sectionTexts(key, 'M'));
+  return TEXTS.get(key);
+}
 const HEART_VALUES = new Map();
 /**
  * The heart shown, as the site's report has it: its LVEF (biplane), its aortic stenosis grade
@@ -930,12 +953,12 @@ function retrievalLayout(W, H) {
     return { wide, map: { x: pad, y: pad, w: side, h: side }, box: { x: pad + side + gap, y: pad, w: W - 2 * pad - gap - side, h: side } };
   }
   const pad = 6, gap = 10;
-  const side = Math.floor(Math.min(W - 2 * pad, H - 2 * pad - gap - 128));
+  const side = Math.floor(Math.min(W - 2 * pad, H - 2 * pad - gap - 134));
   return { wide, map: { x: Math.round((W - side) / 2), y: pad, w: side, h: side }, box: { x: pad, y: pad + side + gap, w: W - 2 * pad, h: H - 2 * pad - side - gap } };
 }
 
 function drawRetrieval(sh, t) {
-  const ctx = sh.ctx, s = st, map = mapOf(s), k = kOf(s), key = heartCase();
+  const ctx = sh.ctx, s = st, map = mapOf(s), k = kOf(s), key = heartCase(s);
   const L = retrievalLayout(sh.w, sh.h), M = L.map, side = M.w;
   const R = retrieve(map, key, k);
   // the map: its frame, the studies, the k nearest ringed, the circle that holds them, the query
@@ -960,7 +983,7 @@ function drawRetrieval(sh, t) {
   ctx.strokeStyle = t.ink2;
   ctx.lineWidth = 1.3;
   ctx.beginPath();
-  ctx.arc(qx, qy, Math.max(rk + 3.6, 6), 0, Math.PI * 2);
+  ctx.arc(qx, qy, Math.max(rk, 5), 0, Math.PI * 2);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.lineCap = 'round';
@@ -1001,7 +1024,7 @@ function resultBox(sh, t, b, R, narrow) {
   const lab = { family: SANS, weight: 400, size: narrow ? 11 : 12.5, color: t.ink2 };
   const val = { family: MONO, weight: 500, size: narrow ? 12 : 14, color: t.ink };
   const note = { family: SANS, weight: 400, size: narrow ? 10.5 : 11.5, color: t.ink3 };
-  const lh = narrow ? 19 : 26, two = narrow && b.w >= 330, cw = two ? (b.w - 20) / 2 : b.w;
+  const lh = narrow ? 19 : 26, two = narrow && b.w >= 280, cw = two ? (b.w - 20) / 2 : b.w;
   let y = b.y;
   /**
    * Rows { k, v, bold, color, bar } in one column, or two on a phone: a label (after a dot of
@@ -1064,10 +1087,16 @@ function resultBox(sh, t, b, R, narrow) {
   // each grade: its color on the map, its name, and its count among the k
   rows(G8.names.map((nm, g) => ({ k: nm, v: String(R.counts[g]), bold: g === R.rep, color: P.grade[g], small: !g, bar: R.counts[g] / R.k })));
   y += narrow ? 4 : 10;
-  rows([
-    { k: 'Reported', v: R.rep >= 0 ? G8.names[R.rep] : 'no grade', bold: true },
-    { k: 'This heart', v: G8.names[R.heart] },
-  ]);
+  if (R.rep < 0) {
+    // no grade: the box says so across its width
+    y = line(sh, 'No grade passes half', b.x, y + 4, { ...lab, weight: 600, color: t.ink }, narrow ? 6 : 10);
+    rows([{ k: 'This heart', v: G8.names[R.heart] }]);
+  } else {
+    rows([
+      { k: 'Reported', v: G8.names[R.rep], bold: true },
+      { k: 'This heart', v: G8.names[R.heart] },
+    ]);
+  }
   y += narrow ? 2 : 6;
   notes(`A grade is reported when more than half of the k carry it. ${ep}`);
 }
@@ -1103,9 +1132,8 @@ function studyText(s, cite) {
 }
 
 function retrievalText(s) {
-  const map = mapOf(s), k = kOf(s), R = retrieve(map, heartCase(), k);
+  const map = mapOf(s), k = kOf(s), R = retrieve(map, heartCase(s), k);
   const sec = { lv: 'Left ventricle', av: 'Aortic valve', mv: 'Mitral valve' }[map];
-  const studies = (n) => (n === 1 ? 'study' : 'studies');
   if (map === 'lv') {
     const live = k === 1
       ? `<b>With k = 1, the LVEF is that of the single closest study: ${R.nearest}%.</b> This heart's LVEF is ${R.heart}%.`
@@ -1128,14 +1156,15 @@ function retrievalText(s) {
       ? `<b>The single closest study has ${phrase(R.rep)}, so the section reports it.</b> This heart has ${phrase(R.heart)}.`
       : `<b>${n} of the ${k} closest studies have ${phrase(R.rep)}, more than half, so the section reports it.</b> This heart has ${phrase(R.heart)}.`;
   } else {
-    const big = R.counts.indexOf(Math.max(...R.counts));
-    live = `<b>No grade passes half of the ${k} closest studies, so the section reports no grade.</b> The largest group, ${R.counts[big]} ${studies(R.counts[big])}, has ${phrase(big)}; this heart has ${phrase(R.heart)}.`;
+    const parts = R.counts.map((n, g) => (n ? `${n} ${G8.names[g]}` : '')).filter(Boolean);
+    const split = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
+    live = `<b>No grade passes half of the ${k} closest studies, so the section reports no grade.</b> They split ${split}; this heart has ${phrase(R.heart)}.`;
   }
   return {
     readouts: [
       { k: 'Section', v: sec, text: true },
       { k: 'Similar studies, k', v: String(k) },
-      { k: 'Reported', v: R.rep >= 0 ? G8.names[R.rep] : 'no grade', text: true, flag: R.rep >= 2 },
+      { k: 'Reported', v: R.rep >= 0 ? G8.names[R.rep] : 'No grade passes half', text: true, flag: R.rep >= 2 },
       { k: 'This heart', v: G8.names[R.heart], text: true, flag: R.heart >= 2 },
     ],
     live,
@@ -1250,5 +1279,3 @@ export default {
     return s.aiTab === 'retrieval' ? retrievalText(s) : studyText(s, cite);
   },
 };
-// TEMP-DEBUG (remove before finishing)
-export const __debug = { cache, TILES, retrieve, heartValues, library, cut };
