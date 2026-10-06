@@ -346,7 +346,7 @@ function tdiPanel(ctx, P, m) {
 // peak systolic longitudinal strain (%): the scanner's colors, from deep red (normal, -20% or
 // less) through pink and white (reduced) to blue (lengthening)
 const RAMP = [[-22, [150, 20, 28]], [-16, [214, 62, 52]], [-11, [240, 140, 128]], [-6, [248, 214, 206]], [0, [232, 236, 244]], [6, [110, 150, 220]]];
-function strainColor(v) {
+export function strainColor(v) {
   if (v <= RAMP[0][0]) return RAMP[0][1];
   for (let i = 0; i < RAMP.length - 1; i++) {
     const [a, ca] = RAMP[i], [b, cb] = RAMP[i + 1];
@@ -354,8 +354,8 @@ function strainColor(v) {
   }
   return RAMP[RAMP.length - 1][1];
 }
-const rgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
-const light = (c) => 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] > 150;
+export const rgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+export const light = (c) => 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] > 150;
 
 function strainPanel(ctx, P, m) {
   panel(ctx, P.x, P.y, P.w, P.h, P.w > 200 ? 'LONGITUDINAL STRAIN' : 'STRAIN');

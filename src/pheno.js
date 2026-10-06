@@ -37,6 +37,8 @@ const PRESETS = {
     side: 'lv', edv: 72, ef: 54, wall: 16, tapse: 15, sPrime: 9, fac: 35,
     rvLoad: 'pressure', rvS: 0.25,
     fstate: 3, periS: 0.25, amyS: 1, caseId: 'amyloid',
+    // strain: the global pattern at the heart's LVEF of 54% (GLS -11.5%)
+    strS: 0.56,
   },
   icm: {
     pv: 'hfref', sv: 45, trV: 3.1,
@@ -46,6 +48,9 @@ const PRESETS = {
     fstate: 2.2, caseId: 'icm',
     // stress echocardiography: a viability study, as the LAD territory is akinetic at rest
     sxCase: 'viable',
+    // strain: the regional pattern near its end, the LAD territory akinetic, at the heart's LVEF
+    // of 25% (GLS -6.8%)
+    strPat: 'regional', strS: 0.97,
   },
   barlow: {
     pv: 'mr', sv: 55, trV: 3.0,
@@ -64,6 +69,8 @@ const PRESETS = {
 const QUIET = { asS: 0, arS: 0, msS: 0, mrS: 0, trS: 0, proS: 0, ieS: 0, periS: 0, amyS: 0, hcmS: 0 };
 // no heart of the menu has a shunt: under a disease heart the shunts page starts with none
 QUIET.shS = 0;
+// the strain page starts at normal LV function unless the heart's own disease sets it
+QUIET.strS = 0;
 /** The chapter state that heart key starts from ({} for the normal heart). */
 export function presetsFor(key) { return key === 'normal' || !PRESETS[key] ? {} : { ...QUIET, ...PRESETS[key] }; }
 /** Every state key that some heart presets. */

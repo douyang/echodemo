@@ -458,6 +458,13 @@ export const DISEASE = {
   // mitral leaflet toward the septum, a move within the beat (setMotion).
   hcmSep: { hcm: 'septum' },
   hcmSam: { hcm: 'sam' },
+  // Myocardial strain (chapter strain; src/gl/strainmesh.js): the LV's systolic motion set by the
+  // chapter's model of longitudinal strain, moves within the beat (setMotion).
+  strA: { strain: 'A' },
+  strB: { strain: 'B' },
+  strD: { strain: 'D' },
+  strR: { strain: 'R' },
+  strZ: { strain: 'Z' },
 };
 /** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {
@@ -466,6 +473,7 @@ export async function buildDisease(ctx, key) {
   if (P.grow) return buildGrow(ctx, key, P.grow);
   if (P.valve) return buildValve(ctx, key, P.valve);
   if (P.hcm) return (await import('./hcmmesh.js')).buildHcm(ctx, key, P.hcm, { addTarget, grid, nearest });
+  if (P.strain) return (await import('./strainmesh.js')).buildStrain(ctx, key, P.strain, { addTarget, grid, nearest });
   const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
   /** The move of landmark name at weight 1 and end-diastole (cm). */
   out.shift = (name) => {
