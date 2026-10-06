@@ -318,8 +318,9 @@ export const VIDEOS = {
     ],
   },
   // diseases of the aorta: the root and the ascending aorta from normal to 6.0 cm; the dissection
-  // from no flap through the reverberation to the flap with AR and an effusion; the coarctation
-  // from a mild narrowing to a significant one (the chapter's tour)
+  // from no flap through the reverberation to the flap, then the AR of each mechanism, held inside
+  // its stage (a dilated root, a prolapsed cusp, the prolapsed flap with an effusion); the
+  // coarctation from a mild narrowing to a significant one (the chapter's tour)
   aorta: {
     pane: '2D and Doppler',
     side: false,
@@ -331,10 +332,11 @@ export const VIDEOS = {
       { set: { aorS: 0.92 }, track: '≥5.5 cm', pick: [0, 3], move: 4, hold: 7 },
       { set: { aorType: 'dis', aorS: 0.05 }, track: 'No flap', pick: [0, 1], move: 3, cut: true, hold: 5 },
       { set: { aorS: 0.27 }, track: 'Reverberation', pick: [0, 1], move: 3, hold: 8 },
-      { set: { aorS: 0.45 }, track: 'Flap', pick: [0, 1, 2], move: 3, hold: 8 },
-      { set: { aorS: 0.66 }, track: 'Flap and AR', pick: [3, 4], move: 4, hold: 6 },
-      { set: { aorS: 0.9 }, track: 'Effusion', pick: [5, 6], move: 4, hold: 7 },
-      { set: { aorType: 'coa', aorS: 0.2 }, track: 'Not significant', pick: [0, 1], move: 3, cut: true, hold: 7 },
+      { set: { aorS: 0.45 }, track: 'Flap', pick: [0, 2, 3], move: 3, hold: 8 },
+      { set: { aorS: 0.6 }, track: 'Dilated root', pick: [6, 7], move: 4, hold: 6 },
+      { set: { aorS: 0.73 }, track: 'Cusp prolapse', pick: [5, 6, 7], move: 4, hold: 6 },
+      { set: { aorS: 0.9 }, track: 'Flap prolapse', pick: [5, 6, 7, 11], move: 4, hold: 7 },
+      { set: { aorType: 'coa', aorS: 0.2 }, track: 'Mild', pick: [0, 1], move: 3, cut: true, hold: 7 },
       { set: { aorS: 0.8 }, track: 'Significant', pick: [1, 2], move: 4, hold: 8 },
     ],
   },
