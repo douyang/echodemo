@@ -2717,15 +2717,20 @@
       <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8Z" fill="currentColor"/></svg>
       <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>
     </button>
-    <ol class="groups" id="groups" aria-hidden="true"></ol>
-    <ol class="chapters" id="chapters">
-      <li class="track" aria-hidden="true"><svg id="track" preserveAspectRatio="none"></svg></li>
-    </ol>
-    <!-- phones: back, the chapter (a tap lists all of them), next; styles.css hides the numbers there -->
+    <!-- the row of chapters under their parts. When the names do not all fit (main.js fitTransport),
+         the row slides between back and next, and a button at the end lists all the chapters.
+         Phones: back, the chapter (a tap lists all of them) and next. styles.css hides the row there -->
     <div class="pager" id="pager">
       <button class="pg-step" id="pg-prev" type="button" aria-label="Previous chapter"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="rail" id="rail">
+        <ol class="groups" id="groups" aria-hidden="true"></ol>
+        <ol class="chapters" id="chapters">
+          <li class="track" aria-hidden="true"><svg id="track" preserveAspectRatio="none"></svg></li>
+        </ol>
+      </div>
       <button class="pg-cur" id="pg-cur" type="button" aria-haspopup="dialog" aria-controls="dlg-chapters"><span class="n">01</span><span class="t">Pulse</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button class="pg-step" id="pg-next" type="button" aria-label="Next chapter"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="pg-step" id="pg-list" type="button" aria-haspopup="dialog" aria-controls="dlg-chapters" aria-label="List of chapters" title="List of chapters"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4.5h7.5M6 8h7.5M6 11.5h7.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="2.8" cy="4.5" r="1.1" fill="currentColor"/><circle cx="2.8" cy="8" r="1.1" fill="currentColor"/><circle cx="2.8" cy="11.5" r="1.1" fill="currentColor"/></svg></button>
     </div>
   </nav>
 </div>
