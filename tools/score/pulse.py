@@ -40,17 +40,17 @@ SEEDS.update({'PULSE': 9301, 'IMAGE': 9302, 'SHIFT': 9303, 'PRESSURE': 9304, 'CY
               'MS': 9314, 'MR': 9315, 'TR': 9316, 'PERI': 9317, 'AMYLOID': 9318})
 SEEDS['IVC'] = 9319                               # IVC (then chapter 18): the next number after that list
 SEEDS['STRESS'] = 9320                            # stress echocardiography (then chapter 19): the next number
-SEEDS['RV'] = 9321                                # the right ventricle (chapter 13): the next number
+SEEDS['RV'] = 9321                                # the right ventricle (chapter 14): the next number
 SEEDS['HCM'] = 9322                               # hypertrophic cardiomyopathy: the next number
 SEEDS['CONSTRICT'] = 9323                         # constrictive pericarditis, added after the RV
 SEEDS['PROSTHETIC'] = 9324                        # prosthetic valves (chapter 19 when it was added)
-SEEDS['SHUNTS'] = 9325                            # shunts: ASD, VSD and PFO (chapter 21): the number set for it
+SEEDS['SHUNTS'] = 9325                            # shunts: ASD, VSD and PFO (chapter 28): the number set for it
 SEEDS['ENDOCARDITIS'] = 9326                      # infective endocarditis: a seed of its own, 9326
 SEEDS['MASSES'] = 9327                            # cardiac masses and thrombus: the number set for it
 SEEDS['STRAIN'] = 9329                            # myocardial strain and cardio-oncology: the number set for it
 SEEDS['LVAD'] = 9330                              # left ventricular assist devices: the number set for it
-SEEDS['AORTA'] = 9331                             # diseases of the aorta (chapter 21): the number set for it
-SEEDS['AI'] = 9328                                # artificial intelligence: one video for chapters 27 and 28
+SEEDS['AORTA'] = 9331                             # diseases of the aorta (chapter 23): the number set for it
+SEEDS['AI'] = 9328                                # artificial intelligence: one video for chapters 30 and 31
 SEEDS['INTRO'] = 9300                             # the intro (video/reel.js): 93 and chapter 00
 PROG = ['C', 'Am', 'F', 'G']
 CHORD = {'C': (0, [0, 4, 7]), 'Am': (9, [9, 0, 4]), 'F': (5, [5, 9, 0]), 'G': (7, [7, 11, 2])}

@@ -114,7 +114,7 @@ export const VIDEOS = {
     ],
   },
   // 08: a dilated LV with a low EF, foreshortening, then the RV
-  // 09: the LV only (the RV went to chapter 13)
+  // 09: the LV only (the RV went to chapter 14)
   eject: {
     pane: 'Volumes and function',
     quant: { edv: 1, ef: 1, fore: 1 },

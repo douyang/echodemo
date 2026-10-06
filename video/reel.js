@@ -15,8 +15,8 @@
 //    amyloid clips.
 //  - AR, MS, TR: the layout of AS and MR.
 // Stress echocardiography, added with its chapter, follows Regional wall motion, as its chapter does:
-// the quad screen of a stress test. The right ventricle (chapter 13), added after the review, has no clip.
-// Study interpretation (chapter 28, EchoPrime) closes the intro, as its part closes the site: the
+// the quad screen of a stress test. The right ventricle (chapter 14), added after the review, has no clip.
+// Study interpretation (chapter 31, EchoPrime) closes the intro, as its part closes the site: the
 // study's videos lit, section by section, by the model's attention weights. Four bars, so that the
 // score's whole four-bar phrases still end on the end card (36 bars).
 //

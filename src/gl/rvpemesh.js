@@ -1,4 +1,4 @@
-// Acute pulmonary embolism in chapter 13 (load 'pe'): the RV free wall's systolic motion by level,
+// Acute pulmonary embolism in the right ventricle chapter, 14 (load 'pe'): the RV free wall's systolic motion by level,
 // from the base to the apex, for McConnell's sign. Lengths in cm.
 //
 // Each myocardium vertex has a level along the RV: 0 at the tricuspid annulus and 1 at the RV apex.
