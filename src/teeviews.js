@@ -24,6 +24,10 @@ const sq = (v, a) => v.clone().addScaledVector(a, -v.dot(a)).normalize();
 export const R_ESO = 0.8, FACE = 0.45;
 /** The probe tip in the stomach: its radius for the clearance test, and its gap below the heart (cm). */
 const R_TG = 0.75, TG_GAP = 2.0;
+/** The aortic valve's short axis: the transducer this far below the valve's centre (cm), behind the upper LA. */
+const AVSAX_BELOW = 0.5;
+/** The descending aorta's views: the transducer this far above the modelled aorta's lower end (cm). */
+const DAO_ABOVE = 4.5;
 
 // ---------------------------------------------------------------- the probe frame
 /**
@@ -309,13 +313,6 @@ function rightIn(n, F, want) {
   const r = new THREE.Vector3().crossVectors(n, F).normalize();
   return r.dot(want) < 0 ? r.negate() : r;
 }
-/** The height of the esophagus point whose transducer lies in the plane (C, n), toward C. */
-function heightOnPlane(G, C, n, y0, y1) {
-  const f = (y) => { const { P } = eso(G.E, y); const F = sq(C.clone().sub(P), n); return n.dot(P.clone().addScaledVector(F, FACE).sub(C)); };
-  let a = y0, b = y1, fa = f(a);
-  for (let k = 0; k < 40; k++) { const m = (a + b) / 2, fm = f(m); if (Math.sign(fm) === Math.sign(fa)) { a = m; fa = fm; } else b = m; }
-  return (a + b) / 2;
-}
 
 /**
  * The mid-esophageal plane of the four-chamber view (Hahn 2013, view 2): the probe behind the LA,
@@ -342,23 +339,33 @@ const POSE = {
     const r = p.r.clone().multiplyScalar(c).addScaledVector(p.F, -si).normalize();
     return { O: p.O, F, r, T: p.T };
   },
-  // the mitral commissural, two-chamber and long-axis views: the frame that shows the plane of
-  // meMitral at the four-chamber angle, the beam toward the apex, rotated forward from there
+  // the mitral commissural and two-chamber views: the frame that shows the plane of meMitral at
+  // the four-chamber angle, the beam toward the apex, rotated forward from there
   memitral(G) { return { ...meMitral(G), ang: 5 }; },
-  // the aortic valve in short axis: square to the root where the shut cusps meet; the left
+  // the long-axis view: that frame's plane at 140 degrees, the beam turned in the plane to the
+  // mitral valve (anteflexion), so that the aortic valve and the proximal ascending aorta lie
+  // right of the centre and the apex low on the left, as in Hahn 2013 (view 5)
+  melax(G) {
+    const p = meMitral(G);
+    const g = planeAt(frameFor(p.O, p.F, p.r, 5), BY_KEY.melax.angle);
+    const F = sq(G.mv.clone().sub(g.O), g.n);
+    return { O: g.O, F, r: rightIn(g.n, F, g.r), T: p.T };
+  },
+  // the aortic valve in short axis: the probe advanced below the valve, behind the upper LA, and
+  // anteflexed to the valve's centre (Hahn 2013, view 10: "CCW, Advance, Anteflex"), so that the
+  // LA lies in the near field; the plane as near square to the root as that beam allows; the left
   // coronary cusp, posterior and on the patient's left, to the right of the display
   meavsax(G) {
-    const C = G.av.clone().addScaledVector(G.root, 0.6), n = G.root.clone();
-    const y = heightOnPlane(G, C, n, G.av.y - 3, G.av.y + 4);
-    const { P, T } = eso(G.E, y);
-    const F = sq(C.clone().sub(P), n), O = P.clone().addScaledVector(F, FACE);
-    return { O, F: sq(C.clone().sub(O), n), r: rightIn(n, sq(C.clone().sub(O), n), LEFT), T };
+    const C = G.av.clone().addScaledVector(G.root, 0.6);
+    const { O, T } = onEso(G, G.av.y - AVSAX_BELOW, C);
+    const F = nz(C.clone().sub(O)), n = sq(G.root, F);
+    return { O, F, r: rightIn(n, F, LEFT), T };
   },
   // RV inflow and outflow round the aortic valve: the plane of the tricuspid and pulmonic
-  // valves, the probe a little lower than for the valve in short axis; RVOT to the right
+  // valves, the probe advanced a little from the valve in short axis; RVOT to the right
   merv(G) {
     const C = G.av.clone().addScaledVector(G.root, 0.6);
-    const y = heightOnPlane(G, C, G.root, G.av.y - 3, G.av.y + 4) - 0.6;
+    const y = G.av.y - AVSAX_BELOW - 0.6;
     const { O, T } = onEso(G, y, C);
     const n = new THREE.Vector3().crossVectors(G.tv.clone().sub(O), G.pv.clone().sub(O)).normalize();
     const F = sq(C.clone().sub(O), n);
@@ -396,9 +403,10 @@ const POSE = {
     const n = G.Z.clone();
     return { O, F: sq(F, n), r: rightIn(n, sq(F, n), G.X), T: null };
   },
-  // the descending aorta, the probe just above the diaphragm turned to face it
+  // the descending aorta, the probe turned to face it and withdrawn until the tube crosses the
+  // whole sector in long axis: the mesh's descending aorta ends a little above the hiatus
   dao(G) {
-    const y = -3.0, A = lineAt(G.desc, y) || G.desc[0];
+    const y = G.desc[0].y + DAO_ABOVE, A = lineAt(G.desc, y) || G.desc[0];
     const { O, F, T } = onEso(G, y, A);
     return { O, F: sq(F, T), T, direct: true };   // the face square to the tube: no flexion
   },
@@ -416,7 +424,18 @@ const POSE = {
     // the point of the arch's axis that the line of sight meets at a right angle
     const C1 = C.clone().addScaledVector(a, -C.clone().sub(P).dot(a));
     const F = sq(C1.clone().sub(P), T), O = P.clone().addScaledVector(F, FACE);
-    return { O, F, T, direct: true };
+    return { O, F, T, direct: true, aim: C1 };
+  },
+  // the arch in short axis: the plane of the long-axis view's probe rotated forward, the beam
+  // turned in it from the arch toward the main PA, which runs along the plane below the arch: the
+  // arch in short axis near the transducer, the PA and the pulmonic valve in long axis in the far
+  // field on the left (Hahn 2013, view 28)
+  uearchsax(G) {
+    const L = POSE.uearch(G);
+    const g = planeAt(frameFacing(L.O, L.F, L.T), BY_KEY.uearchsax.angle);
+    const mid = V3(...VESSELS.paMid);
+    const F = sq(L.aim.clone().sub(g.O), g.n).add(sq(mid.clone().sub(g.O), g.n)).normalize();
+    return { O: g.O, F, r: rightIn(g.n, F, g.r), T: L.T };
   },
   // the ascending aorta at the right pulmonary artery, which lies behind it
   measc(G) {
@@ -437,14 +456,14 @@ export const STD = [
   { key: 'me4c', hahn: 2, reeves: true, name: 'ME four-chamber', short: 'ME 4C', level: 'me', turn: 'mid', angle: 5, depth: 15, range: [0, 10], pose: 'me4c' },
   { key: 'memc', hahn: 3, reeves: false, name: 'ME mitral commissural', short: 'ME MC', level: 'me', turn: 'mid', angle: 60, depth: 15, range: [50, 70], pose: 'memitral' },
   { key: 'me2c', hahn: 4, reeves: true, name: 'ME two-chamber', short: 'ME 2C', level: 'me', turn: 'mid', angle: 85, depth: 15, range: [80, 100], frame: 'memc' },
-  { key: 'melax', hahn: 5, reeves: true, name: 'ME long axis', short: 'ME LAX', level: 'me', turn: 'mid', angle: 140, depth: 15, range: [120, 140], frame: 'memc' },
+  { key: 'melax', hahn: 5, reeves: true, name: 'ME long axis', short: 'ME LAX', level: 'me', turn: 'mid', angle: 140, depth: 15, range: [120, 140], pose: 'melax' },
   { key: 'meavlax', hahn: 6, reeves: false, name: 'ME aortic valve long axis', short: 'ME AV LAX', level: 'me', turn: 'right', angle: 120, depth: 11, range: [120, 140], pose: 'meavlax' },
   { key: 'measclax', hahn: 7, reeves: true, name: 'ME ascending aorta long axis', short: 'ME Asc Ao LAX', level: 'ue', turn: 'right', angle: 95, depth: 11, range: [90, 110], pose: 'measc' },
   { key: 'meascsax', hahn: 8, reeves: true, name: 'ME ascending aorta short axis', short: 'ME Asc Ao SAX', level: 'ue', turn: 'right', angle: 5, depth: 11, range: [0, 30], frame: 'measclax' },
   { key: 'meavsax', hahn: 10, reeves: true, name: 'ME aortic valve short axis', short: 'ME AV SAX', level: 'me', turn: 'right', angle: 30, depth: 10, range: [25, 45], pose: 'meavsax' },
   { key: 'merv', hahn: 11, reeves: true, name: 'ME RV inflow-outflow', short: 'ME RV In-Out', level: 'me', turn: 'right', angle: 55, depth: 12, range: [50, 70], pose: 'merv' },
   { key: 'mebicaval', hahn: 13, reeves: true, name: 'ME bicaval', short: 'ME Bicaval', level: 'me', turn: 'right', angle: 95, depth: 11, range: [90, 110], pose: 'mebicaval' },
-  { key: 'melaa', hahn: 15, reeves: false, name: 'ME left atrial appendage', short: 'ME LAA', level: 'me', turn: 'left', angle: 105, depth: 9, range: [90, 110], pose: 'melaa' },
+  { key: 'melaa', hahn: 15, reeves: false, name: 'ME left atrial appendage', short: 'ME LAA', level: 'me', turn: 'left', angle: 105, depth: 8, range: [90, 110], pose: 'melaa' },
   // the short axis at 10 degrees: the frame's 90 degrees then holds the apex, the mitral valve and
   // the LA, with the aortic valve out of the plane (at 0, the plane at 90 met the aortic valve)
   { key: 'tgsax', hahn: 17, reeves: true, name: 'TG midpapillary short axis', short: 'TG Mid SAX', level: 'tg', turn: 'mid', angle: 10, depth: 12, range: [0, 20], pose: 'tgsax' },
@@ -452,7 +471,7 @@ export const STD = [
   { key: 'daosax', hahn: 25, reeves: true, name: 'Descending aorta short axis', short: 'Desc Ao SAX', level: 'tg', turn: 'left', angle: 0, depth: 8, range: [0, 10], pose: 'dao' },
   { key: 'daolax', hahn: 26, reeves: true, name: 'Descending aorta long axis', short: 'Desc Ao LAX', level: 'tg', turn: 'left', angle: 90, depth: 8, range: [90, 100], frame: 'daosax' },
   { key: 'uearchlax', hahn: 27, reeves: false, name: 'UE aortic arch long axis', short: 'UE Arch LAX', level: 'ue', turn: 'mid', angle: 0, depth: 8, range: [0, 10], pose: 'uearch' },
-  { key: 'uearchsax', hahn: 28, reeves: false, name: 'UE aortic arch short axis', short: 'UE Arch SAX', level: 'ue', turn: 'mid', angle: 70, depth: 11, range: [70, 90], frame: 'uearchlax' },
+  { key: 'uearchsax', hahn: 28, reeves: false, name: 'UE aortic arch short axis', short: 'UE Arch SAX', level: 'ue', turn: 'mid', angle: 70, depth: 11, range: [70, 90], pose: 'uearchsax' },
 ];
 export const BY_KEY = Object.fromEntries(STD.map((v) => [v.key, v]));
 
@@ -548,8 +567,8 @@ export function viewAt(level, turn, ang, tol = 4) {
 
 /**
  * The probe's path, head to stomach: the esophagus, then from the cardia along the stomach to
- * the transgastric tip. { curve, length, sOf(p) }: sOf gives the arc length (cm from the top)
- * of the path point nearest p.
+ * the transgastric tip. { curve, length, sOf(p), cardia }: sOf gives the arc length (cm from the
+ * top) of the path point nearest p; cardia, the arc length where the esophagus ends.
  */
 export function probePath(G) {
   const E = G.E.pts, last = E[E.length - 1];
@@ -562,7 +581,7 @@ export function probePath(G) {
     for (let i = 0; i <= N; i++) { const d = samples[i].distanceToSquared(p); if (d < bd) { bd = d; best = i; } }
     return (best / N) * length;
   };
-  return { curve, length, samples, sOf, at: (s) => curve.getPointAt(Math.max(0, Math.min(1, s / length))) };
+  return { curve, length, samples, sOf, cardia: sOf(last), at: (s) => curve.getPointAt(Math.max(0, Math.min(1, s / length))) };
 }
 
 /**

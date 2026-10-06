@@ -36,7 +36,7 @@ const INFO = {
   melaa: { shows: 'LA appendage, left upper pulmonary vein', move: 'From the two-chamber view at 90–110°, turn to the left; advancing or anteflexing the probe may open the appendage' },
   tgsax: { shows: 'LV at the mid level, both papillary muscles, RV at the mid level', move: 'Advance into the stomach and anteflex against the gastric wall; angle 0–20°' },
   tg2c: { shows: 'LV, mitral valve, LA and LA appendage', move: 'From the midpapillary view, rotate to 90–110°' },
-  daosax: { shows: 'Descending aorta, left thorax, azygos and hemiazygos veins, intercostal arteries', move: 'From the transgastric views, turn to the left at 0–10° and withdraw to just above the diaphragm' },
+  daosax: { shows: 'Descending aorta, left thorax, azygos and hemiazygos veins, intercostal arteries', move: 'From the transgastric views, turn to the left at 0–10° and withdraw to just above the diaphragm; with the aorta in the centre, withdraw further to image the whole descending thoracic aorta' },
   daolax: { shows: 'Descending aorta, left thorax', move: 'Rotate to 90–100°' },
   uearchlax: { shows: 'Aortic arch, innominate vein, mediastinal tissue', move: 'Withdraw along the descending aorta until it elongates, then turn to the right so the probe faces anterior' },
   uearchsax: { shows: 'Aortic arch, innominate vein, main pulmonary artery, pulmonic valve, mediastinal tissue', move: 'Rotate to 70–90°' },
@@ -332,9 +332,11 @@ function placeText(s) {
   const m = maneuver(f, f0, path);
   const parts = [];
   const d = Math.round(m.depth * 2) / 2;
-  if (s.teeLevel === 'tg') parts.push(`advanced ${d.toFixed(1)} cm into the stomach`);
+  // in the stomach the turn is not measured against the esophagus: the depth alone
+  const stomach = path.sOf(f.O.clone().addScaledVector(f.F, -FACE)) > path.cardia;
+  if (stomach) parts.push(`advanced ${d.toFixed(1)} cm into the stomach`);
   else if (Math.abs(d) >= 0.5) parts.push(d > 0 ? `advanced ${d.toFixed(1)} cm` : `withdrawn ${(-d).toFixed(1)} cm`);
-  if (s.teeLevel !== 'tg') {
+  if (!stomach) {
     const t = Math.round(m.turn / 5) * 5;
     if (Math.abs(t) >= 5) parts.push(`turned ${Math.abs(t)}° to the ${t > 0 ? 'left' : 'right'}`);
   }
