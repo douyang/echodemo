@@ -58,7 +58,7 @@ export const BAR = ORDER.map((k, i) => i);
 
 // Each chapter names its part (its module's `part`). A part with no chapter in the bar is left
 // out, and the numerals follow the parts that remain. Congenital, Masses and Acute care hold only
-// bonus chapters now.
+// bonus chapters now. TEE is in the part Views, after Views (order.js).
 const ALL_PARTS = [
   { key: 'physics', name: 'Physics' },
   { key: 'views', name: 'Views' },
@@ -73,7 +73,6 @@ const ALL_PARTS = [
   { key: 'masses', name: 'Masses' },
   { key: 'acute', name: 'Acute care' },
   { key: 'ai', name: 'Artificial intelligence' },
-  { key: 'tee', name: 'TEE' },
   { key: 'report', name: 'Report' },
 ];
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];

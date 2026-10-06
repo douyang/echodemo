@@ -3,12 +3,13 @@
 // edit in the text.
 //
 // The order follows the ASE comprehensive examination (Mitchell 2019): instrumentation, the views,
-// then the measurements; the RA pressure (Mukherjee 2025) before the pressures that add it; then
-// function: the LV's systolic and diastolic function, its regional wall motion and stress
+// then the measurements. TEE follows the transthoracic views, in the same part: a second set of
+// views, from its own probe. Then the RA pressure (Mukherjee 2025) before the pressures that add
+// it; then function: the LV's systolic and diastolic function, its regional wall motion and stress
 // echocardiography, which tests that motion, then the right ventricle; then the valves by valve as in
 // the ASE report (Taub 2025), each stenosis before its regurgitation, the pericardium and amyloid.
-// Artificial intelligence comes next: a model that reads a whole study draws on every chapter before
-// it. TEE comes last: a second examination, with its own probe and views.
+// Artificial intelligence comes last: a model that reads a whole study draws on every chapter
+// before it.
 
 // The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come back
 // as the last chapter, in a part of its own, when this is true. The Normal values table opens from it.
@@ -32,8 +33,8 @@ export const SHOW_SHOCK = false;
 
 /** The main chapters, in reading order: the chapter bar, its list, the tour and the numbers 01, 02 ... */
 export const ORDER = [
-  'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'cycle', 'loop', 'ivc', 'pressure',
-  'eject', 'fill', 'segments', 'strain', 'stress', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'constrict', 'hcm', 'amyloid', ...(SHOW_SHOCK ? ['shock'] : []), ...(SHOW_MEASURE ? ['measure'] : []), 'ai', 'tee', ...(SHOW_REPORT ? ['report'] : []),
+  'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'tee', 'cycle', 'loop', 'ivc', 'pressure',
+  'eject', 'fill', 'segments', 'strain', 'stress', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'constrict', 'hcm', 'amyloid', ...(SHOW_SHOCK ? ['shock'] : []), ...(SHOW_MEASURE ? ['measure'] : []), 'ai', ...(SHOW_REPORT ? ['report'] : []),
 ];
 
 /**
