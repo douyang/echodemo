@@ -521,6 +521,7 @@ node tools/render-video.mjs --reel --stills=7,42.5             # PNG stills at t
 
 Each entry keeps the chapter numbers of the day it was written.
 
+- 33 Transesophageal echocardiography, rendered again from this branch: 4,089 frames against its layout (`framecrc`), 136.3 s, −14.9 LUFS, a true peak of −4.6 dBFS, the moov atom first, and 57.2 MiB. At the middle of each hold, the ten unchanged views differ from the video in use only at the angle icon (0.17% of the frame). The seven changed views differ in 1.4% to 4.9% of the frame. The copy under 30 MiB keeps all 4,089 frames.
 - TEE angle icon and free probe, added on request on the branch of the view corrections. The icon follows the Philips display. Its needle was checked at 5°, 60°, 90°, 125° and 140°. At 1440 × 900, 1024 × 768, 768 × 1024 and 390 × 844, and in the dark theme at 1440 × 900 and 390 × 844, the icon covers no part of the sector, the depth scale or the header. A browser test moved the free probe from the four-chamber view at 1440 × 900:
   - Freed with no move, the panel reads "on ME 4C".
   - An advance of 2 cm moves the plane down. Then 15° of anteflexion tilts it up to the aortic valve, the LVOT and the RV outflow tract.
