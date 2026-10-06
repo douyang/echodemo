@@ -1430,8 +1430,11 @@ export class EchoView {
       { borders: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, spec: 6, closed: true },
       // a chapter's own shapes over the walls (setShapes): a septal defect, as blood
       ...(extra.own || []).filter((it) => !it.top),
-      { polys: tri(extra.chords), e: DB.chord - 7 },
-      { polys: tri(extra.chordsCore), e: DB.chord },
+      // the chordae: the slab's triangles of a chord's near and far faces lie over each other on
+      // the plane and wind opposite ways. A nonzero fill cancelled them, and a chord showed in
+      // broken lengths. The union rule fills every triangle.
+      { polys: tri(extra.chords), e: DB.chord - 7, rule: 'union' },
+      { polys: tri(extra.chordsCore), e: DB.chord, rule: 'union' },
       { borders: periPts, refs: peri.every((L) => L.ref) ? periRefs : null, e: this.periE, spec: 10, w: this.periW, all: true },
       // a chapter's own structures under the leaflets (o.under): a vegetation
       ...(extra.under || []),
