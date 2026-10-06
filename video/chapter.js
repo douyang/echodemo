@@ -58,9 +58,25 @@ if (RL && !CLIP?.video) throw new Error(`no chapter clip ${params.get('reel')} i
 const KEY = CLIP ? CLIP.ch : (params.get('ch') || 'as').toLowerCase();
 const V = CLIP ? clipVideo(CLIP.k) : VIDEOS[KEY];
 if (!V) throw new Error(`no video for chapter ${KEY}`);
-const IDX = CHAPTERS.findIndex((c) => c.key === KEY);
+/**
+ * The chapters on screen: the video's own, or, for a video of several chapters (its `chapters`),
+ * each in turn. A step's `ch` names its chapter (by default the first); the figure of the next
+ * chapter dissolves in across the move into its first step.
+ */
+const SHOWN = CLIP ? [KEY] : (V.chapters || [KEY]);
+const CH = Object.fromEntries(SHOWN.map((k) => {
+  const c = CHAPTERS.find((x) => x.key === k);
+  if (!c) throw new Error(`video ${KEY}: no chapter ${k}`);
+  return [k, c];
+}));
+/** The key of the chapter of step k. */
+const chOf = (k) => (V.chapters ? V.steps[k]?.ch ?? SHOWN[0] : SHOWN[0]);
+const numOfKey = (k) => String(CHAPTERS.findIndex((c) => c.key === k) + 1).padStart(2, '0');
+const IDX = CHAPTERS.findIndex((c) => c.key === SHOWN[0]);
 const C = CHAPTERS[IDX];
-const NUM = String(IDX + 1).padStart(2, '0');
+const NUM = SHOWN.length > 1 ? `${numOfKey(SHOWN[0])}–${numOfKey(SHOWN[SHOWN.length - 1])}` : String(IDX + 1).padStart(2, '0');
+/** The title of the video: a video of several chapters names its own. */
+const TITLE = V.title ?? C.title;
 const [W, H] = SIZE['16:9'];
 const L = chapterLayout(V);
 /** A clip draws frames F0 to F1 of the intro. Its first frame is `offset` s after its bar line. */
@@ -115,7 +131,9 @@ async function applyTheme() {
 }
 
 // ---------------------------------------------------------------- page
-let sheet = null, figEl = null, capEls = null, cardEls = null, trackEls = [], sideEls = null;
+let capEls = null, cardEls = null, trackEls = [], sideEls = null;
+/** Each chapter's sheet and figure element, by chapter key. */
+const sheets = {}, figEls = {};
 
 function pane(k, name, r) {
   const el = h('div', 'pane');
@@ -128,14 +146,21 @@ function pane(k, name, r) {
   return { el, view, w: r.w, h: r.h - LAY.head };
 }
 
-/** The chapter's article and figure, from the site's page: the chapter's code finds its parts by id. */
+/** Each chapter's article and figure, from the site's page: the chapter's code finds its parts by id. */
 async function loadSource() {
   const doc = new DOMParser().parseFromString(await fetch('index.html').then((r) => r.text()), 'text/html');
-  const art = doc.getElementById(`ch-${KEY}`), fig = doc.getElementById(`fig-${KEY}`);
-  if (!art || !fig) throw new Error(`index.html has no #ch-${KEY} or #fig-${KEY}`);
-  $('#src').appendChild(document.importNode(art, true));
-  return { art: $(`#ch-${KEY}`), fig: document.importNode(fig, true) };
+  const arts = {}, figs = {};
+  for (const k of SHOWN) {
+    const art = doc.getElementById(`ch-${k}`), fig = doc.getElementById(`fig-${k}`);
+    if (!art || !fig) throw new Error(`index.html has no #ch-${k} or #fig-${k}`);
+    $('#src').appendChild(document.importNode(art, true));
+    arts[k] = $(`#ch-${k}`);
+    figs[k] = document.importNode(fig, true);
+  }
+  return { art: arts[SHOWN[0]], arts, figs };
 }
+/** The name over the figure pane while chapter k shows. */
+const paneName = (k) => (typeof V.pane === 'object' && V.pane ? V.pane[k] : SHOWN.length > 1 ? null : V.pane) ?? CH[k].title;
 
 function build(src) {
   const F = $('#frame');
@@ -143,16 +168,20 @@ function build(src) {
   document.body.style.width = `${W}px`;
   document.body.style.height = `${H}px`;
   // the figure: the site's own, on paper
-  const P = pane('fig', V.pane ?? C.title, LAY.fig);
+  const P = pane('fig', paneName(SHOWN[0]), LAY.fig);
   const Lt = PAL.light;
   P.el.style.setProperty('--card', Lt['--paper']);
   for (const n of ['--ink', '--ink-2', '--ink-3']) P.el.style.setProperty(n, Lt[n]);
   P.el.style.setProperty('--edge', `color-mix(in srgb, ${Lt['--rule']} 45%, transparent)`);
-  figEl = src.fig;
-  figEl.classList.add('is-active');
-  for (const el of $$('.poster, .fig-note, .occl, figcaption', figEl)) el.remove();
-  Object.assign(figEl.style, { position: 'absolute', left: '0px', top: '0px', width: `${P.w}px`, height: `${P.h}px`, margin: '0' });
-  P.view.appendChild(figEl);
+  for (const k of SHOWN) {
+    const fig = src.figs[k];
+    fig.classList.add('is-active');
+    for (const el of $$('.poster, .fig-note, .occl, figcaption', fig)) el.remove();
+    Object.assign(fig.style, { position: 'absolute', left: '0px', top: '0px', width: `${P.w}px`, height: `${P.h}px`, margin: '0' });
+    if (k !== SHOWN[0]) fig.style.opacity = '0';
+    P.view.appendChild(fig);
+    figEls[k] = fig;
+  }
   P.view.style.height = `${P.h}px`;
   panes.fig = P;
   // the measurements: the chapter's readouts, as the site lists them beside the figure
@@ -178,7 +207,7 @@ function build(src) {
   const title = h('div');
   const T = LAY.title;
   const eye = h('p', 'card-eye', CLIP ? esc(REEL.title.eye) : `${NUM} <span>·</span> ${esc(PART_NAME)}`);
-  const t1 = h('p', 'card-title', esc(CLIP ? REEL.title.name : C.title));
+  const t1 = h('p', 'card-title', esc(CLIP ? REEL.title.name : TITLE));
   const rule = h('div', 'card-rule');
   const sub = h('p', 'card-sub', esc(CLIP ? REEL.title.sub : SUB));
   Object.assign(eye.style, { left: `${T.x + 6}px`, top: `${T.y - 54}px` });
@@ -307,13 +336,42 @@ function advance(n) {
   while (simN < n) {
     simN++;
     set(scriptAt(simN / FPS + T0));
-    C.anim?.(1 / FPS, state, set);
+    for (const k of SHOWN) CH[k].anim?.(1 / FPS, state, set);
   }
 }
 
-function renderFigure() {
-  if (!sheet) return;
-  atZoom(ZOOM, () => sheet.render(true));
+/**
+ * How much each chapter's figure shows at video time t (0 to 1, by key): the chapter of the
+ * step on screen; across a move into another chapter's step, the first fades out over the first
+ * half and the second fades in over the second, so the two never overlap.
+ */
+function figuresAt(t) {
+  const s = segAt(L, Math.max(0, t));
+  if (s.kind === 'title') return { [chOf(0)]: 1 };
+  if (s.kind === 'end') return { [chOf(V.steps.length - 1)]: 1 };
+  if (s.kind === 'hold') return { [chOf(s.i)]: 1 };
+  const a = chOf(s.from), b = chOf(s.to);
+  if (a === b) return { [a]: 1 };
+  const p = (t - s.t0) / (s.t1 - s.t0);
+  return { [a]: 1 - ease(2 * p), [b]: ease(2 * p - 1) };
+}
+/** The chapter whose figure, readouts and pane name show at t: the larger share. */
+function chapterAt(t) {
+  const w = figuresAt(t), k = Object.keys(w);
+  // at the middle of a move into another chapter both are out: the next one takes over
+  return k.reduce((a, b) => (w[b] >= w[a] ? b : a));
+}
+function renderFigure(t) {
+  const w = figuresAt(t);
+  for (const k of SHOWN) {
+    const on = w[k] || 0;
+    if (SHOWN.length > 1) figEls[k].style.opacity = on.toFixed(3);
+    if (on > 0 && sheets[k]) atZoom(ZOOM, () => sheets[k].render(true));
+  }
+  if (SHOWN.length > 1) {
+    const name = paneName(chapterAt(t)), el = $('.pane-name', panes.fig.el);
+    if (el.textContent !== name) el.textContent = name;
+  }
 }
 
 // ---------------------------------------------------------------- measurements
@@ -353,13 +411,13 @@ const sentences = (s) => s.split(/(?<=[.!?])\s+(?=[A-Z0-9(“"])/);
  * (onState) run as they do on the page.
  */
 function capOf(k) {
-  const st = V.steps[k];
+  const st = V.steps[k], Ck = CH[chOf(k)];
   set(STATES[k].a);
-  const out = C.text?.(state, { cite: () => '' }) || {};
+  const out = Ck.text?.(state, { cite: () => '' }) || {};
   const live = out.live || '';
   const m = live.match(/^\s*<b>([\s\S]*?)<\/b>\s*([\s\S]*)$/);
   const rest = sentences(plain(m ? m[2] : live).replace(/^[,;:]\s*/, ''));
-  const name = st.name ?? (m ? plain(m[1]).replace(/[.:]\s*$/, '') : C.title);
+  const name = st.name ?? (m ? plain(m[1]).replace(/[.:]\s*$/, '') : Ck.title);
   let line = st.line ?? (st.pick ? rest.filter((_, i) => st.pick.includes(i)) : rest).join(' ');
   // a line of the video's own may quote the chapter: {s0} is a sentence of the live text, {LVEF}
   // the value of the readout of that name, as the page shows them at the step's state
@@ -369,7 +427,7 @@ function capOf(k) {
     if (v == null) throw new Error(`chapter ${KEY}, step ${k}: no ${all} in the chapter's text`);
     return v;
   });
-  return { eye: `${NUM} · ${C.title}`, name, line };
+  return { eye: `${numOfKey(chOf(k))} · ${Ck.title}`, name, line };
 }
 
 /** One line of the caption going from text a to text b (k: 0 to 1): out, then in (video/app.js). */
@@ -519,8 +577,8 @@ function frame(i) {
   // own beat, so it runs on every frame, under a card too
   window.__clock.flush();
   if (Math.max(titleOn, endOn) < 1) {
-    renderFigure();
-    updateSide(C.text?.(state, { cite: () => '' }) || {});
+    renderFigure(t);
+    updateSide(CH[chapterAt(t)].text?.(state, { cite: () => '' }) || {});
   }
   updateCaption(t);
   updateTrack(t, endOn);
@@ -539,8 +597,10 @@ async function settle() {
   try { await scanner(); } catch (e) { /* a chapter without the scanner */ }
   await import('../src/echo.js');
   // a 3D chapter: its stage running with the chapter's own frame (its ready())
-  for (let k = 0; C.ready && !C.ready() && k < 400; k++) await new Promise((r) => setTimeout(r, 50));
-  if (C.ready && !C.ready()) throw new Error(`chapter ${KEY}: the 3D view did not start`);
+  for (const c of Object.values(CH)) {
+    for (let k = 0; c.ready && !c.ready() && k < 400; k++) await new Promise((r) => setTimeout(r, 50));
+    if (c.ready && !c.ready()) throw new Error(`chapter ${c.key}: the 3D view did not start`);
+  }
   // each disease heart a step shows, built now (a few seconds, once), so that the step's first
   // frame shows it; then the heart shown before
   const hearts = [...new Set(V.steps.map((s) => s.set?.pheno).filter((k) => k && k !== 'normal'))];
@@ -571,19 +631,26 @@ async function init() {
   const src = await loadSource();
   SUB = V.sub || (plain($('.dek', src.art)?.innerHTML || '').match(/^.*?[.!?](?=\s|$)/) || [''])[0];
   build(src);   // the figure is in the page before the chapter looks for its parts
-  C.init?.({ state, set, subscribe, $, $$, cite: () => '' });
-  if (V.presets) STATES = stepStates(V, (await import(`../src/ch/${KEY}.js`))[V.presets.from]);
-  subscribe((s, changed) => { C.onState?.(s, changed); if (sheet) sheet.dirty = true; });
+  for (const c of Object.values(CH)) c.init?.({ state, set, subscribe, $, $$, cite: () => '' });
+  if (V.presets) STATES = stepStates(V, (await import(`../src/ch/${V.presets.ch ?? KEY}.js`))[V.presets.from]);
+  subscribe((s, changed) => {
+    for (const c of Object.values(CH)) c.onState?.(s, changed);
+    for (const sh of Object.values(sheets)) sh.dirty = true;
+  });
   CAPS = V.steps.map((_, k) => capOf(k));
   labelTrack();
   await Promise.all(['400 20px "IBM Plex Sans"', '500 20px "IBM Plex Sans"', '600 20px "IBM Plex Sans"', '400 20px "IBM Plex Mono"', '500 20px "IBM Plex Mono"',
     '600 20px Caveat', '400 20px Caveat', '400 20px Newsreader', 'italic 400 20px Newsreader'].map((f) => document.fonts.load(f)));
   await document.fonts.ready;
-  sheet = C.figure?.(figEl, () => state) || null;
-  if (sheet) sizeSheet(sheet, panes.fig.w, panes.fig.h, ZOOM);
-  C.enter?.({ state, set, playing: true });
-  C.tourEnter?.(set, state);
-  C.warm?.();
+  for (const k of SHOWN) {
+    const sh = CH[k].figure?.(figEls[k], () => state) || null;
+    if (sh) { sizeSheet(sh, panes.fig.w, panes.fig.h, ZOOM); sheets[k] = sh; }
+  }
+  for (const c of Object.values(CH)) {
+    c.enter?.({ state, set, playing: true });
+    c.tourEnter?.(set, state);
+    c.warm?.();
+  }
   await settle();
   CAPS = V.steps.map((_, k) => capOf(k));
   labelTrack();
@@ -593,7 +660,7 @@ async function init() {
   sizeReelTrack();
   window.__clock.start();
   return {
-    fps: FPS, frames: FRAMES, duration: CLIP ? CLIP.duration : L.duration, width: W, height: H, ch: KEY, name: C.title, num: NUM, capScale,
+    fps: FPS, frames: FRAMES, duration: CLIP ? CLIP.duration : L.duration, width: W, height: H, ch: KEY, name: TITLE, num: NUM, capScale,
     clip: CLIP ? { k: CLIP.k, F0: CLIP.F0, F1: CLIP.F1, offset: CLIP.offset, T0: CLIP.T0, T1: CLIP.T1 } : null,
     segs: L.segs.map((s) => ({ kind: s.kind, i: s.i ?? null, from: s.from ?? null, to: s.to ?? null, t0: s.t0, t1: s.t1 })),
     caps: CAPS,
@@ -603,7 +670,7 @@ async function init() {
 const ready = init();
 /** For writing a script: the grade bands of a severity key, from the chapter's own format (its slider's label). */
 function bands(key) {
-  const f = C.format?.[key];
+  const f = Object.values(CH).find((c) => c.format?.[key])?.format[key];
   if (!f) return null;
   const out = [];
   for (let i = 0; i <= 400; i++) {
