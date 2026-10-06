@@ -96,6 +96,8 @@ export const REEL = {
 
 const num = (ch) => String(CHAPTERS.findIndex((c) => c.key === ch) + 1).padStart(2, '0');
 const title = (ch) => CHAPTERS.find((c) => c.key === ch).title;
+/** The chapter's short name in the site's chapter bar (its nav), if it has one. */
+const navOf = (ch) => CHAPTERS.find((c) => c.key === ch).nav;
 
 /**
  * The time of each clip (s): T0, T1 and its tour, the part between the cards. The first clip
@@ -109,7 +111,7 @@ export function reelLayout() {
     const intro = k === 0 ? REEL.intro : 0, outro = k === n - 1 ? REEL.outro : 0;
     const T0 = t, T1 = t + (intro + c.bars + outro) * sec;
     t = T1;
-    return { ...c, k, num: num(c.ch), title: title(c.ch), intro, outro, T0, T1, tour: { t0: T0 + intro * sec, t1: T1 - outro * sec } };
+    return { ...c, k, num: num(c.ch), title: title(c.ch), nav: navOf(c.ch), intro, outro, T0, T1, tour: { t0: T0 + intro * sec, t1: T1 - outro * sec } };
   });
   const frames = Math.round(t * FPS);
   clips.forEach((c, k) => { c.F0 = k ? Math.ceil(c.T0 * FPS - 1e-6) : 0; });
