@@ -457,7 +457,8 @@ function plumeColor(v, nyq) {
  * chamber); keep: cm over which the core keeps its velocity before it slows (its potential
  * core; 0 by default); pclip: the polygon the convergence zone stays inside (none: it is not cut);
  * a: 0..1 strength over the cycle; pisa: false for no convergence zone; box: false to leave
- * out the outline and return the box's extent { t0, t1, r0, r1 } (radians, px) instead.
+ * out the outline and return the box's extent { t0, t1, r0, r1 } (radians, px) instead; skip(p):
+ * true for a point (cm) the jet and its convergence zone leave out (a dissection flap, ch/aorta.js).
  */
 export function jet(ctx, F, j) {
   if (!j || !(j.a > 0.02) || !(j.q > 0)) return;   // a NaN strength draws nothing
@@ -496,6 +497,7 @@ export function jet(ctx, F, j) {
     for (let ii = 0; ii < W; ii++) {
       const X = x0 + (ii + 0.5) * cell, Y = y0 + (jj + 0.5) * cell;
       const p = [(X - sect.cx) / k, (Y - sect.top) / k];
+      if (j.skip && j.skip(p)) continue;
       const rel = sub(p, O), al = dot(rel, d), ac = dot(rel, n);
       const toward = unit(mul(p, -1));                         // from here to the probe
       let vb = 0, alpha = 0;

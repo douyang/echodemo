@@ -6,8 +6,11 @@
 // the annulus I-I at midsystole (Lang 2015). The largest diameter takes the terms and thresholds of
 // the 2022 ACC/AHA guideline; under the bicuspid heart, its recommendations for a bicuspid valve.
 // Dissection: a reverberation that mimics a flap, then a flap in the root and the ascending aorta,
-// with the true lumen expanding in systole and faster flow in it than in the false lumen, then
-// aortic regurgitation, then a pericardial effusion (Goldstein 2015).
+// with the true lumen expanding in systole, brisk forward flow in it, and slower, later, reversed
+// flow in the false lumen. Then aortic regurgitation, whose mechanism follows the flap as it reaches
+// nearer the valve: a central jet from the dilated root, an eccentric jet from a prolapsed cusp,
+// and a jet beside the flap that prolapses through the valve. Then a pericardial effusion
+// (Goldstein 2015; Movsowitz 2000, PMID 10987615).
 // Coarctation: the suprasternal view of the arch with the narrowing just past the left subclavian
 // artery and the color jet through it, continuous-wave Doppler with the diastolic tail, and pulsed-
 // wave Doppler of the abdominal aorta; the criteria of the ACC/AHA (2022) and of the ESC (2020)
@@ -19,7 +22,7 @@ import { tracks, bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols
 import { cal, jet, barFor } from '../echo2d.js';
 import { mmode } from '../bmode.js';
 import { MeshPanel } from '../meshpanel.js';
-import { onPlane, hingesOf, leafletsOf, blood, cavity, middle, sub, add, mul, dot, unit, perp } from '../meshjet.js';
+import { onPlane, hingesOf, leafletsOf, blood, cavity, area, middle, sub, add, mul, dot, len, unit, perp } from '../meshjet.js';
 import { rootCalipers, annulusCaliper, chords, coaCaliper, shiftOnto, diaphragmCaliper, rootFor, coaFor, COA } from '../aortacal.js';
 import { annulusOf } from '../gl/prostheticmesh.js';
 import { diseaseTargets } from '../model3d.js';
@@ -71,8 +74,20 @@ function dilAt(x, heart) {
 // ---------------------------------------------------------------- dissection
 // Stages along the slider: no flap; a reverberation that mimics one; the flap; the flap with aortic
 // regurgitation (mild, then moderate by its vena contracta); and with a pericardial effusion.
-const DIS = { art: 0.18, flap: 0.36, ar: 0.56, eff: 0.78 };
+// Along the AR stages the flap reaches nearer the valve, and the AR's mechanism follows it
+// (Goldstein 2015, Table 8 and its text; Movsowitz 2000, PMID 10987615). From 0.48 the root
+// dilates. From 0.56 the dilated root holds the cusps apart, and the jet is central. From 0.645 the
+// flap runs down the anterior sinus to the annulus. The right coronary cusp loses its support and
+// prolapses, and the jet is eccentric. From 0.78 the flap's lower part is free. It prolapses through
+// the valve in diastole, and the jet runs beside it. Each change takes 0.05 of the slider.
+const DIS = { art: 0.18, flap: 0.36, dil: 0.48, ar: 0.56, pro: 0.645, eff: 0.78 };
 const DIS_GRADES = ['no flap', 'reverberation', 'flap', 'flap and AR', 'flap, AR and effusion'];
+// the root fully dilated: the sinuses and the ascending aorta, L-L at end-diastole (cm)
+const DIS_ROOT = { sin: 4.3, asc: 4.2 };
+// where the flap joins the anterior wall (cm above the valve's centre): the upper sinus, then the annulus
+const HP = { top: 1.4, low: 0.3 };
+// the AR's mechanisms (Goldstein 2015, Table 8), by the flap's place
+const MECH = { dil: 'dilated root', cusp: 'cusp prolapse', flap: 'flap prolapse' };
 function disAt(x, heart) {
   const v = { type: 'dis', s: x, heart };
   const k = x < DIS.art ? 0 : x < DIS.flap ? 1 : x < DIS.ar ? 2 : x < DIS.eff ? 3 : 4;
@@ -85,9 +100,23 @@ function disAt(x, heart) {
   // AR by its vena contracta (Zoghbi 2017): <0.3 cm mild, >0.6 cm severe
   v.ar = v.vc <= 0 ? 'none' : v.vc < 0.3 ? 'mild' : v.vc <= 0.6 ? 'moderate' : 'severe';
   v.eff = k >= 4 ? rnd(4 + 5 * w) : 0;
-  const R = rootFor(heart, 0, 0);
+  // the root's dilation, 0 to 1: the image is set to the printed diameters, as for the dilation
+  // (aortacal.js rootFor). A heart's own larger size stays.
+  v.dil = v.flap ? smooth((x - DIS.dil) / (DIS.pro - DIS.dil)) : 0;
+  const R0 = rootFor(heart, 0, 0);
+  const to = (own, full) => rnd(own + (Math.max(own, full) - own) * v.dil, 1);
+  const R = v.dil > 0 ? rootFor(heart, to(R0.sin, DIS_ROOT.sin), to(R0.asc, DIS_ROOT.asc)) : R0;
+  v.wr = R.wr;
+  v.wa = R.wa;
   v.sin = rnd(R.sin, 1);
+  v.stj = rnd(R.stj, 1);
   v.asc = rnd(R.asc, 1);
+  // the mechanisms' shares, and the flap: where it joins the anterior wall, and its free part
+  const toCusp = smooth((x - DIS.pro) / 0.05), toFlap = smooth((x - DIS.eff) / 0.05);
+  v.mw = k >= 3 ? { dil: 1 - toCusp, cusp: toCusp * (1 - toFlap), flap: toFlap } : { dil: 0, cusp: 0, flap: 0 };
+  v.mech = k < 3 ? null : x < DIS.pro ? 'dil' : x < DIS.eff ? 'cusp' : 'flap';
+  v.hP = HP.top + (HP.low - HP.top) * toCusp;
+  v.free = toFlap;
   return v;
 }
 
@@ -205,7 +234,7 @@ const beat = new Beat(RR);
 const redraw = () => { if (sheet) sheet.dirty = true; };
 const P_ED = new MeshPanel('plax_root', { diseases: ['aoRoot', 'aoAsc'], redraw });
 const P_MS = new MeshPanel('plax_root', { diseases: ['aoRoot', 'aoAsc'], redraw });
-const P_LAX = new MeshPanel('plax', { diseases: ['eff', 'effAnt'], redraw });
+const P_LAX = new MeshPanel('plax', { diseases: ['eff', 'effAnt', 'aoRoot', 'aoAsc'], redraw });
 const P_SSN = new MeshPanel('ssn', { diseases: ['aoCoa'], redraw });
 const P_SC = new MeshPanel('sc_aorta_z', { diseases: [], redraw });
 const PANELS = [P_ED, P_MS, P_LAX, P_SSN, P_SC];
@@ -218,7 +247,7 @@ function startAll() {
   }
 }
 // what the views drew last, for the checks (drawn())
-const DRAWN = { ed: null, ms: null, coa: null, dia: null };
+const DRAWN = { ed: null, ms: null, coa: null, dia: null, lax: null };
 
 /** The crossings (t > 0) of the ray from the probe along dir with the closed wall loops, sorted. */
 function rayHits(loops, dir, len = 16) {
@@ -237,28 +266,160 @@ function rayHits(loops, dir, len = 16) {
 }
 
 // ---------------------------------------------------------------- the dissection on the long axis
-// The flap: a line in the lumen from 0.8 cm above the valve's centre up the ascending aorta, at a
-// fraction of the lumen's width from its anterior wall. The false lumen lies in front (the outer
-// curve of the ascending aorta), the true lumen behind it. In systole the true lumen expands and
-// the flap moves toward the false lumen; in diastole it returns and flutters.
-const FLAP = { h0: 0.8, dia: 0.58, sys: 0.45 };
+// The lumen of the root and the ascending aorta on a long-axis plane: chords square to the root's
+// axis (aortacal.js chords), every 0.1 cm from 0.3 cm above the valve's centre, each from the inner
+// face of the anterior wall to that of the posterior wall. A point of the lumen is at h cm along
+// the axis and at the fraction u of its chord (0 at the anterior wall). The shut cusps meet about
+// 1.2 cm above the valve's centre.
+// The flap: the false lumen lies in front of it (the outer curve of the ascending aorta), the true
+// lumen behind it. In the tubular aorta it lies at the fraction f of the lumen. In systole the true
+// lumen expands and the flap moves toward the false lumen. In diastole it returns and flutters.
+// Toward the root it bends to the anterior wall and joins it at hP, where the false lumen ends.
+// With a free lower part (disAt), the flap leaves the lumen's fraction below FLAP.hJ. In systole
+// the flow holds that part up in the root. In diastole it prolapses through the valve, just behind
+// the anterior cusp's edge, into the LVOT.
+// The color: in systole the true lumen has brisk forward flow, and the root below the flap too. The
+// false lumen fills late and slowly from its entry tear, beyond the view, so that its flow runs
+// back toward the root (Goldstein 2015, Table 7: reverse, delayed or absent). In diastole the
+// lumens have no flow, and the AR jet shows. No color crosses the flap: each point takes the flow
+// of its own lumen, and the jet and its convergence zone leave out the flap and its far side.
+const FLAP = { dia: 0.58, sys: 0.45, uS: 0.08, turn: 1.4, hJ: 2.2, end: 1.6, w: 0.09 };
 // the peak velocities along the aorta (cm/s): the true lumen's, and the false lumen's, slower and later
-const V_TL = 80, V_FL = 25;
+const V_TL = 80, V_FL = 30;
 const tlFlow = (t) => bump(t, EV.avo + 10, EV.avc + 15, EV.avo + 90);           // 0..1, true lumen
 const flFlow = (t) => bump(t, EV.avo + 70, EV.avc + 150, EV.avo + 190);         // 0..1, false lumen: later, slower
 const flapF = (t) => FLAP.dia - (FLAP.dia - FLAP.sys) * tlFlow(t) + 0.012 * Math.sin((2 * Math.PI * t) / 95) * (1 - tlFlow(t));
 const LUMEN = new WeakMap();   // ev -> the lumen's chords and the flap of its last frame
 
-/** The chords of the root and the ascending aorta on ev's last frame, and the flap's points on them. */
+/**
+ * The flap's fraction of the lumen at h (cm), where it joins the anterior wall at hP: NaN below
+ * hP. Below FLAP.turn it runs down the anterior sinus, close to the wall; from there it turns
+ * into the lumen, and it lies at f from 0.8 cm higher.
+ */
+function uFlap(h, hP, f) {
+  if (h < hP) return NaN;
+  const s0 = smooth((h - hP) / 0.3), s1 = smooth((h - Math.max(hP, FLAP.turn)) / 0.8);
+  return FLAP.uS * s0 * (1 - s1) + f * s1;
+}
+
+/** The chord of M at h, linear between the two round it; below the first, the first moved along the axis. Null above the last. */
+function chordAt(M, h, ax) {
+  if (h <= M[0].h) return { ...M[0], h, C: add(M[0].C, mul(ax, h - M[0].h)) };
+  if (h > M[M.length - 1].h + 1e-9) return null;
+  // the chords lie every 0.1 cm from the first (aortacal.js chords)
+  const i = clamp(Math.floor((h - M[0].h) / 0.1 + 1e-9) + 1, 1, M.length - 1);
+  const A = M[i - 1], B = M[i], f = clamp((h - A.h) / (B.h - A.h || 1), 0, 1);
+  return { h, C: add(A.C, mul(sub(B.C, A.C), f)), n: A.n, a: A.a + (B.a - A.a) * f, b: A.b + (B.b - A.b) * f };
+}
+
+/** The chord of M at h, as chordAt, with h no higher than the top chord. */
+const chordIn = (M, h, ax) => chordAt(M, Math.min(h, M[M.length - 1].h), ax);
+
+/**
+ * The root's axis on the plane at systolic weight s, as aortacal.js finds it: P0 (the valve's
+ * centre), ax (up the aorta) and n (across it, away from the probe). g: the frame's plane.
+ */
+function axisOf(ev, s, g = ev.g) {
+  const A = ev.anat, q = ev.toPlane(A.point('av', 0, s), g), r = A.aorticRoot;
+  const ax = unit([r.dot(g.r), r.dot(g.d)]), n = [-ax[1], ax[0]];
+  return { P0: [q[0], q[1]], ax, n: n[1] < 0 ? mul(n, -1) : n };
+}
+
+/** The aortic cusps of the frame, each { pts, c }: c, the mean of its points across the root (cm, + deeper). */
+function cuspsOf(valves, A) {
+  return valves.filter((V) => V.valve === 'AorticValve' && V.pts.length > 2).map((V) => ({ V, pts: V.pts, c: V.pts.reduce((s, p) => s + dot(sub(p, A.P0), A.n), 0) / V.pts.length }));
+}
+
+/**
+ * Where the flap passes the valve when it prolapses: just behind the edge of the anterior cusp
+ * (the right coronary cusp), on its own frame. Falls back to 1.2 cm up the axis.
+ */
+function throughOf(ev, A) {
+  const front = cuspsOf(ev.last.valves, A).filter((C) => C.c < -0.3);
+  let tip = null;
+  for (const C of front) for (const p of C.pts) if (!tip || dot(sub(p, A.P0), A.n) > dot(sub(tip, A.P0), A.n)) tip = p;
+  return tip ? add(tip, mul(A.n, 0.07)) : add(A.P0, add(mul(A.ax, 1.2), mul(A.n, -0.1)));
+}
+
+/** The LVOT's axis on the plane at systolic weight s: unit, from the valve into the LVOT. */
+function lvotAxis(ev, s) {
+  const an = ev.anchors(s);
+  return unit(sub(onPlane(ev, an.lvot), onPlane(ev, an.av)));
+}
+
+/**
+ * The flap on the frame (plane cm), from the top of the lumen down: by its fraction of the
+ * lumen to hP, where it meets the anterior wall; or, as its lower part frees (v.free), to its
+ * free end: held up in the root while the valve is open, through the valve into the LVOT while
+ * it is shut.
+ */
+function flapPath(ev, L, v, state) {
+  const { M, at, f, A } = L;
+  const hLow = v.free > 0 ? FLAP.hJ : v.hP, pts = [];
+  for (let i = M.length - 1; i >= 0 && M[i].h > hLow + 1e-9; i--) pts.push(at(M[i], uFlap(M[i].h, v.hP, f)));
+  const m0 = chordIn(M, hLow, A.ax);
+  if (m0) pts.push(at(m0, uFlap(hLow, v.hP, f)));
+  if (!(v.free > 0)) return pts;
+  // the lower part: attached down the anterior sinus to hP, and free, blended by v.free
+  const N = 12, att = [];
+  for (let j = 1; j <= N; j++) {
+    const h = hLow + (v.hP - hLow) * (j / N), m = chordIn(M, h, A.ax);
+    if (m) att.push(at(m, uFlap(h, v.hP, f)));
+  }
+  const J = pts.length ? pts[pts.length - 1] : at(chordIn(M, FLAP.hJ, A.ax), f);
+  const shut = clamp(1 - (state.drive ? state.drive.av : 0), 0, 1), pr = smooth((shut - 0.25) / 0.6);
+  const Es = at(chordIn(M, FLAP.end, A.ax), 0.5), K = throughOf(ev, A), Ed = add(K, mul(unit(add(lvotAxis(ev, state.s), mul(A.n, 0.3))), 0.95));
+  for (let j = 1; j <= N; j++) {
+    const q = j / N;
+    const up = add(J, mul(sub(Es, J), q));
+    const down = q <= 0.55 ? add(J, mul(sub(K, J), q / 0.55)) : add(K, mul(sub(Ed, K), (q - 0.55) / 0.45));
+    const fr = add(up, mul(sub(down, up), pr)), a = att[j - 1] || fr;
+    pts.push(add(a, mul(sub(fr, a), v.free)));
+  }
+  return pts;
+}
+
+/** The chords of the root and the ascending aorta on ev's last frame, its axis, and the flap. */
 function lumenOf(ev, state, v) {
-  const M = chords(ev, state.s, 6).filter((m) => m.h >= 0.6);
-  const f = flapF(state.t ?? 0);
+  const M = chords(ev, state.s, 6);
   const at = (m, u) => add(m.C, mul(m.n, m.a + u * (m.b - m.a)));
-  const flap = v.flap ? M.filter((m) => m.h >= FLAP.h0).map((m) => at(m, f)) : [];
-  const L = { M, f, flap, at };
+  const L = { M, at, f: flapF(state.t ?? 0), A: M.length >= 2 ? axisOf(ev, state.s) : null, flap: [], hP: v.hP, hLow: v.free > 0 ? FLAP.hJ : v.hP };
+  if (v.flap && M.length >= 3) L.flap = flapPath(ev, L, v, state);
   LUMEN.set(ev, L);
   return L;
 }
+
+/**
+ * The flap seen from p (plane cm): d, the distance to it; side, < 0 on its anterior side (the false
+ * lumen's); inner, false where the nearest point is one of its ends.
+ */
+function sideOf(L, p) {
+  const P = L.flap;
+  if (P.length < 2) return { d: Infinity, side: 0, inner: false };
+  // where the flap keeps to its fraction of the lumen (0.3 cm above its turn, so that no part of the
+  // turn lies nearer), a point far from it across its chord needs no search
+  const h = dot(sub(p, L.A.P0), L.A.ax);
+  if (h >= Math.max(L.hLow, Math.max(L.hP, FLAP.turn) + 0.8) + 0.3) {
+    const m = chordAt(L.M, h, L.A.ax), uf = uFlap(h, L.hP, L.f);
+    if (m && Number.isFinite(uf)) {
+      const wd = m.b - m.a, u = (dot(sub(p, m.C), m.n) - m.a) / wd;
+      if (Math.abs(u - uf) * wd > 0.3) return { d: Math.abs(u - uf) * wd, side: u - uf, inner: true };
+    }
+  }
+  // the flap runs down the axis from its first point to its last: from the lowest segment up, stop
+  // where a segment lies higher above p than the nearest point found
+  const H = L.flapH || (L.flapH = P.map((q) => dot(sub(q, L.A.P0), L.A.ax)));
+  let d = Infinity, q = null, inner = false;
+  for (let i = P.length - 2; i >= 0; i--) {
+    if (Math.min(H[i], H[i + 1]) - h > d) break;
+    const a = P[i], e = sub(P[i + 1], a), l2 = dot(e, e) || 1e-12;
+    const t = clamp(dot(sub(p, a), e) / l2, 0, 1), c = add(a, mul(e, t)), dc = len(sub(p, c));
+    if (dc < d) { d = dc; q = c; inner = !((i === 0 && t <= 0) || (i === P.length - 2 && t >= 1)); }
+  }
+  return { d, side: dot(sub(p, q), L.A.n), inner };
+}
+/** True on the flap, within band (cm) of its centre line, and on its anterior side: no AR color goes there. */
+const acrossFlap = (L, p, band) => { const S = sideOf(L, p); return S.d < band || (S.inner && S.side < 0); };
 
 /** The crossings (t > 0) of the ray from the probe along dir with open lines (the pericardium), sorted. */
 function lineHits(lines, dir, len = 16) {
@@ -328,7 +489,7 @@ function nameLine(c, F, runs, text) {
 function dissectionItems(ev, state, v) {
   const L = lumenOf(ev, state, v);
   const out = [];
-  if (L.flap.length > 2) out.push({ lines: [L.flap], e: 9, w: 0.09 });
+  if (L.flap.length > 2) out.push({ lines: [L.flap], e: 9, w: FLAP.w });
   if (v.artifact) {
     const R = reverbLines(ev, state.s);
     if (R.length) out.push({ lines: R, e: -2, w: 0.08 });
@@ -337,23 +498,168 @@ function dissectionItems(ev, state, v) {
 }
 
 /**
- * Color in the root and the ascending aorta: each region a polygon on the plane with its velocity
- * (cm/s) along dir; the color shows the part along the beam, at the aliasing velocity nyq. Returns
- * the regions' extent as the color box's angles and radii, for its outline.
+ * The cusps in diastole (EchoView.extraUnder), as the AR's mechanism sets them (v.mw). The
+ * dilated root holds them apart: the anterior cusp and the posterior pieces part across the root
+ * until a central gap of the vena contracta's width stays between them. The anterior (right
+ * coronary) cusp prolapses below the others. Or the prolapsed flap passes just behind the
+ * anterior cusp's edge, and the posterior pieces stand back from it by the gap. The edges' overlap
+ * across the root is measured on the frame (the third cusp's cut piece lies at the coaptation).
+ * Each cusp moves most at its free edge and not at its hinge; a piece cut away from its hinge
+ * moves whole. The loops change on the plane; no items are added.
  */
+function cuspHook(v) {
+  return (ev, g, state, valves) => {
+    const shut = clamp(1 - (state.drive ? state.drive.av : 0), 0, 1);
+    if (!(shut > 0) || !(v.vc > 0)) return [];
+    const A = axisOf(ev, state.s, g), W = v.mw, C = cuspsOf(valves, A);
+    const cOf = (p) => dot(sub(p, A.P0), A.n), hOf = (p) => dot(sub(p, A.P0), A.ax);
+    const front = C.filter((x) => x.c < -0.3), back = C.filter((x) => x.c >= -0.3);
+    const edge = (L, f) => L.flatMap((x) => x.pts).filter((p) => hOf(p) > 0.6).map(cOf).reduce((m, c) => f(m, c), f === Math.max ? -Infinity : Infinity);
+    const fMax = edge(front, Math.max), bMin = edge(back, Math.min);
+    if (!Number.isFinite(fMax) || !Number.isFinite(bMin)) return [];
+    const lap = fMax - bMin;
+    // how far each side moves across at its free edge (cm, + deeper), and how far the anterior cusp drops
+    const apart = Math.max(0, v.vc + lap) / 2;
+    const fShift = (-apart * W.dil - 0.04 * W.flap) * shut;
+    const bShift = (apart * W.dil + Math.max(0, lap + 0.04 + FLAP.w / 2 + v.vc) * W.flap) * shut;
+    const drop = (v.vc + 0.15) * W.cusp * shut;
+    for (const x of C) {
+      const isFront = x.c < -0.3, side = isFront || x.c > 0.3;
+      // across the root on the cusp's own side: largest at its hinge, smallest at its free edge
+      const cs = x.pts.map((p) => (isFront ? -cOf(p) : cOf(p))), hi = Math.max(...cs), lo = Math.min(...cs);
+      x.V.pts = x.pts.map((p, i) => {
+        const w = side && hi - lo > 0.05 ? clamp((hi - cs[i]) / (hi - lo), 0, 1) : 1;
+        if (!isFront) return add(p, mul(A.n, bShift * w));
+        return add(p, add(mul(A.ax, -drop * w * w), mul(A.n, fShift * w + 0.25 * drop * w * w)));
+      });
+    }
+    return [];
+  };
+}
+
+/** The AR jet's strength through diastole, 0..1 (aortic closure to the next opening). */
+function arStrength(t) {
+  const TD = RR + EV.avo - EV.avc, u = (t >= EV.avc ? t - EV.avc : t + RR - EV.avc) / TD;
+  return u > 0.02 && u < 0.98 ? Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05)), 0.25) : 0;
+}
+
+/**
+ * The AR jet on a shut frame, as the mechanism places it (v.mw): from the central gap between the
+ * cusps, along the LVOT; from under the prolapsed cusp's edge, away from it, back toward the
+ * anterior mitral leaflet (Zoghbi 2017: the cusp at fault lies opposite the jet's direction); or
+ * from the gap behind the prolapsed flap, beside it. Each direction leans a little away from the
+ * probe, so that its color holds through diastole. The jet stays in the LVOT, in front of the
+ * anterior mitral leaflet, and in the LV. { O, dir }, and with poly also { clip, also, aml }: the
+ * polygons it stays in and the leaflet's line. Null when the plane shows no cusps.
+ */
+function arJetOf(ev, L, v, s, poly = true) {
+  const A = L.A, cusps = cuspsOf(ev.last.valves, A);
+  const front = cusps.filter((C) => C.c < -0.3).flatMap((C) => C.pts), back = cusps.filter((C) => C.c >= -0.3).flatMap((C) => C.pts);
+  if (!front.length || !back.length) return null;
+  const an = ev.anchors(s), uL = lvotAxis(ev, s);
+  const nearest = (P, q) => P.reduce((b, p) => (len(sub(p, q)) < len(sub(b, q)) ? p : b));
+  // the gap between the cusps: the nearest pair of points across it
+  let gA = front[0], gB = back[0], best = Infinity;
+  for (const p of front) for (const q of back) { const d = len(sub(p, q)); if (d < best) { best = d; gA = p; gB = q; } }
+  const mid = mul(add(gA, gB), 0.5);
+  // behind the prolapsed flap: from its posterior face to the posterior pieces
+  const K = add(throughOf(ev, A), mul(A.n, FLAP.w / 2));
+  const midF = mul(add(K, nearest(back, K)), 0.5);
+  const W = v.mw, away = (d, O) => unit(add(d, mul(unit(O), 0.25)));
+  const dirs = { dil: away(uL, mid), cusp: away(unit(add(uL, mul(A.n, 0.5))), mid), flap: away(unit(add(uL, mul(A.n, 0.3))), midF) };
+  const dir = unit(add(add(mul(dirs.dil, W.dil), mul(dirs.cusp, W.cusp)), mul(dirs.flap, W.flap)));
+  const O = add(mul(mid, W.dil + W.cusp), mul(midF, W.flap));
+  if (!poly) return { O: add(O, mul(dir, 0.04)), dir };
+  const cuts = [[add(O, perp(uL)), sub(O, perp(uL))]];
+  const h = hingesOf(ev, 'MitralValve');
+  if (h) cuts.push(h);
+  // the blood below the orifice, in front of the anterior mitral leaflet, as a point on the jet's
+  // course sees it: the largest of three, as a prolapsed cusp may close a pocket round the nearest;
+  // and the LV, as its middle sees it
+  const aml = amlOf(ev, L), cutsA = aml ? [...cuts, [aml[1], aml[2]]] : cuts;
+  let clip = [];
+  for (const t of [0.5, 0.85, 1.2]) {
+    const sd = seedAt(ev, add(O, mul(dir, t)), 0.3);
+    if (aml && behind([aml[1], aml[2]], O, sd)) continue;
+    const P = cavity(ev, sd, cutsA, 9, 96);
+    if (area(P) > area(clip)) clip = P;
+    if (area(clip) > 2) break;
+  }
+  const also = [cavity(ev, seedAt(ev, middle([onPlane(ev, an.lvot), onPlane(ev, an.lv)]), 1.2), cuts, 9, 96)];
+  return { O: add(O, mul(dir, 0.04)), dir, clip, also, aml };
+}
+
+/** p itself where it lies in blood (inside no wall), else the deepest blood near it (meshjet.js blood). */
+function seedAt(ev, p, r) {
+  const k = ev.last.tissue.filter((W) => W.closed && W.pts.length > 2).reduce((n, W) => (inside(W.pts, p) ? n + 1 : n), 0);
+  return k % 2 ? blood(ev, p, r) : p;
+}
+
+/**
+ * The anterior mitral leaflet as a line on the frame: from the aorto-mitral junction (the root's
+ * posterior wall at the annulus), to the leaflet's end nearest it, to its far end. Null when the
+ * plane shows no mitral leaflet.
+ */
+function amlOf(ev, L) {
+  const leaves = leafletsOf(ev, 'MitralValve');
+  if (!leaves.length || !L.M.length) return null;
+  const J = L.at(L.M[0], 1);
+  let P = null, bd = Infinity;
+  for (const Q of leaves) for (const p of Q) { const d = len(sub(p, J)); if (d < bd) { bd = d; P = Q; } }
+  const a = P.reduce((b, p) => (len(sub(p, J)) < len(sub(b, J)) ? p : b));
+  const b = P.reduce((m, p) => (len(sub(p, a)) > len(sub(m, a)) ? p : m));
+  return [J, a, b];
+}
+
+/** True where p lies behind the line Q (beside it, on the side away from the point ref). */
+function behind(Q, ref, p) {
+  let d = Infinity, k = -1, t0 = 0;
+  for (let i = 0; i + 1 < Q.length; i++) {
+    const e = sub(Q[i + 1], Q[i]), t = clamp(dot(sub(p, Q[i]), e) / (dot(e, e) || 1e-12), 0, 1), dc = len(sub(p, add(Q[i], mul(e, t))));
+    if (dc < d) { d = dc; k = i; t0 = t; }
+  }
+  if (k < 0 || (k === 0 && t0 <= 0) || (k === Q.length - 2 && t0 >= 1)) return false;
+  const e = sub(Q[k + 1], Q[k]), cr = (q) => e[0] * (q[1] - Q[k][1]) - e[1] * (q[0] - Q[k][0]);
+  return cr(p) * cr(ref) < 0;
+}
+
+/** The aortic cusps' segments on ev's frame, and a test: is p (cm) within r of one? */
+function cuspNear(ev) {
+  const S = leafletsOf(ev, 'AorticValve').flatMap((P) => P.map((p, i) => [p, P[(i + 1) % P.length]]));
+  const xs = S.flatMap(([a]) => [a[0]]), ys = S.flatMap(([a]) => [a[1]]);
+  const box = S.length ? [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)] : null;
+  return (p, r) => {
+    if (!box || p[0] < box[0] - r || p[0] > box[1] + r || p[1] < box[2] - r || p[1] > box[3] + r) return false;
+    for (const [a, b] of S) {
+      const e = sub(b, a), t = clamp(dot(sub(p, a), e) / (dot(e, e) || 1e-12), 0, 1);
+      if (len(sub(p, add(a, mul(e, t)))) < r) return true;
+    }
+    return false;
+  };
+}
+
 let CF = null;
-function paintFlow(ctx, F, regions, nyq) {
+/** The color of velocity vb along the beam (cm/s) at aliasing velocity nyq, wrapped past it, as echo2d.js colors its jets. */
+function flowColor(vb, nyq) {
+  let u = vb / nyq;
+  if (Math.abs(u) > 1) u = ((((u + 1) % 2) + 2) % 2) - 1;
+  const a = Math.abs(u), lo = u >= 0 ? SC.red : SC.blue, hi = u >= 0 ? SC.yellow : SC.cyan, t = Math.pow(a, 1.4);
+  const dim = 0.35 + 0.65 * Math.min(1, a * 1.6);
+  return lo.map((q, i) => Math.round((q + (hi[i] - q) * t) * dim));
+}
+
+/**
+ * The lumens' color inside the color box e ({ t0, t1, r0, r1 }: radians from the vertical, px
+ * from the apex): in each cell of about 0.8 mm, the flow of the lumen the cell lies in (flowAt,
+ * cm/s on the plane, or null for none), along the beam, at the aliasing velocity NYQ.
+ */
+function paintLumens(ctx, F, e, flowAt) {
   const { k, sect } = F, vb0 = F.view.box;
-  const pts = regions.flatMap((r) => r.poly);
-  if (!pts.length) return null;
-  const polar = pts.map((p) => [Math.atan2(p[0], p[1]), Math.hypot(p[0], p[1])]);
-  const ext = { t0: Math.min(...polar.map((q) => q[0])) - 0.04, t1: Math.max(...polar.map((q) => q[0])) + 0.04, r0: (Math.min(...polar.map((q) => q[1])) - 0.3) * k, r1: (Math.max(...polar.map((q) => q[1])) + 0.3) * k };
-  const live = regions.filter((r) => Math.abs(r.v) > 2);
-  if (!live.length) return ext;
-  const px = live.flatMap((r) => r.poly.map(F.P));
-  const x0 = Math.max(vb0.x, Math.min(...px.map((p) => p[0]))), x1 = Math.min(vb0.x + vb0.w, Math.max(...px.map((p) => p[0])));
-  const y0 = Math.max(vb0.y, Math.min(...px.map((p) => p[1]))), y1 = Math.min(vb0.y + vb0.h, Math.max(...px.map((p) => p[1])));
-  if (!(x1 > x0 && y1 > y0)) return ext;
+  const corners = [];
+  for (const t of [e.t0, (e.t0 + e.t1) / 2, e.t1]) for (const r of [e.r0, e.r1]) corners.push([sect.cx + r * Math.sin(t), sect.top + r * Math.cos(t)]);
+  const x0 = Math.max(vb0.x, Math.min(...corners.map((p) => p[0]))), x1 = Math.min(vb0.x + vb0.w, Math.max(...corners.map((p) => p[0])));
+  const y0 = Math.max(vb0.y, Math.min(...corners.map((p) => p[1]))), y1 = Math.min(vb0.y + vb0.h, Math.max(...corners.map((p) => p[1])));
+  if (!(x1 > x0 && y1 > y0)) return;
   const cell = Math.max(2, k * 0.08);
   const W = Math.ceil((x1 - x0) / cell), H = Math.ceil((y1 - y0) / cell);
   if (!CF) CF = document.createElement('canvas');
@@ -361,37 +667,87 @@ function paintFlow(ctx, F, regions, nyq) {
   const g = CF.getContext('2d', { willReadFrequently: true });
   g.clearRect(0, 0, CF.width, CF.height);
   const img = g.createImageData(W, H), data = img.data;
-  const paths = live.map((r) => { const p = new Path2D(); r.poly.forEach((q, i) => { const [X, Y] = F.P(q); if (i) p.lineTo(X, Y); else p.moveTo(X, Y); }); p.closePath(); return p; });
   const fr = cine.live ? Math.floor(performance.now() / 45) : 0;
+  let any = false;
   for (let j = 0; j < H; j++) {
     for (let i = 0; i < W; i++) {
-      const X = x0 + (i + 0.5) * cell, Y = y0 + (j + 0.5) * cell;
-      const k2 = paths.findIndex((p) => g.isPointInPath(p, X, Y));
-      if (k2 < 0) continue;
-      const r = live[k2], p = [(X - sect.cx) / k, (Y - sect.top) / k];
-      const toward = unit(mul(p, -1));
+      const X = x0 + (i + 0.5) * cell, Y = y0 + (j + 0.5) * cell, dx = X - sect.cx, dy = Y - sect.top;
+      const th = Math.atan2(dx, dy), r = Math.hypot(dx, dy);
+      if (th < e.t0 || th > e.t1 || r < e.r0 || r > e.r1) continue;
+      const p = [dx / k, dy / k], V = flowAt(p);
+      if (!V) continue;
       const nz = Math.sin(i * 12.9898 + j * 78.233 + fr * 37.719) * 43758.5453;
-      const vb = r.v * (r.prof ? r.prof(p) : 1) * dot(r.dir, toward) * (0.9 + 0.2 * (nz - Math.floor(nz)));
-      const a = Math.abs(vb) / nyq;
+      const vb = dot(V, unit(mul(p, -1))) * (0.9 + 0.2 * (nz - Math.floor(nz)));
+      const a = Math.abs(vb) / NYQ;
       if (a < 0.1) continue;
-      let u = vb / nyq;
-      if (Math.abs(u) > 1) u = ((((u + 1) % 2) + 2) % 2) - 1;
-      const pos = u >= 0, aa = Math.min(1, Math.abs(u));
-      const c0 = pos ? SC.red : SC.blue, c1 = pos ? SC.yellow : SC.cyan, tt = Math.pow(aa, 1.5), dim = 0.3 + 0.7 * Math.min(1, aa * 1.8);
-      const o = 4 * (j * W + i);
-      for (let q = 0; q < 3; q++) data[o + q] = Math.round((c0[q] + (c1[q] - c0[q]) * tt) * dim);
+      const col = flowColor(vb, NYQ), o = 4 * (j * W + i);
+      data[o] = col[0]; data[o + 1] = col[1]; data[o + 2] = col[2];
       data[o + 3] = Math.round(255 * smooth((a - 0.1) / 0.1));
+      any = true;
     }
   }
+  if (!any) return;
   g.putImageData(img, 0, 0);
   ctx.save();
   ctx.clip(F.clipBox);
   ctx.clip(F.fan);
-  ctx.imageSmoothingEnabled = true;
+  // cells of more than 2.5 px are smoothed. Smaller ones are drawn as they are, so that no color runs onto a thin flap.
+  ctx.imageSmoothingEnabled = cell > 2.5;
   ctx.drawImage(CF, 0, 0, W, H, x0, y0, W * cell, H * cell);
   ctx.restore();
-  return ext;
 }
+
+/**
+ * The flow at p (plane cm) at t ms, a vector on the plane (cm/s), or null: up the aorta in the root
+ * and the true lumen, back toward the root in the false lumen, each slowing to none at its walls
+ * and at the flap; in the LVOT up to 1.2 cm below the valve, toward the valve. None on the cusps.
+ * near: cuspNear(ev); lvot: the LVOT's polygon below the annulus and its axis, { P, uL }; band:
+ * no color within this distance of the flap (cm).
+ */
+function flowOf(L, v, t, near, lvot, band) {
+  const { M, A } = L, VT = V_TL * tlFlow(t), VF = V_FL * flFlow(t);
+  if (VT < 1 && VF < 1) return () => null;
+  const blunt = (x) => clamp(1 - Math.pow(2 * x - 1, 4), 0, 1);
+  // the false lumen ends at hP, or at the flap's joint when its lower part is free
+  const hEnd = v.hP + (FLAP.hJ - v.hP) * v.free;
+  // the LVOT's walls and leaflets, not the line across it at the annulus
+  const hOf = (p) => dot(sub(p, A.P0), A.ax);
+  const edges = lvot ? lvot.P.map((p, i) => [p, lvot.P[(i + 1) % lvot.P.length]]).filter(([a, b]) => hOf(a) < M[0].h - 0.05 || hOf(b) < M[0].h - 0.05) : [];
+  // the forward flow turns from the LVOT's axis to the aorta's through the valve
+  const up = (h) => (lvot ? unit(add(mul(lvot.uL, -(1 - smooth((h + 0.3) / 0.9))), mul(A.ax, smooth((h + 0.3) / 0.9)))) : A.ax);
+  return (p) => {
+    const h = dot(sub(p, A.P0), A.ax);
+    if (near(p, 0.06)) return null;
+    if (h < M[0].h) {
+      if (!lvot || h < -1.2 || !inside(lvot.P, p)) return null;
+      let d = Infinity;
+      for (const [a, b] of edges) { const e = sub(b, a), tt = clamp(dot(sub(p, a), e) / (dot(e, e) || 1e-12), 0, 1); d = Math.min(d, len(sub(p, add(a, mul(e, tt))))); }
+      return mul(up(h), 0.8 * VT * smooth(d / 0.35) * smooth((h + 1.2) / 0.5));
+    }
+    const m = chordAt(M, h, A.ax);
+    if (!m) return null;
+    const wd = m.b - m.a, u = (dot(sub(p, m.C), m.n) - m.a) / wd;
+    if (!(u > 0.015 && u < 0.985)) return null;
+    if (!v.flap) return mul(up(h), VT * blunt(u));
+    const S = sideOf(L, p);
+    if (S.d < band) return null;
+    if (!S.inner || S.side > 0) return mul(up(h), 0.85 * VT * blunt(u) * smooth(S.d / 0.25));
+    // in front of a free lower part, the false lumen opens into the root: the root's flow fades into it
+    if (h < hEnd) return mul(A.ax, 0.85 * VT * blunt(u) * smooth((hEnd - h) / 0.6));
+    const dw = u * wd;
+    return mul(A.ax, -VF * blunt(dw / (dw + S.d)) * smooth((h - hEnd) / 0.8));
+  };
+}
+/** Whether p lies inside polygon P (even-odd). */
+function inside(P, p) {
+  let c = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const [xi, yi] = P[i], [xj, yj] = P[j];
+    if ((yi > p[1]) !== (yj > p[1]) && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) c = !c;
+  }
+  return c;
+}
+
 /** The color box's outline, as the scanner draws it: angles t0..t1 from the vertical, radii r0..r1 px. */
 function colorBox(ctx, F, e0) {
   const { sect } = F, half = (sect.deg * Math.PI) / 360;
@@ -408,78 +764,52 @@ function colorBox(ctx, F, e0) {
   ctx.stroke();
   ctx.restore();
 }
+/** The extent of points P (plane cm) as a color box: angles from the vertical and radii in px, with margins. */
+function extentOf(F, P, da = 0.04, dr = 0.3) {
+  const q = P.map((p) => [Math.atan2(p[0], p[1]), Math.hypot(p[0], p[1])]);
+  return { t0: Math.min(...q.map((x) => x[0])) - da, t1: Math.max(...q.map((x) => x[0])) + da, r0: (Math.min(...q.map((x) => x[1])) - dr) * F.k, r1: (Math.max(...q.map((x) => x[1])) + dr) * F.k };
+}
 const merge = (a, b) => (!a ? b : !b ? a : { t0: Math.min(a.t0, b.t0), t1: Math.max(a.t1, b.t1), r0: Math.min(a.r0, b.r0), r1: Math.max(a.r1, b.r1) });
 
-/** The AR jet on a long axis: from the shut cusps into the LVOT (as ch/ar.js draws it). */
-function arJet(ev, s) {
-  const cusps = leafletsOf(ev, 'AorticValve');
-  if (!cusps.length) return null;
-  const an = ev.anchors(s), av = onPlane(ev, an.av), lvot = onPlane(ev, an.lvot), lv = onPlane(ev, an.lv);
-  const u = unit(sub(lvot, av));
-  const O = add(middle(cusps.flat()), mul(u, 0.1));
-  const dir = unit(add(mul(u, 0.6), mul(unit(sub(lv, O)), 0.4)));
-  const cuts = [[add(O, perp(u)), sub(O, perp(u))]];
-  const h = hingesOf(ev, 'MitralValve');
-  if (h) cuts.push(h);
-  const clip = cavity(ev, blood(ev, middle([lvot, lv])), cuts);
-  const aorta = cavity(ev, blood(ev, onPlane(ev, an.ao)), cuts.slice(0, 1));
-  return { O, dir, clip, aorta };
-}
-/** The AR jet's strength through diastole, 0..1 (aortic closure to the next opening). */
-function arStrength(t) {
-  const TD = RR + EV.avo - EV.avc, u = (t >= EV.avc ? t - EV.avc : t + RR - EV.avc) / TD;
-  return u > 0.02 && u < 0.98 ? Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05)), 0.25) : 0;
-}
-
-/**
- * The lumens' regions for the color, from the flap's lower end (above the open cusps) to 4 cm
- * above the valve's centre: one lumen, or the false lumen in front of the flap and the true lumen
- * behind it. Each region's velocity (cm/s, along the aorta) falls to none at its walls (prof: a
- * blunt profile across the region).
- */
-function lumenRegions(L, v, t) {
-  const M = L.M.filter((m) => m.h >= FLAP.h0 && m.h <= 4.0);
-  if (M.length < 3) return [];
-  const dir = unit(sub(M[M.length - 1].C, M[0].C));
-  const band = (u0, u1, list) => [...list.map((m) => L.at(m, u0)), ...list.slice().reverse().map((m) => L.at(m, u1))];
-  // where a point lies across the lumen: 0 at the anterior wall, 1 at the posterior wall
-  const across = (p) => {
-    const i = clamp(Math.round(dot(sub(p, M[0].C), dir) / 0.1), 0, M.length - 1), m = M[i];
-    return (dot(sub(p, m.C), m.n) - m.a) / (m.b - m.a);
-  };
-  const region = (u0, u1, list, vel) => ({
-    poly: band(u0, u1, list), v: vel, dir,
-    prof: (p) => { const w = (across(p) - u0) / (u1 - u0); return clamp(1 - Math.pow(2 * w - 1, 4), 0, 1); },
-  });
-  if (!v.flap) return [region(0, 1, M, V_TL * tlFlow(t))];
-  const gap = 0.04 / Math.max(0.5, M[M.length - 1].b - M[M.length - 1].a);
-  return [region(0, L.f - gap, M, V_FL * flFlow(t)), region(L.f + gap, 1, M, V_TL * tlFlow(t))];
-}
-
 const NYQ = 60;   // cm/s, the color scale of the dissection's long axis
+/** The B-mode items, the cusps and the target weights that the long axis and the zoomed root share. */
+const disOpts = (v) => ({
+  disease: { aoRoot: v.wr, aoAsc: v.wa },
+  extra: (ev, g, state) => dissectionItems(ev, state, v),
+  under: cuspHook(v),
+  extraKey: `dis|${v.s}|${v.heart}`,
+});
 function laxDissection(ctx, box, v, tms) {
   const e = v.eff / 10, S = v.eff > 0 ? { eff: Math.max(0, e - 0.17), effAnt: Math.max(0, e - 0.6) * 0.75 } : { eff: 0, effAnt: 0 };
-  const sy = cycleAt(tms).s;
+  const sy = cycleAt(tms).s, o = disOpts(v);
   P_LAX.draw(ctx, box, fit(box.w, `PARASTERNAL LONG AXIS · COLOR ${NYQ} cm/s`, `PLAX · COLOR ${NYQ}`), {
-    tms, disease: S, sac: v.eff > 0, still: v.eff > 0 ? smooth(S.eff / 0.5) : 0, standoff: S.effAnt, deeper: S.effAnt,
-    extra: (ev, g, state) => dissectionItems(ev, state, v),
-    extraKey: `dis|${v.flap}|${v.artifact}`,
+    ...o, tms, disease: { ...S, ...o.disease }, sac: v.eff > 0, still: v.eff > 0 ? smooth(S.eff / 0.5) : 0, standoff: S.effAnt, deeper: S.effAnt,
     over: (c, F, ev) => {
       const L = LUMEN.get(ev);
-      if (!L) return;
-      let ext = paintFlow(c, F, lumenRegions(L, v, tms), NYQ);
-      if (v.vc > 0) {
-        const a = arStrength(tms), J = arJet(ev, sy);
-        if (J) {
-          const q = Math.PI * (Math.max(v.vc, 0.24) / 2) ** 2 * 400;
-          const x = jet(c, F, { q, va: NYQ, vc: v.vc, jl: 2.6 + 4 * v.vc, jw: 1.5 * v.vc, a, pisa: true, O: J.O, dir: J.dir, clip: J.clip, pclip: J.aorta, box: false });
-          // the box covers the jet's whole course, also where this frame draws none
-          const P = [J.O, add(J.O, mul(J.dir, 2.6 + 4 * v.vc))].map((p) => [Math.atan2(p[0], p[1]), Math.hypot(p[0], p[1]) * F.k]);
-          ext = merge(ext, merge(x || null, { t0: Math.min(P[0][0], P[1][0]) - 0.06, t1: Math.max(P[0][0], P[1][0]) + 0.06, r0: Math.min(P[0][1], P[1][1]) - 10, r1: Math.max(P[0][1], P[1][1]) + 10 }));
-        }
+      if (!L || !L.A || L.M.length < 3) return;
+      const near = cuspNear(ev), uL = lvotAxis(ev, sy), a = arStrength(tms);
+      // the LVOT below the annulus, as the blood just below the valve sees it, while it carries flow
+      const lv = V_TL * tlFlow(tms) >= 1 ? cavity(ev, seedAt(ev, sub(L.A.P0, mul(L.A.ax, 0.5)), 0.3), [[L.at(L.M[0], 0), L.at(L.M[0], 1)]]) : [];
+      const lvot = lv.length > 2 ? { P: lv, uL } : null;
+      // the color box: the root, the ascending aorta, the top 1 cm of the LVOT, and the AR jet's whole course
+      const down = mul(L.A.ax, -1.0);
+      let ext = extentOf(F, [...L.M.flatMap((m) => [L.at(m, 0), L.at(m, 1)]), add(L.at(L.M[0], 0), down), add(L.at(L.M[0], 1), down)]);
+      const J = v.vc > 0 ? arJetOf(ev, L, v, sy, a > 0.02) : null;
+      const jl = 2.6 + 4 * v.vc;
+      if (J) ext = merge(ext, extentOf(F, [J.O, add(J.O, mul(J.dir, jl)), add(J.O, mul(perp(J.dir), 0.8 * v.vc)), sub(J.O, mul(perp(J.dir), 0.8 * v.vc))], 0.06, 0.2));
+      // no color within this of the flap's centre line: its half-width and a margin, at least 1.2
+      // color cells, and 2.2 px past its half-width, so that no color runs onto a thin flap
+      const band = Math.max(FLAP.w / 2 + 0.035, (1.2 * Math.max(2, F.k * 0.09)) / F.k, FLAP.w / 2 + 2.2 / F.k);
+      paintLumens(c, F, ext, flowOf(L, v, tms, near, lvot, band));
+      if (J && J.clip) {
+        const q = Math.PI * (Math.max(v.vc, 0.24) / 2) ** 2 * 400, Rc = 0.35 + 0.6 * v.vc;
+        // no color on the cusps, on the flap or across it, and the convergence zone only near the orifice
+        const skip = (p) => near(p, 0.05) || (v.flap && acrossFlap(L, p, band)) || (dot(sub(p, J.O), J.dir) < 0 && len(sub(p, J.O)) > Rc) || (J.aml && behind(J.aml, J.O, p));
+        jet(c, F, { q, va: NYQ, vc: v.vc, jl, jw: 1.5 * v.vc, a, pisa: true, O: J.O, dir: J.dir, clip: J.clip, clipOr: J.also, box: false, skip });
       }
-      if (ext) colorBox(c, F, ext);
+      colorBox(c, F, ext);
       barFor(c, F, -NYQ, NYQ);
+      DRAWN.lax = { t: tms, flap: L.flap.slice(), hEnd: v.hP + (FLAP.hJ - v.hP) * v.free, axis: L.A, jet: J ? { O: J.O, dir: J.dir, clip: J.clip, also: J.also, aml: J.aml } : null, map: { cx: F.sect.cx, top: F.sect.top, k: F.k, deg: F.sect.deg, depth: F.depth } };
       if (v.artifact) nameLine(c, F, reverbLines(ev, sy), 'reverberation');
     },
     names: [['prv', 'RV'], ['plv', 'LV'], ['la', 'LA']],
@@ -489,13 +819,13 @@ function laxDissection(ctx, box, v, tms) {
 /** The zoomed long axis of the root as a cine, in B-mode: the flap, or the reverberation, and the two lumens named. */
 function rootDissection(ctx, box, v, tms) {
   P_MS.draw(ctx, box, fit(box.w, 'PLAX · AORTIC ROOT · ZOOM', 'PLAX · ROOT'), {
-    tms, disease: { aoRoot: 0, aoAsc: 0 },
-    extra: (ev, g, state) => dissectionItems(ev, state, v),
-    extraKey: `dis|${v.flap}|${v.artifact}`,
+    ...disOpts(v), tms,
     over: (c, F, ev) => {
       const L = LUMEN.get(ev);
       if (!L || L.M.length < 3) return;
-      const m = L.M.reduce((b, x) => (Math.abs(x.h - 2.6) < Math.abs(b.h - 2.6) ? x : b));
+      // the lumens named above the flap's joint, where it keeps to its fraction of the lumen
+      const m = L.M.reduce((b, x) => (Math.abs(x.h - 3.0) < Math.abs(b.h - 3.0) ? x : b));
+      const u = v.flap ? uFlap(m.h, v.hP, L.f) : NaN;
       c.save();
       c.font = `600 11px ${MONO}`;
       c.textAlign = 'center';
@@ -504,9 +834,9 @@ function rootDissection(ctx, box, v, tms) {
       c.strokeStyle = 'rgba(8,10,12,0.85)';
       c.fillStyle = 'rgba(214,222,226,0.92)';
       const put = (p, s) => { const [x, y] = F.P(p); c.strokeText(s, x, y); c.fillText(s, x, y); };
-      if (v.flap) {
-        put(L.at(m, L.f / 2), 'FL');
-        put(L.at(m, (1 + L.f) / 2), 'TL');
+      if (Number.isFinite(u)) {
+        put(L.at(m, u / 2), 'FL');
+        put(L.at(m, (1 + u) / 2), 'TL');
       } else put(L.at(m, 0.5), 'Ao');
       // from this window, one space higher, the pericardium's copy falls elsewhere
       if (v.artifact) nameLine(c, F, reverbLines(ev, cycleAt(tms).s), 'reverberation');
@@ -519,23 +849,34 @@ function rootDissection(ctx, box, v, tms) {
 // (the beam 34 degrees right of the sector's axis): the pericardium in front of the aorta, the
 // aorta, and the pericardium behind it, at the depths of the normal heart's mesh on that beam at
 // end-diastole, each moving to its end-systolic depth (cm; the aorta moves toward the probe in
-// systole, the anterior pericardium hardly at all). The flap moves with the aorta and on its own:
-// toward the anterior wall as the true lumen expands, and back, fluttering, in diastole. The
-// reverberation lies at twice the pericardium's depth and moves with it, at twice its excursion.
+// systole, the anterior pericardium hardly at all). The beam crosses the root's axis 2.3 cm above
+// the valve's centre at end-diastole and 2.9 cm at end-systole. The flap lies there as the long
+// axis draws it, and moves with the aorta and on its own: toward the anterior wall as the true
+// lumen expands, and back, fluttering, in diastole. The reverberation lies at twice the
+// pericardium's depth and moves with it, at twice its excursion. With the dilated root (disAt),
+// each layer moves on the beam as the targets move it (cm per unit of weight of aoRoot, r, and of
+// aoAsc, a, at end-diastole and at end-systole, measured on the normal heart's mesh).
 const MM = { peri: [2.59, -0.04], ant: [3.52, 3.76, -0.43], post: [6.63, 6.88, -0.54], back: [7.08, -0.6], depth: 9 };
-function mmGeom(t) {
+const MMD = { peri: { a: [-0.37, -0.57] }, ant: { a: [-1.01, -1.01] }, post: { r: [0.76, 0.37], a: [0.04, 0.12] }, back: { r: [0.92, 0.59], a: [0, 0.13] } };
+function mmGeom(t, v) {
   const sy = clamp(cycleAt(t).s, 0, 1);
-  const peri = MM.peri[0] + MM.peri[1] * sy, back = MM.back[0] + MM.back[1] * sy;
-  const da = MM.ant[2] * sy, dp = MM.post[2] * sy;
+  const dd = (key) => {
+    const D = MMD[key], at = (j) => (D.r ? D.r[j] * v.wr : 0) + (D.a ? D.a[j] * v.wa : 0);
+    return at(0) + (at(1) - at(0)) * sy;
+  };
+  const peri = MM.peri[0] + MM.peri[1] * sy + dd('peri'), back = MM.back[0] + MM.back[1] * sy + dd('back');
+  const da = MM.ant[2] * sy + dd('ant'), dp = MM.post[2] * sy + dd('post');
   const a0 = MM.ant[0] + da, a1 = MM.ant[1] + da, p0 = MM.post[0] + dp, p1 = MM.post[1] + dp;
-  return { sy, peri, back, da, dp, a0, a1, p0, p1, flap: a1 + flapF(t) * (p0 - a1), rev: 2 * peri };
+  // the flap where the beam crosses the axis
+  const f = flapF(t), uB = v.free >= 0.5 ? f : uFlap(2.32 + 0.55 * sy, v.hP, f);
+  return { sy, peri, back, da, dp, a0, a1, p0, p1, flap: a1 + (Number.isFinite(uB) ? uB : f) * (p0 - a1), rev: 2 * peri };
 }
 function mmodeRoot(ctx, Pn, v) {
   panel(ctx, Pn.x, Pn.y, Pn.w, Pn.h, fit(Pn.w, 'M-MODE · ASCENDING AORTA', 'M-MODE · ASC AO'));
   const B = { x: Pn.x + 6, y: Pn.y + 24, w: Pn.w - 40, h: Pn.h - 30 };
   const d1 = MM.depth;
   const layers = (u) => {
-    const G = mmGeom((u * 2 * RR) % RR);
+    const G = mmGeom((u * 2 * RR) % RR, v);
     const L = [
       [0, 0.5, 8, 0], [0.9, 1.3, 0, 0],
       [G.peri - 0.06, G.peri + 0.06, 12, MM.peri[1] * G.sy], [G.a0, G.a1, 6, G.da], [G.p0, G.p1, 6, G.dp], [G.back - 0.06, G.back + 0.06, 12, MM.back[1] * G.sy],
@@ -544,7 +885,7 @@ function mmodeRoot(ctx, Pn, v) {
     if (v.artifact) L.push([G.rev - 0.04, G.rev + 0.04, -2, 2 * MM.peri[1] * G.sy]);
     return L;
   };
-  mmode(ctx, B, 0, d1, layers, `aormm|${v.flap}|${v.artifact}`);
+  mmode(ctx, B, 0, d1, layers, `aormm|${v.s}|${v.heart}`);
   const pxcm = B.h / d1, yOf = (cm) => B.y + cm * pxcm;
   ctx.save();
   ctx.font = `400 10px ${MONO}`;
@@ -558,13 +899,13 @@ function mmodeRoot(ctx, Pn, v) {
   // the structures named at the strip's left edge, at their depths at end-diastole
   ctx.font = `600 10px ${MONO}`;
   ctx.fillStyle = 'rgba(214,222,226,0.85)';
-  const G0 = mmGeom(0), names = [[G0.peri - 0.5, 'pericardium'], [(G0.a1 + G0.p0) / 2 - (v.flap || v.artifact ? 0.9 : 0), 'Ao']];
+  const G0 = mmGeom(0, v), names = [[G0.peri - 0.5, 'pericardium'], [(G0.a1 + G0.p0) / 2 - (v.flap || v.artifact ? 0.9 : 0), 'Ao']];
   for (const [d, s] of names) ctx.fillText(s, B.x + 6, yOf(d) + 3.5);
   ctx.restore();
   const avoid = [];
   if (v.flap || v.artifact) {
     // the line named in diastole, where it is still
-    const t = 640, G = mmGeom(t), x = B.x + (t / (2 * RR)) * B.w, y = yOf(v.flap ? G.flap : G.rev);
+    const t = 640, G = mmGeom(t, v), x = B.x + (t / (2 * RR)) * B.w, y = yOf(v.flap ? G.flap : G.rev);
     const text = v.flap ? 'flap' : 'reverberation';
     ctx.save();
     ctx.font = `500 10.5px ${MONO}`;
@@ -977,9 +1318,15 @@ function liveDil(v, cite) {
 function liveDis(v, cite) {
   if (v.k === 0) return `<b>No dissection flap.</b> One lumen runs from the root up the ascending aorta. In systole, color fills it from wall to wall.`;
   if (v.k === 1) return `<b>Reverberation, not a flap.</b> The line lies at twice the depth of the pericardium in front of the aorta. It moves with the pericardium, not on its own, and it runs across the lumen into the posterior wall. In systole, color fills the lumen on both sides of it. Reverberations, especially in the ascending aorta, can mimic a flap${cite('goldstein2015')}.`;
-  let s = `<b>Dissection flap${v.k >= 3 ? ` with ${v.ar} AR` : ''}${v.k >= 4 ? ' and a pericardial effusion' : ''}.</b> A mobile flap divides the lumen. The true lumen, behind it here, expands in systole, and the flap moves toward the false lumen. Color is brighter in the true lumen; flow in the false lumen is slower${cite('goldstein2015')}.`;
-  if (v.k >= 3) s += ` The AR jet has a vena contracta of ${fmt(v.vc, 2)} cm: ${v.ar}${cite('zoghbi2017')}. AR occurs in about 50% of type A dissections${cite('goldstein2015')}.`;
-  if (v.k >= 4) s += ` The effusion measures ${fmt(v.eff)} mm. In ascending dissection, an effusion indicates a poor prognosis and suggests rupture of the false lumen into the pericardium${cite('goldstein2015')}.`;
+  const g = cite('goldstein2015'), z = cite('zoghbi2017');
+  let s = `<b>Dissection flap${v.k >= 3 ? ` with ${v.ar} AR` : ''}${v.k >= 4 ? ' and a pericardial effusion' : ''}.</b> A mobile flap divides the lumen. The true lumen, behind it here, expands in systole, and the flap moves toward the false lumen. In systole the true lumen has brisk forward flow (red). Flow in the false lumen is slower and later, and here it runs back toward the root (blue)${g}. No color crosses the flap.`;
+  const size = `L-L at end-diastole, the sinuses measure ${f1(v.sin)} cm, the STJ ${f1(v.stj)} cm and the ascending aorta ${f1(v.asc)} cm`;
+  if (v.k === 2 && v.dil > 0) s += ` The root is dilating: ${size}. The cusps still close.`;
+  if (v.mech === 'dil') s += ` The root has dilated: ${size}. The flap stays above the cusps, but the wider root holds them apart, and they do not close in the centre. The AR jet is central, down the LVOT${g}.`;
+  if (v.mech === 'cusp') s += ` The flap now runs down the anterior sinus to the annulus. The right coronary cusp loses its support and prolapses below the other cusps in diastole${g}. The AR jet is eccentric. It starts under the posterior cusp's edge and runs back onto the anterior mitral leaflet, away from the prolapsed cusp${z}.`;
+  if (v.mech === 'flap') s += ` The flap's lower part is now free. In diastole it prolapses through the valve into the LVOT and keeps the cusps apart. The AR jet passes behind the flap and runs beside it, not through it${g}. In systole the flow pushes the flap back into the root.`;
+  if (v.k >= 3) s += ` The jet's vena contracta is ${fmt(v.vc, 2)} cm: ${v.ar}${z}. AR occurs in about 50% of type A dissections${g}.`;
+  if (v.k >= 4) s += ` The effusion measures ${fmt(v.eff)} mm. In ascending dissection, an effusion indicates a poor prognosis and suggests rupture of the false lumen into the pericardium${g}.`;
   return s;
 }
 
@@ -1100,8 +1447,8 @@ const aortaPage = {
       live = liveDil(v, cite);
     } else if (v.type === 'dis') {
       readouts = [
-        { k: 'Flap', v: v.flap ? 'mobile flap' : v.artifact ? 'reverberation' : 'none', text: true, flag: v.flap },
-        { k: 'True lumen', v: v.flap ? 'expands in systole' : '–', text: true, flag: false },
+        { k: 'Flap', v: !v.flap ? (v.artifact ? 'reverberation' : 'none') : v.free >= 0.5 ? 'prolapses' : v.hP <= HP.low + 0.05 ? 'to the annulus' : 'mobile flap', text: true, flag: v.flap },
+        { k: 'AR mechanism', v: v.mech ? MECH[v.mech] : '–', text: true, flag: v.vc > 0 },
         { k: 'AR vena contracta', v: v.vc > 0 ? fmt(v.vc, 2) : '–', u: v.vc > 0 ? 'cm' : '', flag: v.vc > 0 },
         { k: 'AR grade', v: v.ar, text: true, flag: v.vc > 0 },
         { k: 'Pericardial effusion', v: v.eff > 0 ? fmt(v.eff) : '–', u: v.eff > 0 ? 'mm' : '', flag: v.eff > 0 },
@@ -1136,7 +1483,8 @@ function paintFor(s) {
 /**
  * For the checks: each view's EchoView, and what it drew last: the root's three L-L calipers at
  * end-diastole, the annulus at midsystole, the coarctation's narrowest lumen and the aorta below
- * the diaphragm.
+ * the diaphragm; and on the dissection's long axis, the flap, the root's axis, the AR jet's
+ * orifice and direction, and the plane's mapping to the figure (cm to px).
  */
 export function drawn() {
   return { views: { ed: P_ED.ev, ms: P_MS.ev, lax: P_LAX.ev, ssn: P_SSN.ev, sc: P_SC.ev }, ...DRAWN };
