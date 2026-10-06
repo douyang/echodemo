@@ -11,14 +11,16 @@
 // standard view sits at one level, one turn and one angle (teeviews.js STD). Between two views of
 // a level and turn, the probe moves from one view's position to the other's as the angle turns.
 // A drag of the slider that stops near a view's angle snaps to it.
+// Free probe: four more sliders move the probe from that pose (advance or withdraw along its path,
+// turn, ante- or retroflex, flex to the side), and the multiplane angle then turns the plane alone.
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { loadModel } from '../model3d.js';
 import { sharedStage } from '../gl/shared.js';
 import { Fan, rgb } from '../gl/fans.js';
 import { TeeScene } from '../gl/teeprobe3d.js';
-import { STD, LEVELS, slotViews, slotFrame, viewAt, planeAt, teeAnatomy, framesOf, probePath, maneuver, mixFrames, FACE } from '../teeviews.js';
+import { STD, LEVELS, slotViews, slotFrame, viewAt, planeAt, teeAnatomy, framesOf, probePath, maneuver, mixFrames, freeFrame, FACE } from '../teeviews.js';
 import { reducedMotion } from '../state.js';
-import { tokens } from '../sketch.js';
+import { MONO } from '../sketch.js';
 
 // What each view shows (Hahn 2013, Table 10: the structures imaged) and how the probe gets there
 // (Table 10, the maneuver, and the text of each view). Angles in degrees.
@@ -54,6 +56,10 @@ const LABELS = [['la', 'LA'], ['ra', 'RA'], ['lv', 'LV'], ['rv', 'RV'], ['mv', '
 const SNAP = 6;          // degrees: a drag that stops this near a view's angle (or in its range) snaps to it
 const JUMP = 700;        // ms: the probe moves to a new level or turn, or across a jump of the angle, in this time
 const STEP_MAX = 8;      // degrees: a larger change of the angle at once is a jump; a smaller one shows at once
+// the free probe's controls (cm, then degrees), and how far the probe moves at once before it is a
+// jump (the button back to the view, a switch): beyond 1 cm or 10 degrees
+const FREE_KEYS = ['teeAdv', 'teeRot', 'teeFlex', 'teeLat'];
+const JUMP_CM = 1, JUMP_DEG = 10;
 const cssVar = (k) => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
 
 let stage = null, echo = null, model = null, ready = null, failed = false, fig = null, tick = 0;
@@ -62,11 +68,18 @@ let st = null, setState = null, on = false, scene3d = null, fan = null;
 let G = null, frames = null, path = null, gVer = -1;
 // the probe shown (frame, angle, depth), and a jump in progress: from the probe shown when it began,
 // toward the controls, over JUMP ms of performance.now() (the clock of the chapter videos too)
-let cur = null, move = null, lastKey = '', lastAng = null, lastNow = 0;
+let cur = null, move = null, lastKey = '', lastAng = null, lastNow = 0, lastT = null;
 
 // ---------------------------------------------------------------- the views
 /** The standard view the controls show, or null; and the slot's view nearest the angle. */
-function viewOf(s) { return viewAt(s.teeLevel, s.teeTurn, s.teeAngle, 0.5); }
+function viewOf(s) {
+  const v = viewAt(s.teeLevel, s.teeTurn, s.teeAngle, 0.5);
+  return moved(s) ? { on: null, near: v.near } : v;
+}
+/** The free probe away from the pose it started from: a control moved, or the angle turned alone. */
+function moved(s) {
+  return !!s.teeFree && (FREE_KEYS.some((k) => Math.abs(s[k]) > 1e-6) || Math.abs(s.teeAngle - s.teeBase) > 0.5);
+}
 /** The image depth at the angle: between the slot's two views, by angle (cm). */
 function depthAt(level, turn, ang) {
   const L = slotViews(level, turn);
@@ -97,8 +110,20 @@ function anatomy() {
 
 /** The probe frame and the plane the controls ask for, with the image depth. */
 function target(s) {
+  if (s.teeFree) {
+    // the pose the controls gave at the angle where the probe was freed, moved by the free controls
+    const base = slotFrame(frames, s.teeLevel, s.teeTurn, s.teeBase);
+    // the Turn slider is positive to the right (clockwise), as it is drawn; freeFrame's turn to the left
+    const f = freeFrame(base, path, { adv: s.teeAdv, rot: -s.teeRot, flex: s.teeFlex, lat: s.teeLat });
+    return { f, ang: s.teeAngle, depth: depthAt(s.teeLevel, s.teeTurn, s.teeBase) };
+  }
   const f = slotFrame(frames, s.teeLevel, s.teeTurn, s.teeAngle);
   return { f, ang: s.teeAngle, depth: depthAt(s.teeLevel, s.teeTurn, s.teeAngle) };
+}
+/** Two probe frames far enough apart that the probe should move between them, not jump. */
+function far(a, b) {
+  const deg = (x, y) => (Math.acos(Math.max(-1, Math.min(1, x.dot(y)))) * 180) / Math.PI;
+  return a.O.distanceTo(b.O) > JUMP_CM || deg(a.F, b.F) > JUMP_DEG || deg(a.u, b.u) > JUMP_DEG;
 }
 
 // ---------------------------------------------------------------- echo labels
@@ -139,10 +164,11 @@ function onFrame(stg) {
   // everything after a gap in the frames (a hidden tab, or a chapter video drawn at one moment)
   const key = `${st.teeLevel}|${st.teeTurn}|${gVer}`, gap = now - lastNow > 250;
   if (gap) move = null;
-  else if (cur && !reducedMotion && (key !== lastKey || Math.abs(st.teeAngle - lastAng) > STEP_MAX)) move = { from: cur, t0: now };
+  else if (cur && !reducedMotion && (key !== lastKey || Math.abs(st.teeAngle - lastAng) > STEP_MAX || (lastT && far(lastT.f, T.f)))) move = { from: cur, t0: now };
   lastKey = key;
   lastAng = st.teeAngle;
   lastNow = now;
+  lastT = T;
   cur = T;
   if (move) {
     const u = Math.min(1, Math.max(0, (now - move.t0) / JUMP)), e = u * u * (3 - 2 * u), a = move.from;
@@ -169,35 +195,59 @@ function onFrame(stg) {
 /** The echo settings for the probe shown: the sector, the depth, the labels and the name. */
 function specFor(s, c) {
   const v = viewOf(s).on;
-  const name = v ? v.short : LEVELS.find((l) => l.key === s.teeLevel).short;
+  const name = v ? v.short : moved(s) ? 'Free' : LEVELS.find((l) => l.key === s.teeLevel).short;
   return { angle: 90, depth: Math.round(c.depth * 2) / 2, near: 0.4, labels: LABELS, strict: true, short: `${name} · ${Math.round(c.ang)}°`, name: v ? v.name : 'TEE', win: 'psax' };
 }
 
 /**
- * The multiplane icon in the image's top right corner, as the guideline's figures show it: a
- * half circle with the angle's line, turning counterclockwise from 0 at the right to 180 at the left.
+ * The multiplane icon in the image's top right corner, after the Philips display: on a dark chip
+ * (the machine's screen), a half circle open at the top with 0 at its left end and 180 at its
+ * right, the angle above it, and a white needle from the centre that turns counterclockwise
+ * (Hahn 2013): to the left at 0 degrees, down at 90, to the right at 180.
  */
 function angleIcon(ang) {
   const m = echo.map;
   if (!m) return;
-  const ctx = echo.ctx, dpr = echo.dpr, t = tokens();
-  const half = Math.PI / 4, R = m.scale * echo.specOf(echo.view).depth;
-  const r = 12, x = Math.min(echo.w - r - 6, m.cx + R * Math.sin(half) - r), y = m.top + 4;
+  const ctx = echo.ctx, dpr = echo.dpr;
+  const r = 24, W = 2 * r + 24, H = r + 25;
+  const x0 = echo.w - W - 6, y0 = m.top - 6, cx = x0 + W / 2, cy = y0 + 20;
   ctx.save();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.strokeStyle = t.ink2;
-  ctx.lineWidth = 1.2;
+  ctx.fillStyle = '#05070a';
   ctx.beginPath();
-  ctx.arc(x, y, r, Math.PI, 0);
+  ctx.moveTo(x0 + 5, y0);
+  ctx.arcTo(x0 + W, y0, x0 + W, y0 + H, 5);
+  ctx.arcTo(x0 + W, y0 + H, x0, y0 + H, 5);
+  ctx.arcTo(x0, y0 + H, x0, y0, 5);
+  ctx.arcTo(x0, y0, x0 + W, y0, 5);
   ctx.closePath();
-  ctx.stroke();
-  const a = (ang * Math.PI) / 180;
-  ctx.strokeStyle = t.accent;
-  ctx.lineWidth = 2;
+  ctx.fill();
+  // the half circle: its diameter on top, the arc below
+  ctx.strokeStyle = '#3a52b4';
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + r * Math.cos(a), y - r * Math.sin(a));
+  ctx.moveTo(cx - r, cy);
+  ctx.lineTo(cx + r, cy);
+  ctx.arc(cx, cy, r, 0, Math.PI);
   ctx.stroke();
+  // the needle: wide at the centre, pointed at the rim
+  const a = (ang * Math.PI) / 180, dx = -Math.cos(a), dy = Math.sin(a), tip = r - 2, w = 2.4;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(cx + dx * tip, cy + dy * tip);
+  ctx.lineTo(cx - dy * w, cy + dx * w);
+  ctx.lineTo(cx + dy * w, cy - dx * w);
+  ctx.closePath();
+  ctx.fill();
+  // the ends and the angle
+  ctx.fillStyle = '#e8edf5';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `500 8px ${MONO}`;
+  ctx.fillText('0', cx - r, cy - 4);
+  ctx.fillText('180', cx + r, cy - 4);
+  ctx.font = `700 12px ${MONO}`;
+  ctx.fillText(String(Math.round(ang)), cx, cy - 4);
   ctx.restore();
 }
 
@@ -270,6 +320,7 @@ async function enter() {
   anatomy();
   cur = null;
   move = null;
+  lastT = null;
   scene3d.show(true);
   fan.obj.visible = true;
   aim(true);
@@ -305,6 +356,7 @@ function bindSnap() {
   const snap = () => {
     if (!drag) return;
     drag = false;
+    if (st.teeFree) return;   // a free probe's angle turns the plane alone
     const a = Number(el.value);
     const L = slotViews(st.teeLevel, st.teeTurn);
     const v = L.find((x) => Math.abs(x.angle - a) <= SNAP || (a >= x.range[0] && a <= x.range[1]));
@@ -328,7 +380,7 @@ function display(a, level, turn) {
 /** The probe's place in the model against the four-chamber view: cm and degrees, in words. */
 function placeText(s) {
   if (!frames || !path) return '';
-  const f = slotFrame(frames, s.teeLevel, s.teeTurn, s.teeAngle), f0 = frames.me4c;
+  const f = target(s).f, f0 = frames.me4c;
   const m = maneuver(f, f0, path);
   const parts = [];
   const d = Math.round(m.depth * 2) / 2;
@@ -352,6 +404,55 @@ function flexText(v) {
   return out.join(' and ');
 }
 
+// ---------------------------------------------------------------- the free probe
+/** The free probe's moves from the pose it started from, in words. */
+function freeText(s) {
+  const out = [], a = Math.round(s.teeAdv * 10) / 10, r = Math.round(s.teeRot), f = Math.round(s.teeFlex), l = Math.round(s.teeLat);
+  if (a) out.push(a > 0 ? `advanced ${a.toFixed(1)} cm` : `withdrawn ${(-a).toFixed(1)} cm`);
+  if (r) out.push(`turned ${Math.abs(r)}° to the ${r > 0 ? 'right' : 'left'}`);
+  if (f) out.push(f > 0 ? `anteflexed ${f}°` : `retroflexed ${-f}°`);
+  if (l) out.push(`flexed ${Math.abs(l)}° to the ${l > 0 ? 'right' : 'left'}`);
+  return out.join(', ');
+}
+/**
+ * The standard view nearest the plane the probe shows: the larger of the angles between the two
+ * beams and between the two screen-rights, and the distance between the two transducers. On a
+ * view within 2 degrees and 0.2 cm; near it within 15 degrees and 1.5 cm.
+ */
+function nearestView(s) {
+  if (!frames || !path) return null;
+  const g = planeAt(target(s).f, s.teeAngle);
+  const deg = (x, y) => (Math.acos(Math.max(-1, Math.min(1, x.dot(y)))) * 180) / Math.PI;
+  let best = null;
+  for (const v of STD) {
+    const h = planeAt(frames[v.key], v.angle);
+    const d = Math.max(deg(g.d, h.d), deg(g.r, h.r)), cm = g.O.distanceTo(h.O), score = d + 10 * cm;
+    if (!best || score < best.score) best = { v, deg: d, cm, score };
+  }
+  best.on = best.deg < 2 && best.cm < 0.2;
+  best.near = best.deg < 15 && best.cm < 1.5;
+  return best;
+}
+function nearText(nb) {
+  if (!nb) return '';
+  return nb.on ? `on ${nb.v.short}` : nb.near ? `near ${nb.v.short} · ${Math.round(nb.deg)}° · ${nb.cm.toFixed(1)} cm` : 'no standard view near';
+}
+/** The free probe's panel: shown with the probe free, with the standard view it is on or near. */
+function paintFree(s) {
+  const box = document.getElementById('tee-free');
+  if (!box) return;
+  box.hidden = !s.teeFree;
+  if (!s.teeFree) return;
+  const nb = nearestView(s);
+  box.classList.toggle('is-on', !!(nb && nb.on));
+  box.classList.toggle('is-near', !!(nb && nb.near && !nb.on));
+  const out = document.getElementById('tee-free-state');
+  if (out) out.textContent = nearText(nb);
+}
+const REST = { teeAdv: 0, teeRot: 0, teeFlex: 0, teeLat: 0 };
+const signed = (v, d, unit) => { const r = Math.round(v * 10 ** d) / 10 ** d; return `${r > 0 ? '+' : r < 0 ? '−' : ''}${Math.abs(r).toFixed(d)}${unit}`; };
+const side = (v, pos, neg) => { const r = Math.round(v); return r ? `${Math.abs(r)}° ${r > 0 ? pos : neg}` : '0°'; };
+
 export default {
   key: 'tee',
   part: 'tee',
@@ -359,9 +460,19 @@ export default {
   nav: 'TEE',
   dwell: 48,
   // teeGeo: the heart whose probe positions the readouts give (set when its anatomy is built)
-  defaults: { teeLevel: 'me', teeTurn: 'mid', teeAngle: 5, teeGeo: '' },
-  watch: ['teeLevel', 'teeTurn', 'teeAngle', 'teeGeo', 'pheno'],
-  format: { teeAngle: (a) => `${a}°` },
+  // teeFree: the probe moves freely from the pose the controls gave at teeBase (degrees), by the
+  // free controls (FREE_KEYS); the angle then turns the plane alone
+  defaults: { teeLevel: 'me', teeTurn: 'mid', teeAngle: 5, teeGeo: '', teeFree: false, teeBase: 5, ...REST },
+  watch: ['teeLevel', 'teeTurn', 'teeAngle', 'teeGeo', 'pheno', 'teeFree', 'teeBase', ...FREE_KEYS],
+  // the free controls: advance and anteflexion signed (− is a withdrawal, a retroflexion), the turn
+  // and the side flex with their side (each slider is positive to the right)
+  format: {
+    teeAngle: (a) => `${a}°`,
+    teeAdv: (v) => signed(v, 1, ' cm'),
+    teeRot: (v) => side(v, 'right', 'left'),
+    teeFlex: (v) => signed(v, 0, '°'),
+    teeLat: (v) => side(v, 'right', 'left'),
+  },
   figure(f) { fig = f; return null; },
   pulse: () => (stage ? stage.pulse() : null),
   init({ state, set }) {
@@ -370,6 +481,8 @@ export default {
     fig = document.getElementById('fig-tee');   // warm() may run before the figure is first shown
     paintViews(state);
     bindSnap();
+    paintFree(state);
+    document.getElementById('tee-free-reset')?.addEventListener('click', () => set({ ...REST, teeAngle: st.teeBase, playing: false, anim: false }));
   },
   enter() { enter(); },
   leave() {
@@ -395,11 +508,16 @@ export default {
     retheme3d();
   },
   onState(s, ch) {
+    // freed or held again: the free controls start at rest from the pose at this angle; a new level
+    // or turn takes the free probe there; Play holds the probe to the guided poses
+    if ('teeFree' in ch || (s.teeFree && ('teeLevel' in ch || 'teeTurn' in ch))) setState({ teeBase: s.teeAngle, ...REST });
+    if (s.teeFree && ((ch.playing && s.playing) || (ch.anim && s.anim))) setState({ teeFree: false });
+    if (['teeFree', 'teeBase', 'teeAngle', 'teeLevel', 'teeTurn', 'teeGeo', 'chapter', ...FREE_KEYS].some((k) => k in ch)) paintFree(s);
     if ('teeLevel' in ch || 'teeTurn' in ch || 'chapter' in ch) paintViews(s);
-    if ('teeLevel' in ch || 'teeTurn' in ch || 'teeAngle' in ch || 'chapter' in ch) {
+    if (['teeLevel', 'teeTurn', 'teeAngle', 'chapter', 'teeFree', 'teeBase', ...FREE_KEYS].some((k) => k in ch)) {
       const lab = fig && fig.querySelector('#tee-label');
       const v = viewOf(s).on;
-      if (lab) lab.textContent = v ? v.name : `${levelName(s.teeLevel)} · ${s.teeAngle}°`;
+      if (lab) lab.textContent = v ? v.name : `${moved(s) ? 'Free probe' : levelName(s.teeLevel)} · ${s.teeAngle}°`;
     }
   },
   key_(k, set, s) {
@@ -408,9 +526,9 @@ export default {
     const v = viewOf(s).on || viewOf(s).near || TOUR[0];
     const i = Math.max(0, TOUR.indexOf(v)), n = TOUR.length;
     const w = TOUR[(i + (k === ']' ? 1 : n - 1)) % n];
-    set({ teeLevel: w.level, teeTurn: w.turn, teeAngle: w.angle, playing: false });
+    set({ teeLevel: w.level, teeTurn: w.turn, teeAngle: w.angle, teeFree: false, playing: false });
   },
-  tourEnter(set) { set({ teeLevel: 'me', teeTurn: 'mid', teeAngle: TOUR[0].angle }); },
+  tourEnter(set) { set({ teeLevel: 'me', teeTurn: 'mid', teeAngle: TOUR[0].angle, teeFree: false }); },
   // each view for an equal share of the dwell; when the next view lies at the same level and
   // turn, the angle turns to it in the last third of the share
   tourTick(tt, set) {
@@ -439,6 +557,14 @@ export default {
       readouts.push({ k: 'Level and angle', v: `${levelName(v.level)}, ${v.angle}° (guideline ${v.range[0]}–${v.range[1]}°)`, text: true });
       readouts.push({ k: 'Probe movement (guideline)', v: INFO[v.key].move, text: true });
       readouts.push({ k: 'Shows', v: INFO[v.key].shows, text: true });
+    } else if (moved(s)) {
+      const nb = nearestView(s), t = nearText(nb);
+      readouts.push({ k: 'View', v: `Free probe${t ? `, ${t}` : ''}`, text: true });
+      // the level is where the probe now lies, which "Probe in the model" gives: the angle alone here
+      readouts.push({ k: 'Angle', v: `${s.teeAngle}°`, text: true });
+      const b = viewAt(s.teeLevel, s.teeTurn, s.teeBase, 0.5).on, from = `the ${b ? `${b.short} ` : ''}position at ${s.teeBase}°`;
+      const moves = freeText(s);
+      readouts.push({ k: 'Free probe', v: moves ? `${moves.replace(/^./, (c) => c.toUpperCase())} from ${from}` : `Not moved from ${from}`, text: true });
     } else {
       readouts.push({ k: 'View', v: near ? `No standard view; nearest ${near.short} at ${near.angle}°` : 'No standard view at this turn', text: true });
       readouts.push({ k: 'Level and angle', v: `${levelName(s.teeLevel)}, ${s.teeAngle}°`, text: true });
@@ -450,6 +576,9 @@ export default {
       live = `<b>${v.name}.</b> ${display(v.angle, v.level, v.turn)} `;
       const flex = flexText(v);
       if (flex && v.key === 'me4c') live += `To show this heart’s four-chamber plane at ${v.angle}°, the model’s probe is ${flex}. The guideline notes that slight retroflexion may be needed. `;
+    } else if (moved(s)) {
+      // the orientation at this angle holds wherever the free probe lies
+      live = `<b>Free probe, ${s.teeAngle}°.</b> ${display(s.teeAngle, 'me', 'mid')} The multiplane angle turns the plane about the beam, and the probe stays where it is. `;
     } else {
       live = `<b>${levelName(s.teeLevel)}, ${s.teeAngle}°.</b> ${display(s.teeAngle, s.teeLevel, s.teeTurn)} `;
       if (EMPTY[key]) live += `${EMPTY[key]} `;

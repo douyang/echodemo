@@ -581,7 +581,43 @@ export function probePath(G) {
     for (let i = 0; i <= N; i++) { const d = samples[i].distanceToSquared(p); if (d < bd) { bd = d; best = i; } }
     return (best / N) * length;
   };
-  return { curve, length, samples, sOf, cardia: sOf(last), at: (s) => curve.getPointAt(Math.max(0, Math.min(1, s / length))) };
+  const u = (s) => Math.max(0, Math.min(1, s / length));
+  return {
+    curve, length, samples, sOf, cardia: sOf(last),
+    at: (s) => curve.getPointAt(u(s)),
+    // the path's direction at s, toward the mouth
+    up: (s) => curve.getTangentAt(u(s)).negate().normalize(),
+  };
+}
+
+/** The shaft's direction this far back from the tip (cm): its turn and flexion are about it. */
+const SHAFT_BACK = 3;
+/**
+ * Frame f moved by the free probe's controls (ch/tee.js): advanced adv cm along the probe's path
+ * (negative: withdrawn), its turn and flexion carried round the path's bends; turned rot degrees
+ * about the shaft (positive: to the patient's left); flexed flex degrees, the beam toward the
+ * head (positive: anteflexion); and flexed lat degrees to the side (positive: the tip to the
+ * patient's right), which turns the plane about the beam. The face stays FACE cm from the path's
+ * centre line. With every control at 0 the frame is f itself.
+ */
+export function freeFrame(f, path, { adv = 0, rot = 0, flex = 0, lat = 0 } = {}) {
+  const c0 = f.O.clone().addScaledVector(f.F, -FACE);
+  const s0 = path.sOf(c0), s1 = Math.max(0, Math.min(path.length, s0 + adv));
+  const q = new THREE.Quaternion().setFromUnitVectors(path.up(s0), path.up(s1));
+  const F = f.F.clone().applyQuaternion(q), t = f.t.clone().applyQuaternion(q), u = f.u.clone().applyQuaternion(q);
+  const turn = (axis, d) => {
+    if (!d || axis.lengthSq() < 1e-9) return;
+    const r = new THREE.Quaternion().setFromAxisAngle(axis.normalize(), rad(d));
+    F.applyQuaternion(r);
+    t.applyQuaternion(r);
+    u.applyQuaternion(r);
+  };
+  const shaft = path.up(Math.max(0, s1 - SHAFT_BACK));
+  turn(shaft.clone(), rot);
+  turn(new THREE.Vector3().crossVectors(F, shaft), flex);
+  turn(F.clone(), -lat);
+  const c1 = c0.add(path.at(s1)).sub(path.at(s0));
+  return { O: c1.addScaledVector(F, FACE), F: F.normalize(), t: t.normalize(), u: u.normalize(), T: path.up(s1) };
 }
 
 /**
