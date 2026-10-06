@@ -868,6 +868,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="measure"] .stage { height: min(64vh, 560px); }
   /* AI interpretation and measurement: one row of the seven steps at a time, under its tabs */
   html[data-ch="ai"] .stage { height: min(70vh, 600px); }
+  /* Transesophageal echocardiography: the probe in the esophagus above the echo of its plane */
+  html[data-ch="tee"] .stage { height: min(64vh, 560px); }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }
   .split.wide .pane-2d { display: none; }
   /* with the free plane on, its echo shows under the 3D view */

@@ -544,6 +544,31 @@ export const VIDEOS = {
       { set: { aiSec: 7 }, name: 'Report: the aortic valve', track: 'Report: AV', move: 2, hold: 7 },
     ],
   },
+  // 32: the chapter's tour, the 16 views in the order of Hahn 2013. The angle turns within a level
+  // and turn of the probe; the level and the turn change at the middle of a move
+  tee: {
+    pane: 'Transesophageal views',
+    side: false,
+    quant: { teeAngle: 1 },
+    steps: [
+      { set: { teeLevel: 'me', teeTurn: 'mid', teeAngle: 5 }, track: '4C', pick: [0], hold: 6 },
+      { set: { teeAngle: 60 }, track: 'MC', pick: [0], move: 4 },
+      { set: { teeAngle: 85 }, track: '2C', pick: [0] },
+      { set: { teeAngle: 140 }, track: 'LAX', pick: [0], move: 4 },
+      { set: { teeTurn: 'right', teeAngle: 120 }, track: 'AV LAX', pick: [0] },
+      { set: { teeLevel: 'ue', teeAngle: 95 }, track: 'Asc LAX', pick: [0] },
+      { set: { teeAngle: 5 }, track: 'Asc SAX', pick: [0], move: 4 },
+      { set: { teeLevel: 'me', teeAngle: 30 }, track: 'AV SAX', pick: [0], hold: 6 },
+      { set: { teeAngle: 55 }, track: 'RV in-out', pick: [0] },
+      { set: { teeAngle: 95 }, track: 'Bicaval', pick: [0] },
+      { set: { teeLevel: 'tg', teeTurn: 'mid', teeAngle: 10 }, track: 'TG SAX', pick: [0], move: 4, hold: 6 },
+      { set: { teeAngle: 90 }, track: 'TG 2C', pick: [0], move: 4 },
+      { set: { teeTurn: 'left', teeAngle: 0 }, track: 'Desc SAX', pick: [0], move: 4 },
+      { set: { teeAngle: 90 }, track: 'Desc LAX', pick: [0] },
+      { set: { teeLevel: 'ue', teeTurn: 'mid', teeAngle: 0 }, track: 'Arch LAX', pick: [0], move: 4 },
+      { set: { teeAngle: 70 }, track: 'Arch SAX', pick: [0], hold: 6 },
+    ],
+  },
 };
 
 /** The video's chapter keys. */
