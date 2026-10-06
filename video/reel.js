@@ -15,10 +15,11 @@
 //    amyloid clips.
 //  - AR, MS, TR: the layout of AS and MR.
 // Stress echocardiography, added with its chapter, follows Regional wall motion, as its chapter does:
-// the quad screen of a stress test. The right ventricle (chapter 14), added after the review, has no clip.
-// AI interpretation and measurement closes the intro, as its part closes the site: the weights of
-// the LV section, its task heads, then the anchor, which returns the septum's caliper from a second
-// peak. Four bars, so that the score's whole four-bar phrases still end on the end card (36 bars).
+// the quad screen of a stress test. The right ventricle, added after the review, has no clip, and
+// neither do the chapters added after it, apart from AI interpretation and measurement.
+// AI interpretation and measurement closes the intro: the weights of the LV section, its task heads,
+// then the anchor, which returns the septum's caliper from a second peak. Four bars, so that the
+// score's whole four-bar phrases still end on the end card (36 bars).
 //
 // A clip has ch (the chapter's key) and bars (its length in bars of the score). A chapter clip has
 // a video in the shape of video/chapters.js. The clip of Views has a cut of the views video
