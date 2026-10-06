@@ -522,38 +522,26 @@ export const VIDEOS = {
       { set: { shkS: 1 }, track: 'High output', pick: [3, 4], move: 4, hold: 7 },
     ],
   },
-  // 27–28 Artificial intelligence, one video for the two chapters of part XI. EchoNet-Measurements
-  // (its tour): the LV internal diameter, the septum and its map with a second peak, the aortic
-  // root and the IVC; then TR, mitral E and E/A, and TAPSE, which loses its DICOM data. EchoPrime:
-  // the weights of the LV, aortic valve and IVC sections and the four-chamber video alone; then
-  // retrieval: the LVEF of the Barlow heart from its closest study and from the 50 closest (k eases
-  // from 1 to 50), its mitral valve, and the aortic valve of the bicuspid heart
+  // AI interpretation and measurement: the chapter's tour, steps 1 to 7 on the normal heart, one
+  // row of the figure at a time (the video's figure box is one row high). Sort, encode, weigh the
+  // LV section and then the aortic valve section, the task heads, the 18 measurements, the anchor,
+  // which returns the septum's caliper from a second peak, and the report's LV and aortic valve.
+  // No step sets another heart: the chapter cuts its videos and tiles for the heart that the
+  // page's wait (ready()) sees, and the captions leave the last step's heart there
   ai: {
-    chapters: ['measure', 'ai'],
-    title: 'Artificial intelligence',
-    pane: { measure: 'EchoNet-Measurements', ai: 'EchoPrime' },
+    pane: 'EchoPrime and EchoNet-Measurements',
     side: false,
-    quant: { aiK: 1 },
-    discrete: ['emB', 'emD', 'aiSec', 'aiN'],
+    discrete: ['aiSec', 'aiStep', 'aiRow'],
     steps: [
-      { ch: 'measure', set: { emTab: 'bmode', emB: 1, emD: 0, emTwo: false, emRaw: false, pheno: 'normal' }, track: 'LVID', hold: 7 },
-      { ch: 'measure', set: { emB: 0 }, track: 'Septum', line: 'The septum is reported at end-diastole, the frame of the largest LV diameter.', move: 3, hold: 6 },
-      { ch: 'measure', set: { emTwo: true }, track: 'Two peaks', move: 2, hold: 7 },
-      { ch: 'measure', set: { emTwo: false, emB: 5 }, track: 'Aortic root', line: 'EchoNet-Measurements has one model for each of its 18 measurements; the aortic root model finds the two ends of the root.', move: 3, hold: 6 },
-      { ch: 'measure', set: { emB: 8 }, track: 'IVC', move: 3, hold: 6 },
-      { ch: 'measure', set: { emTab: 'doppler', emD: 0 }, track: 'TR', move: 3, hold: 6 },
-      { ch: 'measure', set: { emD: 6 }, track: 'E/A', move: 3, hold: 6 },
-      { ch: 'measure', set: { emD: 7 }, track: 'TAPSE', move: 3, hold: 6 },
-      { ch: 'measure', set: { emRaw: true }, track: 'No DICOM', move: 2, hold: 6 },
-      { ch: 'ai', set: { aiTab: 'study', aiSec: 0, aiN: 14, aiOnly: false, aiMap: 'lv', aiK: 50 }, name: 'Left ventricle section', track: 'LV',
-        line: '{b} Each video counts by the weight of its view group in this section.', move: 4, hold: 7 },
-      { ch: 'ai', set: { aiSec: 7 }, name: 'Aortic valve section', track: 'Aortic valve', line: '{b}', move: 3, hold: 6 },
-      { ch: 'ai', set: { aiSec: 12 }, name: 'Inferior vena cava section', track: 'IVC', line: '{b}', move: 3, hold: 6 },
-      { ch: 'ai', set: { aiOnly: true }, name: 'One apical four-chamber video', track: 'A4C only', line: '{b} {s0}', move: 2, hold: 7 },
-      { ch: 'ai', set: { aiTab: 'retrieval', aiOnly: false, aiMap: 'lv', aiK: 1, pheno: 'barlow' }, track: 'k = 1', move: 3, cut: true, hold: 6 },
-      { ch: 'ai', set: { aiK: 50 }, track: 'k = 50', line: "{s0} This heart's LVEF is {This heart}%.", move: 4, hold: 7 },
-      { ch: 'ai', set: { aiMap: 'mv' }, name: 'Mitral valve, the 50 closest studies', track: 'Mitral valve', line: '{b} {s0}', move: 2, hold: 7 },
-      { ch: 'ai', set: { aiMap: 'av', pheno: 'bav' }, name: 'Aortic valve, the 50 closest studies', track: 'Aortic valve', line: '{b} {s0}', move: 3, cut: true, hold: 7 },
+      { set: { aiTab: 'steps', aiStep: 1, aiSec: 0, aiRow: 0, aiTwo: true, pheno: 'normal' }, track: 'Sort', hold: 6 },
+      { set: { aiStep: 2 }, track: 'Encode', move: 2, hold: 6 },
+      { set: { aiStep: 3 }, track: 'Weigh', move: 2, hold: 6 },
+      { set: { aiSec: 7 }, track: 'Aortic valve', move: 2, hold: 6 },
+      { set: { aiStep: 4, aiSec: 0 }, track: 'Answer', move: 2, hold: 6 },
+      { set: { aiStep: 5, aiRow: 1 }, track: 'Measure', move: 3, hold: 7 },
+      { set: { aiStep: 6, aiRow: 2 }, track: 'Anchor', move: 3, hold: 8 },
+      { set: { aiStep: 7 }, track: 'Report', pick: [0, 1], move: 2, hold: 7 },
+      { set: { aiSec: 7 }, name: 'Report: the aortic valve', track: 'Report: AV', move: 2, hold: 7 },
     ],
   },
 };

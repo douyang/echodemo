@@ -14,8 +14,9 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const KEYS = CHAPTERS.map((c) => c.key);
-// old addresses: Planes is archived (order.js), and #views names Views (key windows)
-const ALIAS = { planes: 'windows', views: 'windows' };
+// old addresses: Planes is archived and Automated measurements is hidden (order.js), and #views
+// names Views (key windows)
+const ALIAS = { planes: 'windows', views: 'windows', measure: 'ai' };
 /** The chapter index of an address's #key, or -1. */
 const chapterOf = (hash) => { const h = (hash || '').slice(1); return KEYS.indexOf(ALIAS[h] || h); };
 const CH = Object.fromEntries(KEYS.map((k, i) => [k, i]));

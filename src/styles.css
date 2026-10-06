@@ -866,7 +866,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   /* Automated measurements: the echo view or the recording, the heat map's close-up beside its
      arithmetic, and the measurement on every frame, stacked */
   html[data-ch="measure"] .stage { height: min(64vh, 560px); }
-  /* Study interpretation: the 14 videos, the heat map of the weights and the section, one under the other */
+  /* AI interpretation and measurement: one row of the seven steps at a time, under its tabs */
   html[data-ch="ai"] .stage { height: min(70vh, 600px); }
   .split.wide { grid-template-columns: 1fr; grid-template-rows: 100%; }
   .split.wide .pane-2d { display: none; }

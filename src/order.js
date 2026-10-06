@@ -15,10 +15,14 @@ export const SHOW_REPORT = false;
 // back after Views when this is true. Views shows the nine standard planes in its Probe and body
 // view (ch/windows.js).
 export const SHOW_PLANES = false;
+// Automated measurements is hidden: its module and markup stay (index.html, #ch-measure,
+// #fig-measure) and come back before the AI chapter when this is true. The AI chapter shows its
+// 17 outputs (src/aifig.js), and the address #measure opens it (src/main.js).
+export const SHOW_MEASURE = false;
 
 export const ORDER = [
   'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'cycle', 'loop', 'ivc', 'pressure',
-  'eject', 'fill', 'segments', 'strain', 'stress', 'rv', 'lvad', 'as', 'ar', 'ms', 'mr', 'tr', 'prosthetic', 'endocarditis', 'aorta', 'peri', 'constrict', 'hcm', 'amyloid', 'shunts', 'masses', 'mi', 'shock', 'measure', 'ai', ...(SHOW_REPORT ? ['report'] : []),
+  'eject', 'fill', 'segments', 'strain', 'stress', 'rv', 'lvad', 'as', 'ar', 'ms', 'mr', 'tr', 'prosthetic', 'endocarditis', 'aorta', 'peri', 'constrict', 'hcm', 'amyloid', 'shunts', 'masses', 'mi', 'shock', ...(SHOW_MEASURE ? ['measure'] : []), 'ai', ...(SHOW_REPORT ? ['report'] : []),
 ];
 
 /** A chapter's number as the page prints it ("08"); '' for a chapter that is not shown. */
