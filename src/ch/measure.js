@@ -20,7 +20,7 @@
 import { Sheet, clamp, MONO, SANS } from '../sketch.js';
 import { panel, spectral, vscale, SC, tagBox } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
-import { Beat, rows, cols, inner, note, fit } from '../sev.js';
+import { rows, cols, inner, note } from '../sev.js';
 import { reducedMotion } from '../state.js';
 import { MeshPanel } from '../meshpanel.js';
 import { scanner } from '../scanner.js';
@@ -38,7 +38,7 @@ import { valuesAt as fillShown, inflow, tissue } from './fill.js';
 import pressurePage from './pressure.js';
 
 // ---------------------------------------------------------------- the model's numbers
-// The heat maps: one hue over the scanner's grey (both themes draw the scanner alike); a peak is
+// The heat maps: one hue over the scanner's gray (both themes draw the scanner alike); a peak is
 // a Gaussian 1.5 mm wide (σ; 3.5 mm at half its height); a two-peaked map's second peak lies
 // 0.75 cm from the first along the caliper line, as high as the first.
 const HEAT = [255, 92, 196];
@@ -64,15 +64,15 @@ const DW = 1024, DH = 426;
 // the two-peaked map: on end 0 or 1 of the caliper, outward (away from the other end) or inward,
 // on a structure that the model could take for the end it looks for.
 const B = [
-  { key: 'ivs', name: 'Septum', short: 'IVS', model: 'ivs', view: 'plax', at: 'ed', two: { end: 0, out: true, on: 'RV trabeculation', site: 'septum' } },
-  { key: 'lvid', name: 'LV internal diameter', short: 'LVID', model: 'lvid', view: 'plax', at: 'ed', two: { end: 1, out: false, on: 'mitral chordae', site: 'posterior wall' } },
-  { key: 'lvpw', name: 'Posterior wall', short: 'LVPW', model: 'lvpw', view: 'plax', at: 'ed', two: { end: 0, out: true, on: 'mitral chordae', site: 'posterior wall' } },
-  { key: 'la', name: 'LA diameter', short: 'LA', model: 'la', view: 'plax', at: 'es', two: { end: 0, out: true, on: 'aortic wall', site: 'LA wall' } },
-  { key: 'rvb', name: 'RV basal diameter', short: 'RV base', model: 'rv_base', view: 'a4c_rv', at: 'ed', two: { end: 1, out: false, on: 'septal leaflet', site: 'septum' } },
-  { key: 'root', name: 'Aortic root', short: 'Ao root', model: 'aortic_root', view: 'plax', at: 'ed', two: { end: 1, out: false, on: 'aortic cusp', site: 'posterior wall' } },
-  { key: 'asc', name: 'Ascending aorta', short: 'Asc Ao', model: 'aorta', view: 'plax_asc', at: 'ed', two: { end: 1, out: true, on: 'right PA', site: 'posterior wall' } },
-  { key: 'pa', name: 'Pulmonary artery', short: 'PA', model: 'pa', view: 'psax_pa', at: 'ed', two: { end: 0, out: true, on: 'aortic wall', site: 'PA wall' } },
-  { key: 'ivc', name: 'IVC', short: 'IVC', model: 'ivc', view: 'sc_ivc', at: 'max', two: { end: 0, out: true, on: 'hepatic vein', site: 'IVC wall' } },
+  { key: 'ivs', name: 'Septum', short: 'IVS', model: 'ivs', view: 'plax', at: 'ed', two: { end: 0, out: true, on: 'RV trabeculation', the: 'an RV trabeculation', site: 'septum' } },
+  { key: 'lvid', name: 'LV internal diameter', short: 'LVID', model: 'lvid', view: 'plax', at: 'ed', two: { end: 1, out: false, on: 'mitral chordae', the: 'the mitral chordae', site: 'posterior wall' } },
+  { key: 'lvpw', name: 'Posterior wall', short: 'LVPW', model: 'lvpw', view: 'plax', at: 'ed', two: { end: 0, out: true, on: 'mitral chordae', the: 'the mitral chordae', site: 'posterior wall' } },
+  { key: 'la', name: 'LA diameter', short: 'LA', model: 'la', view: 'plax', at: 'es', two: { end: 0, out: true, on: 'aortic wall', the: 'the aortic wall', site: 'LA wall' } },
+  { key: 'rvb', name: 'RV basal diameter', short: 'RV base', model: 'rv_base', view: 'a4c_rv', at: 'ed', two: { end: 1, out: false, on: 'septal leaflet', the: 'the septal leaflet of the tricuspid valve', site: 'septum' } },
+  { key: 'root', name: 'Aortic root', short: 'Ao root', model: 'aortic_root', view: 'plax', at: 'ed', two: { end: 1, out: false, on: 'aortic cusp', the: 'an aortic cusp', site: 'posterior wall' } },
+  { key: 'asc', name: 'Ascending aorta', short: 'Asc Ao', model: 'aorta', view: 'plax_asc', at: 'ed', two: { end: 1, out: true, on: 'right PA', the: 'the right pulmonary artery', site: 'posterior wall' } },
+  { key: 'pa', name: 'Pulmonary artery', short: 'PA', model: 'pa', view: 'psax_pa', at: 'ed', two: { end: 0, out: true, on: 'aortic wall', the: 'the aortic wall', site: 'PA wall' } },
+  { key: 'ivc', name: 'IVC', short: 'IVC', model: 'ivc', view: 'sc_ivc', at: 'max', two: { end: 0, out: true, on: 'hepatic vein', the: 'a hepatic vein', site: 'IVC wall' } },
 ];
 // The eight Doppler and M-mode models (E and E/A come from one model with two maps).
 const D = [
@@ -132,7 +132,7 @@ function lumen(ev, C, u, loops) {
   return { a: add(C, mul(u, a)), b: add(C, mul(u, b)), w: b - a, mid: add(C, mul(u, (a + b) / 2)) };
 }
 /**
- * Up a vessel from P, first along u: every step cm the lumen square to the vessel's axis, centred
+ * Up a vessel from P, first along u: every step cm the lumen square to the vessel's axis, centered
  * again on the lumen's middle, the axis turning toward the line of the middles. [{ d, a, b, w, mid, u }].
  */
 function vessel(ev, P, u, d1, loops, step = 0.1) {
@@ -192,7 +192,7 @@ const CALIPERS = {
   /**
    * The parasternal long axis. The septum, the LV and the posterior wall: meshjet.js plaxCalipers,
    * the site's own. The aortic root: its widest lumen 0.3 to 2 cm up the root from the valve's
-   * centre (the sinuses), square to the root's axis. The LA: along the scan line through the
+   * center (the sinuses), square to the root's axis. The LA: along the scan line through the
    * middle of that lumen, the LA's lumen from its anterior wall to its posterior wall. (In this
    * model the root rises 49° across the image and the LA lies under the annulus, so a line square
    * to the root at the sinuses passes beside the LA; the scan line is the M-mode's line.)
@@ -219,7 +219,7 @@ const CALIPERS = {
   /**
    * The ascending aorta, one interspace higher: up the root from the valve to the sinotubular
    * junction (the narrowest lumen after the sinuses) and on to 4.5 cm, its widest lumen past the
-   * junction, square to its axis (as chapter 14 measures it, 2 to 4.5 cm above the valve).
+   * junction, square to its axis (as.js measures it 2 to 4.5 cm above the valve).
    */
   plax_asc(ev, s) {
     const st = vessel(ev, onPlane(ev, ev.anchors(s).av), rootAxis(ev), 4.5, loopsOf(ev));
@@ -254,7 +254,7 @@ const CALIPERS = {
   },
   /**
    * The main PA midway between the pulmonic valve and the bifurcation (views.js VESSELS.paBif),
-   * square to the line between them, centred on the lumen; end 0 toward the aorta.
+   * square to the line between them, centered on the lumen; end 0 toward the aorta.
    */
   psax_pa(ev, s) {
     const an = ev.anchors(s), pv = onPlane(ev, an.pv), bif = planeOf(ev, VESSELS.paBif), loops = loopsOf(ev);
@@ -267,7 +267,7 @@ const CALIPERS = {
   },
   /**
    * The IVC (abdomen.js, a tube through the liver to the heart's own stub) 1.8 cm from its junction
-   * with the right heart, square to its axis, as chapter 07 measures it (ivc2d.js); end 0 anterior.
+   * with the right heart, square to its axis, as ivc2d.js places its caliper; end 0 anterior.
    */
   sc_ivc(ev) {
     const P = ABD.ivc.pts.map((p) => planeOf(ev, p)), J = P[0], u = unit(sub(P[1], P[0]));
@@ -383,7 +383,7 @@ function secondPeak(m, ends) {
   return add(e, mul(u, m.two.out ? OFF : -OFF));
 }
 /**
- * A heat map on the model's pixel grid (pixel size px cm) round centre c: its peaks (plane cm),
+ * A heat map on the model's pixel grid (pixel size px cm) round center c: its peaks (plane cm),
  * Gaussians of height 1, sampled at the pixels' middles within half cm. Returns its cells
  * ({ p, h }) and its weighted center: the mean of the pixels' positions weighted by the map.
  */
@@ -450,12 +450,12 @@ export function reportedNow() {
 
 // ---------------------------------------------------------------- the Doppler of the heart shown
 // Each recording is the other chapters' own, at the heart's values: the values that the Heart menu
-// gives each chapter (pheno.js presets). TR: the heart's peak TR velocity of chapter 08 (its trV),
-// drawn as chapter 13 draws the CW trace. The aortic valve and the LVOT: chapter 14's model at the
-// heart's grade (none, but on the bicuspid heart). MR: chapter 18's model at the heart's grade;
-// a heart without MR there shows chapter 18's jet at its default. E, A and e′: chapter 11's model
-// at the heart's filling state. TAPSE: the annulus's travel on the RV-focused view of the heart
-// mesh (chapter 13 at a normal RV).
+// gives each chapter (pheno.js presets). TR: the heart's peak TR velocity (pressure.js trV, its
+// default on the normal heart), drawn as rv.js draws the CW trace. The aortic valve and the LVOT:
+// as.js's model at the heart's grade (none, but on the bicuspid heart). MR: mr.js's model at the
+// Barlow heart's grade; the other hearts have no MR and show mr.js's jet at its default, and the
+// text says so. E, A and e′: fill.js's model at the heart's filling state. TAPSE: the annulus's
+// travel on the RV-focused view of the heart mesh (rv.js at a normal RV).
 const fixed = (x, d) => Math.round(x * 10 ** d) / 10 ** d;
 function dopplerOf(d, heart) {
   const P = presetsFor(heart), two = RR * 2;
@@ -478,7 +478,7 @@ function dopplerOf(d, heart) {
         points: [{ t: tPeak(E.jet), v: -V.vmax, name: 'peak' }], value: V.vmax, dec: 1, site: `chapter ${numOf('as')}`,
       };
     }
-    // PW in the LVOT: chapter 14's LVOT envelope, on the scale and baseline of chapter 08's PW strip
+    // PW in the LVOT: as.js's LVOT envelope, on the scale and baseline of pressure.js's PW strip
     const vs = Math.max(1.5, Math.ceil(V.vL * 1.15 * 2) / 2);
     return {
       title: ['PW · LVOT', 'PW · LVOT'], mode: 'pw', scale: vs, base: 0.1, broad: 0.08, seed: 3, step: 0.5,
@@ -487,7 +487,8 @@ function dopplerOf(d, heart) {
     };
   }
   if (d.key === 'mr') {
-    const own = (P.mrS ?? 0) > 0, V = mrValues(own ? P.mrS : mrPage.defaults.mrS), env = mrCw(V);
+    // the heart's own MR (the Barlow heart's preset); a heart without MR shows mr.js's jet at its default
+    const own = P.mrS > 0, V = mrValues(own ? P.mrS : mrPage.defaults.mrS), env = mrCw(V);
     let bt = 0, bv = 0;
     for (let t = EV.mvc; t <= EV.mvo; t += 1) { const y = env(t); if (y > bv) { bv = y; bt = t; } }
     const vs = Math.max(6, Math.ceil(V.vmax + 0.6)), dens = Math.round(clamp(V.rvol / 60, 0.06, 1) * 50) / 50;
@@ -514,12 +515,13 @@ function dopplerOf(d, heart) {
       points: [{ t: EV.mvo + 70, v: F.E, name: 'E' }, { t: 800, v: F.A, name: 'A' }], value: F.E, A: F.A, ea: F.ea, dec: 2, site: `chapter ${numOf('fill')}`,
     };
   }
-  // TAPSE: the annulus on M-mode, 4 cm deep across the strip (chapter 13's 40 mm), as it travels
-  // toward the apex in systole (cyclemodel.js systolic weight × TAPSE)
+  // TAPSE: the annulus on M-mode, in a window 4 cm deep (rv.js's 40 mm). It is deepest at
+  // end-diastole and travels toward the apex, and the probe, in systole (cyclemodel.js systolic
+  // weight × TAPSE); mm is the depth below its systolic peak.
   const tapse = fixed(rvTapseOwn(heart), 0);
   return {
     title: ['M-MODE · TAPSE · LATERAL TRICUSPID ANNULUS', 'M-MODE · TAPSE'], mode: 'mm', tapse, span: 40, top: 0.22,
-    points: [{ t: RR, mm: 0, name: 'end-diastole' }, { t: RR + 405, mm: tapse, name: 'peak' }], value: tapse, dec: 0, unit: 'mm', site: `chapter ${numOf('rv')}`,
+    points: [{ t: RR, mm: tapse, name: 'end-diastole' }, { t: RR + 405, mm: 0, name: 'peak' }], value: tapse, dec: 0, unit: 'mm', site: `chapter ${numOf('rv')}`,
   };
 }
 const dopplerCache = new Map();
@@ -530,7 +532,6 @@ function dopplerShown(s) {
 }
 
 let sheet = null, st = null;
-const beat = new Beat(RR);
 const clip = { ms: 0 };
 const redraw = () => { if (sheet) sheet.dirty = true; };
 const MESH = new MeshPanel('plax', { redraw });
@@ -585,6 +586,29 @@ function tagIn(ctx, text, x, y, b, o = {}) {
   const dx = clamp(x0, b.x + 4, b.x + b.w - 4 - w) - x0;
   return tag(ctx, text, x + dx, clamp(y, b.y + 9, b.y + b.h - 9), o);
 }
+/**
+ * A tag beside point q, inside box b, where it meets none of the boxes placed: the first of its
+ * forms (long to short) that fits at one of eight places round the point (or at o.spots, [dx, dy,
+ * align] from it). When none fits, the last form at the first place, or nothing when o.optional.
+ * Returns its box, or null.
+ */
+function placeTag(ctx, text, q, b, placed, o = {}) {
+  const forms = [].concat(text), g = 12, h = 14;
+  const spots = o.spots || [[g, 0, 'left'], [-g, 0, 'right'], [0, -g - 2, 'center'], [0, g + 2, 'center'], [g, -g, 'left'], [-g, -g, 'right'], [g, g, 'left'], [-g, g, 'right']];
+  const free = (r) => r.x0 >= b.x + 2 && r.x1 <= b.x + b.w - 2 && r.y0 >= b.y + 2 && r.y1 <= b.y + b.h - 2 && !placed.some((p) => r.x0 < p.x1 && p.x0 < r.x1 && r.y0 < p.y1 && p.y0 < r.y1);
+  ctx.save();
+  ctx.font = `${o.weight || 500} ${o.size || 11}px ${MONO}`;
+  const widths = forms.map((f) => ctx.measureText(f).width);
+  ctx.restore();
+  for (let i = 0; i < forms.length; i++) {
+    const w = widths[i];
+    const boxOf = ([dx, dy, al]) => { const x0 = al === 'left' ? q[0] + dx : al === 'right' ? q[0] + dx - w : q[0] + dx - w / 2; return { x0, y0: q[1] + dy - h / 2, x1: x0 + w, y1: q[1] + dy + h / 2 }; };
+    const spot = spots.find((sp) => free(boxOf(sp)));
+    if (spot) return tagIn(ctx, forms[i], q[0] + spot[0], q[1] + spot[1], b, { ...o, align: spot[2] });
+  }
+  if (o.optional) return null;
+  return tagIn(ctx, forms[forms.length - 1], q[0] + spots[0][0], q[1] + spots[0][1], b, { ...o, align: spots[0][2] });
+}
 /** The first of the forms that fits w px in the mono face at size px, else the last. */
 function pick(ctx, forms, w, size, weight = 500) {
   ctx.save();
@@ -607,6 +631,22 @@ const NAMES = {
   psax_pa: [['ao', 'Ao'], ['rvot', 'RVOT']],
   sc_ivc: [['ra', 'RA'], [(ev) => { const P = ABD.ivc.pts.map((p) => planeOf(ev, p)); return add(P[0], mul(unit(sub(P[1], P[0])), 4.2)); }, 'IVC']],
 };
+
+/** Where meshpanel.js tags puts the chamber names of list on frame F (its 600 11 px mono, kept inside the image): their boxes. */
+function nameBoxes(ctx, ev, F, list, s) {
+  const an = ev.anchors(s), bx = F.view.box, out = [];
+  ctx.save();
+  ctx.font = `600 11px ${MONO}`;
+  for (const [k, name, toward, f] of list) {
+    const q = typeof k === 'function' ? k(ev, s) : an[k] ? F.cm(toward && an[toward] ? an[k].clone().lerp(an[toward], f) : an[k]) : null;
+    if (!q) continue;
+    const hw = ctx.measureText(name).width / 2 + 3, [x0, y0] = F.P(q);
+    const x = clamp(x0, bx.x + hw + 2, bx.x + bx.w - hw - 2), y = clamp(y0, bx.y + 10, bx.y + bx.h - 10);
+    out.push({ x0: x - hw, y0: y - 8, x1: x + hw, y1: y + 8 });
+  }
+  ctx.restore();
+  return out;
+}
 
 /** The echo view with the two heat maps, the caliper between their weighted centers and its length, at clip frame f. */
 function bView(ctx, box, m, T, f, o) {
@@ -649,13 +689,11 @@ function bView(ctx, box, m, T, f, o) {
       const lab = tag(c, text, mid[0] + nn[0] * 14, mid[1] + nn[1] * 14, { size: 11.5, weight: 600, align: nn[0] > 0.3 ? 'left' : 'center' });
       // no chamber name on the length (meshpanel.js tags skips a name in the box F.meas)
       Fr.meas = { x: lab.x0 - 4, y: lab.y0 - 3, w: lab.x1 - lab.x0 + 8, h: lab.y1 - lab.y0 + 6 };
-      // the second peak's structure, named beyond it
+      // the second peak's structure, named beside it, clear of the length, the ends and the
+      // chamber names
       if (two) {
-        const q = Fr.P(fr.p2), e = Fr.P(fr.ends[m.two.end]), w = unit(sub(q, e));
-        let side = perp(w);
-        if (dot(side, nn) > 0) side = mul(side, -1);
-        const tx = q[0] + w[0] * 10 + side[0] * 12, ty = q[1] + w[1] * 10 + side[1] * 12;
-        tag(c, m.two.on, tx, ty, { size: 10.5, color: heat(1), align: side[0] < -0.3 ? 'right' : side[0] > 0.3 ? 'left' : 'center' });
+        const keep = [lab, ...[A, Bp, Fr.P(fr.ends[m.two.end])].map((q) => ({ x0: q[0] - 7, y0: q[1] - 7, x1: q[0] + 7, y1: q[1] + 7 })), ...nameBoxes(c, ev, Fr, NAMES[m.view], cycleAt(tms).s)];
+        placeTag(c, m.two.on, Fr.P(fr.p2), Fr.view.box, keep, { size: 10.5, color: heat(1) });
       }
       if (o.raw) note(c, Fr.view.box, ['no pixel size: no centimeters', 'no pixel size'], 'top', [lab]);
       c.restore();
@@ -707,21 +745,17 @@ function bClose(ctx, P, m, T, f, F, o) {
   ctx.globalAlpha = 1;
   const w = Q(H.center);
   centerMark(ctx, w[0], w[1], 5);
-  // the names, beside the caliper's line: the end's own structure and the second peak's on one
-  // side, the center on the other
-  const side = perp(u), sd = side[0] > 0 ? side : mul(side, -1), fs = bx.w < 200 ? 9.5 : 10.5;
-  const boxes = [];
-  const name = (text, p, k, color) => {
-    const q = Q(p), d = mul(sd, Math.sign(k)), x = q[0] + sd[0] * k, y = q[1] + sd[1] * k;
-    const align = d[0] > 0.35 ? 'left' : d[0] < -0.35 ? 'right' : 'center';
-    boxes.push(tagIn(ctx, text, x, y + (align === 'center' ? (d[1] > 0 ? 7 : -7) : 0), bx, { size: fs, color, align }));
-  };
-  if (o.two) {
-    name(m.two.site, e, 14, '#d6dee2');
-    name(m.two.on, fr.p2, 14, heat(1));
-  }
-  name('weighted center', H.center, -14, SC.cal);
-  // the pixel's size, at the foot
+  // the names: the center, then the second peak's structure and the end's own, each beside its
+  // point where it meets no other name
+  const fs = bx.w < 200 ? 9.5 : 10.5, boxes = [{ x0: w[0] - 9, y0: w[1] - 9, x1: w[0] + 9, y1: w[1] + 9 }];
+  // the names keep off the foot, where the pixel's size goes; in a small close-up the
+  // structures' names give way (the view names the second peak's)
+  const foot = { x0: bx.x, y0: bx.y + bx.h - 20, x1: bx.x + bx.w, y1: bx.y + bx.h };
+  const names = [[['weighted center', 'center'], H.center, SC.cal], ...(o.two ? [[m.two.on, fr.p2, heat(1)], [m.two.site, e, '#d6dee2']] : [])];
+  names.forEach(([text, p, color], i) => {
+    const r = placeTag(ctx, text, Q(p), bx, [...boxes, foot], { size: fs, color, optional: i > 0 });
+    if (r) boxes.push(r);
+  });
   note(ctx, bx, [`1 square = 1 px = ${px.toFixed(3)} cm`, `1 px = ${px.toFixed(3)} cm`], 'bottom', boxes);
   ctx.restore();
 }
@@ -818,15 +852,17 @@ function bTrace(ctx, P, m, T, f, o) {
 }
 
 // ---------------------------------------------------------------- how the number is made (on the paper)
+const HOW = ['How the number is made', 'How it is made'];
 /**
- * Lines of the arithmetic in box b: a title in the hand, then mono lines, each { t, c (color), w
- * (weight) } or a list of forms, long to short. The type shrinks to fit the widest line, then
- * lines from the end drop when the box is short.
+ * Lines of the arithmetic in box b: a title in the hand (the first of its forms that fits), then
+ * mono lines, each { t, c (color), w (weight) } or a list of forms, long to short. The type
+ * shrinks to fit the widest line, then lines from the end drop when the box is short.
  */
 function howPanel(sh, t, b, title, lines) {
   const narrow = b.w < 260;
   let y = b.y + (narrow ? 15 : 20);
-  sh.text(title, b.x, y, { size: narrow ? 17 : 21, color: t.ink });
+  const head = sh.fit(title, b.w, { size: narrow ? 17 : 21 }, 0.8);
+  sh.text(head.str, b.x, y, { size: head.size, color: t.ink });
   y += narrow ? 9 : 12;
   const avail = b.y + b.h - y;
   let size = narrow ? 10.5 : 12;
@@ -867,10 +903,10 @@ function bHow(sh, t, b, m, T, f, o) {
       const at = m.at === 'max' ? 'the largest of the clip' : m.at === 'es' ? 'end-systole' : 'end-diastole';
       const v = o.two ? rep.cm2 : rep.cm;
       lines.push({ t: [`reported at ${at} (frame ${T.at + 1}): ${v.toFixed(2)} cm`, `reported: ${v.toFixed(2)} cm`] });
-      if (o.two) lines.push({ t: [`the site's caliper: ${rep.cm.toFixed(2)} cm`, `site: ${rep.cm.toFixed(2)} cm`], c: t.ink3 });
+      if (o.two) lines.push({ t: [`the site’s caliper: ${rep.cm.toFixed(2)} cm`, `site: ${rep.cm.toFixed(2)} cm`], c: t.ink3 });
     }
   }
-  howPanel(sh, t, b, 'How the number is made', lines);
+  howPanel(sh, t, b, HOW, lines);
 }
 
 // ---------------------------------------------------------------- Doppler and M-mode
@@ -888,7 +924,8 @@ const toBox = (bx, q) => [bx.x + (q[0] / DW) * bx.w, bx.y + (q[1] / DH) * bx.h];
 function dStrip(ctx, P, D, right) {
   panel(ctx, P.x, P.y, P.w, P.h, titleOf(ctx, P.w, D.title, right));
   if (D.mode === 'mm') {
-    // as chapter 13 draws it: the annulus's echo over two beats, toward the apex in systole
+    // the annulus's echo over two beats, with the probe at the top: rv.js's trace, but toward
+    // the probe in systole (rv.js draws it moving away)
     const bx = { x: P.x + 6, y: P.y + 24, w: P.w - 40, h: P.h - 30 };
     ctx.save();
     ctx.fillStyle = '#20262a';
@@ -897,7 +934,7 @@ function dStrip(ctx, P, D, right) {
     ctx.lineWidth = 2.2;
     ctx.beginPath();
     for (let i = 0; i <= 240; i++) {
-      const u = i / 240, y = bx.y + (D.top + (cycleAt((u * 2 * RR) % RR).s * D.tapse) / D.span) * bx.h;
+      const u = i / 240, y = bx.y + (D.top + ((1 - cycleAt((u * 2 * RR) % RR).s) * D.tapse) / D.span) * bx.h;
       if (i) ctx.lineTo(bx.x + u * bx.w, y); else ctx.moveTo(bx.x + u * bx.w, y);
     }
     ctx.stroke();
@@ -918,7 +955,7 @@ function dStrip(ctx, P, D, right) {
   const bx = inner(P, 34);
   spectral(ctx, bx, { fn: D.fn, scale: D.scale, base: D.base, mode: D.mode, broad: D.broad, gain: D.gain, key: D.key, seed: D.seed });
   if (D.dens !== undefined && D.dens < 0.95) {
-    // a faint jet, as chapter 18 dims it
+    // a faint jet, as mr.js dims it
     ctx.save();
     ctx.fillStyle = SC.bg;
     ctx.globalAlpha = 0.72 * (1 - D.dens);
@@ -964,11 +1001,13 @@ function dMarks(ctx, bx, D, o) {
     ctx.stroke();
     const rows = Math.abs(p.q[1] - (D.mode === 'mm' ? pts[0].q[1] : D.base * DH));
     const txt = `${D.points.length > 1 && D.mode !== 'mm' ? `${p.name} ` : ''}${f1(rows)} px`;
-    boxes.push(tag(ctx, txt, xl + 6, (y0 + y) / 2, { size: 10.5 }));
+    // beside the line's middle, clear of the baseline's label: right of it, else left, else past the point
+    const far = (y - y0) / 2 + Math.sign(y - y0) * 14;
+    boxes.push(placeTag(ctx, txt, [xl, (y0 + y) / 2], bx, boxes, { size: 10.5, spots: [[6, 0, 'left'], [-6, 0, 'right'], [6, far, 'left']] }));
   });
   // each map's name beside its point
   pts.forEach((p) => {
-    const [x, y] = toBox(bx, p.q), above = D.mode === 'mm' ? p.mm > 0 : p.v < 0 ? false : true;
+    const [x, y] = toBox(bx, p.q), above = D.mode === 'mm' ? p.mm < D.tapse / 2 : p.v >= 0;
     boxes.push(tag(ctx, p.name, x, y + (above ? -sig * 2.6 - 4 : sig * 2.6 + 6), { size: 10.5, color: heat(1), align: 'center' }));
   });
   ctx.restore();
@@ -1010,7 +1049,8 @@ function dClose(ctx, P, D, bx, pts, k) {
   centerMark(ctx, w[0], w[1], 5);
   const fs = cb.w < 200 ? 9.5 : 10.5;
   const r = tag(ctx, 'weighted center', w[0], clamp(w[1] - 22, cb.y + 9, cb.y + cb.h - 9), { size: fs, align: 'center' });
-  note(ctx, cb, [`1 square = 1 px of the ${DW} × ${DH} region`, '1 square = 1 px'], 'bottom', [r]);
+  // the note on the dark side of the peak: above a velocity toward the probe, whose spectrum fills below it
+  note(ctx, cb, [`1 square = 1 px of the ${DW} × ${DH} region`, '1 square = 1 px'], D.mode !== 'mm' && p.v > 0 ? 'top' : 'bottom', [r]);
   ctx.restore();
 }
 
@@ -1020,16 +1060,16 @@ function dHow(sh, t, b, D, pts, o) {
   const head = { t: [`${D.d.model} model · ${pts.length} heat map${pts.length > 1 ? 's' : ''}`, `${D.d.model} · ${pts.length} map${pts.length > 1 ? 's' : ''}`], c: t.ink3 };
   const lines = [head];
   if (D.mode === 'mm') {
-    const [a, c] = pts, rows = c.q[1] - a.q[1];
+    const [a, c] = pts, rows = Math.abs(a.q[1] - c.q[1]);
     lines.push({ t: [`end-diastole ${pt(a.q)}`, `ED ${pt(a.q)}`] }, { t: [`peak ${pt(c.q)}`, `peak ${pt(c.q)}`] });
-    lines.push({ t: [`excursion ${f1(c.q[1])} − ${f1(a.q[1])} = ${f1(rows)} px`, `excursion ${f1(rows)} px`] });
+    lines.push({ t: [`excursion ${f1(Math.max(a.q[1], c.q[1]))} − ${f1(Math.min(a.q[1], c.q[1]))} = ${f1(rows)} px`, `excursion ${f1(rows)} px`] });
     if (o.raw) lines.push({ t: ['pixel size: none (no DICOM region tags)', 'pixel size: none'] }, { t: [`${f1(rows)} px: no pixel size, no millimeters`, 'no millimeters'], c: t.flag, w: 600 });
     else {
       const cm = rows * dY;
       lines.push({ t: [`pixel size ${dY.toFixed(4)} cm (DICOM 0018,602E)`, `pixel size ${dY.toFixed(4)} cm`] });
       lines.push({ t: [`${f1(rows)} px × ${dY.toFixed(4)} cm = ${cm.toFixed(2)} cm = ${Math.round(cm * 10)} mm`, `= ${Math.round(cm * 10)} mm`], c: t.accent, w: 600 });
     }
-    howPanel(sh, t, b, 'How the number is made', lines);
+    howPanel(sh, t, b, HOW, lines);
     return;
   }
   for (const p of pts) lines.push({ t: [`${pts.length > 1 ? `${p.name} ` : 'point '}${pt(p.q)}`, pt(p.q)] });
@@ -1048,7 +1088,7 @@ function dHow(sh, t, b, D, pts, o) {
     if (D.d.key === 'ea') lines.push({ t: [`E/A = ${Math.round(vel[0])} ÷ ${Math.round(vel[1])} = ${(vel[0] / vel[1]).toFixed(2)}`, `E/A ${(vel[0] / vel[1]).toFixed(2)}`], c: t.accent, w: 600 });
     else if (!cm) lines.push({ t: [`${Math.round(vel[0])} cm/s = ${(vel[0] / 100).toFixed(D.dec)} m/s, as ${D.site} prints it`, `= ${(vel[0] / 100).toFixed(D.dec)} m/s`] });
   }
-  howPanel(sh, t, b, 'How the number is made', lines);
+  howPanel(sh, t, b, HOW, lines);
 }
 
 // ---------------------------------------------------------------- the figure
@@ -1096,7 +1136,7 @@ function drawB(sh, t, W, H, narrow) {
     MESH.draw(ctx, img, titleOf(ctx, img.w, VIEW_TITLE[m.view]), { tms: 0, deeper: DEEPER[m.view], names: NAMES[m.view] });
     panel(ctx, close.x, close.y, close.w, close.h, 'HEAT MAP');
     panel(ctx, tr.x, tr.y, tr.w, tr.h, `${m.short}`);
-    note(ctx, inner(tr), 'loading the heart model', 'top');
+    note(ctx, inner(tr), MESH.state === 'failed' ? 'no heart model' : 'loading the heart model', 'top');
   } else {
     const f = frameNow(T);
     const F = bView(ctx, img, m, T, f, o);
@@ -1160,9 +1200,9 @@ const AT = { ed: 'at end-diastole', es: 'at end-systole', max: 'at its largest' 
 const LEAD_NAME = { ivs: 'septum', lvid: 'LV internal diameter', lvpw: 'posterior wall', la: 'LA diameter', rvb: 'RV basal diameter', root: 'aortic root', asc: 'ascending aorta', pa: 'main pulmonary artery', ivc: 'IVC' };
 /** How the reported frame is found, for each kind of measurement. */
 const PHASE_WORDS = {
-  ed: 'end-diastole is a frame at a peak of the LV diameter over the clip',
-  es: 'end-systole is a frame at a trough of the LV diameter over the clip',
-  max: 'the model reports the largest diameter of the clip; this model’s IVC does not change with the beat',
+  ed: 'the frames with the largest LV diameter mark end-diastole',
+  es: 'the frames with the smallest LV diameter mark end-systole',
+  max: 'the model reports the largest diameter of the clip, and this model’s IVC does not change with the beat',
 };
 
 function bText(s, cite) {
@@ -1180,9 +1220,9 @@ function bText(s, cite) {
   if (raw) {
     live = `<b>Without the DICOM region data, the model finds the two ends of the ${name} but gives no centimeters.</b> The caliper is ${fmt(cm / px, 0)} px long; the pixel size that converts it is stored in the DICOM file, and an export to a video format does not keep it${C}.`;
   } else if (two) {
-    live = `<b>With a second peak on ${/^[aeiou]/i.test(m.two.on) ? 'an' : 'a'} ${m.two.on}, the ${name} measures ${fmt(V.cm2, 1)} cm instead of ${fmt(V.cm, 1)} cm.</b> The weighted center falls between the two peaks, on neither structure${C}.`;
+    live = `<b>With a second peak on ${m.two.the}, the ${name} measures ${fmt(V.cm2, 1)} cm instead of ${fmt(V.cm, 1)} cm.</b> The weighted center falls between the two peaks, on neither structure${C}.`;
   } else {
-    live = `<b>The ${name} measures ${fmt(cm, 1)} cm ${AT[m.at]}.</b> The two ends are the weighted centers of two heat maps, and the model measures every frame; ${PHASE_WORDS[m.at]}${C}.`;
+    live = `<b>The ${name} measures ${fmt(cm, 1)} cm ${AT[m.at]}.</b> The two ends are the weighted centers of two heat maps, on every frame; ${m.key === 'lvid' ? 'the frames with the largest diameter mark end-diastole' : PHASE_WORDS[m.at]}${C}.`;
   }
   return { readouts, live };
 }
@@ -1193,10 +1233,10 @@ function dText(s, cite) {
   const readouts = [{ k: 'Measurement', v: D.d.name, text: true }];
   const n = pts.length;
   let live;
-  const noMr = D.d.key === 'mr' && !D.own ? ` The heart shown has no MR in this site’s model: the recording is chapter ${numOf('mr')}’s jet at its default.` : '';
+  const noMr = D.d.key === 'mr' && !D.own ? ` The heart shown has no MR: the recording is the jet of chapter ${numOf('mr')} at its default.` : '';
   if (D.mode === 'mm') {
-    const rows = pts[1].q[1] - pts[0].q[1];
-    readouts.push(raw ? { k: 'Value', v: fmt(rows, 0), u: 'px · no mm', flag: true } : { k: 'Value', v: String(D.value), u: 'mm' });
+    const rows = Math.abs(pts[0].q[1] - pts[1].q[1]);
+    readouts.push(raw ? { k: 'Value', v: fmt(rows, 0), u: 'px', flag: true } : { k: 'Value', v: String(D.value), u: 'mm' });
     readouts.push(raw ? { k: 'Pixel size', v: 'none', text: true, flag: true } : { k: 'Pixel size', v: dY.toFixed(4), u: 'cm' });
     live = raw
       ? `<b>Without the DICOM region data, the model finds the two points of TAPSE but gives no millimeters.</b> The annulus moves ${fmt(rows, 0)} px between them; the pixel size is stored in the DICOM file${C}.`
@@ -1217,7 +1257,7 @@ function dText(s, cite) {
     const what = { tr: 'The peak TR velocity', av: 'The peak aortic valve velocity', mr: 'The peak MR velocity', lvot: 'The peak LVOT velocity', sep: 'Septal e′', lat: 'Lateral e′' }[D.d.key];
     live = raw
       ? `<b>Without the DICOM region data, the model finds the peak but gives no velocity.</b> The baseline row and the velocity per pixel come from the DICOM region tags${C}.${noMr}`
-      : `<b>${what} measures ${shownV} ${D.unit || 'm/s'}.</b> The point is the weighted center of the heat map on the peak; its ${fmt(rows, 0)} px from the baseline, times ${dY.toFixed(3)} cm/s per px, give ${fmt(v, 0)} cm/s${C}.${noMr}`;
+      : `<b>${what} measures ${shownV} ${D.unit || 'm/s'}.</b> The point is the weighted center of the heat map on the peak; its ${fmt(rows, 0)} px from the baseline, times ${dY.toFixed(3)} cm/s per px, give ${fmt(v, D.unit === 'cm/s' ? 1 : 0)} cm/s${C}.${noMr}`;
   }
   readouts.push({ k: 'Points', v: `${n} heat map${n > 1 ? 's' : ''}`, text: true });
   return { readouts, live };
@@ -1273,9 +1313,10 @@ const measurePage = {
   warm() { MESH.start(); scanner().then((S) => { SCAN = S; warmAhead(); }).catch(() => {}); },
   // the figure can draw the state shown: the mesh and the measuring views are loaded, or failed
   ready: () => MESH.state === 'failed' || (MESH.state === 'ready' && !!SCAN),
-  pulse: () => beat.pulse(),
+  // the heart for the music: the cine's beat while it runs (frame f shows the beat at
+  // phaseOf(f) × FRAME), none on the still recordings
+  pulse: (s) => ({ rr: RR, phase: tabOf(s) === 'bmode' && !reducedMotion ? ((clip.ms + F0 * FRAME) % RR) / RR : null }),
   anim(dt, s) {
-    beat.tick(dt, true);
     if (tabOf(s) !== 'bmode' || reducedMotion) return;
     const f0 = Math.floor(clip.ms / FRAME) % NF;
     clip.ms = (clip.ms + dt * 1000) % (NF * FRAME);
