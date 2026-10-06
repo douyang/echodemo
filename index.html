@@ -206,6 +206,14 @@
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">How EchoPrime reads a study. Study: a grid of 14 echocardiography videos of the heart shown, each one beat of 16 frames of 224 × 224 pixels cut from the heart model, three of them with color Doppler, each tagged with its view group; a heat map of EchoPrime's anatomical attention weights, 15 report sections by 11 view groups, where a click on a row chooses the section; the chosen section's weights on the videos, with the share of the section's weight that the videos present carry, its three heaviest view groups and the section's text from the site's report. Retrieval: a two-dimensional map of 2,000 simulated earlier studies, colored by LVEF or valve grade, with the study shown, its k most similar studies, the mean of their LVEFs or the count of each grade, and the grade reported when more than half of them carry it.</figcaption>
     </figure>
+    <figure class="fig" id="fig-tee">
+      <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
+      <div class="split">
+        <div class="pane-3d"><div class="gl-host"></div><p class="pane-label" id="tee-3dlabel">Probe and plane</p><p class="fig-note" id="tee-note">Drag to orbit</p></div>
+        <div class="pane-2d"><canvas class="fig-canvas" id="tee-canvas" aria-hidden="true"></canvas><p class="pane-label" id="tee-label">ME four-chamber</p></div>
+      </div>
+      <figcaption class="sr-only">Two views of one transesophageal imaging plane. Left: the three-dimensional heart seen from the patient's left, with the esophagus behind the left atrium, the probe in it at the chosen level, and the imaging plane, which turns with the multiplane angle. Right: the echocardiographic image of the same plane in the guideline's display orientation, with the structures labeled, the view's name, the image depth and an icon of the multiplane angle.</figcaption>
+    </figure>
     <figure class="fig" id="fig-report" hidden>
       <div class="sheet-host" id="report-host"></div>
       <figcaption class="sr-only">A structured echocardiography report built from the values on this page.</figcaption>
@@ -2340,6 +2348,67 @@
         <li>TTE comes first. TOE is recommended when TTE is negative or nondiagnostic and the suspicion remains, with a prosthetic valve or a device, and after a positive TTE except in isolated right-sided native valve IE with a clear TTE<span class="cite" data-ref="delgado2023"></span>.</li>
         <li>The size of a vegetation is its maximal length. Size and mobility are the most important predictors of a new embolic event, and 10 mm is the length in the ESC recommendations for urgent surgery<span class="cite" data-ref="delgado2023"></span>.</li>
         <li>A perforation is an interruption of the leaflet with color flow through it<span class="cite" data-ref="habib2015"></span>. In acute MR the jet is eccentric and slower, and color Doppler can underestimate it; systolic flow reversal in the pulmonary veins supports severe MR<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-tee">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">32</span><div><h2 class="ch-title">Transesophageal echocardiography</h2><p class="ch-kicker">The probe, its movements and the standard views</p></div></div>
+      <p class="dek" data-part="dek">Transesophageal echocardiography (TEE) images the heart from the esophagus and the stomach, directly behind the left atrium. Each standard view is set by the level of the probe, its turn and the multiplane angle.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Level</span>
+          <div class="seg" role="group" aria-label="Level of the probe" data-key="teeLevel">
+            <button type="button" data-val="ue" title="Upper esophageal">Upper esophageal</button><button type="button" data-val="me" title="Mid-esophageal">Mid-esophageal</button><button type="button" data-val="tg" title="Transgastric">Transgastric</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Turn</span>
+          <div class="seg" role="group" aria-label="Turn of the probe" data-key="teeTurn">
+            <button type="button" data-val="left" title="Turned to the left (counterclockwise)">Left</button><button type="button" data-val="mid" title="Not turned">Neutral</button><button type="button" data-val="right" title="Turned to the right (clockwise)">Right</button>
+          </div>
+        </div>
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="teeAngle">Multiplane angle <output data-for="teeAngle"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="teeAngle" data-key="teeAngle" min="0" max="180" step="1">
+          <div class="grades" id="tee-views" aria-hidden="true"></div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>The probe and its movements</h3>
+        <p>The probe tip is advanced into the esophagus or the stomach, or withdrawn<span class="cite" data-ref="hahn2013"></span>. Rotating the probe clockwise, toward the patient's right, is turning to the right; rotating it counterclockwise is turning to the left<span class="cite" data-ref="hahn2013"></span>. The large control wheel flexes the tip anteriorly (anteflexion) or posteriorly (retroflexion). The small wheel flexes it to the patient's right or left<span class="cite" data-ref="hahn2013"></span>. Buttons on the handle rotate the imaging plane electronically from 0° to 180°. Rotation toward 180° is forward rotation, and rotation toward 0° is backward rotation<span class="cite" data-ref="hahn2013"></span>.</p>
+        <p>The basic examination uses three positions: the upper esophageal (UE), the mid-esophageal (ME) and the transgastric (TG) level<span class="cite" data-ref="reeves2013"></span>. The transthoracic views and their windows are in <a href="#windows" data-go="windows">chapter 04</a>.</p>
+        <h3>Image orientation</h3>
+        <p>The transducer is at the top of the image, with the near field close to it and the far field at the bottom<span class="cite" data-ref="hahn2013"></span>. At 0°, the transverse plane, the patient's right appears on the left of the display<span class="cite" data-ref="hahn2013"></span>. Forward rotation to 90°, the longitudinal plane, moves the left of the display inferiorly<span class="cite" data-ref="hahn2013"></span>. At 180°, the image is the mirror image of 0°<span class="cite" data-ref="hahn2013"></span>. From the mid-esophagus, the LA lies in the near field, at the top of the image. An icon on the screen shows the angle<span class="cite" data-ref="hahn2013"></span>.</p>
+        <h3>The standard views</h3>
+        <p>The ASE/SCA guideline describes 28 views of a comprehensive examination. For each view it gives the level, the approximate angle, the probe movement from the previous view and the structures imaged<span class="cite" data-ref="hahn2013"></span>. The angles are approximate, and flexion or turning may be needed in a given patient<span class="cite" data-ref="hahn2013"></span>. The basic perioperative examination uses 11 of the views and starts in the ME four-chamber view<span class="cite" data-ref="reeves2013"></span>. The figure shows 16 views, including all 11 basic views.</p>
+        <ul>
+        <li><b>Mid-esophageal, neutral.</b> From the four-chamber view at 0–10°, forward rotation gives the mitral commissural view at 50–70°. Further rotation gives the two-chamber view at 80–100° and the long-axis view at 120–140°<span class="cite" data-ref="hahn2013"></span>. The long-axis view has the orientation of the transthoracic long-axis or three-chamber view<span class="cite" data-ref="hahn2013"></span>.</li>
+        <li><b>Mid-esophageal, turned right.</b> In the aortic valve short-axis view at 25–45°, the left coronary cusp lies in the near field on the right of the display. The noncoronary cusp lies next to the atrial septum, and the right coronary cusp lies in the far field<span class="cite" data-ref="hahn2013"></span>. The RV inflow-outflow view lies at 50–70°, the bicaval view at 90–110° and the aortic valve long-axis view at 120–140°<span class="cite" data-ref="hahn2013"></span>.</li>
+        <li><b>Upper esophageal.</b> The ascending aorta appears in long axis at 90–110°, with the right pulmonary artery behind it, and in short axis at 0–30°<span class="cite" data-ref="hahn2013"></span>. Higher, the aortic arch appears in long axis at 0–10° and in short axis at 70–90°<span class="cite" data-ref="hahn2013"></span>.</li>
+        <li><b>Transgastric.</b> In the stomach, the anteflexed probe shows the LV in short axis at the papillary muscles at 0–20°. This view shows myocardium of the left anterior descending, circumflex and right coronary arteries together<span class="cite" data-ref="hahn2013"></span>. At 90–110°, the TG two-chamber view shows the anterior and inferior walls<span class="cite" data-ref="hahn2013"></span>.</li>
+        <li><b>Descending aorta.</b> Turned to the left, the probe shows the descending aorta in short axis at 0–10° and in long axis at 90–100°<span class="cite" data-ref="hahn2013"></span>. The descending thoracic aorta lies posterior to the esophagus and to its left<span class="cite" data-ref="hahn2013"></span>.</li>
+        </ul>
+        <h3>What TEE adds to transthoracic imaging</h3>
+        <p>TEE is indicated when its findings will change management and TTE is nondiagnostic, or likely to be<span class="cite" data-ref="hahn2013"></span>. TTE may be nondiagnostic for far-field structures, such as the aorta and the LA appendage. It may also be nondiagnostic for prosthetic valves, native valve masses and paravalvular abscesses<span class="cite" data-ref="hahn2013"></span>. The guideline rates TEE as appropriate in suspected acute aortic pathology, including dissection. It also rates TEE as appropriate in suspected endocarditis with a moderate or high pretest probability, such as staphylococcal bacteremia or a prosthetic valve<span class="cite" data-ref="hahn2013"></span>. <a href="#endocarditis" data-go="endocarditis">Chapter 22</a> covers endocarditis, <a href="#prosthetic" data-go="prosthetic">chapter 21</a> prosthetic valves and <a href="#aorta" data-go="aorta">chapter 23</a> aortic dissection.</p>
+        <p>The LA appendage is the primary target in the search for a cardiac source of embolus<span class="cite" data-ref="hahn2013"></span>. TEE detects LA appendage thrombus with a sensitivity of 100% and a specificity of 99%. Thrombi smaller than 2 mm can be missed<span class="cite" data-ref="hahn2013"></span>. The ACUTE trial randomized 1222 patients with atrial fibrillation of more than two days. One group had cardioversion guided by TEE; the other had 3 weeks of warfarin before cardioversion<span class="cite" data-ref="klein2001"></span>. Embolic events did not differ: 0.8% with TEE and 0.5% with warfarin (P = 0.50). Hemorrhagic events were fewer with TEE: 2.9% and 5.5% (P = 0.03)<span class="cite" data-ref="klein2001"></span>. The mean time to cardioversion was 3.0 days with TEE and 30.6 days with warfarin<span class="cite" data-ref="klein2001"></span>.</p>
+        <p>For the atrial septum, agitated saline is injected into a vein. More than three bubbles in the left heart within three beats of right heart opacification are most consistent with a patent foramen ovale<span class="cite" data-ref="hahn2013"></span>. <a href="#shunts" data-go="shunts">Chapter 28</a> shows the shunts.</p>
+        <h3>The interactive figure</h3>
+        <p>The left pane shows the heart model from the patient's left. The esophagus lies behind the LA, with the probe at its level and its imaging plane. The right pane shows the echo image that the plane cuts from the same mesh, in the guideline's orientation. The Level and Turn switches move the probe, and the slider rotates the plane from 0° to 180°. When the slider stops near the angle of a view, it snaps to that view. Between two views of one level and turn, the probe moves from one view's position to the other's. Play steps through the views in the guideline's order.</p>
+        <p>The esophagus is placed from landmarks of the mesh. It runs behind the LA and to the right of the descending aorta, and then through the hiatus to the stomach under the LV. For each heart of the Heart menu, it lies on the back wall of that heart's LA. The model's LA has no appendage, so the figure does not show the ME LA appendage view. In this model, the probe is retroflexed and flexed to the right to show the four-chamber plane at 5°. The text under the readouts gives the flexion.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>The probe is advanced or withdrawn, turned right or left, and flexed; the imaging plane rotates electronically from 0° to 180°<span class="cite" data-ref="hahn2013"></span>.</li>
+        <li>The transducer is at the top of the image. At 0° the patient's right is on the left of the display, and 180° gives the mirror image<span class="cite" data-ref="hahn2013"></span>.</li>
+        <li>The basic perioperative examination uses 11 views and starts in the ME four-chamber view<span class="cite" data-ref="reeves2013"></span>.</li>
+        <li>TEE shows structures that TTE may not: the LA appendage, the aorta, prosthetic valves and abscesses<span class="cite" data-ref="hahn2013"></span>.</li>
+        <li>In the ACUTE trial, TEE-guided early cardioversion had an embolic rate similar to 3 weeks of warfarin, with fewer hemorrhagic events<span class="cite" data-ref="klein2001"></span>.</li>
         </ol>
       </div>
       <div class="quiz"></div>
