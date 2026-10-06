@@ -420,11 +420,12 @@ function capOf(k) {
   const rest = sentences(plain(m ? m[2] : live).replace(/^[,;:]\s*/, ''));
   const name = st.name ?? (m ? plain(m[1]).replace(/[.:]\s*$/, '') : Ck.title);
   let line = st.line ?? (st.pick ? rest.filter((_, i) => st.pick.includes(i)) : rest).join(' ');
-  // a line of the video's own may quote the chapter: {s0} is a sentence of the live text, {LVEF}
-  // the value of the readout of that name, as the page shows them at the step's state
+  // a line of the video's own may quote the chapter: {b} is the live text's bold lead, {s0} a
+  // sentence of the rest, {LVEF} the value of the readout of that name, as the page shows them at
+  // the step's state
   const ro = Object.fromEntries((out.readouts || []).map((r) => [r.k, plain(String(r.v))]));
   line = line.replace(/\{([^}]+)\}/g, (all, key) => {
-    const v = /^s\d+$/.test(key) ? rest[Number(key.slice(1))] : ro[key];
+    const v = key === 'b' ? (m ? plain(m[1]).trim() : null) : /^s\d+$/.test(key) ? rest[Number(key.slice(1))] : ro[key];
     if (v == null) throw new Error(`chapter ${KEY}, step ${k}: no ${all} in the chapter's text`);
     return v;
   });
