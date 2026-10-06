@@ -725,7 +725,7 @@ export class EchoView {
   }
 
   /**
-   * The IVC's caliber below the diaphragm (shock.js): k times the model's, each point of the
+   * The IVC's caliber below the diaphragm (meshpanel.js, o.ivc): k times the model's, each point of the
    * IVC tube moved out from its ring's centre (abdomen.js). The change fades in over the first
    * IVC_TAPER cm from the tube's end at the RA, so the tube still meets the RA. 1: the model's.
    */

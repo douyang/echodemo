@@ -12,7 +12,7 @@
 import { FPS, BEAT, DISSOLVE, SIZE, segAt, cycleMs } from './timeline.js';
 import { VIDEOS, chapterLayout, stepStates } from './chapters.js';
 import { REEL, reelLayout, clipVideo, reelTrack, reelDip } from './reel.js';
-import { CHAPTERS, PARTS } from '../src/chapters.js';
+import { CHAPTERS, numOf, partOf } from '../src/chapters.js';
 import { state, set, subscribe, declare } from '../src/state.js';
 import { RR } from '../src/cyclemodel.js';
 import { ecg } from '../src/scope.js';
@@ -72,10 +72,10 @@ const CH = Object.fromEntries(SHOWN.map((k) => {
 }));
 /** The key of the chapter of step k. */
 const chOf = (k) => (V.chapters ? V.steps[k]?.ch ?? SHOWN[0] : SHOWN[0]);
-const numOfKey = (k) => String(CHAPTERS.findIndex((c) => c.key === k) + 1).padStart(2, '0');
 const IDX = CHAPTERS.findIndex((c) => c.key === SHOWN[0]);
 const C = CHAPTERS[IDX];
-const NUM = SHOWN.length > 1 ? `${numOfKey(SHOWN[0])}–${numOfKey(SHOWN[SHOWN.length - 1])}` : String(IDX + 1).padStart(2, '0');
+/** The chapter's number as the site prints it: 08, or B3 for a bonus chapter (src/order.js). */
+const NUM = SHOWN.length > 1 ? `${numOf(SHOWN[0])}–${numOf(SHOWN[SHOWN.length - 1])}` : numOf(C.key);
 /** The title of the video: a video of several chapters names its own. */
 const TITLE = V.title ?? C.title;
 const [W, H] = SIZE['16:9'];
@@ -409,7 +409,7 @@ function updateSide(out) {
 }
 
 // ---------------------------------------------------------------- caption
-const PART_NAME = PARTS.find((p) => p.key === C.part)?.name || C.part;
+const PART_NAME = partOf(C.key)?.name || C.part;
 let SUB = '';
 let CAPS = [];
 /** Sentences of a line: a stop, a space, then a capital, a digit or a bracket. */
@@ -438,7 +438,7 @@ function capOf(k) {
     if (v == null) throw new Error(`chapter ${KEY}, step ${k}: no ${all} in the chapter's text`);
     return v;
   });
-  return { eye: `${numOfKey(chOf(k))} · ${Ck.title}`, name, line };
+  return { eye: `${numOf(chOf(k))} · ${Ck.title}`, name, line };
 }
 
 /** One line of the caption going from text a to text b (k: 0 to 1): out, then in (video/app.js). */

@@ -30,35 +30,58 @@ import endocarditisPage from './ch/endocarditis.js';
 import aortaPage from './ch/aorta.js';
 import massesPage from './ch/masses.js';
 import miPage from './ch/mi.js';
-import shockPage from './ch/shock.js';
+// Shock is hidden (SHOW_SHOCK in order.js), so this file does not import it and the page does not
+// load it. To restore it, add `import shockPage from './ch/shock.js';` here and shockPage to BY
+// below, and follow the steps at SHOW_SHOCK in order.js.
 import measurePage from './ch/measure.js';
 import aiPage from './ch/ai.js';
 import teePage from './ch/tee.js';
 import report from './ch/report.js';
 
-import { ORDER, SHOW_REPORT } from './order.js';
+import { ORDER, BONUS, numOf } from './order.js';
 
 export { numOf } from './order.js';
 
-export const PARTS = [
-  { key: 'physics', num: 'I', name: 'Physics' },
-  { key: 'views', num: 'II', name: 'Views' },
-  { key: 'physiology', num: 'III', name: 'Physiology' },
-  { key: 'hemodynamics', num: 'IV', name: 'Hemodynamics' },
-  { key: 'function', num: 'V', name: 'Function' },
-  { key: 'valves', num: 'VI', name: 'Valves' },
-  { key: 'aorta', num: 'VII', name: 'Aorta' },
-  { key: 'pericardium', num: 'VIII', name: 'Pericardium' },
-  { key: 'cardiomyopathy', num: 'IX', name: 'Cardiomyopathy' },
-  { key: 'congenital', num: 'X', name: 'Congenital' },
-  { key: 'masses', num: 'XI', name: 'Masses' },
-  { key: 'acute', num: 'XII', name: 'Acute care' },
-  { key: 'ai', num: 'XIII', name: 'Artificial intelligence' },
-  { key: 'tee', num: 'XIV', name: 'TEE' },
-  ...(SHOW_REPORT ? [{ key: 'report', num: 'XV', name: 'Report' }] : []),
-];
-
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, constrictPage, hcmPage, shuntsPage, massesPage, miPage, shockPage, measurePage, aiPage, teePage, report].map((c) => [c.key, c]));
-/** The chapters in reading order (order.js). */
-export const CHAPTERS = ORDER.map((k) => BY[k]);
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, constrictPage, hcmPage, shuntsPage, massesPage, miPage, measurePage, aiPage, teePage, report].map((c) => [c.key, c]));
+/**
+ * Every chapter shown, in the order back and next step through them: the main chapters in
+ * reading order (ORDER), then the bonus chapters (BONUS). state.chapter is an index in it.
+ */
+export const CHAPTERS = [...ORDER, ...BONUS].map((k) => BY[k]);
+/**
+ * The chapters of the chapter bar, of its list and of the tour, by their index in CHAPTERS: the
+ * main chapters. A bonus chapter is not in it. It opens by back and next, by the block at the end
+ * of the last main chapter and by its address, and the bar then shows no chapter as current.
+ */
+export const BAR = ORDER.map((k, i) => i);
+
+// Each chapter names its part (its module's `part`). A part with no chapter in the bar is left
+// out, and the numerals follow the parts that remain. Congenital, Masses and Acute care hold only
+// bonus chapters now.
+const ALL_PARTS = [
+  { key: 'physics', name: 'Physics' },
+  { key: 'views', name: 'Views' },
+  { key: 'physiology', name: 'Physiology' },
+  { key: 'hemodynamics', name: 'Hemodynamics' },
+  { key: 'function', name: 'Function' },
+  { key: 'valves', name: 'Valves' },
+  { key: 'aorta', name: 'Aorta' },
+  { key: 'pericardium', name: 'Pericardium' },
+  { key: 'cardiomyopathy', name: 'Cardiomyopathy' },
+  { key: 'congenital', name: 'Congenital' },
+  { key: 'masses', name: 'Masses' },
+  { key: 'acute', name: 'Acute care' },
+  { key: 'ai', name: 'Artificial intelligence' },
+  { key: 'tee', name: 'TEE' },
+  { key: 'report', name: 'Report' },
+];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
+/** The parts of the chapter bar, in order, numbered I, II ... */
+export const PARTS = ALL_PARTS.filter((p) => BAR.some((i) => CHAPTERS[i].part === p.key)).map((p, i) => ({ ...p, num: ROMAN[i] }));
+/** The part that a chapter's video names: its part in the bar, or Bonus for a bonus chapter. */
+export function partOf(key) {
+  if (numOf(key).startsWith('B')) return { key: 'bonus', num: '', name: 'Bonus' };
+  const c = CHAPTERS.find((x) => x.key === key);
+  return PARTS.find((p) => p.key === c?.part) || null;
+}
