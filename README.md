@@ -475,7 +475,7 @@ node tools/storyboard.mjs --ch=as                              # one frame of ea
 | 52.6 | 19 Mitral regurgitation | No regurgitation, then severe with LV dysfunction |
 | 59.4 | 24 Pericardial effusion | No pericardial effusion, then tamponade |
 | 66.3 | 27 Cardiac amyloidosis | A normal wall, then relative apical sparing |
-| 73.1 | 30 AI interpretation and measurement | The LV section's weights, its task heads and the septum's anchor |
+| 73.1 | 32 AI interpretation and measurement | The LV section's weights, its task heads and the septum's anchor |
 | 82.3 | | End card |
 
 Left out, with the reason:
@@ -487,10 +487,12 @@ Left out, with the reason:
 - 14: added after the review.
 - 21, 22, 25, 26, 28 and 29: added after the review.
 - 12, 15 and 23: added after the review.
+- 30, 31 and 33: added after the review.
 
 How it is built:
 - `video/reel.js` holds the clips. A chapter clip is a chapter video script with its holds and moves in bars. The clip of Views is a cut of the views video with the nine planes in Probe and body, as in cut B.
 - Each clip renders on its own page: `video/chapter.html?reel=k`, or `video/index.html?reel=k` for Views. The page draws the progress line of the intro, which names the ten chapters and runs on the time of the whole.
+- A name too long for the progress line takes the chapter's short name from the site's chapter bar, the longest first, until every name fits. The AI clip reads AI.
 - The score is *Bright pulse* at 105 BPM (`tools/score/pulse.py intro`, seed 9300). A bar is 8/3 heartbeats, so a clip of 3 bars is 8 heartbeats. Each cut falls on a bar line.
 - The clips are the windows of the score. The bass starts at the second clip, and the pluck and the pad brighten clip by clip.
 - At each cut the panes and the caption dip to the frame for 0.4 s. The progress line stays.
