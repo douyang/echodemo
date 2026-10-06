@@ -313,14 +313,16 @@ function estimateNoise(NB, NS, fr) {
  * cf: box [t0, t1, r0, r1] from boxAround; lo, hi (cm/s): the displayed range, hi - lo twice the
  * Nyquist limit (a shifted baseline makes them unequal); variance: tag turbulence green; blood
  * and tissue: polygons (cm); flows: elements; stats (optional): { poly } counts the color area
- * (cm²) inside poly into stats.area.
+ * (cm²) inside poly into stats.area. now (optional, s): the time of a frame made ahead of time
+ * (ch/ai.js), for its noise and eddies; such a frame is always made new, never the last one again.
  */
 export function colorFlow(ctx, F, cf) {
   const { k, sect, view } = F;
   const [t0, t1, r0, r1] = cf.box;
   if (!(t1 > t0 && r1 > r0)) return;
   const lo = cf.lo, hi = cf.hi, Vn = (hi - lo) / 2, span = hi - lo;
-  const key = cine.live && !cf.stats ? `${Math.floor(performance.now() / 50)}|${F.box.x},${F.box.y},${F.box.w},${F.box.h}|${k}|${sect.cx},${sect.top}|${cf.box.join(',')}|${lo},${hi},${cf.variance}` : '';
+  const fixed = Number.isFinite(cf.now);
+  const key = cine.live && !cf.stats && !fixed ? `${Math.floor(performance.now() / 50)}|${F.box.x},${F.box.y},${F.box.w},${F.box.h}|${k}|${sect.cx},${sect.top}|${cf.box.join(',')}|${lo},${hi},${cf.variance}` : '';
   if (key && key === LAST.key) {
     blit(ctx, F, LAST);
     outlineBox(ctx, F, cf.box);
@@ -333,7 +335,7 @@ export function colorFlow(ctx, F, cf) {
   const NSc = (NS + 1) >> 1;
   if (N > CAP) { CAP = N; RE = new Float32Array(N); IM = new Float32Array(N); DP = new Float32Array(N); PB = new Float32Array(N); CV = new Float32Array(N); CS = new Float32Array(N); }
   const M = bloodMask(cf, t0, t1, r0, r1);
-  const now = cine.live ? performance.now() / 1000 : 0;
+  const now = fixed ? cf.now : cine.live ? performance.now() / 1000 : 0;
   const tf = now * 12, fr = Math.floor(now * 20);    // eddies change over about 80 ms; color frames at 20 Hz
   const pwf = 0.1 * Math.PI;                          // wall filter: 10% of the Nyquist limit
   const flows = cf.flows;
