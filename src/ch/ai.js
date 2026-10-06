@@ -63,7 +63,7 @@ const pctOf = (x) => (x > 0 && x < 0.01 ? '<1' : x > 0.99 && x < 1 - 1e-9 ? '>99
 // The frames are cut a few at a time on the page's animation frames, so the page stays
 // responsive, in the order of the study; a video shows when all its frames are in.
 const PX = 224, NF = 16, TOTAL = N_ALL * NF;
-const BUDGET = 12;        // ms of cutting per animation frame (at least one frame)
+const BUDGET = 22;        // ms of cutting per animation frame (at least one frame): under the 50 ms of a long task
 const STILL = 10;         // the frame shown with reduced motion: early diastole, the valves open
 const cache = {
   state: 'idle',          // idle, loading, ready, failed: the heart model and the view that cuts
@@ -143,7 +143,7 @@ function fill() {
   // Date.now(): a video page holds performance.now() still while it loads (video/chapter.html)
   const t0 = Date.now();
   let n = 0;
-  while (cache.next < TOTAL && (n === 0 || (n < 4 && Date.now() - t0 < BUDGET))) {
+  while (cache.next < TOTAL && (n === 0 || (n < 6 && Date.now() - t0 < BUDGET))) {
     try { cut(cache.next); } catch (err) { console.error('ai: a frame failed', err); }
     cache.next++;
     n++;
@@ -367,7 +367,7 @@ const rgbOf = (c) => {
   return m && m.length >= 3 ? m.slice(0, 3).map(Number) : [128, 128, 128];
 };
 const mixRgb = (a, b, u) => a.map((x, i) => Math.round(x + (b[i] - x) * u));
-const css = (c, a = 1) => (a >= 1 ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`);
+const css = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
 let PAL = { key: '' };
 /**
  * The figure's colors from the sheet's tokens, so that both themes follow: the heat map's
@@ -487,18 +487,31 @@ function studyLayout(sh, W, H) {
     const box = { x: right.x, y: heat.y + heat.h + 14, w: right.w, h: right.y + right.h - (heat.y + heat.h + 14) };
     return { wide, grid, heat, box, pad, foot: { x: grid.x, y: grid.y + grid.h + 14, w: grid.w } };
   }
-  // narrow (a phone): the grid, the heat map, then the section box. The grid in four columns,
-  // with the section, its share of the weight and its top views beside it; a short figure takes
-  // the videos in two rows of seven, with the section under the heat map, if its tiles are larger.
-  const pad = 6, gap = 8, SIDE = 112;
+  // narrow (a phone): the grid, the heat map, then the section box, one under the other. The
+  // grid takes four columns with the section, its share and its top views beside it, or five or
+  // seven columns with them under the heat map: the arrangement whose smallest part is largest,
+  // with tiles of 60 px, rows of 12 px and three lines of the site's report counting the same.
+  const pad = 6, gap = 8, SIDE = 112, cg = 4;
   const hs = heatSize(sh, W - 2 * pad, true);
-  const rh = clamp(Math.floor((H * 0.4 - hs.title - hs.head) / 15), 9, 13);
-  const heatH = hs.title + hs.head + 15 * rh;
-  const free = H - 2 * pad - 2 * gap - heatH;
-  let grid = gridIn({ x: pad, y: pad, w: W - 2 * pad - 10 - SIDE, h: free - 58 }, [4], 4);
-  let side = { x: pad + grid.w + 10, y: pad, w: W - 2 * pad - grid.w - 10, h: grid.h };
-  const g7 = gridIn({ x: pad, y: pad, w: W - 2 * pad, h: free - 92 }, [7], 4);
-  if (grid.s < 52 && g7.s > grid.s) { grid = g7; side = null; }
+  let best = null;
+  for (const [c, withSide] of [[4, true], [5, false], [7, false]]) {
+    const r = Math.ceil(N_ALL / c), boxMin = withSide ? 58 : 90;
+    const sw = Math.floor((W - 2 * pad - (withSide ? 10 + SIDE : 0) - (c - 1) * cg) / c);
+    for (let rh = 16; rh >= 9; rh--) {
+      const heatH = hs.title + hs.head + 15 * rh;
+      const s = Math.min(sw, Math.floor((H - 2 * pad - 2 * gap - heatH - boxMin - (r - 1) * cg) / r));
+      const boxH = H - 2 * pad - 2 * gap - heatH - (r * s + (r - 1) * cg);
+      const lines = Math.floor((boxH - (withSide ? 0 : 55) - 16) / 15);
+      const score = Math.min(s / 60, rh / 12, (lines + 1) / 4);
+      if (s >= 30 && (!best || score > best.score + 1e-9)) best = { c, withSide, rh, s, score };
+    }
+  }
+  best = best || { c: 7, withSide: false, rh: 9, s: 30 };
+  const grid = { c: best.c, r: Math.ceil(N_ALL / best.c), s: best.s, gap: cg, x: pad, y: pad };
+  grid.w = grid.c * grid.s + (grid.c - 1) * cg;
+  grid.h = grid.r * grid.s + (grid.r - 1) * cg;
+  const side = best.withSide ? { x: pad + grid.w + 10, y: pad, w: W - 2 * pad - grid.w - 10, h: grid.h } : null;
+  const rh = best.rh, heatH = hs.title + hs.head + 15 * rh;
   const heat = { x: pad, y: pad + grid.h + gap, w: W - 2 * pad, h: heatH, rh, ...hs };
   const box = { x: pad, y: heat.y + heat.h + gap, w: W - 2 * pad, h: H - pad - (heat.y + heat.h + gap) };
   return { wide, grid, side, heat, box, pad, foot: null };
@@ -785,22 +798,22 @@ function drawStudy(sh, t) {
 // a cluster for each grade, the clusters along an arc), plus noise of the study's own. Most
 // studies lie near their value's place; some (STRAY) lie far from it, as the other findings of a
 // study move it in the embedding.
-const N_LIB = 2000, STRAY = 0.12;
+const N_LIB = 2000, STRAY = 0.15;
 const GRADES = {
   av: { names: ['none', 'mild', 'moderate', 'severe'], what: 'aortic stenosis', none: 'no aortic stenosis' },
   mv: { names: ['none or trace', 'mild', 'moderate', 'severe'], what: 'mitral regurgitation', none: 'no or trace mitral regurgitation' },
 };
 /** The LVEF's place on its map (unit square): an arch from 10% at the lower left to 80% at the lower right. */
 function efPlace(ef) {
-  const u = clamp((ef - 10) / 70, 0, 1), th = ((200 + 150 * u) * Math.PI) / 180;
-  return [0.5 + 0.42 * Math.cos(th), 0.79 + 0.42 * Math.sin(th)];
+  const u = clamp((ef - 10) / 70, 0, 1), th = ((188 + 164 * u) * Math.PI) / 180;
+  return [0.5 + 0.4 * Math.cos(th), 0.76 + 0.4 * Math.sin(th)];
 }
 /** A grade's place on its map: the four clusters along an arc, none at the left, severe at the right. */
 function gradePlace(g) {
   const th = ((210 + 33 * g) * Math.PI) / 180;
   return [0.55 + 0.38 * Math.cos(th), 0.8 + 0.38 * Math.sin(th)];
 }
-const SPREAD = { ef: 0.055, grade: [0.1, 0.07, 0.07, 0.07], stray: 0.22 };
+const SPREAD = { ef: 0.065, grade: [0.1, 0.07, 0.07, 0.07], stray: 0.25 };
 let LIB = null;
 function library() {
   if (LIB) return LIB;
@@ -814,11 +827,13 @@ function library() {
     ef[i] = Math.round(clamp(u < 0.7 ? 62 + 5 * gauss() : u < 0.85 ? 45 + 6 * gauss() : 28 + 7 * gauss(), 10, 80));
     av[i] = pick([0.85, 0.05, 0.04, 0.06]);
     mv[i] = pick([0.72, 0.14, 0.08, 0.06]);
-    // every study stays on its map: one that would fall off it sits at its edge
+    // every study stays on its map: noise that would put it off the map is drawn again
     const put = (key, [x, y], sd) => {
       const k = r() < STRAY ? SPREAD.stray : sd;
-      pos[key][2 * i] = clamp(x + k * gauss(), 0.02, 0.98);
-      pos[key][2 * i + 1] = clamp(y + k * gauss(), 0.02, 0.98);
+      let px, py, n = 0;
+      do { px = x + k * gauss(); py = y + k * gauss(); } while ((px < 0.03 || px > 0.97 || py < 0.03 || py > 0.97) && ++n < 50);
+      pos[key][2 * i] = clamp(px, 0.03, 0.97);
+      pos[key][2 * i + 1] = clamp(py, 0.03, 0.97);
     };
     put('lv', efPlace(ef[i]), SPREAD.ef);
     put('av', gradePlace(av[i]), SPREAD.grade[av[i]]);
@@ -1073,8 +1088,8 @@ function studyText(s, cite) {
   if (s.aiOnly) {
     live = `<b>With the A4C video alone, the ${name} section keeps ${share} of its weight.</b> In the paper, studies with one A4C video performed about as well as full studies across tasks${cite('vukadinovic2026')}.`;
   } else {
-    const rest = b.w >= 0.8 ? `and ${GROUP_TEXT[GROUPS[b.g].key]} (${f2(b.w)})` : `with ${GROUP_TEXT[GROUPS[b.g].key]} next (${f2(b.w)})`;
-    live = `<b>The ${name} section rests on ${GROUP_TEXT[GROUPS[a.g].key]} (${f2(a.w)}) ${rest}.</b> The videos present carry ${share} of its weight.`;
+    const rest = b.w >= 0.8 ? ` and ${GROUP_TEXT[GROUPS[b.g].key]} (${f2(b.w)})` : `, with ${GROUP_TEXT[GROUPS[b.g].key]} next (${f2(b.w)})`;
+    live = `<b>The ${name} section rests on ${GROUP_TEXT[GROUPS[a.g].key]} (${f2(a.w)})${rest}.</b> The videos present carry ${share} of its weight.`;
   }
   return {
     readouts: [
@@ -1131,7 +1146,7 @@ function retrievalText(s) {
 // Study: the LV section, the aortic valve, the IVC; the videos added one by one under the IVC
 // section; the A4C video alone, then the full study again. Retrieval: the LV map with k = 1, 50
 // and 200, then the aortic valve with k = 50.
-const T_SEC = [[0, 0], [4, 7], [8, 12]], T_ADD = [12, 21], T_ONLY = [21, 24], T_FULL = 24;
+const T_SEC = [[0, 0], [4, 7], [8, 12]], T_ADD = [12, 21], T_ONLY = 21, T_FULL = 24;
 const T_RET = [[26, 'lv', 1], [29.5, 'lv', 50], [33, 'lv', 200], [36.5, 'av', 50]];
 const addAt = (tt) => clamp(1 + Math.floor(((tt - T_ADD[0]) / (T_ADD[1] - T_ADD[0])) * N_ALL), 1, N_ALL);
 
@@ -1225,7 +1240,7 @@ export default {
       const at = T_RET.find(([, m, kk]) => m === map && kk === k);
       return at ? at[0] + 0.01 : undefined;
     }
-    if (s.aiOnly) return T_ONLY[0] + 0.01;
+    if (s.aiOnly) return secOf(s) === 12 ? T_ONLY + 0.01 : undefined;
     const n = clamp(Math.round(s.aiN), 1, N_ALL);
     if (n < N_ALL) return secOf(s) === 12 ? T_ADD[0] + ((n - 1) / N_ALL) * (T_ADD[1] - T_ADD[0]) + 0.01 : undefined;
     const at = T_SEC.find(([, sec]) => sec === secOf(s));
@@ -1236,4 +1251,4 @@ export default {
   },
 };
 // TEMP-DEBUG (remove before finishing)
-export const __debug = { cache, TILES, retrieve, heartValues, library };
+export const __debug = { cache, TILES, retrieve, heartValues, library, cut };
