@@ -50,6 +50,7 @@ SEEDS['MASSES'] = 9327                            # cardiac masses and thrombus:
 SEEDS['STRAIN'] = 9329                            # myocardial strain and cardio-oncology: the number set for it
 SEEDS['LVAD'] = 9330                              # left ventricular assist devices: the number set for it
 SEEDS['AORTA'] = 9331                             # diseases of the aorta (chapter 23): the number set for it
+SEEDS['MI'] = 9332                                # complications of myocardial infarction (chapter 30): the number set for it
 SEEDS['AI'] = 9328                                # artificial intelligence: one video for chapters 30 and 31
 SEEDS['INTRO'] = 9300                             # the intro (video/reel.js): 93 and chapter 00
 PROG = ['C', 'Am', 'F', 'G']
