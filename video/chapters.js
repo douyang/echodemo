@@ -206,7 +206,8 @@ export const VIDEOS = {
     ],
   },
   // 13: pressure overload from a normal RV to severe PH, and the septum at end-systole; then
-  // volume overload, and the septum at end-diastole
+  // volume overload, and the septum at end-diastole; then acute PE, from RV dilation to its
+  // specific signs. Fourteen steps share the progress line, so its names are short.
   rv: {
     pane: '2D and Doppler',
     side: false,
@@ -219,9 +220,13 @@ export const VIDEOS = {
       { set: { rvFrame: 'es' }, name: 'End-systole: the septum flattens', track: 'End-systole', pick: [3], move: 2, hold: 5 },
       { set: { rvS: 0, rvFrame: 'cine' }, name: 'A normal RV again', track: 'Back', line: '', move: 3, hold: 2 },
       { set: { rvLoad: 'volume' }, name: 'Volume overload', track: 'Volume', line: 'The same RV under a volume load: an atrial septal defect, or significant TR or PR.', move: 1, hold: 3 },
-      { set: { rvS: 0.5 }, name: 'Moderate RV dilation', track: 'Moderate dilation', pick: [0, 2], move: 4, hold: 6 },
-      { set: { rvS: 0.85 }, name: 'Severe RV dilation', track: 'Severe dilation', pick: [0, 1], move: 4, hold: 7 },
+      { set: { rvS: 0.5 }, name: 'Moderate RV dilation', track: 'Moderate', pick: [0, 2], move: 4, hold: 6 },
+      { set: { rvS: 0.85 }, name: 'Severe RV dilation', track: 'Severe', pick: [0, 1], move: 4, hold: 7 },
       { set: { rvFrame: 'ed' }, name: 'End-diastole: the septum flattens', track: 'End-diastole', pick: [3], move: 2, hold: 6 },
+      { set: { rvS: 0, rvLoad: 'pe', rvFrame: 'cine' }, name: 'Acute pulmonary embolism', track: 'Acute PE', line: 'The same RV under an acute pressure load: a pulmonary embolism.', move: 3, cut: true, hold: 3 },
+      { set: { rvS: 0.42 }, name: 'RV dilation', track: 'Dilation', pick: [0, 1], move: 4, hold: 6 },
+      { set: { rvS: 0.68 }, name: 'RV dysfunction', track: 'Dysfunction', pick: [0, 2], move: 4, hold: 6 },
+      { set: { rvS: 0.9 }, name: "McConnell's sign and the 60/60 sign", track: 'Signs', pick: [3, 4], move: 4, hold: 9 },
     ],
   },
   tr: {
