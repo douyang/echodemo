@@ -5,8 +5,9 @@
 // heart is compressed first: the RA folds in from late diastole, the RV free wall in early
 // diastole, the IVC stops collapsing, and right and left filling swing in opposite directions
 // with breathing (ASE 2013). The pressures and velocities are illustrative. Constriction, from a
-// normal pericardium to all three Mayo Clinic criteria, and restrictive cardiomyopathy, for
-// comparison, take the slider with the figure and the text of src/constriction.js.
+// normal pericardium to all three Mayo Clinic criteria, takes the slider with the figure and the
+// text of src/constriction.js. Restrictive cardiomyopathy is one paragraph of the text: its
+// setting of src/constriction.js shows only in the hidden chapter (SHOW_CONSTRICT in order.js).
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { tracks, lazyBands, paintBands, playSeverity, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, shown } from '../sev.js';
@@ -18,8 +19,8 @@ import * as CP from '../constriction.js';
 
 const KEY = 'periS';
 const MODE = 'periMode';
-// the switch: the effusion, constriction and restrictive cardiomyopathy
-const MODES = ['eff', ...CP.MODES];
+// the switch: the effusion and constriction
+const MODES = ['eff', 'cp'];
 const modeOf = (s) => (s && MODES.includes(s[MODE]) ? s[MODE] : 'eff');
 const RR0 = 857;             // ms, the beat the drawn views are timed on (70 a minute)
 const BREATH = 4000;         // ms, 15 breaths a minute
@@ -76,9 +77,9 @@ export function gradeOf(s, m = model(s)) {
   return 'severe';
 }
 // the slider's bands for each disease (sev.js lazyBands, init), with their levels and short names
-const BANDS = { eff: [], cp: [], rcm: [] };
-const LEVELS_OF = { eff: { ...LEVEL, tamponade: 5 }, cp: CP.LEVELS, rcm: CP.LEVELS };
-const SHORT_OF = { eff: { moderate: 'mod.', tamponade: 'tamp.' }, cp: CP.SHORT.cp, rcm: CP.SHORT.rcm };
+const BANDS = { eff: [], cp: [] };
+const LEVELS_OF = { eff: { ...LEVEL, tamponade: 5 }, cp: CP.LEVELS };
+const SHORT_OF = { eff: { moderate: 'mod.', tamponade: 'tamp.' }, cp: CP.SHORT.cp };
 /** The slider's label: the grade at x of the disease shown. */
 const labelOf = (x, mode) => (mode === 'eff' ? gradeOf(x) : CP.LABEL[mode][CP.gradeOf(x, mode)]);
 
@@ -275,8 +276,7 @@ function drawEffusion(sh, t) {
   for (const bx of bxs) cursor(ctx, bx, u);
 }
 
-// constriction and restrictive cardiomyopathy: the figure of src/constriction.js, with its own
-// four-chamber view and clock
+// constriction: the figure of src/constriction.js, with its own four-chamber view and clock
 const conFig = CP.constrictionFigure(redraw);
 const conValues = CP.valuesCache();
 function draw(sh, t) {
@@ -287,7 +287,7 @@ function draw(sh, t) {
 
 // The views of the disease shown load first; the others start when those are ready, at idle, so
 // that the switch shows its views at once.
-const PANELS = { eff: [echoA4C, echoPLAX], cp: [conFig.mesh], rcm: [conFig.mesh] };
+const PANELS = { eff: [echoA4C, echoPLAX], cp: [conFig.mesh] };
 const ALL = [echoA4C, echoPLAX, conFig.mesh];
 const idle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 300));
 function startPanels(mode) {
@@ -336,7 +336,7 @@ function tampRows(m) {
 }
 
 // the tour: the start (s) and the length (s) of each disease's sweep of the slider
-const TOUR = { eff: [1, 14], cp: [17, 7], rcm: [26, 5] };
+const TOUR = { eff: [1, 14], cp: [17, 7] };
 
 export default {
   key: 'peri',
@@ -344,7 +344,7 @@ export default {
   model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Pericardial disease',
   nav: 'Peri',
-  dwell: 32,
+  dwell: 25,
   defaults: { periS: 0.45, periMode: 'eff', periCine: true },
   format: { periS: (x, s) => labelOf(x, modeOf(s)) },
   watch: ['periS', 'periMode', 'periCine', 'pheno'],
@@ -359,7 +359,7 @@ export default {
   init({ state }) {
     st = state;
     BANDS.eff = lazyBands((x) => gradeOf(x));
-    for (const mode of CP.MODES) BANDS[mode] = lazyBands((x) => CP.gradeOf(x, mode));
+    BANDS.cp = lazyBands((x) => CP.gradeOf(x, 'cp'));
     paintFor(state);
   },
   onState(s, ch) { if (MODE in ch) paintFor(s); },
@@ -378,11 +378,11 @@ export default {
       if (sheet) sheet.dirty = true;
     }
   },
-  // the sequence: the effusion to tamponade, then, shorter, constriction and restrictive
-  // cardiomyopathy, each from normal to its most severe grade
+  // the sequence: the effusion to tamponade, then, shorter, constriction from a normal
+  // pericardium to all three Mayo Clinic criteria
   tourEnter(set) { set({ periS: 0, periMode: 'eff', periCine: true }); },
   tourTick(tt, set) {
-    const mode = tt < 16 ? 'eff' : tt < 25 ? 'cp' : 'rcm', [t0, len] = TOUR[mode];
+    const mode = tt < 16 ? 'eff' : 'cp', [t0, len] = TOUR[mode];
     set({ periMode: mode, periS: Math.round(clamp((tt - t0) / len, 0, 1) * 200) / 200 });
   },
   // the time of the tour at which tourTick shows this state (its inverse): the tour continues from it
@@ -398,7 +398,6 @@ export default {
         live: CP.liveOf(v, cite),
         extra: (art) => {
           tables(art);
-          CP.diffTable(art.querySelector('#peri-table3'), v, cite);
           paintFor(s);
         },
       };

@@ -344,7 +344,7 @@ export const VIDEOS = {
     ],
   },
   // the effusion from none to tamponade; then, shorter, constriction to all three Mayo Clinic
-  // criteria and restrictive cardiomyopathy at grade 3 (the tour)
+  // criteria (the tour)
   peri: {
     pane: '2D and Doppler',
     side: false,
@@ -356,8 +356,7 @@ export const VIDEOS = {
       { set: { periS: 0.64 }, name: 'Severe pericardial effusion', track: 'Severe', pick: [0, 2, 3], move: 4, hold: 6 },
       { set: { periS: 0.85 }, name: 'Tamponade', track: 'Tamponade', pick: [0, 1, 4], move: 4, hold: 7 },
       { set: { periMode: 'cp', periS: 0.58 }, track: 'Constriction', pick: [0, 1], move: 3, cut: true, hold: 7 },
-      { set: { periS: 0.9 }, track: '3 of 3', pick: [1, 2, 3], move: 4, hold: 7 },
-      { set: { periMode: 'rcm', periS: 0.92 }, track: 'Restrictive CM', pick: [2, 3], move: 3, cut: true, hold: 8 },
+      { set: { periS: 0.9 }, track: '3 of 3', pick: [1, 2, 3], move: 4, hold: 8 },
     ],
   },
   // hcm: at rest from a normal heart to severe obstruction; back to latent obstruction at rest;
