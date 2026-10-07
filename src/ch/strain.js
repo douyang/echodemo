@@ -21,7 +21,7 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, SC } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
-import { bands, paintBands, playSeverity, Beat, cine, rows, cols, note, fit, gradeTable, shown as rnd } from '../sev.js';
+import { lazyBands, paintBands, playSeverity, Beat, cine, rows, cols, note, fit, gradeTable, shown as rnd } from '../sev.js';
 import { MeshPanel } from '../meshpanel.js';
 import { scanner } from '../scanner.js';
 import { diseaseTargets } from '../model3d.js';
@@ -804,8 +804,8 @@ function paint(s) {
   const key = `${heartOf(s)}|${trackOf(s)}|${bioOf(s)}`;
   if (key === painted) return;
   painted = key;
-  BANDS = bands((x) => gradeAt(x, s), 200).map((b) => ({ ...b, g: b.g }));
-  paintBands(document.getElementById('strain-grades'), BANDS.map((b) => ({ ...b, g: LABEL[b.g] || b.g })), Object.fromEntries(Object.entries(LEVEL).map(([g, l]) => [LABEL[g] || g, l])), Object.fromEntries(Object.entries(SHORT).map(([g, l]) => [LABEL[g] || g, l])));
+  BANDS = lazyBands((x) => gradeAt(x, s), 200);
+  paintBands(document.getElementById('strain-grades'), () => BANDS().map((b) => ({ ...b, g: LABEL[b.g] || b.g })), Object.fromEntries(Object.entries(LEVEL).map(([g, l]) => [LABEL[g] || g, l])), Object.fromEntries(Object.entries(SHORT).map(([g, l]) => [LABEL[g] || g, l])));
 }
 
 /** The view under a pointer event on the figure, or null. */
@@ -819,6 +819,7 @@ function viewAt(e) {
 const strainPage = {
   key: 'strain',
   part: 'function',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Strain',
   nav: 'Strain',
   dwell: 33,

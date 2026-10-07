@@ -6,6 +6,11 @@ let modelP = null;
 export function loadModel() {
   if (!modelP) {
     modelP = (async () => {
+      // the model's files download beside the modules that read them, not after them (index.html
+      // may have started them already: a preload that these fetches take over)
+      const HEART = 'assets/heart.json', VALVES = 'assets/valves.json';
+      const early = { [HEART]: fetch(HEART), [VALVES]: fetch(VALVES) };
+      for (const f of Object.values(early)) f.catch(() => {});   // a failure surfaces in loadHeart, not before
       const [{ loadHeart, Anatomy, turnValve }, { bendPA }, RVD, { openPosteriorLeaflet }, doc] = await Promise.all([
         import('./gl/heart.js'),
         import('./gl/pabend.js'),
@@ -35,7 +40,7 @@ export function loadModel() {
         RVD.holdPapillary(meshes);
         openPosteriorLeaflet(meshes, anat);
       };
-      const heart = await loadHeart('assets/heart.json', { valves: 'assets/valves.json', prepare });
+      const heart = await loadHeart(HEART, { valves: VALVES, prepare, early });
       const m = { heart, anat, doc, pheno: { key: 'normal', a: 0, mesh: null, version: 0 }, sizes: normalGeo(doc), built: {} };
       await applyPheno(m);
       return m;

@@ -58,18 +58,41 @@ export function bands(gradeOf, n = 500) {
 }
 
 /**
- * Grade bands under a slider. levels: grade name -> 0 (normal) .. 4 (beyond severe); short:
- * a shorter name for a narrow band ('' for none).
+ * The grade bands of bands(), built on first use: a function that builds them once and then
+ * returns them. A slider's bands cost hundreds of model evaluations, so a chapter builds them when
+ * it first shows (paintBands), when Play runs, or when a ▲▼ button needs them, not when the page
+ * starts.
+ */
+export function lazyBands(gradeOf, n) {
+  let list = null;
+  return () => list || (list = bands(gradeOf, n));
+}
+/** A band list, or the bands of a function that returns them (lazyBands). */
+export const bandList = (list) => (typeof list === 'function' ? list() : list);
+
+/**
+ * Grade bands under a slider. list: the bands, or a function that returns them (lazyBands);
+ * levels: grade name -> 0 (normal) .. 4 (beyond severe); short: a shorter name for a narrow band
+ * ('' for none). The bands of a hidden chapter are painted when the chapter shows: a function's
+ * bands are then built.
  */
 export function paintBands(host, list, levels, short = {}) {
   if (!host) return;
-  host.innerHTML = list.map(({ a, b, g }) => {
-    const pos = `--a:${a.toFixed(4)};--w:${(b - a).toFixed(4)}`;
-    return `<i style="${pos}" data-l="${levels[g] ?? 0}"></i><span style="${pos}" title="${g}" data-full="${g}" data-short="${short[g] ?? g}"></span>`;
-  }).join('');
-  fitBands(host);
+  const paint = () => {
+    host.innerHTML = bandList(list).map(({ a, b, g }) => {
+      const pos = `--a:${a.toFixed(4)};--w:${(b - a).toFixed(4)}`;
+      return `<i style="${pos}" data-l="${levels[g] ?? 0}"></i><span style="${pos}" title="${g}" data-full="${g}" data-short="${short[g] ?? g}"></span>`;
+    }).join('');
+    fitBands(host);
+  };
+  const shown = () => host.getClientRects().length > 0;
+  host.pending = shown() ? null : paint;
+  if (!host.pending) paint();
   if (!host.fitting) {
-    host.fitting = new ResizeObserver(() => fitBands(host));
+    // a hidden host has no box; it gets one when its chapter shows, and its bands are painted then
+    host.fitting = new ResizeObserver(() => {
+      if (host.pending && shown()) { const p = host.pending; host.pending = null; p(); } else fitBands(host);
+    });
     host.fitting.observe(host);
   }
 }
@@ -93,8 +116,9 @@ const grades = new Map();
  * while state.anim is on). Here, a soft bell (music.js) sounds each time s[key] enters another
  * grade. dt, set and the options are not used: the slider does not move here.
  */
-export function playSeverity(dt, s, set, key, list) {
+export function playSeverity(dt, s, set, key, bandsOrFn) {
   if (!s.anim) { grades.delete(key); return; }
+  const list = bandList(bandsOrFn);
   const g = list.findIndex((b) => s[key] < b.b || b === list[list.length - 1]);
   if (grades.has(key) && grades.get(key) !== g) cue('bell');
   grades.set(key, g);

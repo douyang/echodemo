@@ -13,7 +13,7 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
-import { tracks, bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit } from '../sev.js';
+import { tracks, lazyBands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit } from '../sev.js';
 import { cal, jet, barFor } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { rvGrowOf, raAreaWeight, raAreaMin, lvSizeOf, laWeight, lveddLeast, laviLeast } from '../meshcal.js';
@@ -978,6 +978,7 @@ function liveOf(v, s, cite) {
 const shuntsPage = {
   key: 'shunts',
   part: 'congenital',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Shunts: ASD, VSD and PFO',
   nav: 'Shunts',
   dwell: 40,
@@ -998,7 +999,7 @@ const shuntsPage = {
   },
   init({ state }) {
     st = state;
-    for (const type of TYPES) BANDS_OF[type] = bands((x) => gradeOf(x, type));
+    for (const type of TYPES) BANDS_OF[type] = lazyBands((x) => gradeOf(x, type));
     paintFor(state);
   },
   onState(s, ch) {
@@ -1102,7 +1103,7 @@ function paintFor(s) {
   if (type === painted || typeof document === 'undefined') return;
   painted = type;
   const L = LABEL[type] || {}, named = (o) => Object.fromEntries(Object.entries(o).map(([g, x]) => [L[g] || g, x]));
-  paintBands(document.getElementById('sh-grades'), BANDS_OF[type].map((b) => ({ ...b, g: L[b.g] || b.g })), named(LEVEL), named(SHORT[type] || {}));
+  paintBands(document.getElementById('sh-grades'), () => BANDS_OF[type]().map((b) => ({ ...b, g: L[b.g] || b.g })), named(LEVEL), named(SHORT[type] || {}));
 }
 
 export default shuntsPage;

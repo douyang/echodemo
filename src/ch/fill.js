@@ -8,7 +8,7 @@
 import { Sheet, clamp, mix, SANS } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { RR, EV } from '../cyclemodel.js';
-import { bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, note, LEVEL, fit } from '../sev.js';
+import { lazyBands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, note, LEVEL, fit } from '../sev.js';
 import { MeshPanel } from '../meshpanel.js';
 import { laWeight } from '../meshcal.js';
 import { reducedMotion } from '../state.js';
@@ -689,6 +689,7 @@ function flashChanges(P, M, cause) {
 const fillPage = {
   key: 'fill',
   part: 'function',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Diastolic function',
   nav: 'Diastolic',
   dwell: 16,
@@ -705,7 +706,7 @@ const fillPage = {
   init({ state, set, subscribe }) {
     st = state;
     setState = set;
-    BANDS = bands((x) => gradeLabel(x * 3));
+    BANDS = lazyBands((x) => gradeLabel(x * 3));
     paintBands(document.getElementById('fill-grades'), BANDS, LEVEL, { 'not graded': '' });
     buildDiagram(document.getElementById('fill-ase'));
     // The slider, Play, the tour or a heart's preset: the values follow the slider again. A store

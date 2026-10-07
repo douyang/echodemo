@@ -5,8 +5,8 @@ let P = null;
 export function scanner() {
   if (!P) {
     P = (async () => {
-      const model = await loadModel();
-      const { EchoView } = await import('./echo.js');
+      // the renderer's module loads beside the model, not after it
+      const [model, { EchoView }] = await Promise.all([loadModel(), import('./echo.js')]);
       return {
         model,
         /** An offscreen view of w x h CSS px; opts may set depth and angle. */

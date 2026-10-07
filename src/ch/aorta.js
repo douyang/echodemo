@@ -1385,6 +1385,7 @@ function tablesFor(art, v) {
 const aortaPage = {
   key: 'aorta',
   part: 'aorta',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Diseases of the aorta',
   nav: 'Aorta',
   dwell: 30,
@@ -1479,7 +1480,7 @@ function paintFor(s) {
   const type = typeOf(s), k = `${type}|${type === 'dil' ? heartOf(s) : ''}`;
   if (k === painted) return;
   painted = k;
-  paintBands(document.getElementById('aor-grades'), bandsFor(s), LEVELS, SHORT);
+  paintBands(document.getElementById('aor-grades'), () => bandsFor(s), LEVELS, SHORT);
 }
 
 /**

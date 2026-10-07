@@ -90,8 +90,9 @@ const STENCIL_CAP = {
   stencilZPass: THREE.ReplaceStencilOp,
 };
 
-async function parseGlb(url) {
-  const res = await fetch(url);
+/** url: the model's file; early: its fetch() already on the way (model3d.js), if any. */
+async function parseGlb(url, early) {
+  const res = await (early || fetch(url));
   if (!res.ok) throw new Error(`heart model: HTTP ${res.status}`);
   // the published copy ships the binary glTF as base64 in JSON
   let buf;
@@ -108,9 +109,13 @@ async function parseGlb(url) {
   return new Promise((resolve, reject) => loader.parse(buf, '', resolve, reject));
 }
 
-/** opts.valves: a model whose meshes replace the heart's valves (and add chordae and muscles). */
+/**
+ * opts.valves: a model whose meshes replace the heart's valves (and add chordae and muscles).
+ * opts.early: fetch() responses already on the way for these files, by URL (model3d.js).
+ */
 export async function loadHeart(url, opts = {}) {
-  const [gltf, extra] = await Promise.all([parseGlb(url), opts.valves ? parseGlb(opts.valves) : null]);
+  const early = opts.early || {};
+  const [gltf, extra] = await Promise.all([parseGlb(url, early[url]), opts.valves ? parseGlb(opts.valves, early[opts.valves]) : null]);
   if (extra) {
     const add = [];
     extra.scene.traverse((o) => { if (o.isMesh) add.push(o); });

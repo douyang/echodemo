@@ -8,6 +8,116 @@
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<!-- preload: tools/preload.mjs writes this block -->
+<link rel="modulepreload" href="src/main.js">
+<link rel="modulepreload" href="src/state.js">
+<link rel="modulepreload" href="src/refs.js">
+<link rel="modulepreload" href="src/chapters.js">
+<link rel="modulepreload" href="src/norms.js">
+<link rel="modulepreload" href="src/quiz.js">
+<link rel="modulepreload" href="src/pheno.js">
+<link rel="modulepreload" href="src/model3d.js">
+<link rel="modulepreload" href="src/meshpanel.js">
+<link rel="modulepreload" href="src/echo2d.js">
+<link rel="modulepreload" href="src/jets.js">
+<link rel="modulepreload" href="src/music.js">
+<link rel="modulepreload" href="src/ch/pulse.js">
+<link rel="modulepreload" href="src/ch/image.js">
+<link rel="modulepreload" href="src/ch/windows.js">
+<link rel="modulepreload" href="src/ch/planes.js">
+<link rel="modulepreload" href="src/ch/cycle.js">
+<link rel="modulepreload" href="src/ch/loop.js">
+<link rel="modulepreload" href="src/ch/shift.js">
+<link rel="modulepreload" href="src/ch/pressure.js">
+<link rel="modulepreload" href="src/ch/eject.js">
+<link rel="modulepreload" href="src/ch/segments.js">
+<link rel="modulepreload" href="src/ch/strain.js">
+<link rel="modulepreload" href="src/ch/fill.js">
+<link rel="modulepreload" href="src/ch/as.js">
+<link rel="modulepreload" href="src/ch/ar.js">
+<link rel="modulepreload" href="src/ch/ms.js">
+<link rel="modulepreload" href="src/ch/mr.js">
+<link rel="modulepreload" href="src/ch/tr.js">
+<link rel="modulepreload" href="src/ch/peri.js">
+<link rel="modulepreload" href="src/ch/amyloid.js">
+<link rel="modulepreload" href="src/ch/ivc.js">
+<link rel="modulepreload" href="src/ch/stress.js">
+<link rel="modulepreload" href="src/ch/rv.js">
+<link rel="modulepreload" href="src/ch/lvad.js">
+<link rel="modulepreload" href="src/ch/constrict.js">
+<link rel="modulepreload" href="src/ch/hcm.js">
+<link rel="modulepreload" href="src/ch/prosthetic.js">
+<link rel="modulepreload" href="src/ch/shunts.js">
+<link rel="modulepreload" href="src/ch/endocarditis.js">
+<link rel="modulepreload" href="src/ch/aorta.js">
+<link rel="modulepreload" href="src/ch/masses.js">
+<link rel="modulepreload" href="src/ch/mi.js">
+<link rel="modulepreload" href="src/ch/measure.js">
+<link rel="modulepreload" href="src/ch/ai.js">
+<link rel="modulepreload" href="src/ch/tee.js">
+<link rel="modulepreload" href="src/ch/report.js">
+<link rel="modulepreload" href="src/ch/bonus.js">
+<link rel="modulepreload" href="src/order.js">
+<link rel="modulepreload" href="src/sketch.js">
+<link rel="modulepreload" href="src/scope.js">
+<link rel="modulepreload" href="src/sev.js">
+<link rel="modulepreload" href="src/cyclemodel.js">
+<link rel="modulepreload" href="src/scanner.js">
+<link rel="modulepreload" href="src/cflow.js">
+<link rel="modulepreload" href="src/bmode.js">
+<link rel="modulepreload" href="src/physics.js">
+<link rel="modulepreload" href="vendor/three.bundle.min.js">
+<link rel="modulepreload" href="src/views.js">
+<link rel="modulepreload" href="src/gl/shared.js">
+<link rel="modulepreload" href="src/gl/stage3d.js">
+<link rel="modulepreload" href="src/gl/fans.js">
+<link rel="modulepreload" href="src/freeprobe.js">
+<link rel="modulepreload" href="src/meshtrace.js">
+<link rel="modulepreload" href="src/meshcal.js">
+<link rel="modulepreload" href="src/edits.js">
+<link rel="modulepreload" href="src/aha.js">
+<link rel="modulepreload" href="src/gl/heart.js">
+<link rel="modulepreload" href="src/straintrack.js">
+<link rel="modulepreload" href="src/straincal.js">
+<link rel="modulepreload" href="src/meshjet.js">
+<link rel="modulepreload" href="src/ivc2d.js">
+<link rel="modulepreload" href="src/stresscal.js">
+<link rel="modulepreload" href="src/gl/rvpemesh.js">
+<link rel="modulepreload" href="src/lvadcal.js">
+<link rel="modulepreload" href="src/gl/lvadmesh.js">
+<link rel="modulepreload" href="src/hcmcal.js">
+<link rel="modulepreload" href="src/gl/prostheticmesh.js">
+<link rel="modulepreload" href="src/gl/shuntsmesh.js">
+<link rel="modulepreload" href="src/gl/endocarditismesh.js">
+<link rel="modulepreload" href="src/aortacal.js">
+<link rel="modulepreload" href="src/gl/massesmesh.js">
+<link rel="modulepreload" href="src/gl/mimesh.js">
+<link rel="modulepreload" href="src/mical.js">
+<link rel="modulepreload" href="src/abdomen.js">
+<link rel="modulepreload" href="src/echoprime.js">
+<link rel="modulepreload" href="src/aifig.js">
+<link rel="modulepreload" href="src/gl/teeprobe3d.js">
+<link rel="modulepreload" href="src/teeviews.js">
+<link rel="modulepreload" href="vendor/rough.esm.js">
+<link rel="modulepreload" href="src/gl/pencil.js">
+<link rel="modulepreload" href="src/gl/probe3d.js">
+<script>
+// a chapter whose figure needs the heart model at once: its files and modules load from the start
+(() => {
+  const MODEL = ['windows', 'tee', 'eject', 'fill', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'constrict', 'hcm', 'amyloid', 'lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi'];
+  if (!MODEL.includes(location.hash.slice(1))) return;
+  const add = (rel, href, as) => {
+    const l = document.createElement('link');
+    l.rel = rel;
+    l.href = href;
+    if (as) { l.as = as; l.crossOrigin = 'anonymous'; }
+    document.head.appendChild(l);
+  };
+  for (const f of ['assets/anatomy.json', 'assets/heart.json', 'assets/valves.json']) add('preload', f, 'fetch');
+  for (const f of ['src/gl/pabend.js', 'src/gl/rvdetail.js', 'src/gl/mvopen.js', 'src/gl/phenomesh.js', 'src/echo.js', 'src/gl/liver3d.js']) add('modulepreload', f);
+})();
+</script>
+<!-- /preload -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&display=swap">

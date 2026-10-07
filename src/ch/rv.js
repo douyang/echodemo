@@ -20,7 +20,7 @@ import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper, tagBox } from '../scope.js';
 import { RR, EV, mitralV, cycleAt } from '../cyclemodel.js';
 import { rapEstimate } from '../norms.js';
-import { tracks, bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit, waveLetter } from '../sev.js';
+import { tracks, lazyBands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit, waveLetter } from '../sev.js';
 import { cal } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { rvGrowOf, raAreaWeight, raAreaMin, sepOf, sepEsOf, rvThickOf, rvWallOwn, rvSepAdd, lvBasalAt, rvFacAt, rvTapseOwn, RV_TAPSE, rvPeAt } from '../meshcal.js';
@@ -1074,6 +1074,7 @@ const peReadouts = (v) => [
 const rvPage = {
   key: 'rv',
   part: 'function',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Right ventricle',
   nav: 'RV',
   dwell: 39,
@@ -1093,7 +1094,7 @@ const rvPage = {
   init({ state, set, subscribe }) {
     st = state;
     setState = set;
-    for (const load of LOADS) BANDS_OF[load] = bands((x) => gradeOf(x, load));
+    for (const load of LOADS) BANDS_OF[load] = lazyBands((x) => gradeOf(x, load));
     const host = document.getElementById('rv-grades');
     let painted = '';
     const paint = (s) => {

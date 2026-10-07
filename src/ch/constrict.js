@@ -11,7 +11,7 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper, tagBox } from '../scope.js';
 import { RR, EV, cycleAt, mitralV } from '../cyclemodel.js';
-import { tracks, bands, paintBands, playSeverity, cursor, rows, cols, inner, meters, note, fit, shown, waveLetter, gradeTable } from '../sev.js';
+import { tracks, lazyBands, paintBands, playSeverity, cursor, rows, cols, inner, meters, note, fit, shown, waveLetter, gradeTable } from '../sev.js';
 import { drawIVC } from '../echo2d.js';
 import { mmode, DB } from '../bmode.js';
 import { MeshPanel } from '../meshpanel.js';
@@ -549,6 +549,7 @@ function diffRows(v) {
 const page = {
   key: 'constrict',
   part: 'pericardium',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Constrictive pericarditis',
   nav: 'CP',
   dwell: 26,
@@ -561,7 +562,7 @@ const page = {
   },
   init({ state, subscribe }) {
     st = state;
-    for (const mode of MODES) BANDS_OF[mode] = bands((x) => gradeOf(x, mode));
+    for (const mode of MODES) BANDS_OF[mode] = lazyBands((x) => gradeOf(x, mode));
     const host = document.getElementById('constrict-grades');
     let painted = '';
     const paint = (s) => {
