@@ -1159,10 +1159,13 @@ function resultBox(sh, t, b, R, narrow) {
 }
 
 // ---------------------------------------------------------------- the seven steps
-let stepsHit = [];        // the figure's hit boxes: a section, or a view of a small figure
-let narrowNow = null;     // the figure shows one of its two views (aiRow): its view switch shows
+let stepsHit = [];        // the figure's hit boxes: a section, or a view of the figure with tabs
+let narrowNow = null;     // the figure shows one of its two views (aiRow, SHOW_TABS): its view switch shows
+let figEl = null;         // the figure's box: on the site it scrolls a canvas taller than itself
+let stepsL = null;        // the layout of the last drawing, for the scroll and the videos
+let shownStep = 0;        // the step whose card the box last brought into view
 const stepOf = (s) => clamp(Math.round(s?.aiStep ?? 0), 0, 7);
-/** The view of a small figure: 0, EchoPrime (1 to 4); 1, the measurements, the anchor and the report (5 to 7). */
+/** The view of the figure with tabs: 0, EchoPrime (1 to 4); 1, the measurements, the anchor and the report (5 to 7). */
 const rowOf = (s) => clamp(Math.round(s?.aiRow ?? 0), 0, 1);
 /**
  * The controls of the view shown (data-ai-tab: the views each serves). The view switch shows only
@@ -1174,16 +1177,48 @@ function showControls() {
     el.hidden = !el.dataset.aiTab.split(' ').includes(tab) || ('aiNarrow' in el.dataset && !narrowNow);
   }
 }
+/** The site's figure scrolls its canvas; a video's pane shows the sheet at its own size. */
+const scrolls = () => !!figEl?.closest('.stage');
+/** The height of the box that shows sheet sh: the box's own, or the sheet's in a taller box (a video's pane). */
+const boxOf = (sh) => Math.min(sh.h, figEl ? figEl.clientHeight / (sh.z || 1) : sh.h);
 function drawSteps(sh, t) {
-  const S = { sec: secOf(st), step: stepOf(st), two: !!st.aiTwo, row: rowOf(st), heart: heartCase(st) };
+  const S = { sec: secOf(st), step: stepOf(st), two: !!st.aiTwo, row: rowOf(st), heart: heartCase(st), boxH: boxOf(sh) };
   const { L, hits } = drawFigure(sh, t, S, { video: videoTile });
   stepsHit = hits;
-  if (narrowNow !== !L.all) { narrowNow = !L.all; showControls(); }
+  stepsL = L;
+  if (narrowNow !== !!L.tabs) { narrowNow = !!L.tabs; showControls(); }
+  if (!scrolls()) return;
+  // the canvas as tall as the steps, which the box scrolls; once it is, the lit step's card in view
+  const want = L.H > S.boxH + 0.5 ? `${Math.ceil(L.H * (sh.z || 1))}px` : '';
+  if (sh.canvas.style.height !== want) sh.canvas.style.height = want;
+  else if (S.step !== shownStep && sh.h >= L.H - 1) { shownStep = S.step; showStep(L, S.step, S.boxH); }
+}
+/**
+ * Scroll the box to the card of step k where it is not all in view: to the card's middle, or to
+ * its top where the box is shorter than the card.
+ */
+function showStep(L, k, boxH) {
+  const ps = (k === 5 ? [5, 5.5] : [k]).map((j) => L.P[j]).filter(Boolean);
+  if (!ps.length || L.H <= boxH + 1) return;
+  const z = sheet?.z || 1, now = figEl.scrollTop / z;
+  const top = Math.min(...ps.map((p) => p.y)), bot = Math.max(...ps.map((p) => p.y + p.h));
+  if (top >= now && bot <= now + boxH) return;
+  const y = bot - top <= boxH ? top - (boxH - (bot - top)) / 2 : top - 6;
+  figEl.scrollTo({ top: clamp(y, 0, L.H - boxH) * z, behavior: reducedMotion ? 'auto' : 'smooth' });
+}
+/** The videos show: in EchoPrime's view of the figure with tabs, or where the sort's card is in the box. */
+function sortShown() {
+  if (narrowNow) return rowOf(st) === 0;
+  const P = stepsL?.P?.[1];
+  if (!P || !scrolls()) return true;
+  const z = sheet?.z || 1, top = figEl.scrollTop / z;
+  return P.y < top + figEl.clientHeight / z && P.y + P.h > top;
 }
 
 function draw(sh, t) {
   if (!st) return;
   const tab = tabOf(st);
+  if (tab !== 'steps' && scrolls() && sh.canvas.style.height) sh.canvas.style.height = '';
   if (tab === 'retrieval') drawRetrieval(sh, t);
   else if (tab === 'study') drawStudy(sh, t);
   else drawSteps(sh, t);
@@ -1337,6 +1372,7 @@ export default {
   },
   watch: ['aiTab', 'aiSec', 'aiStep', 'aiRow', 'aiTwo', 'aiN', 'aiOnly', 'aiMap', 'aiK', 'pheno'],
   figure(fig) {
+    figEl = fig;
     const canvas = fig.querySelector('canvas');
     sheet = new Sheet(canvas, (sh, t) => draw(sh, t));
     const at = (e) => {
@@ -1344,7 +1380,7 @@ export default {
       return [(e.clientX - r.left) / z, (e.clientY - r.top) / z];
     };
     // the seven steps: a click on a column of step 3 or 4, a tile of step 5 or a sentence of step
-    // 7 chooses its section; a tab of a small figure, its view
+    // 7 chooses its section; a tab of the figure with tabs, its view
     const stepAt = (e) => {
       if (!st || tabOf(st) !== 'steps') return null;
       const [x, y] = at(e);
@@ -1397,9 +1433,9 @@ export default {
   anim(dt) {
     if (!reducedMotion) clock += dt;
     if (!complete() && open) pump();
-    // the videos play where they show: the earlier Study view, or EchoPrime's row of the steps
+    // the videos play where they show: the earlier Study view, or the sort's card in the box
     const tab = st ? tabOf(st) : 'steps';
-    if (tab === 'study' || (tab === 'steps' && (narrowNow === false || rowOf(st) === 0))) {
+    if (tab === 'study' || (tab === 'steps' && sortShown())) {
       const f = frameNow();
       if (f !== shownFrame) { shownFrame = f; redraw(); }
     }
