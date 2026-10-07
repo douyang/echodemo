@@ -276,7 +276,7 @@ Each concept has one home chapter, and the other chapters link to it instead of 
 
 ## How it is built
 
-A static site with no build step: ES modules, a canvas sketch layer (`src/sketch.js`, rough.js) and a WebGL pencil renderer for the 3D heart (three.js). Echo views are live cross-sections of the heart mesh (`src/echo.js`) or parametric views (`src/echo2d.js`), imaged by `src/bmode.js`. The heart mesh, pencil renderer and 3D stage are adapted from *The Amyloid Heart*. Vendored libraries and their licenses are in `vendor/`.
+A static site with no build step: ES modules, a canvas sketch layer (`src/sketch.js`, rough.js) and a WebGL pencil renderer for the 3D heart (three.js). Echo views are live cross-sections of the heart mesh (`src/echo.js`) or parametric views (`src/echo2d.js`), imaged by `src/bmode.js`. The heart mesh, pencil renderer and 3D stage are adapted from *The Amyloid Heart*. Vendored libraries and their licenses are in `vendor/`. The pencil draws graphite on paper in the light theme and chalk on slate in the dark theme (`src/gl/pencil.js`). In both, the lit surface stays bare: graphite hatches the shadows, and chalk gives only the highlights a faint sheen.
 
 ```
 index.html          page, chapter text, dialogs
