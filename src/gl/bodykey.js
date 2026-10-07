@@ -211,10 +211,12 @@ export class BodyKey {
 
   /**
    * Put the probe at window win on the skin, its beam toward target (world cm), its marker
-   * toward r; the sector spec.angle wide and spec.depth deep.
+   * toward r; the sector spec.angle wide and spec.depth deep. shift: a move over the skin from the
+   * window's place (world cm), for the free probe of Views.
    */
-  setView(win, target, r, spec = {}) {
+  setView(win, target, r, spec = {}, shift = null) {
     const at = this.site(win);
+    if (shift) at.add(shift);
     const dir = target.clone().sub(at).normalize();
     placeProbe(this.probe, at, dir, r);
     // the cable leaves along the handle, then hangs

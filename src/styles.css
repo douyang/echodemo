@@ -439,6 +439,14 @@ a:hover { text-decoration-color: var(--accent); }
 .free.is-on { border-color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok); }
 .free.is-on .free-head output { color: var(--ok); }
 .free-reset { display: flex; align-items: flex-end; }
+/* Views: the free probe, one slider a row. Its state takes a line of its own under the head, so
+   the sliders hold still as it changes; in a narrow panel each value goes under its slider's name */
+#w-free { container-type: inline-size; }
+#w-free .free-head output { flex-basis: 100%; min-height: 1.3em; }
+@container (max-width: 310px) {
+  #w-free .control label { flex-direction: column; align-items: flex-start; gap: 3px; }
+  #w-free .free-head output { min-height: 2.6em; }
+}
 .control label, .control .label {
   display: flex;
   justify-content: space-between;

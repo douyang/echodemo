@@ -815,7 +815,8 @@ export class EchoView {
    */
   _liverFor(key, T) {
     if (!this.liver3d) return;
-    const v = VIEWS[key], sub = !!v && v.win === 'sub', four = sub && v.plane === 'sc4c';
+    // any plane (setGeometry): its settings name the window and the plane it came from
+    const v = key === 'free' ? this.freeSpec : VIEWS[key], sub = !!v && v.win === 'sub', four = sub && v.plane === 'sc4c';
     this.liver3d.fadeTo({ liver: sub && (this.bodyOn || !four) ? 1 : 0, layer: four && !this.bodyOn ? 1 : 0 }, T);
   }
 
