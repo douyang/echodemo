@@ -37,28 +37,37 @@ import measurePage from './ch/measure.js';
 import aiPage from './ch/ai.js';
 import teePage from './ch/tee.js';
 import report from './ch/report.js';
+import bonusPage from './ch/bonus.js';
 
-import { ORDER, BONUS, numOf } from './order.js';
+import { ORDER, BONUS_PAGE, BONUS, numOf } from './order.js';
 
 export { numOf } from './order.js';
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, constrictPage, hcmPage, shuntsPage, massesPage, miPage, measurePage, aiPage, teePage, report].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, constrictPage, hcmPage, shuntsPage, massesPage, miPage, measurePage, aiPage, teePage, report, bonusPage].map((c) => [c.key, c]));
 /**
  * Every chapter shown, in the order back and next step through them: the main chapters in
- * reading order (ORDER), then the bonus chapters (BONUS). state.chapter is an index in it.
+ * reading order (ORDER), the bonus page (B), then the bonus chapters (BONUS). state.chapter is an
+ * index in it.
  */
-export const CHAPTERS = [...ORDER, ...BONUS].map((k) => BY[k]);
+export const CHAPTERS = [...ORDER, BONUS_PAGE, ...BONUS].map((k) => BY[k]);
+/** The main chapters, by their index in CHAPTERS: the tour runs through them, and the intro counts them. */
+export const MAIN = ORDER.map((k, i) => i);
+/** The bonus page's index in CHAPTERS. */
+const BONUS_AT = ORDER.length;
 /**
- * The chapters of the chapter bar, of its list and of the tour, by their index in CHAPTERS: the
- * main chapters. A bonus chapter is not in it. It opens by back and next, by the block at the end
- * of the last main chapter and by its address, and the bar then shows no chapter as current.
+ * The entries of the chapter bar and of its list, by their index in CHAPTERS: the main chapters,
+ * then the bonus page (B). A bonus chapter is not in it. It opens by back and next, by the bonus
+ * page and by its address, and the bar then shows B as current (barOf).
  */
-export const BAR = ORDER.map((k, i) => i);
+export const BAR = [...MAIN, BONUS_AT];
+/** The bar's entry for chapter i: the chapter itself, or B for a bonus chapter. */
+export const barOf = (i) => (BAR.includes(i) ? i : BONUS_AT);
 
 // Each chapter names its part (its module's `part`). A part with no chapter in the bar is left
 // out, and the numerals follow the parts that remain. Congenital, Masses and Acute care hold only
-// bonus chapters now. TEE is in the part Views, after Views (order.js).
+// bonus chapters now. The bonus page has the part Bonus. TEE is in the part Views, after Views
+// (order.js).
 const ALL_PARTS = [
   { key: 'physics', name: 'Physics' },
   { key: 'views', name: 'Views' },
@@ -74,11 +83,12 @@ const ALL_PARTS = [
   { key: 'acute', name: 'Acute care' },
   { key: 'ai', name: 'Artificial intelligence' },
   { key: 'report', name: 'Report' },
+  { key: 'bonus', name: 'Bonus' },
 ];
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
 /** The parts of the chapter bar, in order, numbered I, II ... */
 export const PARTS = ALL_PARTS.filter((p) => BAR.some((i) => CHAPTERS[i].part === p.key)).map((p, i) => ({ ...p, num: ROMAN[i] }));
-/** The part that a chapter's video names: its part in the bar, or Bonus for a bonus chapter. */
+/** The part that a chapter's video names: its part in the bar, or Bonus for a bonus chapter (number B1 ...). */
 export function partOf(key) {
   if (numOf(key).startsWith('B')) return { key: 'bonus', num: '', name: 'Bonus' };
   const c = CHAPTERS.find((x) => x.key === key);
