@@ -15,7 +15,7 @@ import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols
 import { drawPLAX, plaxLV, cal, measures, jet, barFor } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { lvDiamWeights } from '../meshcal.js';
-import { onPlane, hingesOf, leafletsOf, blood, cavity, middle, plaxCalipers, sub, add, mul, unit, perp } from '../meshjet.js';
+import { plaxCalipers, aorticJet, add, mul } from '../meshjet.js';
 import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
@@ -244,26 +244,9 @@ function tagsOf(v) {
 // (jets.js) keeps the parametric view.
 const MESH = new MeshPanel('plax', { diseases: ['lvSize'], lv: true, redraw: () => { if (sheet) sheet.dirty = true; } });
 
-/**
- * The jet on the mesh view at systolic weight s: from the middle of the shut aortic cusps into
- * the LVOT and the LV, which clip it (the cusps' line and the mitral hinge line close them); the
- * flow convergence stays in the aorta. P0 and n: where the caliper reads the jet's width, 0.7 cm
- * below the cusps, and across it.
- */
-function arJet(ev, s) {
-  const cusps = leafletsOf(ev, 'AorticValve');
-  if (!cusps.length) return null;
-  const an = ev.anchors(s), av = onPlane(ev, an.av), lvot = onPlane(ev, an.lvot), lv = onPlane(ev, an.lv);
-  const u = unit(sub(lvot, av));
-  const O = add(middle(cusps.flat()), mul(u, 0.1));
-  const dir = unit(add(mul(u, 0.6), mul(unit(sub(lv, O)), 0.4)));
-  const cuts = [[add(O, perp(u)), sub(O, perp(u))]];
-  const h = hingesOf(ev, 'MitralValve');
-  if (h) cuts.push(h);
-  const clip = cavity(ev, blood(ev, middle([lvot, lv])), cuts);
-  const aorta = cavity(ev, blood(ev, onPlane(ev, an.ao)), cuts.slice(0, 1));
-  return { O, dir, clip, aorta, P0: add(O, mul(dir, 0.7)), n: perp(dir) };
-}
+// the jet/LVOT caliper reads the jet's width this far (cm) below the cusps (Zoghbi 2017: within
+// 1 cm of the valve), where the jet is widest
+const CAL_AT = 0.7;
 
 function plax(ctx, box, v, t) {
   const u = diaFrac(t);
@@ -293,12 +276,13 @@ function plax(ctx, box, v, t) {
           cal(c, F, K.pw[0], K.pw[1], '');
         }
         if (!v.leak) return;
-        const J = arJet(ev, sy);
+        const J = aorticJet(ev, sy);
         if (!J) return;
         const jw = (v.jet / 100) * v.lvotD;
-        jet(c, F, { q, va: 60, vc: v.vc, jl, jw, a, pisa, O: J.O, dir: J.dir, clip: J.clip, pclip: J.aorta });
+        jet(c, F, { q, va: 60, vc: v.vc, jl, jw, a, pisa, O: J.O, dir: J.dir, clip: J.clip, clipOr: J.also, pclip: J.aorta, wide: CAL_AT });
         barFor(c, F, -60, 60);
-        if (a > 0.4) cal(c, F, add(J.P0, mul(J.n, jw / 2)), add(J.P0, mul(J.n, -jw / 2)), '', { solid: true });
+        const P0 = add(J.O, mul(J.dir, CAL_AT));
+        if (a > 0.4) cal(c, F, add(P0, mul(J.n, jw / 2)), add(P0, mul(J.n, -jw / 2)), '', { solid: true });
       },
       lines,
     });

@@ -26,7 +26,7 @@ import { reducedMotion } from '../state.js';
 import { MeshPanel } from '../meshpanel.js';
 import { lvByEf } from '../meshcal.js';
 import { vadWeights, rvGrowAt, avGapAt, avDriveFor } from '../lvadcal.js';
-import { blood, cavity, onPlane, hingesOf, closureOf, leafletsOf, middle, area, plaxCalipers, sub, add, mul, dot, unit, perp } from '../meshjet.js';
+import { blood, cavity, onPlane, hingesOf, closureOf, middle, area, plaxCalipers, aorticJet, sub, add, mul, dot, unit, perp } from '../meshjet.js';
 import { cannulaOf, cannulaCut, onG } from '../gl/lvadmesh.js';
 
 const KEY = 'vadS';
@@ -353,24 +353,6 @@ function backJet(ev, valve, chamber, s, vc, lean = 0.2) {
   if (dot(dir, unit(O)) < 0.35) dir = unit(add(dir, mul(unit(O), 0.6)));
   return { O, dir, clip: C, jl, jw };
 }
-/**
- * The AR jet: from the middle of the shut aortic cusps into the LVOT and the LV, which clip it;
- * the flow convergence stays in the aorta (as chapter Aortic regurgitation draws it).
- */
-function arJet(ev, s) {
-  const cusps = leafletsOf(ev, 'AorticValve');
-  if (!cusps.length) return null;
-  const an = ev.anchors(s), av = onPlane(ev, an.av), lvot = onPlane(ev, an.lvot), lv = onPlane(ev, an.lv);
-  const u = unit(sub(lvot, av));
-  const O = add(middle(cusps.flat()), mul(u, 0.1));
-  const dir = unit(add(mul(u, 0.6), mul(unit(sub(lv, O)), 0.4)));
-  const cuts = [[add(O, perp(u)), sub(O, perp(u))]];
-  const h = hingesOf(ev, 'MitralValve');
-  if (h) cuts.push(h);
-  const clip = cavity(ev, blood(ev, middle([lvot, lv])), cuts);
-  const aorta = cavity(ev, blood(ev, onPlane(ev, an.ao)), cuts.slice(0, 1));
-  return { O, dir, clip, aorta, n: perp(dir) };
-}
 /** One color box round the extents of the jets drawn (as chapter Hypertrophic cardiomyopathy draws it). */
 function colorBox(ctx, F, list) {
   const B = list.filter(Boolean);
@@ -427,10 +409,10 @@ function lax(ctx, box, v, tt, b) {
       const boxes = [];
       const a = arStrength(v, b, tt);
       if (a > 0) {
-        const J = arJet(ev, sy);
+        const J = aorticJet(ev, sy);
         if (J) {
           const jw = Math.min(0.92, 0.25 + v.ar) * LVOT_D;
-          boxes.push(jet(c, F, { q: Math.PI * (v.ar / 2) ** 2 * 400, va: VA, vmax: 1.8 * VA, keep: 0.6, vc: v.ar, jl: 2.0 + 5 * v.ar, jw, a, pisa: false, O: J.O, dir: J.dir, clip: J.clip, pclip: J.aorta, box: false }));
+          boxes.push(jet(c, F, { q: Math.PI * (v.ar / 2) ** 2 * 400, va: VA, vmax: 1.8 * VA, keep: 0.6, vc: v.ar, jl: 2.0 + 5 * v.ar, jw, a, pisa: false, O: J.O, dir: J.dir, clip: J.clip, clipOr: J.also, pclip: J.aorta, box: false }));
           // the vena contracta, across the jet where it leaves the valve
           const n = J.n, P0 = add(J.O, mul(J.dir, 0.12));
           cal(c, F, add(P0, mul(n, v.ar / 2)), add(P0, mul(n, -v.ar / 2)), '', { solid: true });
