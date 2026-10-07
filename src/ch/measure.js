@@ -98,11 +98,11 @@ const VIEW_TITLE = {
 // calipers below. The text reads this table, so that it never waits for the mesh; the figure
 // measures every frame itself, and says so in the console if a value leaves the table.
 const SITE = {
-  normal: { ivs: 0.882, lvid: 4.681, lvpw: 0.898, la: 3.381, rvb: 3.075, root: 3.188, asc: 2.711, pa: 1.762, ivc: 2.018 },
-  amyloid: { ivs: 1.638, lvid: 3.991, lvpw: 1.560, la: 5.045, rvb: 3.041, root: 3.187, asc: 2.711, pa: 1.762, ivc: 1.992 },
-  icm: { ivs: 0.660, lvid: 6.264, lvpw: 0.899, la: 3.826, rvb: 3.043, root: 3.372, asc: 2.732, pa: 1.875, ivc: 2.009 },
-  barlow: { ivs: 0.883, lvid: 5.680, lvpw: 0.898, la: 4.944, rvb: 3.062, root: 3.355, asc: 2.755, pa: 2.341, ivc: 2.007 },
-  bav: { ivs: 1.181, lvid: 4.301, lvpw: 1.264, la: 3.718, rvb: 2.885, root: 3.206, asc: 3.516, pa: 1.719, ivc: 2.018 },
+  normal: { ivs: 0.882, lvid: 4.681, lvpw: 0.898, la: 3.381, rvb: 3.075, root: 3.188, asc: 2.711, pa: 1.762, ivc: 2.058 },
+  amyloid: { ivs: 1.638, lvid: 3.991, lvpw: 1.560, la: 5.045, rvb: 3.041, root: 3.187, asc: 2.711, pa: 1.762, ivc: 2.058 },
+  icm: { ivs: 0.660, lvid: 6.264, lvpw: 0.899, la: 3.826, rvb: 3.043, root: 3.372, asc: 2.732, pa: 1.875, ivc: 2.058 },
+  barlow: { ivs: 0.883, lvid: 5.680, lvpw: 0.898, la: 4.944, rvb: 3.062, root: 3.355, asc: 2.755, pa: 2.341, ivc: 2.058 },
+  bav: { ivs: 1.181, lvid: 4.301, lvpw: 1.264, la: 3.718, rvb: 2.885, root: 3.206, asc: 3.516, pa: 1.719, ivc: 2.058 },
 };
 /** The site's value and the two-peaked map's (cm) for B-mode measurement m on heart: the second peak moves its end OFF / 2 along the caliper. */
 function siteValue(m, heart) {
@@ -266,13 +266,15 @@ const CALIPERS = {
     return { pa: len(sub(L.a, ao)) <= len(sub(L.b, ao)) ? [L.a, L.b] : [L.b, L.a] };
   },
   /**
-   * The IVC (abdomen.js, a tube through the liver to the heart's own stub) 1.8 cm from its junction
-   * with the right heart, square to its axis, as ivc2d.js places its caliper; end 0 anterior.
+   * The IVC (abdomen.js, a tube through the liver to the heart's own stub) 2.0 cm from its junction
+   * with the right heart, square to its axis; end 0 anterior. The view's plane holds the middle
+   * hepatic vein, which opens into the IVC's front wall 1.1 to 1.8 cm from the junction. So the
+   * caliper sits just past that opening, at the site that shockcal.js uses (IVC_SITE).
    */
   sc_ivc(ev) {
     const P = ABD.ivc.pts.map((p) => planeOf(ev, p)), J = P[0], u = unit(sub(P[1], P[0]));
     const loops = ev.abd.ivc.section(ev.g).filter((L) => L.closed && L.pts.length > 2);
-    const L = lumen(ev, add(J, mul(u, 1.8)), perp(u), loops);
+    const L = lumen(ev, add(J, mul(u, 2.0)), perp(u), loops);
     return L ? { ivc: nearFirst(L.a, L.b) } : {};
   },
 };

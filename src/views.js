@@ -99,8 +99,10 @@ export const VIEWS = {
     labels: [['liver', 'liver'], ['rv', 'RV'], ['ra', 'RA'], ['lv', 'LV'], ['la', 'LA'], ['ias', 'IAS']] }),
   sc4c_ias: V({ win: 'sub', short: 'SC', name: 'Subcostal four-chamber, zoomed atrial septum', lab: null, plane: 'sc4c', depth: 20, angle: 84, near: 5.0, liver: true, zoom: { at: 'ias', w: 7 },
     labels: [['ias', 'IAS'], ['ra', 'RA'], ['la', 'LA']] }),
-  sc_ivc: V({ win: 'sub', short: 'SC', name: 'Subcostal inferior vena cava', lab: 'Subcostal_IVC', plane: 'sc_ivc', depth: 16, angle: 76, near: 1.6,
-    labels: [['liver', 'liver'], ['ivcl', 'IVC'], ['hv', 'hepatic vein'], ['ra', 'RA']] }),
+  // 84 degrees wide, as the four-chamber view: the plane turns toward that view (echo.js), and
+  // the sector then holds the RA, the tricuspid valve and the RV beside the IVC
+  sc_ivc: V({ win: 'sub', short: 'SC', name: 'Subcostal inferior vena cava', lab: 'Subcostal_IVC', plane: 'sc_ivc', depth: 16, angle: 84, near: 1.6,
+    labels: [['liver', 'liver'], ['ivcl', 'IVC'], ['hv', 'hepatic vein'], ['ra', 'RA'], ['tv', 'TV'], ['rv', 'RV']] }),
   sc_aorta: V({ win: 'sub', short: 'SC', name: 'Subcostal abdominal aorta', lab: 'Subcostal_Abdominal_Aorta', plane: 'sc_aorta', depth: 18, angle: 76, near: 1.6,
     labels: [['liver', 'liver'], ['abdao', 'abdominal Ao'], ['celiac', 'celiac trunk'], ['sma', 'SMA']] }),
   // the same plane zoomed on the abdominal aorta (chapter Diseases of the aorta); not in ORDER

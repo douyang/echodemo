@@ -837,7 +837,7 @@ export default {
     else if (s.view === 'plax' && m && !s.wcine) live += `At end-diastole, with calipers perpendicular to the LV long axis, the septum measures ${(m.ivs / 10).toFixed(1)} cm, the LV internal diameter ${(m.lvid / 10).toFixed(1)} cm and the inferolateral wall ${(m.pw / 10).toFixed(1)} cm. `;
     else if (v.zoom) live += `The image is magnified to a region ${v.zoom.w} cm wide. `;
     // the IVC and the aorta have a chapter of their own
-    if (s.view === 'sc_ivc') live += `The IVC diameter and its collapse with a sniff give the RA pressure (<a href="#ivc" data-go="ivc">chapter ${numOf('ivc')}</a>). `;
+    if (s.view === 'sc_ivc') live += `The plane holds the IVC's long axis. It turns 20° about that axis toward the subcostal four-chamber view, so the tricuspid valve and the RV show above the RA. The IVC diameter and its collapse with a sniff give the RA pressure (<a href="#ivc" data-go="ivc">chapter ${numOf('ivc')}</a>). `;
     else if (s.view === 'sc_aorta') live += `<a href="#ivc" data-go="ivc">Chapter ${numOf('ivc')}</a> distinguishes the aorta from the IVC. `;
     live += `<span class="note">Views and measurements are as defined in the ASE guideline${cite('mitchell2019')}. Annotation class: ${v.lab || 'none'}.</span>`;
     return { readouts, live };
