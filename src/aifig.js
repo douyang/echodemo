@@ -12,9 +12,10 @@
 // Doppler values of ch/measure.js), and its range is that value ± BAND. The words of the report
 // are the site's own report for the heart (ch/report.js). Neither model ran on these images.
 //
-// A box of 840 × 650 px or more shows the three rows. A smaller one shows one of two views (aiRow),
-// with tabs at the top: EchoPrime (1 to 4), or the measurements with the anchor and the report (5
-// to 7). Every text is 9.5 px or larger (9 px for a video's view on a phone).
+// A box 840 px wide or more shows every step at once, in the three rows, at least 540 px tall. A
+// narrower box shows the steps in more rows, each as tall as its cards need, and the box scrolls.
+// Arrows link each step to the next. Every text is 9.5 px or larger (9 px for a video's view on a
+// phone).
 import { MONO, SANS, clamp, rng } from './sketch.js';
 import { SC, spectral } from './scope.js';
 import { cycleAt, RR } from './cyclemodel.js';
@@ -400,13 +401,113 @@ const PAD = 6, GAP = 12;
 const HEAD = 42;            // a card's header: its number, title and subtitle
 const HEAD_C = 28;          // a compact card's header (a phone, a short box): its number and title in one line
 const IN = 10;              // a card's inner margin
-const BANDS = 0.46;         // the bands' share of the height in the second view, as in the three rows
+const BANDS = 0.46;         // the bands' share of the height under row 1, as in the three rows
 /**
- * The layout of the figure in a box W × H: all three rows, or one of two views. View 0 is
- * EchoPrime. View 1 is the measurements, the anchor and the report (viewFive): sh measures its
- * text.
+ * The figure with tabs, as before Oct 2026 (layoutTabs): the three rows in a box of 840 × 650 px
+ * or more, else one of two views with tabs at the top. Hidden; the code stays.
+ */
+export const SHOW_TABS = false;
+const FIT_W = 840, FIT_H = 540;   // px: the smallest box that shows every step at once
+const LINK = 30;            // px: the band of the two links over the measurements, in one line
+const LINK2 = 46;           // the band in two lines
+const ROW_GAP = 20;         // px between two rows of a flow: room for an arrow
+const GAP_Y = 16;           // px between the measurements and the anchor of the three rows
+const LANE = 12;            // px at the left of a flow: the link from the sort down to the measurements
+/**
+ * The layout of the figure in a box W × H. A box FIT_W px wide or more shows every step at once,
+ * in three rows at least FIT_H px tall (layoutFit). A narrower box shows the steps in more rows,
+ * each as tall as its cards need (layoutFlow). H of the layout is the height of its content: where
+ * that is taller than the box, the box scrolls. sh measures the text. row: the view of the figure
+ * with tabs.
  */
 export function layoutOf(W, H, row, sh) {
+  if (SHOW_TABS) return layoutTabs(W, H, row, sh);
+  const key = `${W}|${H}`;
+  let L = LAYOUTS.get(key);
+  if (!L) {
+    L = W >= FIT_W ? layoutFit(W, H, sh) : layoutFlow(W, H, sh);
+    LAYOUTS.set(key, L);
+    if (LAYOUTS.size > 12) LAYOUTS.delete(LAYOUTS.keys().next().value);
+  }
+  return L;
+}
+/**
+ * The layouts made, by box: a layout depends on the box and on the fonts that measure its text
+ * alone, and the figure draws again with each frame of the videos. A font that loads clears them.
+ */
+const LAYOUTS = new Map();
+globalThis.document?.fonts?.addEventListener?.('loadingdone', () => LAYOUTS.clear());
+/**
+ * The three rows in a box W px wide, FIT_H px tall or more. Row 1, EchoPrime: the sort at two
+ * fifths of the width, the other three at a fifth each. Under the links, the measurements, the
+ * anchor and the report in a form of viewFive.
+ */
+function layoutFit(W, H, sh) {
+  const Hc = Math.max(H, FIT_H), u = (W - 2 * PAD - 3 * GAP) / 5;
+  const h1 = clamp(Math.round((Hc - 2 * PAD - LINK - GAP) * 0.4), 200, 360), y2 = PAD + h1 + LINK;
+  const P = { 1: { x: PAD, y: PAD, w: 2 * u, h: h1 } };
+  [2, 3, 4].forEach((k, i) => { P[k] = { x: PAD + (i + 2) * u + (i + 1) * GAP, y: PAD, w: u, h: h1 }; });
+  const F5 = viewFive(sh, { x: PAD, y: y2, w: W - 2 * PAD, h: Hc - PAD - y2 }, GAP, GAP_Y);
+  Object.assign(P, F5.P);
+  const c = F5.compact, plan = linkPlan(sh, P, PAD, null);
+  return { W, H: Hc, P, fit: true, merged: F5.merged, level: F5.level, clip: F5.clip, compact: { 5: c, 5.5: c, 6: c, 7: c }, link: { y0: PAD + h1, y1: y2, ...plan }, arrows: arrowsOf(P) };
+}
+/**
+ * The steps in rows of cards, each row as tall as its cards need, for a box W px wide (narrower
+ * than FIT_W). The sort sits at two fifths beside the other three of EchoPrime in a box 800 px
+ * wide or more. Else it sits over them, in a row of three from 486 px or of two and one. The
+ * bands take two cards from 600 px, else one. The anchor sits beside the report from 800 px, else
+ * over it. Where rows lie between the sort and the measurements, their link runs down a lane at
+ * the left. The normal heart's values set the heights, so they do not change with the heart. A
+ * flow shorter than the box gives the rest to the report.
+ */
+function layoutFlow(W, H, sh) {
+  const V = valuesOf('normal', true), wide = W >= 800, lane = wide ? 0 : LANE;
+  const x0 = PAD + lane, w0 = W - 2 * PAD - lane, half = (w0 - GAP) / 2, merged = w0 < 600;
+  const rows = [];
+  if (wide) {
+    const u = (w0 - 3 * GAP) / 5;
+    rows.push([[1, 2 * u, sortNeed(sh, 2 * u, 52)], [2, u, encodeNeed()], [3, u, weighNeed(u)], [4, u, answerNeed(u)]]);
+  } else {
+    rows.push([[1, w0, sortNeed(sh, w0, 64)]]);
+    if (w0 >= 3 * 150 + 2 * GAP) {
+      const u = (w0 - 2 * GAP) / 3;
+      rows.push([[2, u, encodeNeed()], [3, u, weighNeed(u)], [4, u, answerNeed(u)]]);
+    } else {
+      rows.push([[2, half, encodeNeed()], [3, half, weighNeed(half)]]);
+      rows.push([[4, w0, answerNeed(w0)]]);
+    }
+  }
+  const bands = rows.length;
+  const nb = bandNeed(sh, merged ? w0 : half, 'b', V), nd = bandNeed(sh, merged ? w0 : half, 'd', V);
+  if (merged) rows.push([[5, w0, nb + nd + SEP + HEAD + 12]]);
+  else {
+    const h = Math.max(nb, nd) + HEAD + 12;
+    rows.push([[5, half, h], [5.5, half, h]]);
+  }
+  if (wide) rows.push([[6, half, anchorNeed(sh, half, false, true)], [7, half, reportNeed(sh, half)]]);
+  else { rows.push([[6, w0, anchorNeed(sh, w0, false, true)]]); rows.push([[7, w0, reportNeed(sh, w0)]]); }
+  // the cards' boxes: x first, as the links' band needs them for its height
+  const P = {};
+  for (const row of rows) {
+    let x = x0;
+    for (const [k, w] of row) { P[k] = { x, y: 0, w, h: 0 }; x += w + GAP; }
+  }
+  const plan = linkPlan(sh, P, x0, lane ? PAD + lane / 2 : null);
+  let y = PAD, link = null;
+  rows.forEach((row, i) => {
+    if (i === bands) { link = { y0: y - ROW_GAP, y1: y - ROW_GAP + plan.h, ...plan }; y += plan.h - ROW_GAP; }
+    const h = Math.max(...row.map((c) => c[2]));
+    for (const [k] of row) Object.assign(P[k], { y, h });
+    y += h + ROW_GAP;
+  });
+  const total = y - ROW_GAP + PAD;
+  if (total < H) P[7].h += H - total;
+  const P1 = P[1];
+  return { W, H: Math.max(H, total), P, flow: true, merged, split: nb / (nb + nd), level: 0, compact: {}, link: { ...link, from1: lane ? { x: P1.x, y: P1.y + P1.h - 18 } : null }, arrows: arrowsOf(P) };
+}
+/** The figure with tabs (SHOW_TABS): the three rows, or one of two views (viewFive for the second). */
+function layoutTabs(W, H, row, sh) {
   const all = W >= 840 && H >= 650;
   if (all) {
     const cw = (W - 2 * PAD - 3 * GAP) / 4, bw = (W - 2 * PAD - GAP) / 2;
@@ -419,7 +520,7 @@ export function layoutOf(W, H, row, sh) {
       5: { x: PAD, y: y2, w: bw, h: h2 }, 5.5: { x: PAD + bw + GAP, y: y2, w: bw, h: h2 },
       6: { x: PAD, y: y3, w: bw, h: h3 }, 7: { x: PAD + bw + GAP, y: y3, w: bw, h: h3 },
     };
-    return { all: true, W, H, P, rows: [0, 1, 2], link: { y0: PAD + h1, y1: y2 } };
+    return { all: true, old: true, W, H, P, rows: [0, 1, 2], link: { y0: PAD + h1, y1: y2 } };
   }
   // one view: tabs across the top, the view's panels under them
   const tabs = { x: PAD, y: PAD, w: W - 2 * PAD, h: 26 };
@@ -452,10 +553,10 @@ export function layoutOf(W, H, row, sh) {
  * (LABS) comes only where the full one does not fit. The normal heart's values set the layout,
  * so it does not change with the heart.
  */
-function viewFive(sh, box, g) {
+function viewFive(sh, box, g, gy = g) {
   const half = (box.w - g) / 2, V = valuesOf('normal', true);
   const make = (merged, compact, h3, level) => {
-    const P = {}, h2 = box.h - h3 - g, y3 = box.y + h2 + g;
+    const P = {}, h2 = box.h - h3 - gy, y3 = box.y + h2 + gy;
     if (merged) P[5] = { x: box.x, y: box.y, w: box.w, h: h2 };
     else {
       P[5] = { x: box.x, y: box.y, w: half, h: h2 };
@@ -476,7 +577,7 @@ function viewFive(sh, box, g) {
   };
   const need = { std: anchorNeed(sh, half, false), compact: anchorNeed(sh, half, true) };
   const wide = box.w >= 600;
-  const first = wide ? make(false, false, box.h - Math.round(box.h * BANDS) - g, 0)
+  const first = wide ? make(false, false, box.h - Math.round(box.h * BANDS) - gy, 0)
     : make(true, true, Math.max(need.compact, Math.min(Math.round(box.h * 0.34), 220)), 0);
   if (first.good && first.P[6].h >= (wide ? need.std : need.compact)) return first;
   const forms = wide ? [[false, false], [false, true], [true, false], [true, true]] : [[true, true]];
@@ -490,7 +591,91 @@ function viewFive(sh, box, g) {
   }
   // no form holds images of IH_MIN px: the last one, at the shortest label, each card clipped
   const [merged, compact] = forms[forms.length - 1];
-  return { ...make(merged, compact, Math.min(need.compact, box.h - g), 2), clip: true };
+  return { ...make(merged, compact, Math.min(need.compact, box.h - gy), 2), clip: true };
+}
+/**
+ * The height of the sort's card w px wide: its 14 videos in the fewest rows whose tiles are tmin
+ * px wide or more, with each view's tag in one line. sortPanel then takes that grid.
+ */
+function sortNeed(sh, w, tmin) {
+  const bw = w - 2 * IN, tagO = { family: MONO, weight: 500, size: bw < 200 ? 9 : 9.5 };
+  const need = Math.max(tmin, ...VIEW_TAG.map((s) => sh.measure(s, tagO) + 5));
+  const c = [7, 5, 4, 3].find((n) => (bw - (n - 1) * 2) / n >= need) ?? 3;
+  const r = Math.ceil(N_VID / c), th = (bw - (c - 1) * 2) / c / 1.12;
+  return Math.ceil(r * th + (r - 1) * 2) + HEAD + 12 + 18;
+}
+/** The heights of the cards of steps 2, 3 and 4, w px wide: 14 rows of numbers; 14 rows of weights, as high as a column is wide up to 11 px; the heads, 6 to 14 px each. */
+const encodeNeed = () => HEAD + 12 + 18 + 14 * 8;
+const weighNeed = (w) => HEAD + 12 + 18 + Math.ceil(14 * clamp((w - 2 * IN) / 15, 6, 11));
+const answerNeed = (w) => HEAD + 12 + Math.ceil(10 * clamp((w - 2 * IN - 33.6) / 15, 6, 14) + 83.6);
+const TILE_W = { b: 96, d: 88 };   // px: the width of a band's tiles in a flow
+/**
+ * The height of a band's tiles in a card w px wide: the columns whose tiles come nearest TILE_W
+ * px wide (as a ratio), with every name and value in its tile, as tileGrid then takes them.
+ */
+function bandNeed(sh, w, kind, V) {
+  const list = OUT.filter((o) => o.kind === kind), bw = w - 2 * IN, tw = (c) => (bw - (c - 1) * 10) / c;
+  const off = (c) => Math.max(tw(c) / TILE_W[kind], TILE_W[kind] / tw(c));
+  const ok = COLS[kind].filter((c) => list.every((o) => labelFits(sh, o, V.out[o.key], tw(c), 0)));
+  const c = (ok.length ? ok : [Math.min(...COLS[kind])]).reduce((a, b) => (off(b) < off(a) ? b : a));
+  const r = Math.ceil(list.length / c), one = list.every((o) => oneLine(sh, o, V.out[o.key], tw(c)));
+  return Math.ceil(r * (tw(c) / ASPECT[kind] + (one ? LAB1 : LAB2)) + (r - 1) * 8);
+}
+/**
+ * The height of a report card w px wide that holds the normal heart's report at 13.5 px (13 on a
+ * phone), with a line to spare for a longer report.
+ */
+function reportNeed(sh, w) {
+  const bw = w - 2 * IN, lay = reportLines(sh, { x: 0, w: bw }, reportOf(valuesOf('normal', true)), w < 420 ? 13 : 13.5);
+  return HEAD + 12 + reportPlan(sh, w, bw, false).foot - 2 + (lay.rows + 1) * lay.lh;
+}
+/**
+ * The two links over the measurements, across: the sort's link to the B-mode band, straight down
+ * from the sort or down the lane at laneX; and the number heads' link down from step 4 to the
+ * bands, with a branch to the B-mode band where the bands are two cards. Their labels go in one
+ * line, the heads' label on the branch where it fits; else it goes in a second line. h: the band's
+ * height. A label too long for its room takes a shorter form.
+ */
+function linkPlan(sh, P, x0, laneX) {
+  const B = P[5], D = P[5.5], o1 = F(11, SANS, 400), o2 = F(11, MONO, 500);
+  const x1 = laneX === null ? clamp(P[1].x + P[1].w * 0.42, B.x + 16, B.x + B.w - 16) : B.x + 24;
+  const full4 = P[4].w >= P[1].w - 1, x4 = full4 ? P[4].x + P[4].w - 28 : P[4].x + P[4].w / 2;
+  const xb = D && x4 > B.x + B.w ? B.x + B.w - 30 : null;
+  const S1 = ['the view picks the clip each model reads', 'the view picks each clip'];
+  const S2 = ['the number heads anchor every value', 'the heads anchor every value', 'heads anchor each value'];
+  const s1 = fits(sh, S1, (xb ?? x4) - 12 - (x1 + 9), o1) ?? S1[1];
+  const e1 = x1 + 9 + sh.measure(s1, o1), w2 = (s) => sh.measure(s, o2) + 14;
+  const fitIn = (l, r) => S2.find((s) => w2(s) <= r - l);
+  // the heads' label: on the branch, in the middle; else at the left of the heads' drop, in full
+  // after the sort's label, or in a second line between the two drops
+  let s2, at, l2x;
+  if (xb !== null) {
+    s2 = fitIn(xb + 10, x4 - 10);
+    at = s2 ? 'branch' : 2;
+    s2 ??= S2[2];
+    l2x = at === 'branch' ? (xb + x4) / 2 - w2(s2) / 2 : Math.max(xb + 9, x4 - 9 - w2(s2));
+  } else {
+    at = w2(S2[0]) <= x4 - 9 - (e1 + 16) ? 1 : 2;
+    s2 = at === 1 ? S2[0] : fitIn(x1 + 9, x4 - 9) ?? S2[2];
+    l2x = Math.max(at === 1 ? e1 + 16 : x1 + 9, x4 - 9 - w2(s2));
+  }
+  return { x1, x4, xb, lane: laneX, s1, s2, l2x, at, h: at === 2 ? LINK2 : LINK };
+}
+/**
+ * The arrows from each step to the next, other than the links over the measurements: in the
+ * gutter between two cards of a row, or down from a card to the one under it.
+ */
+function arrowsOf(P) {
+  const out = [];
+  for (const [a, b] of [[1, 2], [2, 3], [3, 4], [5, 6], [6, 7]]) {
+    const A = P[a], Bq = P[b];
+    if (Math.abs(A.y - Bq.y) < 1) out.push({ x: A.x + A.w, y: A.y + Math.min(A.h, Bq.h) / 2 });
+    else {
+      const l = Math.max(A.x, Bq.x), r = Math.min(A.x + A.w, Bq.x + Bq.w);
+      out.push({ x: (l + r) / 2, y0: A.y + A.h, y1: Bq.y });
+    }
+  }
+  return out;
 }
 /** The view of each step: 1 to 4 EchoPrime, 5 to 7 the measurements, the anchor and the report. */
 export const rowOfStep = (k) => (k >= 5 ? 1 : 0);
@@ -817,17 +1002,18 @@ function bandBoxes(P, merged, compact) {
 const SEP = 9;                // px between the bands in their one card
 /**
  * One card of both bands: the B-mode tiles over the Doppler and M-mode tiles, a rule between them.
- * P: the card, where each band keeps its tiles in its half (a box too short for view 1).
+ * P: the card, where each band keeps its tiles in its part (a box too short for the bands).
+ * split: the B-mode band's share of the height (a flow gives each band its own need).
  */
-function bothBands(sh, t, b, sec, V, hits, level, P) {
-  const h = (b.h - SEP) / 2, ctx = sh.ctx;
+function bothBands(sh, t, b, sec, V, hits, level, P, split = 0.5) {
+  const h = (b.h - SEP) * split, hd = b.h - SEP - h, ctx = sh.ctx;
   measurePanel(sh, t, { ...b, h }, 'b', sec, V, hits, level, true, P && { x: P.x - 2, y: b.y - 4, w: P.w + 4, h: h + 4 + SEP / 2 });
   ctx.save();
   ctx.strokeStyle = t.rule;
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(b.x, b.y + h + SEP / 2); ctx.lineTo(b.x + b.w, b.y + h + SEP / 2); ctx.stroke();
   ctx.restore();
-  measurePanel(sh, t, { ...b, y: b.y + h + SEP, h }, 'd', sec, V, hits, level, true, P && { x: P.x - 2, y: b.y + h + SEP / 2, w: P.w + 4, h: P.y + P.h + 2 - (b.y + h + SEP / 2) });
+  measurePanel(sh, t, { ...b, y: b.y + h + SEP, h: hd }, 'd', sec, V, hits, level, true, P && { x: P.x - 2, y: b.y + h + SEP / 2, w: P.w + 4, h: P.y + P.h + 2 - (b.y + h + SEP / 2) });
 }
 /** The view tag at the top left of an image, as the scanner prints its text; none on a very short image. */
 function imgTag(sh, img, str) {
@@ -1103,12 +1289,12 @@ function anchorColumns(sh, w, lines, V) {
 /**
  * The height an anchor card w px wide needs for the most lines a section has (the LV's six, with
  * the septum's second peak): its header, its lines in one row each (18 px) or two (20 px), and
- * its legend.
+ * its legend. roomy: 26 px a line, for a flow.
  */
-function anchorNeed(sh, w, compact) {
+function anchorNeed(sh, w, compact, roomy = false) {
   const V = valuesOf('normal', true), lines = linesOf(0), bw = w - 2 * IN;
   const { nameW, valW } = anchorColumns(sh, bw, lines, V);
-  const rows = lines.length * (bw - nameW - valW - 10 >= 64 ? 18 : 20);
+  const rows = lines.length * (roomy ? 26 : bw - nameW - valW - 10 >= 64 ? 18 : 20);
   const free = compact ? compactPlan(sh, w, '6', TITLES[6][0], TITLES[6][1]).free : 0;
   return (compact ? HEAD_C + 2 + 7 : HEAD + 4 + 8) + rows + legendPlan(sh, bw, anchorItems(lines, V), free).h;
 }
@@ -1172,31 +1358,53 @@ function anchorPanel(sh, t, b, sec, V, head) {
 }
 
 // 7 · Report: the sentences, EchoPrime's words in the serif, the measured numbers in blue
+const REPORT_KEYS = [['serif: ', 'EchoPrime heads', F(11, SERIF, 400)], ['blue: ', 'measured, then anchored', F(10, MONO, 500)]];
 /**
- * The report's legend: at the right of the card's header when it fits there, else at the foot, in
- * one line or one item a line. Returns the room it takes at the foot.
+ * Where the report's legend goes in a card w px wide, bw inside: at the right of the header where
+ * it fits there (foot 0), else at the foot in one line (20 px) or one item a line (34 px).
  */
-function reportLegend(sh, t, P, b, compact) {
-  const lo = F(10, SANS, 400);
-  const items = [['serif: ', 'EchoPrime heads', F(11, SERIF, 400), t.ink2], ['blue: ', 'measured, then anchored', F(10, MONO, 500), t.accent]];
-  const widths = items.map(([k, s, kO]) => sh.measure(k, kO) + sh.measure(s, lo));
+function reportPlan(sh, w, bw, compact) {
+  const lo = F(10, SANS, 400), widths = REPORT_KEYS.map(([k, s, kO]) => sh.measure(k, kO) + sh.measure(s, lo));
   const titleW = sh.measure('Report', F(18.5, SERIF)) + 44, capsW = 190;
-  const right = P.x + P.w - IN;
-  if (!compact && P.w - Math.max(titleW, capsW) - Math.max(...widths) >= 36) {
-    items.forEach(([k, s, kO, kc], i) => {
-      const y = P.y + 19 + i * 15, x = right - widths[i];
-      sh.text(k, x, y, { ...kO, color: kc });
-      sh.text(s, x + sh.measure(k, kO), y, { ...lo, color: t.ink3 });
-    });
-    return 0;
-  }
-  const one = widths[0] + 14 + widths[1] <= b.w + 2;
-  items.forEach(([k, s, kO, kc], i) => {
-    const lx = one && i ? b.x + widths[0] + 14 : b.x, ly = b.y + b.h - 3 - (one || i ? 0 : 14);
-    sh.text(k, lx, ly, { ...kO, color: kc });
-    sh.text(s, lx + sh.measure(k, kO), ly, { ...lo, color: t.ink3 });
+  if (!compact && w - Math.max(titleW, capsW) - Math.max(...widths) >= 36) return { beside: true, widths, foot: 0 };
+  const one = widths[0] + 14 + widths[1] <= bw + 2;
+  return { beside: false, one, widths, foot: one ? 20 : 34 };
+}
+/** The report's legend (reportPlan). Returns the room it takes at the foot. */
+function reportLegend(sh, t, P, b, compact) {
+  const lo = F(10, SANS, 400), L = reportPlan(sh, P.w, b.w, compact), colors = [t.ink2, t.accent];
+  REPORT_KEYS.forEach(([k, s, kO], i) => {
+    const x = L.beside ? P.x + P.w - IN - L.widths[i] : L.one && i ? b.x + L.widths[0] + 14 : b.x;
+    const y = L.beside ? P.y + 19 + i * 15 : b.y + b.h - 3 - (L.one || i ? 0 : 14);
+    sh.text(k, x, y, { ...kO, color: colors[i] });
+    sh.text(s, x + sh.measure(k, kO), y, { ...lo, color: t.ink3 });
   });
-  return one ? 20 : 34;
+  return L.foot;
+}
+/**
+ * The words of each part of report R in lines area.w px wide, at ws px: words break at spaces, a
+ * number with its unit stays whole, and a value flagged for review takes its flag's room too.
+ * Numbers are 1 px smaller, in the mono face.
+ */
+function reportLines(sh, area, R, ws) {
+  const wO = F(ws, SERIF, 400), nO = F(ws - 1, MONO, 500), lh = Math.round(ws * 1.32);
+  const items = [], space = sh.measure(' ', wO);
+  let x = area.x, y = 0;
+  for (const S of R) {
+    for (const [text, kind] of S.parts) {
+      const o = kind === 'w' ? wO : nO;
+      const toks = kind === 'w' ? text.split(/(\s+)/).filter((q) => q.length) : [text];
+      for (const tok of toks) {
+        if (/^\s+$/.test(tok)) { x += space; continue; }
+        const w = sh.measure(tok, o) + (kind === 'f' ? 10 : 0);
+        if (x + w > area.x + area.w + 0.5 && x > area.x) { x = area.x; y += lh; }
+        items.push({ tok, x, y, w, o, kind, sec: S.sec });
+        x += w;
+      }
+    }
+    x += space;
+  }
+  return { items, lh, rows: Math.round(y / lh) + 1, ws, space };
 }
 function reportPanel(sh, t, P, b, sec, V, hits, compact) {
   const ctx = sh.ctx, C = palette(t), R = reportOf(V);
@@ -1206,28 +1414,8 @@ function reportPanel(sh, t, P, b, sec, V, hits, compact) {
   // lines all fit; numbers 1 px smaller in the mono face, never under 9.5 px
   let lay = null;
   for (const ws of [14, 13.5, 13, 12.5, 12, 11.5, 11, 10.5]) {
-    const wO = F(ws, SERIF, 400), nO = F(ws - 1, MONO, 500), lh = Math.round(ws * 1.32);
-    const items = [];
-    let x = area.x, y = 0;
-    const space = sh.measure(' ', wO);
-    for (const S of R) {
-      for (const [text, kind] of S.parts) {
-        const o = kind === 'w' ? wO : nO;
-        // words break at spaces; a number with its unit stays whole
-        const toks = kind === 'w' ? text.split(/(\s+)/).filter((q) => q.length) : [text];
-        for (const tok of toks) {
-          if (/^\s+$/.test(tok)) { x += space; continue; }
-          // a value flagged for review takes its flag's room too
-          const w = sh.measure(tok, o) + (kind === 'f' ? 10 : 0);
-          if (x + w > area.x + area.w + 0.5 && x > area.x) { x = area.x; y += lh; }
-          items.push({ tok, x, y, w, o, kind, sec: S.sec });
-          x += w;
-        }
-      }
-      x += space;
-    }
-    lay = { items, lh, rows: Math.round(y / lh) + 1, ws, space };
-    if (lay.rows * lh <= area.h) break;
+    lay = reportLines(sh, area, R, ws);
+    if (lay.rows * lay.lh <= area.h) break;
   }
   // the lines that fit: all of them, or a window that holds the lit sentence, with a mark where
   // lines are left out
@@ -1297,6 +1485,37 @@ function links(sh, t, L) {
   }
 }
 
+/**
+ * The arrows of the figure without tabs: from each step to the next, in a gutter or down to the
+ * next row; and over the measurements, the sort's link to the B-mode band and the number heads'
+ * link to both bands, with their labels (linkPlan).
+ */
+function arrows(sh, t, L) {
+  const ctx = sh.ctx, K = L.link, y0 = K.y0 + 3, y1 = K.y1 - 3, ym = K.y0 + 16;
+  ctx.save();
+  ctx.strokeStyle = t.accent;
+  ctx.fillStyle = t.accent;
+  ctx.lineWidth = 1.4;
+  const line = (pts) => { ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke(); };
+  for (const a of L.arrows) {
+    if (a.y0 === undefined) { line([[a.x + 2, a.y], [a.x + 6, a.y]]); arrowHead(ctx, a.x + GAP - 2, a.y, 1, 0, 5); }
+    else { line([[a.x, a.y0 + 2], [a.x, a.y1 - 6]]); arrowHead(ctx, a.x, a.y1 - 1, 0, 1, 6); }
+  }
+  // the sort's link: straight down, or from the sort's side down the lane and across
+  if (K.lane !== null) line([[K.from1.x, K.from1.y], [K.lane, K.from1.y], [K.lane, ym], [K.x1, ym], [K.x1, y1 - 5]]);
+  else line([[K.x1, y0], [K.x1, y1 - 5]]);
+  arrowHead(ctx, K.x1, y1, 0, 1, 6);
+  // the number heads' link: down from step 4, with its branch to the B-mode band
+  line([[K.x4, y0], [K.x4, y1 - 5]]);
+  arrowHead(ctx, K.x4, y1, 0, 1, 6);
+  if (K.xb !== null) { line([[K.x4, ym], [K.xb, ym], [K.xb, y1 - 5]]); arrowHead(ctx, K.xb, y1, 0, 1, 6); }
+  ctx.restore();
+  sh.text(K.s1, K.x1 + 9, ym + 4, { ...F(11, SANS, 400), color: t.ink2 });
+  const yb = K.at === 'branch' ? ym - 4.5 : K.at === 1 ? ym + 4 : ym + 20;
+  diamond(ctx, K.l2x + 4, yb - 3.5, 4, t.accent);
+  sh.text(K.s2, K.l2x + 12, yb, { ...F(11, MONO, 500), color: t.accent });
+}
+
 /** Under the EchoPrime row of a small figure: its two links to the other rows, as the arrows of the full figure name them. */
 function linkNotes(sh, t, b) {
   const ctx = sh.ctx, o = F(11, SANS, 400), lo = F(11, MONO, 500);
@@ -1343,36 +1562,39 @@ function tabsOf(sh, t, L, hits) {
 
 // ---------------------------------------------------------------- the figure
 /**
- * Draw the figure for state S: { sec, step (0 none, 1 to 7), two, row, heart } on sheet sh with
- * tokens t. F1.video(ctx, i, x, y, w, h) draws video i of the study (ch/ai.js). Returns the
- * layout and the hit boxes (a section or a view).
+ * Draw the figure for state S: { sec, step (0 none, 1 to 7), two, row, heart, boxH } on sheet sh
+ * with tokens t. boxH: the height of the box that shows the sheet, which can be shorter than the
+ * sheet (the box scrolls). F1.video(ctx, i, x, y, w, h) draws video i of the study (ch/ai.js).
+ * Returns the layout and the hit boxes (a section, or a view of the figure with tabs).
  */
 export function drawFigure(sh, t, S, F1) {
-  const L = layoutOf(sh.w, sh.h, S.row, sh), hits = [], V = valuesOf(S.heart, S.two);
+  const L = layoutOf(sh.w, S.boxH ?? sh.h, S.row, sh), hits = [], V = valuesOf(S.heart, S.two);
   const lit = (k) => S.step === Math.floor(k) || (k === 5.5 && S.step === 5);
-  const rows = { top: 0, h: 0 }, compact = !!L.compact, level = L.level || 0, ctx = sh.ctx;
+  const rows = { top: 0, h: 0 }, level = L.level || 0, ctx = sh.ctx;
+  // compact headers: per card without tabs, for every card of the view with tabs
+  const compact = (k) => (typeof L.compact === 'object' ? !!L.compact[k] : !!L.compact);
   for (const k of [1, 2, 3, 4, 5, 5.5, 6, 7]) {
     const P = L.P[k];
     if (!P) continue;
-    // in a box too short for view 1, each card keeps its drawing inside it. The clip lies 2 px
-    // outside the card, clear of its frame and of the next card (8 px or more away)
-    const clip = L.clip ? { x: P.x - 2, y: P.y - 2, w: P.w + 4, h: P.h + 4 } : null;
+    // in a box too short for the measurements, each card keeps its drawing inside it. The clip
+    // lies 2 px outside the card, clear of its frame and of the next card (8 px or more away)
+    const clip = L.clip && k >= 5 ? { x: P.x - 2, y: P.y - 2, w: P.w + 4, h: P.h + 4 } : null;
     if (clip) { ctx.save(); ctx.beginPath(); ctx.rect(clip.x, clip.y, clip.w, clip.h); ctx.clip(); }
-    const b = card(sh, t, P, k, lit(k), compact, k === 5 && L.merged);
+    const b = card(sh, t, P, k, lit(k), compact(k), k === 5 && L.merged);
     if (k === 1) sortPanel(sh, t, b, F1);
     else if (k === 2) encodePanel(sh, t, b, V.heart, rows);
     else if (k === 3) weighPanel(sh, t, b, S.sec, hits);
     else if (k === 4) answerPanel(sh, t, b, S.sec, V, hits);
-    else if (k === 5 && L.merged) bothBands(sh, t, b, S.sec, V, hits, level, L.clip ? P : null);
-    else if (k === 5 || k === 5.5) measurePanel(sh, t, b, k === 5 ? 'b' : 'd', S.sec, V, hits, level, !L.all, clip);
+    else if (k === 5 && L.merged) bothBands(sh, t, b, S.sec, V, hits, level, clip ? P : null, L.split);
+    else if (k === 5 || k === 5.5) measurePanel(sh, t, b, k === 5 ? 'b' : 'd', S.sec, V, hits, level, !L.old, clip);
     else if (k === 6) anchorPanel(sh, t, b, S.sec, V, b.head);
-    else reportPanel(sh, t, P, b, S.sec, V, hits, compact);
+    else reportPanel(sh, t, P, b, S.sec, V, hits, compact(k));
     if (clip) ctx.restore();
   }
-  if (L.all) links(sh, t, L);
-  else {
+  if (L.tabs) {
     tabsOf(sh, t, L, hits);
     if (L.foot) linkNotes(sh, t, L.foot);
-  }
+  } else if (L.old) links(sh, t, L);
+  else arrows(sh, t, L);
   return { L, hits };
 }
