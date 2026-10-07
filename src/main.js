@@ -1,7 +1,7 @@
 // The page engine: chapters, controls, readouts, live sentences, citations, dialogs, tour.
 import { state, set, subscribe, declare, reducedMotion } from './state.js';
 import { REFS } from './refs.js';
-import { CHAPTERS, BAR, PARTS, numOf } from './chapters.js';
+import { CHAPTERS, BAR, MAIN, PARTS, numOf, barOf } from './chapters.js';
 import { NORM_TABLES } from './norms.js';
 import { QUIZ } from './quiz.js';
 import { PHENOS, PHENO_STORE, presetsFor, PRESET_KEYS } from './pheno.js';
@@ -339,10 +339,11 @@ $('#chapters').addEventListener('click', (e) => {
   if (b) goChapter(Number(b.dataset.go));
 });
 
-// BAR (src/chapters.js): the chapters of the bar and of its list, in order, by their index in
+// BAR (src/chapters.js): the entries of the bar and of its list, in order, by their index in
 // CHAPTERS. The row, the strip, the parts over them and the list all come from it. It holds the
-// main chapters only. A bonus chapter opens by back and next and by its address, and the bar then
-// shows no chapter as current.
+// main chapters, then the bonus page (B). A bonus chapter opens by back and next, by the bonus
+// page and by its address, and the bar then shows B as current (barOf). The tour runs through the
+// main chapters only (MAIN).
 
 // px: each bar chapter's place on the track, under the start of its number. The columns differ
 // in width, so the places come from the buttons (drawTrack).
@@ -368,17 +369,15 @@ function moveDot() {
   const svg = $('#track');
   const dot = svg.querySelector('.dot');
   if (!dot) return;
-  // the open chapter's place in the bar. A chapter outside the bar shows no dot, and the line is
-  // done up to the bar's last chapter before it.
-  const i = state.chapter, k = BAR.indexOf(i), last = BAR.length - 1;
-  const at = k >= 0 ? k : BAR.filter((j) => j < i).length - 1;
-  const f = k >= 0 && k < last ? Math.min(1, dotT / CHAPTERS[i].dwell) : 0;
-  const x = at < 0 ? 0 : trackX(at) + (trackX(Math.min(at + 1, last)) - trackX(at)) * f;
-  dot.style.visibility = k < 0 ? 'hidden' : '';
+  // the open chapter's entry in the bar: B for a bonus chapter. In the tour the dot moves on toward
+  // the next main chapter with the chapter's time, and not on from the last main chapter.
+  const i = state.chapter, k = BAR.indexOf(barOf(i)), m = MAIN.indexOf(i);
+  const f = m >= 0 && m < MAIN.length - 1 ? Math.min(1, dotT / CHAPTERS[i].dwell) : 0;
+  const x = trackX(k) + (trackX(k + 1) - trackX(k)) * f;
   if (Math.abs(x - dotX) < 0.3) return;
   dotX = x;
   dot.setAttribute('cx', x.toFixed(1));
-  svg.querySelector('.done').setAttribute('d', at < 0 ? '' : trackPath(trackX(0), x));
+  svg.querySelector('.done').setAttribute('d', trackPath(trackX(0), x));
 }
 new ResizeObserver(() => drawTrack()).observe($('#track'));
 
@@ -420,17 +419,19 @@ function showChapter() {
   held = false;
   if (active >= 0 && active !== i) CHAPTERS[active].leave?.();
   active = i;
-  // the tour runs through the bar's chapters only: a chapter outside the bar (a bonus chapter)
-  // stops it, and plays its own sequence
-  if (state.playing && !BAR.includes(i)) set({ playing: false });
+  // the tour runs through the main chapters only: the bonus page and a bonus chapter stop it, and
+  // a bonus chapter plays its own sequence
+  if (state.playing && !MAIN.includes(i)) set({ playing: false });
   // the chapter opens with its own sequence playing. Not during the tour: the tour plays the
   // same steps, and then opens the next chapter.
   const autoplay = !state.playing && ownPlays(c);
   if (!!state.anim !== autoplay) set({ anim: autoplay });
   $$('.chapter').forEach((a) => a.classList.toggle('is-active', a.id === `ch-${c.key}`));
   $$('.fig').forEach((f) => f.classList.toggle('is-active', f.id === `fig-${c.key}`));
-  $$('#chapters button[data-go]').forEach((b) => (Number(b.dataset.go) === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
-  $$('#groups li').forEach((li) => li.classList.toggle('is-cur', BAR.includes(i) && li.dataset.part === c.part));
+  // the bar's current entry: the chapter, or B for a bonus chapter, and its part
+  const cur = barOf(i);
+  $$('#chapters button[data-go]').forEach((b) => (Number(b.dataset.go) === cur ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
+  $$('#groups li').forEach((li) => li.classList.toggle('is-cur', li.dataset.part === CHAPTERS[cur].part));
   fitTransport();
   drawTrack();
   centerChapter(true);
@@ -502,9 +503,9 @@ function tourTick(dt) {
   tourT += dt;
   stepTo(c, tourT);
   if (tourT >= c.dwell) {
-    // the next chapter of the bar: the tour never opens a bonus chapter
-    const k = BAR.indexOf(i);
-    if (k >= 0 && k < BAR.length - 1) { set({ chapter: BAR[k + 1] }); return; }
+    // the next main chapter: the tour never opens the bonus page or a bonus chapter
+    const k = MAIN.indexOf(i);
+    if (k >= 0 && k < MAIN.length - 1) { set({ chapter: MAIN[k + 1] }); return; }
     // the end of the tour: it stops, and the last chapter continues with its own sequence
     tourT = c.dwell;
     tourDone = true;
@@ -520,8 +521,9 @@ function pauseTour() {
 }
 function togglePlay() {
   if (state.playing) { pauseTour(); return; }
-  if (tourDone || !BAR.includes(state.chapter)) {
-    // after the end of the tour, or from a bonus chapter, the tour starts again at chapter 01
+  if (tourDone || !MAIN.includes(state.chapter)) {
+    // after the end of the tour, or from the bonus page or a bonus chapter, the tour starts again
+    // at chapter 01
     tourDone = false;
     set({ playing: true, anim: false });
     if (state.chapter === 0) { tourT = 0; dotT = 0; entered = false; } else set({ chapter: 0 });
@@ -663,21 +665,20 @@ function buildTransport() {
 }
 
 /**
- * The bonus chapters (order.js BONUS) as a list at the end of the bar's last chapter: each one's
- * number, title and kicker (the line under its title), as a link.
+ * The bonus page's list (B, src/ch/bonus.js): each bonus chapter (order.js BONUS) with its number,
+ * title and kicker (the line under its title), as a link.
  */
 function buildBonus() {
   const bonus = CHAPTERS.filter((c, i) => !BAR.includes(i));
-  const last = document.getElementById(`ch-${CHAPTERS[BAR[BAR.length - 1]].key}`);
-  if (!bonus.length || !last) return;
-  const sec = document.createElement('section');
-  sec.className = 'bonus';
-  sec.setAttribute('aria-labelledby', 'bonus-head');
-  sec.innerHTML = `<h3 id="bonus-head">Bonus chapters</h3><ol>${bonus.map((c) => {
+  const page = document.getElementById('ch-bonus');
+  if (!bonus.length || !page) return;
+  const ol = document.createElement('ol');
+  ol.className = 'bonus';
+  ol.innerHTML = bonus.map((c) => {
     const kicker = $(`#ch-${c.key} .ch-kicker`)?.textContent.trim() || '';
     return `<li><a href="#${c.key}" data-go="${c.key}"><span class="n">${numOf(c.key)}</span> <span class="t">${esc(c.title)}</span>${kicker ? ` <span class="k">${esc(kicker)}</span>` : ''}</a></li>`;
-  }).join('')}</ol>`;
-  last.appendChild(sec);
+  }).join('');
+  page.appendChild(ol);
 }
 
 /** The phone bar's title in two lines at most; if it needs more, the short name of the desktop bar. */
@@ -687,7 +688,10 @@ function fitPager() {
   if (c.nav && t.clientHeight && (t.scrollHeight > t.clientHeight + 1 || t.scrollWidth > t.clientWidth + 1)) t.textContent = c.nav;
 }
 
-/** The phone bar: the current chapter's number and title (B3 for a bonus chapter), the ends, the list's current row. */
+/**
+ * The phone bar: the current chapter's number and title (B3 for a bonus chapter), the ends, the
+ * list's current row (B for a bonus chapter).
+ */
 function syncPager() {
   const i = state.chapter, c = CHAPTERS[i], n = numOf(c.key);
   const cur = $('#pg-cur');
@@ -697,7 +701,7 @@ function syncPager() {
   $('#pg-prev').disabled = i === 0;
   $('#pg-next').disabled = i === CHAPTERS.length - 1;
   for (const b of $$('#chlist button[data-go]')) {
-    if (Number(b.dataset.go) === i) b.setAttribute('aria-current', 'page');
+    if (Number(b.dataset.go) === barOf(i)) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   }
 }
@@ -739,7 +743,7 @@ function fitTransport() {
     }
     return need;
   };
-  const k = BAR.indexOf(state.chapter);
+  const k = BAR.indexOf(barOf(state.chapter));
   const need = widen(reg.map((w, j) => (j === k ? cur[j] : w)));
   const most = widen([...reg]).reduce((a, b) => a + b, 0) + Math.max(...cur.map((w, j) => w - reg[j]));
   // the row's room in the full form: the bar's content less the Play button and the gap
@@ -764,13 +768,13 @@ function railTo(b, glide) {
   rail.scrollTo({ left, behavior: glide && !reducedMotion ? 'smooth' : 'auto' });
 }
 /**
- * The strip: the open chapter in its middle (the ends stop at the first and the last chapter). A
- * new chapter glides there, and a new layout jumps there.
+ * The strip: the open chapter's entry in its middle (B for a bonus chapter; the ends stop at the
+ * first and the last entry). A new chapter glides there, and a new layout jumps there.
  */
 function centerChapter(glide) {
   const rail = $('#rail'), w = rail.clientWidth;
   if (!isStrip() || !w) { railW = 0; return; }
-  const b = $(`#chapters button[data-go="${state.chapter}"]`);
+  const b = $(`#chapters button[data-go="${barOf(state.chapter)}"]`);
   if (b) railTo(b, glide && w === railW);
   railW = w;
 }

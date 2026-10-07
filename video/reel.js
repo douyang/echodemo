@@ -26,8 +26,8 @@
 // (video/cuts.js). Holds and moves are in bars. Captions are the chapter's own text: its live
 // text at the step's state, or a sentence from its page.
 import { BEAT, FPS } from './timeline.js';
-// MAIN: the main chapters, those of the site's chapter bar (BAR there; BAR here is a bar of the score)
-import { CHAPTERS, BAR as MAIN, numOf } from '../src/chapters.js';
+// MAIN: the main chapters, those of the site's tour (BAR here is a bar of the score)
+import { CHAPTERS, MAIN, numOf } from '../src/chapters.js';
 
 /** The tempo of the score (tools/score/pulse.py). A bar is 8/3 heartbeats, so a clip of 3 bars is 8 heartbeats. */
 export const BPM = 105;
@@ -40,7 +40,7 @@ const TWO = { hold0: 0.75, move: 1, hold1: 1.25 };
 export const REEL = {
   key: 'intro',
   // the title card: the site's name and the start of its description (index.html, meta description).
-  // It counts the main chapters (the chapter bar), not the bonus chapters.
+  // It counts the main chapters (the tour), not the bonus page or the bonus chapters.
   title: { eye: `${MAIN.length} chapters`, name: 'The Heart by Ultrasound', sub: 'An illustrated, interactive guide to echocardiography.' },
   intro: 2,
   outro: 3,
