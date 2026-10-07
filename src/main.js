@@ -15,11 +15,13 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const KEYS = CHAPTERS.map((c) => c.key);
-// old addresses: Planes is archived and Automated measurements is hidden (order.js), and #views
-// names Views (key windows)
-const ALIAS = { planes: 'windows', views: 'windows', measure: 'ai' };
-/** The chapter index of an address's #key, or -1. */
-const chapterOf = (hash) => { const h = (hash || '').slice(1); return KEYS.indexOf(ALIAS[h] || h); };
+// old addresses: Planes is archived and Automated measurements is hidden (order.js), #views names
+// Views (key windows), and Constrictive pericarditis is a setting of Pericardial disease
+const ALIAS = { planes: 'windows', views: 'windows', measure: 'ai', constrict: 'peri' };
+// the state that an old address opens its chapter in
+const ALIAS_STATE = { constrict: { periMode: 'cp', periS: 0.55 } };
+/** The chapter index of an address's #key, or -1. An alias applies only to a key that is not a chapter. */
+const chapterOf = (hash) => { const h = (hash || '').slice(1); return KEYS.indexOf(KEYS.includes(h) ? h : ALIAS[h] || h); };
 const CH = Object.fromEntries(KEYS.map((k, i) => [k, i]));
 
 // a chapter article left out of CHAPTERS (the report and Planes, order.js) stays hidden, its citations unnumbered
@@ -521,6 +523,14 @@ function pauseTour() {
   // the chapter continues its own sequence from the same step, unless an input in it holds it
   if (!state.anim && !held && ownPlays(CHAPTERS[state.chapter])) set({ anim: true });
 }
+/** An old address that names a setting of its chapter (ALIAS_STATE): the chapter shows it, and its steps continue from it. */
+function aliasState(hash) {
+  const h = (hash || '').slice(1), p = !KEYS.includes(h) && ALIAS_STATE[h];
+  if (!p) return;
+  set(p);
+  takeUp(CHAPTERS[state.chapter]);
+  dotT = tourT;
+}
 function togglePlay() {
   if (state.playing) { pauseTour(); return; }
   if (tourDone || !MAIN.includes(state.chapter)) {
@@ -843,16 +853,19 @@ function start() {
   refIndex = numberCitations();
   applyTheme();
   syncControls();
-  const fromHash = chapterOf(location.hash);
+  // the address before showChapter writes the chapter's own
+  const hash = location.hash, fromHash = chapterOf(hash);
   renderAllText();
   // the tour plays when the page opens, from the chapter that opens; not with reduced motion
   if (!reducedMotion) set({ playing: true });
   if (fromHash > 0) set({ chapter: fromHash }); else showChapter();
+  aliasState(hash);
   // a new #key in the address bar opens that chapter (showChapter writes the hash with
   // replaceState, which fires no hashchange)
   window.addEventListener('hashchange', () => {
-    const i = chapterOf(location.hash);
+    const h = location.hash, i = chapterOf(h);
     if (i >= 0 && i !== state.chapter) goChapter(i);
+    if (i >= 0) aliasState(h);
   });
   window.addEventListener('resize', () => {
     for (const s of Object.values(sheets)) s?.resize?.();

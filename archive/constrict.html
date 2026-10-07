@@ -1,0 +1,116 @@
+<!-- Constrictive pericarditis, hidden as a chapter of its own: the site does not load this file. Pericardial disease (src/ch/peri.js) shows constriction on its switch. To restore the chapter, do the steps at SHOW_CONSTRICT in src/order.js, which put each block below back in its file. -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Archive</title>
+</head>
+<body>
+<!-- Each template holds lines taken out of one file. A template is not drawn. -->
+
+<!-- index.html: the figure. It stood after #fig-peri. -->
+<template data-file="index.html">
+    <figure class="fig" id="fig-constrict">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Constrictive pericarditis from a normal pericardium to severe constriction, or restrictive cardiomyopathy from normal to grade 3 diastolic dysfunction: an apical four-chamber view with the pericardium at its measured thickness and the septum shifting with each breath; mitral and tricuspid inflow and hepatic vein flow over two breaths with a respiratory trace; tissue Doppler of the medial and lateral mitral annulus; an M-mode of the septum with breathing; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
+    </figure>
+</template>
+
+<!-- index.html: the article. It stood after #ch-peri, under the part comment of the pericardium. -->
+<template data-file="index.html">
+    <article class="chapter" id="ch-constrict">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">20</span><div><h2 class="ch-title">Constrictive pericarditis</h2><p class="ch-kicker">Septal shift, e′ and the hepatic veins; restrictive cardiomyopathy</p></div></div>
+      <p class="dek" data-part="dek">In constrictive pericarditis a thick, rigid pericardium limits the filling of the heart and couples the two ventricles. The septum shifts with each breath, the hepatic veins reverse in expiration, and the medial mitral annulus keeps a normal or high e′ velocity, which separates constriction from restrictive cardiomyopathy.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="conS">Severity <output data-for="conS"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="conS" data-key="conS" min="0" max="1" step="0.005">
+          <div class="grades" id="constrict-grades" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Disease</span>
+          <div class="seg" role="group" aria-label="Disease" data-key="conMode">
+            <button type="button" data-val="cp">Constriction</button><button type="button" data-val="rcm">Restrictive CM</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="constrict-table"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>Physiology</h3>
+        <p>In constrictive pericarditis a thickened, scarred, inelastic and often calcified pericardium limits the diastolic filling of the ventricles<span class="cite" data-ref="klein2013"></span>. It fixes the total volume of the heart, so the diastolic pressures of the chambers rise and equalize. Early diastolic filling is faster than normal; from mid-diastole the pericardium restrains the ventricles, and little filling occurs, even with atrial contraction<span class="cite" data-ref="klein2013"></span>. Two hemodynamic features define constriction<span class="cite" data-ref="klein2024"></span>:</p>
+        <ul>
+        <li><b>Dissociation of intrathoracic and intracardiac pressures.</b> The inspiratory fall in intrathoracic pressure reaches the pulmonary veins outside the pericardium but not the heart chambers. The gradient from the pulmonary veins to the LA falls, and LV filling falls with inspiration<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Ventricular interdependence.</b> The two ventricles share the fixed volume. As LV filling falls with inspiration, RV filling rises and the septum shifts toward the LV. Expiration reverses both: the RV fills little, and blood flows back into the IVC and the hepatic veins<span class="cite" data-ref="klein2013"></span>.</li>
+        </ul>
+        <h3>Echocardiographic findings</h3>
+        <ul>
+        <li><b>Septum.</b> The septum shifts toward the LV with inspiration and toward the RV with expiration. In early diastole it moves abruptly toward the LV, the septal bounce. An M-mode recording with a respiratory trace shows both<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>IVC and atria.</b> The IVC and the hepatic veins are dilated and collapse little or not at all, a sign of a raised RA pressure (<a href="#ivc" data-go="ivc">chapter 08</a>), and both atria are moderately enlarged<span class="cite" data-ref="klein2013"></span>. A plethoric IVC and a respiratory septal shift are the key findings: without them, constriction is unlikely<span class="cite" data-ref="klein2024"></span>. The LA volume index is normal up to 34 mL/m², mildly enlarged at 35–41, moderately at 42–48 and severely above 48 mL/m²<span class="cite" data-ref="lang2015"></span>.</li>
+        <li><b>Mitral and tricuspid inflow.</b> Both ventricles fill in a restrictive pattern: a high E velocity, a short deceleration time and a small A wave<span class="cite" data-ref="klein2013"></span>. With inspiration the mitral E velocity falls by more than 25% and the tricuspid E velocity rises by more than 40%, and expiration reverses the changes<span class="cite" data-ref="klein2013,schulzmenger2025"></span>. Each variation is (expiration − inspiration) ÷ expiration; for tricuspid inflow the result is negative. The mitral E velocity is lowest on the first beat of inspiration, and the tricuspid E velocity on the first beat of expiration<span class="cite" data-ref="klein2013"></span>. A markedly raised LA pressure can hide the respiratory variation of mitral inflow; preload reduction, with a head-up tilt or a diuretic, can bring it out<span class="cite" data-ref="klein2013"></span>. In chronic obstructive pulmonary disease, SVC systolic flow varies markedly with respiration; in constriction it varies little<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Hepatic veins.</b> In expiration the diastolic forward flow falls, and the flow reverses at end-diastole<span class="cite" data-ref="klein2013"></span>. The expiratory diastolic reversal ratio is the end-diastolic reversal velocity ÷ the diastolic forward velocity, both in expiration<span class="cite" data-ref="nagueh2025,klein2024"></span>. Diastolic reversals in inspiration suggest restrictive cardiomyopathy instead<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Tissue Doppler.</b> The medial mitral e′ is normal or increased, often above 7 cm/s<span class="cite" data-ref="nagueh2025"></span>. The lateral e′ is usually lower than the medial e′, annulus reversus: the thick pericardium tethers the lateral annulus<span class="cite" data-ref="klein2013"></span>. In most patients E/e′ falls as the LA pressure rises, annulus paradoxus, because the medial e′ increases as constriction worsens<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Pericardium.</b> On CT the normal pericardium is 1–2 mm thick, and in constriction usually 4–20 mm; a thickness above 4 mm on CT or CMR supports the diagnosis<span class="cite" data-ref="klein2013"></span>. TTE is unreliable for measuring the thickness<span class="cite" data-ref="klein2013"></span>. A thick pericardium alone does not establish constriction<span class="cite" data-ref="klein2013"></span>, and up to 20% of patients with constriction have a pericardium of normal thickness<span class="cite" data-ref="schulzmenger2025"></span>.</li>
+        </ul>
+        <h3>The Mayo Clinic criteria</h3>
+        <p>Welch et al. compared surgically confirmed constriction with restrictive myocardial disease or severe TR. Three echocardiographic variables were independently associated with constriction: respiration-related septal shift, the medial e′ and the hepatic vein expiratory diastolic reversal ratio<span class="cite" data-ref="welch2014"></span>.</p>
+        <ul>
+        <li>Septal shift with a medial e′ of 9 cm/s or more, or with a reversal ratio of 0.79 or more, had a sensitivity of 87% and a specificity of 91%.</li>
+        <li>All three findings together had a specificity of 97% and a sensitivity of 64%<span class="cite" data-ref="welch2014"></span>.</li>
+        </ul>
+        <p>The ESC guideline states the criteria as a septal bounce or septal shift with a medial e′ above 8 cm/s or a ratio above 0.78<span class="cite" data-ref="schulzmenger2025"></span>; at the precision that the page prints, whole cm/s and two decimals, they are the same. In atrial fibrillation or flutter, every variable but the mitral inflow velocity still differed between the groups<span class="cite" data-ref="welch2014"></span>. The guidelines state the septal shift without a size; this page calls it present from 3 mm.</p>
+        <h3>Constriction or restrictive cardiomyopathy</h3>
+        <p>In restrictive cardiomyopathy, for example cardiac amyloidosis (<a href="#amyloid" data-go="amyloid">chapter 25</a>), the stiff myocardium, not the pericardium, limits filling. The septal e′ is usually 5 cm/s or less<span class="cite" data-ref="nagueh2025"></span>. Diastolic function goes from grade 1 to grade 3 as the disease advances, and advanced disease shows a mitral E/A above 2.5, a deceleration time below 150 ms, an IVRT below 50 ms and septal and lateral e′ velocities of 3–4 cm/s<span class="cite" data-ref="nagueh2025"></span>. The page grades restrictive cardiomyopathy by the 2025 ASE algorithm (<a href="#fill" data-go="fill">chapter 11</a>), which the guideline does not apply in constriction<span class="cite" data-ref="nagueh2025"></span>.</p>
+        <ul>
+        <li>The marked respiratory changes in mitral and tricuspid E of constriction do not occur in restrictive cardiomyopathy<span class="cite" data-ref="hatle1989"></span>.</li>
+        <li>The atria are more often severely enlarged in restrictive cardiomyopathy<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>An e′ below 6 cm/s, especially without a respiratory septal shift, points to restrictive cardiomyopathy. An e′ of 6–8 cm/s with a septal shift may indicate mixed constrictive and restrictive physiology<span class="cite" data-ref="klein2024"></span>, which occurs after radiation therapy or cardiac surgery<span class="cite" data-ref="klein2013"></span>.</li>
+        </ul>
+        <h3>Effusive-constrictive pericarditis</h3>
+        <p>In effusive-constrictive pericarditis, fluid lies between a thickened visceral and parietal pericardium<span class="cite" data-ref="klein2013"></span>, and the visceral layer constricts the heart<span class="cite" data-ref="schulzmenger2025"></span>. It is defined hemodynamically by an RA pressure that does not fall by 50% or to below 10 mmHg after pericardiocentesis<span class="cite" data-ref="schulzmenger2025"></span>. Before drainage, its Doppler findings lie between those of tamponade and constriction<span class="cite" data-ref="klein2024"></span>. <a href="#peri" data-go="peri">Chapter 22</a> shows the effusion and the signs of tamponade.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>Inside a fixed pericardial volume, inspiration shifts the septum toward the LV, lowers mitral E and raises tricuspid E; in expiration the hepatic veins reverse.</li>
+        <li>The Mayo Clinic criteria: a respiratory septal shift with a medial e′ of 9 cm/s or more or a hepatic vein expiratory diastolic reversal ratio of 0.79 or more.</li>
+        <li>The medial e′ is normal or high in constriction, with the lateral e′ below it, and reduced in restrictive cardiomyopathy.</li>
+        <li>Pericardial thickness supports the diagnosis but does not make it: up to 20% of patients with constriction have a normal pericardium.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+</template>
+
+<!-- src/styles.css: the stage height on a phone. It goes after the rule for html[data-ch="lvad"]. -->
+<template data-file="src/styles.css">
+  /* Constrictive pericarditis: the four-chamber view and tissue Doppler above two strips with breathing */
+  html[data-ch="constrict"] .stage { height: min(64vh, 560px); }
+</template>
+
+<!-- video/chapters.js: the chapter video. It stood after the video of hcm. -->
+<template data-file="video/chapters.js">
+  // constriction from a normal pericardium to all three Mayo Clinic criteria, then restrictive
+  // cardiomyopathy to grade 3: a step in the middle of each band
+  constrict: {
+    pane: '2D and Doppler',
+    side: false,
+    quant: { conS: 0.005 },
+    steps: [
+      { set: { conS: 0, conMode: 'cp' }, track: 'Normal', pick: [0, 1], hold: 5 },
+      { set: { conS: 0.35 }, track: 'Thickened', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.58 }, track: 'Constriction', pick: [0, 1], move: 4, hold: 7 },
+      { set: { conS: 0.9 }, track: '3 of 3', pick: [1, 2, 3], move: 4, hold: 7 },
+      { set: { conS: 0.9 }, name: 'Annulus reversus', track: 'Annulus', pick: [4], move: 1, hold: 5 },
+      { set: { conS: 0, conMode: 'rcm' }, name: 'Restrictive cardiomyopathy', track: 'Restriction', line: 'The same slider for restrictive cardiomyopathy: the stiff myocardium, not the pericardium, limits filling.', move: 3, cut: true, hold: 3 },
+      { set: { conS: 0.28 }, track: 'Grade 1', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.57 }, track: 'Grade 2', pick: [0, 1], move: 4, hold: 6 },
+      { set: { conS: 0.92 }, track: 'Grade 3', pick: [1, 2, 3], move: 4, hold: 8 },
+    ],
+  },
+</template>
+</body>
+</html>

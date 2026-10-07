@@ -81,7 +81,7 @@ export const REEL = {
       { set: { mrS: 0.9 }, name: 'Severe mitral regurgitation', pick: [0], move: TWO.move, hold: TWO.hold1 },
     ] } },
     { ch: 'peri', bars: 3, video: { pane: '2D and Doppler', side: false, quant: { periS: 0.005 }, steps: [
-      { set: { periS: 0.04, periCine: true }, name: 'No pericardial effusion', pick: [0], hold: TWO.hold0 },
+      { set: { periMode: 'eff', periS: 0.04, periCine: true }, name: 'No pericardial effusion', pick: [0], hold: TWO.hold0 },
       { set: { periS: 0.85 }, name: 'Tamponade', pick: [0], move: TWO.move, hold: TWO.hold1 },
     ] } },
     { ch: 'amyloid', bars: 3, video: { pane: 'Echocardiographic signs', side: false, quant: { amyS: 0.0025 }, steps: [

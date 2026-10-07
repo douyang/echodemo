@@ -343,16 +343,21 @@ export const VIDEOS = {
       { set: { aorS: 0.8 }, track: 'Significant', pick: [1, 2], move: 4, hold: 8 },
     ],
   },
+  // the effusion from none to tamponade; then, shorter, constriction to all three Mayo Clinic
+  // criteria and restrictive cardiomyopathy at grade 3 (the tour)
   peri: {
     pane: '2D and Doppler',
     side: false,
     quant: { periS: 0.005 },
     steps: [
-      { set: { periS: 0.04, periCine: true }, name: 'No pericardial effusion', track: 'None', pick: [0], hold: 5 },
+      { set: { periMode: 'eff', periS: 0.04, periCine: true }, name: 'No pericardial effusion', track: 'None', pick: [0], hold: 5 },
       { set: { periS: 0.2 }, name: 'Mild pericardial effusion', track: 'Mild', move: 4, hold: 6 },
       { set: { periS: 0.45 }, name: 'Moderate pericardial effusion', track: 'Moderate', move: 4, hold: 6 },
       { set: { periS: 0.64 }, name: 'Severe pericardial effusion', track: 'Severe', pick: [0, 2, 3], move: 4, hold: 6 },
       { set: { periS: 0.85 }, name: 'Tamponade', track: 'Tamponade', pick: [0, 1, 4], move: 4, hold: 7 },
+      { set: { periMode: 'cp', periS: 0.58 }, track: 'Constriction', pick: [0, 1], move: 3, cut: true, hold: 7 },
+      { set: { periS: 0.9 }, track: '3 of 3', pick: [1, 2, 3], move: 4, hold: 7 },
+      { set: { periMode: 'rcm', periS: 0.92 }, track: 'Restrictive CM', pick: [2, 3], move: 3, cut: true, hold: 8 },
     ],
   },
   // hcm: at rest from a normal heart to severe obstruction; back to latent obstruction at rest;
@@ -372,24 +377,6 @@ export const VIDEOS = {
       { set: { hcmProv: 'valsalva' }, name: 'Latent obstruction: the Valsalva strain', track: 'Valsalva', pick: [1, 2], move: 2, hold: 7 },
       { set: { hcmFrame: 'sam' }, name: 'SAM: the leaflet meets the septum', track: 'SAM', pick: [3, 4], move: 2, hold: 6 },
       { set: { hcmS: 1, hcmFrame: 'cine' }, name: 'Severe obstruction with Valsalva', track: 'Severe, Valsalva', pick: [2, 6], move: 4, hold: 7 },
-    ],
-  },
-  // constriction from a normal pericardium to all three Mayo Clinic criteria, then restrictive
-  // cardiomyopathy to grade 3: a step in the middle of each band
-  constrict: {
-    pane: '2D and Doppler',
-    side: false,
-    quant: { conS: 0.005 },
-    steps: [
-      { set: { conS: 0, conMode: 'cp' }, track: 'Normal', pick: [0, 1], hold: 5 },
-      { set: { conS: 0.35 }, track: 'Thickened', pick: [0, 1], move: 4, hold: 6 },
-      { set: { conS: 0.58 }, track: 'Constriction', pick: [0, 1], move: 4, hold: 7 },
-      { set: { conS: 0.9 }, track: '3 of 3', pick: [1, 2, 3], move: 4, hold: 7 },
-      { set: { conS: 0.9 }, name: 'Annulus reversus', track: 'Annulus', pick: [4], move: 1, hold: 5 },
-      { set: { conS: 0, conMode: 'rcm' }, name: 'Restrictive cardiomyopathy', track: 'Restriction', line: 'The same slider for restrictive cardiomyopathy: the stiff myocardium, not the pericardium, limits filling.', move: 3, cut: true, hold: 3 },
-      { set: { conS: 0.28 }, track: 'Grade 1', pick: [0, 1], move: 4, hold: 6 },
-      { set: { conS: 0.57 }, track: 'Grade 2', pick: [0, 1], move: 4, hold: 6 },
-      { set: { conS: 0.92 }, track: 'Grade 3', pick: [1, 2, 3], move: 4, hold: 8 },
     ],
   },
   // 17: the walls thicken; the echo criteria are met; the apex is spared

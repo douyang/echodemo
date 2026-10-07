@@ -30,11 +30,23 @@ export const SHOW_MEASURE = false;
 //     sources in src/refs.js, its heart preset in src/pheno.js and its stage height in src/styles.css.
 // Its chapter video (video/chapters.js) follows this flag.
 export const SHOW_SHOCK = false;
+// Constrictive pericarditis is hidden as a chapter of its own: Pericardial disease (src/ch/peri.js)
+// shows constriction and restrictive cardiomyopathy on its switch, with the figure and the text
+// of src/constriction.js. The page does not load the old chapter's module (src/ch/constrict.js
+// stays in the repo), and the address #constrict opens Pericardial disease on Constriction
+// (src/main.js). To restore the chapter:
+//  1. Set SHOW_CONSTRICT to true. It then comes back after Pericardial disease, in the part Pericardium.
+//  2. Import src/ch/constrict.js in src/chapters.js and add it to BY.
+//  3. Put back the lines in archive/constrict.html: the figure and the article in index.html and its
+//     stage height in src/styles.css.
+//  4. Run node tools/preload.mjs.
+// Its chapter video is in archive/constrict.html too.
+export const SHOW_CONSTRICT = false;
 
 /** The main chapters, in reading order: the numbers 01, 02 ..., the tour, and the chapter bar and its list before B. */
 export const ORDER = [
   'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'tee', 'cycle', 'loop', 'ivc', 'pressure',
-  'eject', 'fill', 'segments', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'constrict', 'hcm', 'amyloid', ...(SHOW_SHOCK ? ['shock'] : []), ...(SHOW_MEASURE ? ['measure'] : []), 'ai', ...(SHOW_REPORT ? ['report'] : []),
+  'eject', 'fill', 'segments', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', ...(SHOW_CONSTRICT ? ['constrict'] : []), 'hcm', 'amyloid', ...(SHOW_SHOCK ? ['shock'] : []), ...(SHOW_MEASURE ? ['measure'] : []), 'ai', ...(SHOW_REPORT ? ['report'] : []),
 ];
 
 /**
