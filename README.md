@@ -548,6 +548,11 @@ node tools/render-video.mjs --reel --stills=7,42.5             # PNG stills at t
 
 Each entry keeps the chapter numbers of the day it was written.
 
+- 08 Inferior vena cava cut to 1,100 words or fewer. It is the last chapter of the entry "Chapter text cut to 1,100 words or fewer" below, and it waited for the change to its subcostal view. The chapter holds 1,040 words (1,539 before). Its dek holds 50 words (66 before), and its first sentence is unchanged, so the title card of its video does not change. Its key points are 4 items of 95 words (6 items of 120 words before). All seven sections stay, each condensed. Checks:
+  - That entry's script, against main `c95b724`: the cap, the dek, the key points and the numbers pass, and no other chapter changed.
+  - The chapter at 1440 × 900 and 390 × 844: no page error, no missing source, no sideways scroll, every citation numbered, and the cross-links show the right numbers.
+  - The text was read against the 2025 ASE guideline (Mukherjee 2025). The three values with their ranges and cut-offs, the rule for the mixed patterns, the 20 mmHg pattern, the 20% cut-off with quiet breathing, the rules under ventilation, S/(S + D) below 55% and the single value in the report all match. The figure's numbers in the text (the hepatic vein 0.9 cm and the caliper 1.8 cm from the RA) match `src/ivc2d.js`.
+  - jue1992 is no longer cited on the page, because its only item was cut. It stays in `src/refs.js`.
 - Views: the subcostal IVC view shows more of the heart, after a request that it look closer to the subcostal four-chamber view. The assessment, then the checks:
   - ASE's view (Mitchell 2019, Section IV.D.2 and Table 2, row 2.25) turns the four-chamber view about 90° counterclockwise and points it at the liver. It shows the IVC in its length for several centimeters as it enters the RA. Its figure shows the liver, the IVC and the RA at the edge of the sector. The guideline names no other chamber in this view.
   - The old plane held the body's long axis and lay 8° off the IVC's axis. The heart in it was the RA with an arc of the tricuspid valve.
