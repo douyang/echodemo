@@ -91,7 +91,7 @@ export const REEL = {
     { ch: 'ai', bars: 4, video: { pane: 'EchoPrime and EchoNet-Measurements', side: false, discrete: ['aiSec', 'aiStep', 'aiRow'], steps: [
       { set: { aiTab: 'steps', aiStep: 3, aiSec: 0, aiRow: 0, aiTwo: true }, hold: 1 },
       { set: { aiStep: 4 }, move: 0.75, hold: 1 },
-      { set: { aiStep: 6, aiRow: 2 }, move: 0.5, hold: 0.75 },
+      { set: { aiStep: 6, aiRow: 1 }, move: 0.5, hold: 0.75 },
     ] } },
   ],
 };
