@@ -1,5 +1,5 @@
 // Parametric views of the IVC for the IVC chapter, drawn to scale in cm as the views of echo2d.js are:
-// the subcostal long axis of the IVC with the hepatic vein and the RA, its M-mode, hepatic vein
+// the subcostal long axis of the IVC with the hepatic vein, the RA and the RV, its M-mode, hepatic vein
 // PW Doppler, and the IVC and the abdominal aorta side by side. One breathing model (dAt) drives
 // the 2D view, the M-mode and the IVC of the pair, so all three show the same diameter at the
 // same moment. Echogenicity and speckle come from bmode.js.
@@ -140,7 +140,8 @@ function image(ctx, F, items, key, t) {
 // ---------------------------------------------------------------- the subcostal long axis
 // The IVC runs through the liver, almost square to the beam, and opens into the RA at xJ; the
 // hepatic vein joins it from the front, 0.9 cm from the RA; the diaphragm curves round the
-// junction. The site of measurement is 1.8 cm from the RA (1 to 2 cm, Mitchell 2019), just
+// junction; the RV lies above the RA, toward the probe, with the tricuspid valve between them.
+// The site of measurement is 1.8 cm from the RA (1 to 2 cm, Mitchell 2019), just
 // below the hepatic vein (about 1 cm, Assavapokee 2024), and near the middle of the sector, so
 // that the M-mode beam crosses the IVC at a right angle.
 const SC_GEO = { depth: 15, deg: 76, near: 1.6, xJ: 1.3, site: 1.8, hvIn: 0.9 };
@@ -154,6 +155,23 @@ function subcostalItems(d, hvW, G = SC_GEO) {
   const ivc = tube(line, flare);
   const raC = [xJ + 2.4, axisY(xJ) + 0.5];
   const ra = ellipse(raC, 2.5, 2.15), raOut = ellipse(raC, 2.72, 2.36);
+  // the RV above the RA, toward the probe, with the tricuspid valve between them, as the mesh
+  // view shows them (echo.js sc_ivc: the plane turns toward the subcostal four-chamber view)
+  const rvC = [raC[0] - 0.4, raC[1] - 3.3];
+  const rv = ellipse(rvC, 1.9, 1.55), rvOut = ellipse(rvC, 2.15, 1.8);
+  // the annulus: the ends of the RA's outline inside the RV; each leaflet opens into the RV. The
+  // walls' bright lines stop at the annulus, so none crosses the orifice
+  const inRv = (p) => ((p[0] - rvC[0]) / 1.9) ** 2 + ((p[1] - rvC[1]) / 1.55) ** 2 < 1;
+  const inRa = (p) => ((p[0] - raC[0]) / 2.5) ** 2 + ((p[1] - raC[1]) / 2.15) ** 2 < 1;
+  const arc = ellipse(raC, 2.5, 2.15, 360).filter(inRv).sort((a, b) => a[0] - b[0]);
+  const leaflets = arc.length > 1 ? [arc[0], arc[arc.length - 1]].map((h) => [h, add(h, mul(unit(sub(rvC, h)), 1.05))]) : [];
+  const outside = (P, inside) => {
+    // the points outside, in order from the first point past the part inside
+    const n = P.length, i0 = P.findIndex((p, i) => inside(p) && !inside(P[(i + 1) % n]));
+    if (i0 < 0) return P;
+    return [...P.slice(i0 + 1), ...P.slice(0, i0 + 1)].filter((p) => !inside(p));
+  };
+  const raWall = outside(ellipse(raC, 2.5, 2.15, 96), inRv), rvWall = outside(ellipse(rvC, 1.9, 1.55, 96), inRa);
   // the diaphragm: a bright band round the junction, liver on its left (caudal) side
   const dia = spline([[-1.6, 1.7], [-0.2, 3.1], [0.8, 4.9], [1.25, 6.8], [1.45, 8.7], [1.45, 10.4], [1.1, 12.3], [0.3, 14.3], [-0.6, 16.2]], 10);
   const liver = [[-14, 1.75], [-1.7, 1.75], ...dia.slice(1), [-0.6, 17], [-14, 17]];
@@ -166,15 +184,16 @@ function subcostalItems(d, hvW, G = SC_GEO) {
   const items = [
     { polys: [liver], e: DB.liver },
     { polys: [heartSide], e: -12 },
-    { polys: [raOut], e: DB.myo - 4 },
+    { polys: [raOut, rvOut], e: DB.myo - 4 },
     { lines: [dia], e: 7, w: 0.2 },
-    { polys: [ra], e: DB.blood, blood: true },
+    { polys: [ra, rv], e: DB.blood, blood: true },
     { polys: [ivc.poly, hv.poly], e: DB.blood, blood: true },
     // the walls of the IVC: thin, bright where the beam meets them square
     { borders: [sliceX(ivc.a, -20, xJ - 0.3), sliceX(ivc.b, -20, gapA), sliceX(ivc.b, gapB, xJ - 0.2)], e: 0, spec: 8, w: 0.07 },
-    { borders: [ra], e: DB.myo, spec: 6 },
+    { borders: [raWall, rvWall], e: DB.myo, spec: 6 },
+    { lines: leaflets, e: DB.valve, w: 0.07 },
   ];
-  return { items, ivc, ra, raC, dia, hv, hvLine, line };
+  return { items, ivc, ra, raC, rvC, dia, hv, hvLine, line };
 }
 
 /**
@@ -227,6 +246,7 @@ export function drawSubcostal(ctx, box, p, o = {}) {
   const lab2 = narrow ? 9.5 : 11;
   tag(ctx, F, 'IVC', [-3.6, axisY(-3.6)], { size: lab2 });
   tag(ctx, F, 'RA', S.raC, { size: lab2 });
+  tag(ctx, F, 'RV', S.rvC, { size: lab2 });
   tag(ctx, F, narrow ? 'HV' : 'hepatic vein', S.hvLine[Math.round(S.hvLine.length * 0.62)], { size: lab2 });
   tag(ctx, F, 'liver', [-3.2, 11.8], { size: lab2 });
   if (!narrow) tag(ctx, F, 'diaphragm', [2.9, 3.6], { size: lab2 });

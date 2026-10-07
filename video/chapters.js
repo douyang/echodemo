@@ -530,10 +530,12 @@ export const VIDEOS = {
       ],
     },
   } : {}),
-  // AI interpretation and measurement: the chapter's tour, steps 1 to 7 on the normal heart, one
-  // row of the figure at a time (the video's figure box is one row high). Sort, encode, weigh the
-  // LV section and then the aortic valve section, the task heads, the 18 measurements, the anchor,
-  // which returns the septum's caliper from a second peak, and the report's LV and aortic valve.
+  // AI interpretation and measurement: the chapter's tour, steps 1 to 7 on the normal heart. The
+  // video's figure box is too short for the three rows, so the figure shows one of its two views:
+  // EchoPrime for steps 1 to 4, then the measurements, the anchor and the report in one view for
+  // steps 5 to 7. The steps sort, encode, and weigh the LV section and then the aortic valve
+  // section. The task heads, the 18 measurements, the anchor and the report's LV and aortic valve
+  // follow. The anchor returns the septum's caliper from a second peak.
   // No step sets another heart: the chapter cuts its videos and tiles for the heart that the
   // page's wait (ready()) sees, and the captions leave the last step's heart there
   ai: {
@@ -547,7 +549,7 @@ export const VIDEOS = {
       { set: { aiSec: 7 }, track: 'Aortic valve', move: 2, hold: 6 },
       { set: { aiStep: 4, aiSec: 0 }, track: 'Answer', move: 2, hold: 6 },
       { set: { aiStep: 5, aiRow: 1 }, track: 'Measure', move: 3, hold: 7 },
-      { set: { aiStep: 6, aiRow: 2 }, track: 'Anchor', move: 3, hold: 8 },
+      { set: { aiStep: 6 }, track: 'Anchor', move: 3, hold: 8 },
       { set: { aiStep: 7 }, track: 'Report', pick: [0, 1], move: 2, hold: 7 },
       { set: { aiSec: 7 }, name: 'Report: the aortic valve', track: 'Report: AV', move: 2, hold: 7 },
     ],

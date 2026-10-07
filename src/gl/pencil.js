@@ -109,8 +109,8 @@ vec4 layerColor(vec2 uv, vec2 p, vec2 wob, out float cover, out float depth, out
   depth = texture2D(tDepth2, uv).r;
   float cap = step(0.9, d.b);
   float e = edges(tNormal2, tDepth2, uv + wob, 1.0 * uDpr, 1.0);
-  e = max(e, 0.55 * edges(tNormal2, tDepth2, uv - wob * 0.6, 1.9 * uDpr, 1.0));
-  e *= 0.72 + 0.28 * noise(p * 0.35 + uBoil);
+  e = max(e, mix(0.55, 0.30, uDark) * edges(tNormal2, tDepth2, uv - wob * 0.6, 1.9 * uDpr, 1.0));
+  e *= (0.72 + 0.28 * noise(p * 0.35 + uBoil)) * mix(1.0, 0.85, uDark);
   float t = mix(d.r, 1.0 - d.r, uDark);
   float ink = 0.0;
   if (uDark < 0.5) {
@@ -118,12 +118,12 @@ vec4 layerColor(vec2 uv, vec2 p, vec2 wob, out float cover, out float depth, out
     ink = max(ink, 0.55 * hatch(p, -0.62, 5.8, 0.9, 2.0) * smoothstep(0.55, 0.42, t));
     ink = max(ink, 0.60 * hatch(p, 0.18, 5.2, 0.9, 3.0) * smoothstep(0.38, 0.26, t));
   } else {
-    ink = max(ink, 0.42 * hatch(p, 0.72, 6.5, 0.9, 1.0) * smoothstep(0.30, 0.48, 1.0 - t));
-    ink = max(ink, 0.50 * hatch(p, -0.62, 5.8, 0.9, 2.0) * smoothstep(0.50, 0.66, 1.0 - t));
+    ink = max(ink, 0.14 * hatch(p, 1.05, 5.6, 1.2, 4.0) * smoothstep(0.80, 0.93, 1.0 - t));
   }
   ink *= cover * (1.0 - cap);
-  float lift = (1.0 - uDark) * 0.55 * hatch(p, 1.05, 5.6, 1.2, 4.0) * smoothstep(0.80, 0.93, d.r) * cover * (1.0 - cap);
-  ink = max(ink, cap * 0.36 * hatch(p, -0.785, 7.4, 0.85, 6.0));
+  float lift = (1.0 - uDark) * 0.55 * hatch(p, 1.05, 5.6, 1.2, 4.0) * smoothstep(0.80, 0.93, d.r) * cover * (1.0 - cap)
+    + uDark * 0.05 * cap;
+  ink = max(ink, cap * mix(0.36, 0.22, uDark) * hatch(p, -0.785, 7.4, 0.85, 6.0));
   ink = max(ink, e);
   vec4 col = over(vec4(0.0), uLift, clamp(lift, 0.0, 1.0));
   return over(col, uInk, clamp(ink, 0.0, 1.0) * 0.92);
@@ -157,10 +157,13 @@ void main() {
   }
 
   float e = edges(tNormal, tDepth, uv + wob, 1.0 * uDpr, 1.0);
-  e = max(e, 0.55 * edges(tNormal, tDepth, uv - wob * 0.6, 1.9 * uDpr, 1.0));
-  e *= 0.72 + 0.28 * noise(p * 0.35 + uBoil);
+  e = max(e, mix(0.55, 0.30, uDark) * edges(tNormal, tDepth, uv - wob * 0.6, 1.9 * uDpr, 1.0));
+  e *= (0.72 + 0.28 * noise(p * 0.35 + uBoil)) * mix(1.0, 0.85, uDark);
 
-  // Shade: graphite where dark on paper; chalk where lit on slate.
+  // Shade. On paper: graphite hatching in the shadows; the lit surface stays bare paper with a
+  // white lift on its highlights. On slate the lit surface stays bare slate in the same way: only
+  // the highlights take a faint chalk sheen, the lift's hatch, as chalk lines read far stronger on
+  // slate than white lines on paper. Light-on-dark contours read heavier: a thinner second stroke.
   float t = mix(tone, 1.0 - tone, uDark);
   float ink = 0.0;
   if (uDark < 0.5) {
@@ -168,14 +171,15 @@ void main() {
     ink = max(ink, 0.55 * hatch(p, -0.62, 5.8, 0.9, 2.0) * smoothstep(0.55, 0.42, t));
     ink = max(ink, 0.60 * hatch(p, 0.18, 5.2, 0.9, 3.0) * smoothstep(0.38, 0.26, t));
   } else {
-    ink = max(ink, 0.42 * hatch(p, 0.72, 6.5, 0.9, 1.0) * smoothstep(0.30, 0.48, 1.0 - t));
-    ink = max(ink, 0.50 * hatch(p, -0.62, 5.8, 0.9, 2.0) * smoothstep(0.50, 0.66, 1.0 - t));
+    ink = max(ink, 0.14 * hatch(p, 1.05, 5.6, 1.2, 4.0) * smoothstep(0.80, 0.93, 1.0 - t));
   }
   ink *= cover * (1.0 - cap);
-  float lift = (1.0 - uDark) * 0.55 * hatch(p, 1.05, 5.6, 1.2, 4.0) * smoothstep(0.80, 0.93, tone) * cover * (1.0 - cap);
+  float lift = (1.0 - uDark) * 0.55 * hatch(p, 1.05, 5.6, 1.2, 4.0) * smoothstep(0.80, 0.93, tone) * cover * (1.0 - cap)
+    + uDark * 0.05 * cap;
 
-  // Cut myocardium: architectural section hatch, amyloid stipple in Congo red.
-  float sec = cap * 0.5 * hatch(p, 0.785, 4.6, 0.85, 5.0);
+  // Cut myocardium: architectural section hatch (lighter in chalk, on a faint chalk ground, the
+  // lift above), amyloid stipple in Congo red.
+  float sec = cap * mix(0.5, 0.3, uDark) * hatch(p, 0.785, 4.6, 0.85, 5.0);
   float grain = hash(floor(p / 1.4));
   float clump = smoothstep(0.35, 0.7, noise(p * 0.06));
   float red = cap * uAmyloid * step(1.0 - 0.28 * uAmyloid * clump, grain) * (0.75 + 0.25 * noise(p));

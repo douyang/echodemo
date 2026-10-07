@@ -240,14 +240,35 @@ export function viewGeometry(anat, key) {
       r = perp(Z.clone().negate(), d);
       break;
     }
-    case 'sc_ivc': case 'sc_aorta': {
-      // long axis of the IVC as it runs through the liver into the right atrium, the head on
-      // screen-right; a small angle to the patient's left finds the aorta behind the liver
-      const P = spec.plane === 'sc_ivc' ? ABD.ivc.pts : ABD.aorta.pts;
-      const A = V3(...P[0]), B = V3(...P[2]);
-      const probe = SUB.clone().addScaledVector(BODY.left, spec.plane === 'sc_ivc' ? -1.2 : 0.6);
+    case 'sc_ivc': {
+      // The IVC's long axis as it runs through the liver into the right atrium, the head on
+      // screen-right. The plane holds the IVC's axis from its RA end to 5 cm down it, so the
+      // vessel lies in its length and its diameter measures square to it. The plane through that
+      // axis and the probe point turns 20 degrees about the axis toward the subcostal
+      // four-chamber view: its near side moves to the patient's left. It then lies 49 degrees
+      // from the four-chamber plane, the least of any plane through the IVC's axis. The tricuspid
+      // valve and the RV show above the RA, and the middle hepatic vein lies in the plane for 3.9
+      // of its 4.8 cm. The beam aims 24 degrees toward the patient's right, toward the liver.
+      // Before, the plane held the body's long axis and lay 8 degrees off the IVC's axis.
+      const A = V3(...ABD.ivc.pts[0]), B = V3(...ABD.ivc.pts[2]), u = A.clone().sub(B).normalize();
+      const probe = SUB.clone().addScaledVector(BODY.left, -1.2);
       const n0 = new THREE.Vector3().crossVectors(A.clone().sub(probe), B.clone().sub(probe)).normalize();
-      subcostal(spec.plane === 'sc_ivc' ? A.clone().lerp(B, 0.2).lerp(ra, 0.12) : A.clone().lerp(B, 0.62), n0, BODY.sup);
+      if (n0.dot(BODY.left) < 0) n0.negate();
+      n0.applyAxisAngle(u, THREE.MathUtils.degToRad(20));
+      const target = onPlane(A.clone().lerp(B, 0.2).lerp(ra, 0.12), A, n0);
+      d = target.clone().sub(onPlane(SUB, A, n0)).normalize();
+      r = n0.clone().cross(d).normalize();
+      if (r.dot(BODY.sup) < 0) r.negate();
+      O = beneath(target, d, 1.6);
+      break;
+    }
+    case 'sc_aorta': {
+      // the abdominal aorta's long axis behind the liver, the head on screen-right: the plane
+      // through its axis and a probe 0.6 cm to the patient's left of the subcostal point
+      const A = V3(...ABD.aorta.pts[0]), B = V3(...ABD.aorta.pts[2]);
+      const probe = SUB.clone().addScaledVector(BODY.left, 0.6);
+      const n0 = new THREE.Vector3().crossVectors(A.clone().sub(probe), B.clone().sub(probe)).normalize();
+      subcostal(A.clone().lerp(B, 0.62), n0, BODY.sup);
       break;
     }
     case 'ssn': case 'ssn_sax': {

@@ -1159,13 +1159,14 @@ function resultBox(sh, t, b, R, narrow) {
 }
 
 // ---------------------------------------------------------------- the seven steps
-let stepsHit = [];        // the figure's hit boxes: a section, or a row of a small figure
-let narrowNow = null;     // the figure shows one row (aiRow): its row switch shows
+let stepsHit = [];        // the figure's hit boxes: a section, or a view of a small figure
+let narrowNow = null;     // the figure shows one of its two views (aiRow): its view switch shows
 const stepOf = (s) => clamp(Math.round(s?.aiStep ?? 0), 0, 7);
-const rowOf = (s) => clamp(Math.round(s?.aiRow ?? 0), 0, 2);
+/** The view of a small figure: 0, EchoPrime (1 to 4); 1, the measurements, the anchor and the report (5 to 7). */
+const rowOf = (s) => clamp(Math.round(s?.aiRow ?? 0), 0, 1);
 /**
- * The controls of the view shown (data-ai-tab: the views each serves); the row switch only while
- * the figure shows one row (data-ai-narrow).
+ * The controls of the view shown (data-ai-tab: the views each serves). The view switch shows only
+ * with a figure of two views (data-ai-narrow).
  */
 function showControls() {
   const tab = tabOf(st);
@@ -1315,7 +1316,7 @@ function stepsText(s, cite) {
 }
 
 // ---------------------------------------------------------------- the tour
-// Steps 1 to 7, each lit on its row: the left ventricle section, the aortic valve section at step 3
+// Steps 1 to 7, each lit in its view: the left ventricle section, the aortic valve section at step 3
 // and at the end. The septum's map keeps its second peak, so the anchor moves its caliper.
 const TOUR = [
   [0, 1, 0], [4.5, 2, 0], [9, 3, 0], [12.5, 3, 7], [16, 4, 0], [20.5, 5, 0], [25, 6, 0], [30, 7, 0], [34.5, 7, 7],
@@ -1343,7 +1344,7 @@ export default {
       return [(e.clientX - r.left) / z, (e.clientY - r.top) / z];
     };
     // the seven steps: a click on a column of step 3 or 4, a tile of step 5 or a sentence of step
-    // 7 chooses its section; a tab of a small figure, its row
+    // 7 chooses its section; a tab of a small figure, its view
     const stepAt = (e) => {
       if (!st || tabOf(st) !== 'steps') return null;
       const [x, y] = at(e);
@@ -1376,7 +1377,7 @@ export default {
     st = state;
     setState = set;
     bind(heartWanted, () => { redraw(); pump(); }, () => (cache.state === 'ready' ? cache.ev : null));
-    // the controls of the view shown (data-ai-tab); the row switch with a figure of one row
+    // the controls of the view shown (data-ai-tab); the view switch with a figure of two views
     showControls();
     subscribe?.((s, ch) => { if ('aiTab' in ch) showControls(); });
   },
@@ -1396,7 +1397,7 @@ export default {
   anim(dt) {
     if (!reducedMotion) clock += dt;
     if (!complete() && open) pump();
-    // the videos play where they show: the earlier Study view, or the first row of the steps
+    // the videos play where they show: the earlier Study view, or EchoPrime's row of the steps
     const tab = st ? tabOf(st) : 'steps';
     if (tab === 'study' || (tab === 'steps' && (narrowNow === false || rowOf(st) === 0))) {
       const f = frameNow();

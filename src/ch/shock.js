@@ -50,10 +50,11 @@ const frameOf = (s) => (s && ['cine', 'ed', 'ms'].includes(s[FRAME]) ? s[FRAME] 
 //     cycle the RA wall stays inverted; rvCol: the RV free wall's early-diastolic collapse (0-1);
 //     swing: the heart's swing in the fluid (cm)
 //   ivc: the IVC's caliber at end-expiration, a factor on the model's (echo.js setIvc); coll: its
-//     collapse with a sniff (0-1), set so that the image's collapse rises along the track
+//     collapse with a sniff (0-1). The IVC view's plane holds the vessel's axis, so the image shows
+//     this collapse; it rises along the hypovolemic and distributive tracks
 //   hr: the heart rate (/min); vti: the LVOT VTI (cm)
 const STOPS = [0, 0.25, 0.5, 0.75, 1];
-const BASE = { size: 0, ef: 62, under: 0, rvg: 0, rag: 0, eiD: 1, eiS: 1, gB: 1, gM: 1, gA: 1, eff: 0, raCol: 0, rvCol: 0, swing: 0, ivc: 0.85, coll: 0.55, hr: 70, vti: 18 };
+const BASE = { size: 0, ef: 62, under: 0, rvg: 0, rag: 0, eiD: 1, eiS: 1, gB: 1, gM: 1, gA: 1, eff: 0, raCol: 0, rvCol: 0, swing: 0, ivc: 0.85, coll: 0.582, hr: 70, vti: 18 };
 const at = (v) => STOPS.map(() => v);
 function track(over) {
   const t = {};
@@ -66,14 +67,14 @@ const TRACKS = {
   // follows both walls, so no space opens round the heart
   hypo: track({
     size: [0, -0.2, -0.4, -0.6, -0.75], rvg: [0, -0.15, -0.3, -0.45, -0.6], ef: [62, 66, 71, 75, 78],
-    ivc: [0.85, 0.75, 0.62, 0.52, 0.45], coll: [0.55, 0.57, 0.59, 0.595, 0.585],
+    ivc: [0.85, 0.75, 0.62, 0.52, 0.45], coll: [0.582, 0.616, 0.663, 0.697, 0.719],
     hr: [70, 85, 100, 113, 130], vti: [18, 14, 11, 8.4, 6.5],
   }),
   // Cardiogenic: large ventricles and poor contractility (Vincent 2013); a large IVC that
   // collapses little
   cardio: track({
     size: [0, 0.25, 0.5, 0.75, 1.0], ef: [62, 48, 36, 27, 20],
-    ivc: [0.85, 0.95, 1.05, 1.13, 1.2], coll: [0.55, 0.45, 0.32, 0.22, 0.15],
+    ivc: [0.85, 0.95, 1.05, 1.13, 1.2], coll: [0.582, 0.467, 0.331, 0.227, 0.155],
     hr: [70, 80, 93, 104, 115], vti: [18, 14, 11, 8.5, 6.5],
   }),
   // Obstructive, tamponade: the effusion grows, then the RA and RV collapse in their relaxation,
@@ -82,7 +83,7 @@ const TRACKS = {
   tamp: track({
     eff: [0, 6, 13, 20, 25], under: [0, 0, 0.1, 0.6, 1], raCol: [0, 0, 0.12, 0.38, 0.5], rvCol: [0, 0, 0, 0.5, 1], swing: [0, 0, 0.1, 0.45, 0.7],
     size: [0, 0, 0, -0.1, -0.2], ef: [62, 63, 65, 68, 70],
-    ivc: [0.85, 0.88, 0.98, 1.1, 1.2], coll: [0.55, 0.52, 0.42, 0.25, 0.12],
+    ivc: [0.85, 0.88, 0.98, 1.1, 1.2], coll: [0.582, 0.547, 0.434, 0.257, 0.123],
     hr: [70, 74, 85, 102, 120], vti: [18, 17, 12.5, 8.5, 6.5],
   }),
   // Obstructive, acute pulmonary embolism: the RV dilates past the LV, the septum flattens, the mid
@@ -92,14 +93,14 @@ const TRACKS = {
     rvg: [0, 0.4, 0.8, 1.2, 1.5], rag: [0, 0.05, 0.1, 0.2, 0.3], eiD: [1, 1.03, 1.08, 1.15, 1.2], eiS: [1, 1.08, 1.2, 1.32, 1.4],
     gB: [1, 0.97, 0.82, 0.68, 0.6], gM: [1, 0.85, 0.55, 0.28, 0],
     size: [0, -0.1, -0.2, -0.3, -0.4], ef: [62, 64, 66, 68, 70],
-    ivc: [0.85, 0.95, 1.05, 1.12, 1.18], coll: [0.55, 0.45, 0.35, 0.25, 0.2],
+    ivc: [0.85, 0.95, 1.05, 1.12, 1.18], coll: [0.582, 0.466, 0.361, 0.257, 0.206],
     hr: [70, 82, 95, 108, 120], vti: [18, 15.5, 12.5, 9.5, 7],
   }),
   // Distributive: normal chambers with preserved, here high, contractility, and a high cardiac
   // output (Vincent 2013); a normal or small IVC that collapses
   dist: track({
     size: [0, 0, -0.05, -0.1, -0.15], ef: [62, 66, 70, 74, 78],
-    ivc: [0.85, 0.8, 0.75, 0.7, 0.65], coll: [0.55, 0.556, 0.575, 0.59, 0.61],
+    ivc: [0.85, 0.8, 0.75, 0.7, 0.65], coll: [0.582, 0.595, 0.626, 0.653, 0.687],
     hr: [70, 80, 90, 100, 110], vti: [18, 19, 20, 20.5, 21],
   }),
 };
