@@ -507,7 +507,7 @@ const TITLES = {
   7: ['Report', ['Both models, one report']],
 };
 /** The title of the one card of both bands. */
-const TITLE_BOTH = ['Measure', ['EchoNet-Measurements · 17 models', '17 models']];
+const TITLE_BOTH = ['Measure', ['EchoNet-Measurements · 18 measurements', '18 measurements']];
 /**
  * A card: its fill, its frame when lit, its number, title and subtitle. Returns the box under the
  * header. A compact card (a phone, a short box) has its number and title in one line. Its
