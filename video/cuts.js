@@ -64,7 +64,7 @@ const SHOWS = {
   a2c: 'Left ventricle · left atrium · mitral valve · anterior and inferior walls · apex',
   a3c: 'Left ventricle · left atrium · aorta · mitral valve · anteroseptal and inferolateral walls · apex',
   sc4c: 'Liver · right ventricle · right atrium · left ventricle · left atrium · atrial septum',
-  sc_ivc: 'Liver · inferior vena cava · hepatic vein · right atrium',
+  sc_ivc: 'Liver · inferior vena cava · hepatic vein · right atrium · tricuspid valve · right ventricle',
   sc_aorta: 'Liver · abdominal aorta · celiac trunk · superior mesenteric artery',
   ssn: 'Ascending aorta · aortic arch · descending aorta · right pulmonary artery',
   ssn_sax: 'Aortic arch · right pulmonary artery · left atrium · superior vena cava',
