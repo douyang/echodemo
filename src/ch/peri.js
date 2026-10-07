@@ -252,10 +252,13 @@ function drawEffusion(sh, t) {
   const m = model(st[KEY]);
   const u = (clock.ms % STRIP) / STRIP;
   if (W < 700) {
-    const [a, b] = cols({ x: 6, y: 6, w: W - 12, h: H - 12 }, [1.25, 1], 8);
+    // a phone: the four-chamber view and the IVC over the two inflow strips, in the grid of the
+    // constriction figure, as tall
+    const [r1, r2, r3] = rows({ x: 6, y: 6, w: W - 12, h: H - 12 }, [1.3, 0.7, 0.7], 8);
+    const [a, b] = cols(r1, [1.25, 1], 8);
     a4c(ctx, a, m);
-    const [p1, p2] = rows(b, [1, 1], 8);
-    for (const bx of [inflowPW(ctx, p1, m, 'mv'), inflowPW(ctx, p2, m, 'tv')]) cursor(ctx, bx, u);
+    drawIVC(ctx, b, { d: m.ivc, collapse: m.coll }, { title: fit(b.w, `IVC · RAP est. ${m.rapIvc} mmHg`, `IVC · RAP ${m.rapIvc}`) });
+    for (const bx of [inflowPW(ctx, r2, m, 'mv'), inflowPW(ctx, r3, m, 'tv')]) cursor(ctx, bx, u);
     return;
   }
   const colL = { x: 16, y: 36, w: W * 0.45 - 16, h: H - 48 };
