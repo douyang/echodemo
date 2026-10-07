@@ -12,8 +12,9 @@
 // Doppler values of ch/measure.js), and its range is that value ± BAND. The words of the report
 // are the site's own report for the heart (ch/report.js). Neither model ran on these images.
 //
-// A box of 840 × 650 px or more shows the three rows; a smaller one shows one row (aiRow), with
-// tabs at the top. Every text is 9.5 px or larger (9 px for a video's view on a phone).
+// A box of 840 × 650 px or more shows the three rows. A smaller one shows one of two views (aiRow),
+// with tabs at the top: EchoPrime (1 to 4), or the measurements with the anchor and the report (5
+// to 7). Every text is 9.5 px or larger (9 px for a video's view on a phone).
 import { MONO, SANS, clamp, rng } from './sketch.js';
 import { SC, spectral } from './scope.js';
 import { cycleAt, RR } from './cyclemodel.js';
@@ -397,9 +398,15 @@ function cutTile(ev, m, f) {
 // ---------------------------------------------------------------- layout
 const PAD = 6, GAP = 12;
 const HEAD = 42;            // a card's header: its number, title and subtitle
+const HEAD_C = 28;          // a compact card's header (a phone, a short box): its number and title in one line
 const IN = 10;              // a card's inner margin
-/** The layout of the figure in a box W × H: all three rows, or the row asked for. */
-export function layoutOf(W, H, row) {
+const BANDS = 0.46;         // the bands' share of the height in the second view, as in the three rows
+/**
+ * The layout of the figure in a box W × H: all three rows, or one of two views. View 0 is
+ * EchoPrime. View 1 is the measurements, the anchor and the report (viewFive): sh measures its
+ * text.
+ */
+export function layoutOf(W, H, row, sh) {
   const all = W >= 840 && H >= 650;
   if (all) {
     const cw = (W - 2 * PAD - 3 * GAP) / 4, bw = (W - 2 * PAD - GAP) / 2;
@@ -414,41 +421,79 @@ export function layoutOf(W, H, row) {
     };
     return { all: true, W, H, P, rows: [0, 1, 2], link: { y0: PAD + h1, y1: y2 } };
   }
-  // one row: tabs across the top, the row's panels under them
+  // one view: tabs across the top, the view's panels under them
   const tabs = { x: PAD, y: PAD, w: W - 2 * PAD, h: 26 };
   const box = { x: PAD, y: tabs.y + tabs.h + 6, w: W - 2 * PAD, h: H - tabs.h - 6 - 2 * PAD };
-  const r = clamp(Math.round(row ?? 0), 0, 2), P = {};
+  const r = clamp(Math.round(row ?? 0), 0, 1), P = {};
   const g = W < 520 ? 8 : GAP;
   let foot = null;
-  if (r === 0) {
-    // the links to the other rows, under this one: one line, or two on a narrow figure
-    const fh = W < 700 ? 34 : 18;
-    foot = { x: box.x, y: box.y + box.h - fh, w: box.w, h: fh };
-    box.h -= fh + 4;
-    if (box.w / box.h > 1.6) {
-      const w = (box.w - 3 * g) / 4;
-      [1, 2, 3, 4].forEach((k, i) => { P[k] = { x: box.x + i * (w + g), y: box.y, w, h: box.h }; });
-    } else {
-      const w = (box.w - g) / 2, h = (box.h - g) / 2;
-      [1, 2, 3, 4].forEach((k, i) => { P[k] = { x: box.x + (i % 2) * (w + g), y: box.y + Math.floor(i / 2) * (h + g), w, h }; });
-    }
+  if (r === 1) return { all: false, W, H, rows: [r], tabs, row: r, foot, ...viewFive(sh, box, g) };
+  // the links to the other view, under this one: one line, or two on a narrow figure
+  const fh = W < 700 ? 34 : 18;
+  foot = { x: box.x, y: box.y + box.h - fh, w: box.w, h: fh };
+  box.h -= fh + 4;
+  if (box.w / box.h > 1.6) {
+    const w = (box.w - 3 * g) / 4;
+    [1, 2, 3, 4].forEach((k, i) => { P[k] = { x: box.x + i * (w + g), y: box.y, w, h: box.h }; });
   } else {
-    const side = box.w / box.h > 1.3, [a, b] = r === 1 ? [5, 5.5] : [6, 7];
-    if (side) {
-      const w = (box.w - g) / 2;
-      P[a] = { x: box.x, y: box.y, w, h: box.h };
-      P[b] = { x: box.x + w + g, y: box.y, w, h: box.h };
-    } else {
-      // stacked: the anchor takes what its lines need, the report the rest
-      const ha = r === 1 ? (box.h - g) / 2 : clamp(HEAD + 34 + 6 * 24, box.h * 0.36, box.h * 0.46);
-      P[a] = { x: box.x, y: box.y, w: box.w, h: ha };
-      P[b] = { x: box.x, y: box.y + ha + g, w: box.w, h: box.h - ha - g };
-    }
+    const w = (box.w - g) / 2, h = (box.h - g) / 2;
+    [1, 2, 3, 4].forEach((k, i) => { P[k] = { x: box.x + (i % 2) * (w + g), y: box.y + Math.floor(i / 2) * (h + g), w, h }; });
   }
   return { all: false, W, H, P, rows: [r], tabs, row: r, foot };
 }
-/** The row of each step: 1 to 4 EchoPrime, 5 the measurements, 6 and 7 the anchor and the report. */
-export const rowOfStep = (k) => (k >= 6 ? 2 : k === 5 ? 1 : 0);
+/**
+ * The cards of view 1 in box, in one of two forms. In a box 600 px wide or more, the bands can sit
+ * side by side, the anchor under the B-mode band and the report under the Doppler band. Or one
+ * card holds both bands across the box, with the anchor and the report side by side under it.
+ * The first try keeps the bands' share of the three rows; on a phone, the anchor and the report
+ * take a third of the height. It stands where each band's images are 32 px high, or as high as
+ * their width allows. Else the anchor and the report get the height of the anchor's six lines,
+ * and the form with the largest tiles wins. Standard headers win a tie. A shorter tile label
+ * (LABS) comes only where the full one does not fit. The normal heart's values set the layout,
+ * so it does not change with the heart.
+ */
+function viewFive(sh, box, g) {
+  const half = (box.w - g) / 2, V = valuesOf('normal', true);
+  const make = (merged, compact, h3, level) => {
+    const P = {}, h2 = box.h - h3 - g, y3 = box.y + h2 + g;
+    if (merged) P[5] = { x: box.x, y: box.y, w: box.w, h: h2 };
+    else {
+      P[5] = { x: box.x, y: box.y, w: half, h: h2 };
+      P[5.5] = { x: box.x + half + g, y: box.y, w: half, h: h2 };
+    }
+    P[6] = { x: box.x, y: y3, w: half, h: h3 };
+    P[7] = { x: box.x + half + g, y: y3, w: half, h: h3 };
+    // each band's grid: its image height, up to the image's own shape
+    const B = bandBoxes(P, merged, compact), q = [];
+    let ok = h2 > 0;
+    for (const kind of ['b', 'd']) {
+      const G = tileGrid(sh, B[kind], OUT.filter((o) => o.kind === kind), V, ASPECT[kind], COLS[kind], level, true);
+      ok = ok && G.ok;
+      q.push({ ih: G.ih, full: G.w / ASPECT[kind] });
+    }
+    const good = ok && q.every((x) => x.ih >= Math.min(32, x.full) - 0.5);
+    return { P, merged, compact, level, ok, good, q: Math.min(...q.map((x) => Math.min(x.ih, x.full))) };
+  };
+  const need = { std: anchorNeed(sh, half, false), compact: anchorNeed(sh, half, true) };
+  const wide = box.w >= 600;
+  const first = wide ? make(false, false, box.h - Math.round(box.h * BANDS) - g, 0)
+    : make(true, true, Math.max(need.compact, Math.min(Math.round(box.h * 0.34), 220)), 0);
+  if (first.good && first.P[6].h >= (wide ? need.std : need.compact)) return first;
+  const forms = wide ? [[false, false], [false, true], [true, false], [true, true]] : [[true, true]];
+  for (const level of [0, 1, 2]) {
+    let best = null;
+    for (const [merged, compact] of forms) {
+      const c = make(merged, compact, compact ? need.compact : need.std, level);
+      if (c.ok && (!best || c.q > best.q + 2)) best = c;
+    }
+    if (best) return best;
+  }
+  // no form holds images of IH_MIN px: the last one, at the shortest label, each card clipped
+  const [merged, compact] = forms[forms.length - 1];
+  return { ...make(merged, compact, Math.min(need.compact, box.h - g), 2), clip: true };
+}
+/** The view of each step: 1 to 4 EchoPrime, 5 to 7 the measurements, the anchor and the report. */
+export const rowOfStep = (k) => (k >= 5 ? 1 : 0);
 
 // ---------------------------------------------------------------- the panels
 const TITLES = {
@@ -461,8 +506,14 @@ const TITLES = {
   6: ['Anchor', ['EchoPrime heads check each value', 'Heads check each value']],
   7: ['Report', ['Both models, one report']],
 };
-/** A card: its fill, its frame when lit, its number, title and subtitle. Returns the box under the header. */
-function card(sh, t, P, k, lit) {
+/** The title of the one card of both bands. */
+const TITLE_BOTH = ['Measure', ['EchoNet-Measurements · 18 measurements', '18 measurements']];
+/**
+ * A card: its fill, its frame when lit, its number, title and subtitle. Returns the box under the
+ * header. A compact card (a phone, a short box) has its number and title in one line. Its
+ * subtitle sits at their right where it fits. both: the one card of both bands.
+ */
+function card(sh, t, P, k, lit, compact = false, both = false) {
   const ctx = sh.ctx, C = palette(t);
   ctx.save();
   rrect(ctx, P.x, P.y, P.w, P.h, 9);
@@ -475,8 +526,9 @@ function card(sh, t, P, k, lit) {
     ctx.stroke();
   }
   ctx.restore();
-  const [title, subs] = TITLES[k], narrow = P.w < 230;
+  const [title, subs] = both ? TITLE_BOTH : TITLES[k], narrow = P.w < 230;
   const n = k === 5.5 ? '' : String(Math.floor(k));
+  if (compact) return cardCompact(sh, t, P, n, title, subs);
   const numO = { family: SERIF, weight: 400, size: narrow ? 24 : 28, color: t.accent };
   const x0 = P.x + IN + 1, tx = n ? x0 + (narrow ? 22 : 26) : x0;
   if (n) {
@@ -498,6 +550,39 @@ function card(sh, t, P, k, lit) {
   }
   if (!done) { const s = [].concat(subs).pop(); caps(sh, s, tx, P.y + 37, sO, 0); }
   return { x: P.x + IN, y: P.y + HEAD + 4, w: P.w - 2 * IN, h: P.h - HEAD - 4 - 8 };
+}
+/**
+ * A compact card's header: the number and the title in one line, the subtitle at the right where
+ * it fits. The box it returns has head: the room at the right of the title that the subtitle
+ * leaves free (its left, its baseline, its width).
+ */
+function cardCompact(sh, t, P, n, title, subs) {
+  const ctx = sh.ctx, x0 = P.x + IN + 1, tx = n ? x0 + 19 : x0, right = P.x + P.w - IN;
+  if (n) {
+    ctx.save();
+    ctx.font = `italic 400 22px ${SERIF}`;
+    ctx.fillStyle = t.accent;
+    ctx.fillText(n, x0 - 1, P.y + 23);
+    ctx.restore();
+  }
+  const H = compactPlan(sh, P.w, n, title, subs);
+  sh.text(H.tf.str, tx, P.y + 21, { family: SERIF, weight: 400, size: H.tf.size, color: t.ink });
+  if (H.sub) caps(sh, H.sub, right - H.subW, P.y + 20, { ...SUB_O, color: t.ink3 }, H.tr);
+  return { x: P.x + IN, y: P.y + HEAD_C + 2, w: P.w - 2 * IN, h: P.h - HEAD_C - 2 - 7, head: { x: right - H.free, y: P.y + 20, w: H.free } };
+}
+const SUB_O = { family: SANS, weight: 500, size: 9.5 };
+/**
+ * A compact header in a card w px wide: the title and its size, and the subtitle and its letter
+ * spacing where it fits at the right. free: the room that the subtitle leaves.
+ */
+function compactPlan(sh, w, n, title, subs) {
+  const avail = w - 2 * IN - 1 - (n ? 19 : 0), tO = { family: SERIF, weight: 400, size: 16 };
+  const tf = sh.fit(title, avail, tO, 0.8), room = avail - sh.measure(tf.str, { ...tO, size: tf.size }) - 14;
+  for (const tr of [1.1, 0.5]) {
+    const f = [].concat(subs).find((x) => capsWidth(sh, x, SUB_O, tr) <= room);
+    if (f) return { tf, sub: f, tr, subW: capsWidth(sh, f, SUB_O, tr), free: 0 };
+  }
+  return { tf, sub: null, free: room };
 }
 /** The caption at the foot of a card: its top. */
 function caption(sh, t, b, str, o = {}) {
@@ -652,38 +737,66 @@ function firstWords(V, sec) {
 
 // 5 · Measure: a tile for each output, with its marks, name, value and anchor check
 const LAB1 = 29, LAB2 = 41;   // the label under a tile: name and value in one line, or in two
+/**
+ * The label's height under a tile, in one line or in two, at each level. 0: the name, the value
+ * and the anchor check. 1, a short box: the name and the value. 2, the shortest boxes: the value,
+ * with the name in the image's tag.
+ */
+const LABS = [[LAB1, LAB2], [17, 30], [17, 17]];
+const IH_MIN = 24;            // px: the smallest image of a tile
+const ASPECT = { b: 1.7, d: 2.0 }, COLS = { b: [5, 3, 9, 4], d: [4, 8, 3, 2] };
 const labO = (r) => ({ n: F(10, SANS, 600), v: F(10.5, MONO, r.state === 'moved' ? 600 : 500) });
+const TAG_O = { family: MONO, weight: 500, size: 9.5 };
 /** The name and the value fit one line under a tile w px wide. */
 function oneLine(sh, o, r, w) {
   const O = labO(r);
   return sh.measure(o.short, O.n) + 6 + sh.measure(valueText(o, r, 1), O.v) + (r.state === 'flagged' ? 9 : 0) <= w;
 }
-/** The arrangement of n tiles in box b whose images are largest: columns, the image's size, the label's height. */
-function tileGrid(sh, b, list, V, aspect, colsList) {
-  let best = null;
+/** The value fits a tile w px wide, and so does the name: in the image's tag at level 2, else in its own line. */
+function labelFits(sh, o, r, w, level) {
+  const O = labO(r), vw = sh.measure(valueText(o, r, 1), O.v) + (r.state === 'flagged' ? 9 : 0);
+  return vw <= w + 0.5 && (level === 2 ? sh.measure(o.short, TAG_O) + 5 <= w : sh.measure(o.short, O.n) <= w + 0.5);
+}
+/**
+ * The arrangement of the tiles of list in box b whose images are largest: columns, the image's
+ * size, the label's form (level, LABS) and height. ok is false when no arrangement holds images
+ * of IH_MIN px. In a view of two (strict), every name and value fits its tile. With no such
+ * arrangement, the tiles there fill the box with smaller images, or none. The three rows keep
+ * their old fallback.
+ */
+function tileGrid(sh, b, list, V, aspect, colsList, level = 0, strict = false) {
+  let best = null, fill = null;
   for (const c of colsList) {
     const r = Math.ceil(list.length / c), gx = 10, gy = 8, w = (b.w - (c - 1) * gx) / c;
-    const lab = list.every((o) => oneLine(sh, o, V.out[o.key], w)) ? LAB1 : LAB2;
+    const one = level === 2 || list.every((o) => oneLine(sh, o, V.out[o.key], w));
+    if (strict && !list.every((o) => labelFits(sh, o, V.out[o.key], w, level))) continue;
+    const lab = LABS[level][one ? 0 : 1];
     const ih = Math.min(w / aspect, (b.h - (r - 1) * gy) / r - lab);
-    if (ih < 24) continue;
+    if (!fill || ih > fill.ih) fill = { c, r, gx, gy, w, ih: Math.max(0, ih), lab, one, score: 0, ok: false };
+    if (ih < IH_MIN) continue;
     const score = Math.min(w, ih * aspect);
-    if (!best || score > best.score + 0.5) best = { c, r, gx, gy, w, ih, lab, score };
+    if (!best || score > best.score + 0.5) best = { c, r, gx, gy, w, ih, lab, one, score, ok: true };
   }
   if (best) return best;
+  if (strict && fill) return fill;
   const c = colsList[colsList.length - 1];
-  return { c, r: Math.ceil(list.length / c), gx: 8, gy: 6, w: (b.w - 8 * (c - 1)) / c, ih: 24, lab: LAB2 };
+  return { c, r: Math.ceil(list.length / c), gx: 8, gy: 6, w: (b.w - 8 * (c - 1)) / c, ih: 24, lab: LAB2, one: false, ok: false };
 }
-function measurePanel(sh, t, b, kind, sec, V, hits) {
-  const list = OUT.filter((o) => o.kind === kind);
-  const G = tileGrid(sh, b, list, V, kind === 'b' ? 1.7 : 2.0, kind === 'b' ? [5, 3, 9, 4] : [4, 8, 3, 2]);
+/** A band's tiles in box b, at label level. strict: in a view of two (tileGrid). clip: a box to keep them in. */
+function measurePanel(sh, t, b, kind, sec, V, hits, level = 0, strict = false, clip = null) {
+  const list = OUT.filter((o) => o.kind === kind), ctx = sh.ctx;
+  const G = tileGrid(sh, b, list, V, ASPECT[kind], COLS[kind], level, strict);
+  if (clip) { ctx.save(); ctx.beginPath(); ctx.rect(clip.x, clip.y, clip.w, clip.h); ctx.clip(); }
   list.forEach((o, i) => {
     const x = b.x + (i % G.c) * (G.w + G.gx), y = b.y + Math.floor(i / G.c) * (G.ih + G.lab + G.gy);
     const img = { x, y, w: G.w, h: G.ih }, lit = o.sec === sec;
-    if (o.kind === 'b') bTile(sh, t, img, o, V);
-    else dTile(sh, t, img, o, V);
-    tileLabel(sh, t, { x, y: y + G.ih, w: G.w }, o, V.out[o.key], lit, G.lab === LAB1);
-    if (lit) {
-      const ctx = sh.ctx;
+    // a tile of the shortest boxes may have no room for its image
+    if (G.ih >= 6) {
+      if (o.kind === 'b') bTile(sh, t, img, o, V, level === 2 ? o.short : o.tag);
+      else dTile(sh, t, img, o, V, level === 2 ? o.short : o.tag);
+    }
+    tileLabel(sh, t, { x, y: y + G.ih, w: G.w }, o, V.out[o.key], lit, G.one, level);
+    if (lit && G.ih >= 6) {
       ctx.save();
       ctx.strokeStyle = t.accent;
       ctx.lineWidth = 2;
@@ -692,11 +805,34 @@ function measurePanel(sh, t, b, kind, sec, V, hits) {
     }
     hits.push({ x0: x, y0: y, x1: x + G.w, y1: y + G.ih + G.lab, sec: o.sec });
   });
+  if (clip) ctx.restore();
 }
-/** The view tag at the top left of an image, as the scanner prints its text. */
+/** The inner box of the bands' card or cards (as card() returns it), with each band's box. */
+function bandBoxes(P, merged, compact) {
+  const inner = (p) => (compact ? { x: p.x + IN, y: p.y + HEAD_C + 2, w: p.w - 2 * IN, h: p.h - HEAD_C - 2 - 7 } : { x: p.x + IN, y: p.y + HEAD + 4, w: p.w - 2 * IN, h: p.h - HEAD - 4 - 8 });
+  if (!merged) return { b: inner(P[5]), d: inner(P[5.5]) };
+  const a = inner(P[5]), h = (a.h - SEP) / 2;
+  return { b: { ...a, h }, d: { ...a, y: a.y + h + SEP, h } };
+}
+const SEP = 9;                // px between the bands in their one card
+/**
+ * One card of both bands: the B-mode tiles over the Doppler and M-mode tiles, a rule between them.
+ * P: the card, where each band keeps its tiles in its half (a box too short for view 1).
+ */
+function bothBands(sh, t, b, sec, V, hits, level, P) {
+  const h = (b.h - SEP) / 2, ctx = sh.ctx;
+  measurePanel(sh, t, { ...b, h }, 'b', sec, V, hits, level, true, P && { x: P.x - 2, y: b.y - 4, w: P.w + 4, h: h + 4 + SEP / 2 });
+  ctx.save();
+  ctx.strokeStyle = t.rule;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(b.x, b.y + h + SEP / 2); ctx.lineTo(b.x + b.w, b.y + h + SEP / 2); ctx.stroke();
+  ctx.restore();
+  measurePanel(sh, t, { ...b, y: b.y + h + SEP, h }, 'd', sec, V, hits, level, true, P && { x: P.x - 2, y: b.y + h + SEP / 2, w: P.w + 4, h: P.y + P.h + 2 - (b.y + h + SEP / 2) });
+}
+/** The view tag at the top left of an image, as the scanner prints its text; none on a very short image. */
 function imgTag(sh, img, str) {
-  const o = { family: MONO, weight: 500, size: 9.5 }, w = sh.measure(str, o);
-  if (w + 5 > img.w) return;
+  const o = TAG_O, w = sh.measure(str, o);
+  if (w + 5 > img.w || img.h < 15) return;
   const ctx = sh.ctx;
   ctx.save();
   ctx.fillStyle = 'rgba(8,10,12,0.72)';
@@ -704,7 +840,7 @@ function imgTag(sh, img, str) {
   ctx.restore();
   sh.text(str, img.x + 3.5, img.y + 11, { ...o, color: SC.text });
 }
-function bTile(sh, t, img, o, V) {
+function bTile(sh, t, img, o, V, tag = o.tag) {
   const ctx = sh.ctx, T = MS.tiles[o.key], f = MS.frames[o.key];
   ctx.save();
   ctx.fillStyle = SC.bg;
@@ -753,7 +889,7 @@ function bTile(sh, t, img, o, V) {
     ctx.stroke();
   }
   ctx.restore();
-  imgTag(sh, img, o.tag);
+  imgTag(sh, img, tag);
 }
 const DCACHE = new Map();
 function dSpec(o, heart) {
@@ -761,7 +897,7 @@ function dSpec(o, heart) {
   if (!DCACHE.has(id)) DCACHE.set(id, { d: o.d, ...dopplerOf(o.d, heart) });
   return DCACHE.get(id);
 }
-function dTile(sh, t, img, o, V) {
+function dTile(sh, t, img, o, V, tag = o.tag) {
   const ctx = sh.ctx, Dd = dSpec(o, V.heart);
   ctx.save();
   ctx.fillStyle = SC.bg;
@@ -799,28 +935,29 @@ function dTile(sh, t, img, o, V) {
     centerMark(ctx, x, y, 2.2);
   }
   ctx.restore();
-  imgTag(sh, img, o.tag);
+  imgTag(sh, img, tag);
 }
 /**
  * Under a tile: the name, then the value (anchored: in the accent, after the caliper's own value
- * when there is room), in one line or in two; under them, the anchor check.
+ * when there is room), in one line or in two; under them, the anchor check. At level 1 no check;
+ * at level 2 the value alone, as the name is in the image's tag (LABS).
  */
-function tileLabel(sh, t, b, o, r, lit, one) {
+function tileLabel(sh, t, b, o, r, lit, one, level = 0) {
   const C = palette(t), O = labO(r), nO = { ...O.n, weight: lit ? 600 : 500 }, vO = O.v;
-  const nw = sh.measure(o.short, nO), room = one ? b.w - nw - 6 : b.w;
+  const named = level < 2, nw = named ? sh.measure(o.short, nO) : 0, room = one && named ? b.w - nw - 6 : b.w;
   const fw = r.state === 'flagged' ? 9 : 0;
   const val = [valueText(o, r, 0), valueText(o, r, 1)].find((s) => sh.measure(s, vO) + fw <= room) ?? valueText(o, r, 1);
   const col = r.state === 'moved' ? t.accent : r.state === 'flagged' ? t.flag : t.ink;
   const vw = sh.measure(val, vO), vy = one ? b.y + 13 : b.y + 26;
-  sh.text(o.short, b.x, b.y + 13, { ...nO, color: lit ? t.ink : t.ink2 });
+  if (named) sh.text(o.short, b.x, b.y + 13, { ...nO, color: lit ? t.ink : t.ink2 });
   sh.text(val, b.x + b.w - fw, vy, { ...vO, align: 'right', color: col });
   if (r.state === 'flagged') flagMark(sh.ctx, b.x + b.w - 6, vy, 8, t.flag);
   if (r.state === 'moved') {
     // the caliper's own value before it, where it fits
-    const was = `${calText(r)}→`, wO = F(10, MONO, 500), left = one ? b.x + nw + 6 : b.x;
+    const was = `${calText(r)}→`, wO = F(10, MONO, 500), left = one && named ? b.x + nw + 6 : b.x;
     if (b.x + b.w - vw - 3 - sh.measure(was, wO) >= left) sh.text(was, b.x + b.w - vw - 3, vy, { ...wO, align: 'right', color: C.pink });
   }
-  miniAnchor(sh.ctx, t, b.x + 2, vy + 10, b.w - 4, r);
+  if (level === 0) miniAnchor(sh.ctx, t, b.x + 2, vy + 10, b.w - 4, r);
 }
 /** The anchor check: the head's range and diamond on a short scale, the caliper's dot. */
 function miniAnchor(ctx, t, x, y, w, r) {
@@ -849,7 +986,133 @@ function miniAnchor(ctx, t, x, y, w, r) {
 }
 
 // 6 · Anchor: a line for each output of the section
-function anchorPanel(sh, t, b, sec, V) {
+/** A legend glyph at (x, y), the baseline of its text: the head, the caliper, a second peak or a flag. */
+function legendGlyph(ctx, t, g, x, y) {
+  const C = palette(t);
+  if (g === 'd') diamond(ctx, x + 4, y - 3.5, 4, t.accent);
+  else if (g === 'c') dot(ctx, x + 4, y - 3.5, 2.8, C.pink);
+  else if (g === 'f') flagMark(ctx, x + 2, y, 8, t.flag);
+  else ring(ctx, x + 4, y - 3.5, 3.4, C.pink);
+}
+/**
+ * The anchor's legend at the foot of box b: its items [glyph, text, short text] in one line, or
+ * in their short forms over two lines. head: the free room at the right of a compact header,
+ * which takes the first item where it fits. Returns the room it takes at the foot.
+ */
+function anchorLegend(sh, t, b, items, head) {
+  const ctx = sh.ctx, lo = F(10, SANS, 400), L = legendPlan(sh, b.w, items, head ? head.w : 0);
+  const draw = ([g, s], x, y) => { legendGlyph(ctx, t, g, x, y); sh.text(s, x + 11, y, { ...lo, color: t.ink3 }); };
+  if (L.head) draw(L.head, head.x + head.w - L.head.w, head.y);
+  L.rows.forEach((row, i) => {
+    for (const it of row) draw(it, b.x + it.x, b.y + b.h - 3 - (L.rows.length - 1 - i) * 14);
+  });
+  return L.h;
+}
+/**
+ * The legend's plan for a card bw px wide inside. Its items [glyph, text] go in one line, or in
+ * their short forms over two lines. The first short form goes at the right of a compact header
+ * where free px hold it. Each item has its left (x) and width (w); h is the room at the foot.
+ */
+function legendPlan(sh, bw, items, free = 0) {
+  const lo = F(10, SANS, 400), w = (s) => 12 + sh.measure(s, lo);
+  if (items.reduce((x, it) => x + w(it[1]) + 14, 0) <= bw + 4) {
+    let x = 0;
+    return { head: null, rows: [items.map(([g, s]) => { const it = [g, s]; it.x = x; x += w(s) + 14; return it; })], h: 20 };
+  }
+  let list = items, head = null;
+  if (free && w(items[0][2]) <= free) { head = [items[0][0], items[0][2]]; head.w = w(items[0][2]); list = items.slice(1); }
+  const rows = [[]];
+  let x = 0;
+  for (const [g, , s] of list) {
+    if (x + w(s) > bw && rows[rows.length - 1].length) {
+      if (rows.length === 2) break;
+      rows.push([]);
+      x = 0;
+    }
+    const it = [g, s];
+    it.x = x;
+    rows[rows.length - 1].push(it);
+    x += w(s) + 10;
+  }
+  return { head, rows, h: 20 + 14 * (rows.length - 1) };
+}
+/** The anchor's lines on a narrow card, two rows each: the name and the value, then the scale. */
+function anchorRows(sh, t, area, lines, V) {
+  const ctx = sh.ctx, C = palette(t), lh = clamp(area.h / Math.max(lines.length, 3), 20, 34);
+  const nameO = F(10.5, SANS, 400), valO = F(10.5, MONO, 500);
+  const half = Math.min(area.w / 2 - 8, 90), cx = area.x + area.w / 2, right = area.x + area.w;
+  lines.forEach((o, i) => {
+    const r = V.out[o.key], ty = area.y + lh * i + 10, y = ty + 6.5;
+    const X = (v) => cx + clamp((v / r.head - 1) / SPAN, -1.05, 1.05) * half;
+    // the value at the right: after the anchor, the caliper's own value before it
+    let vw;
+    if (r.state === 'moved') {
+      const v = valueText(o, r), was = `${calText(r)} →`, w1 = sh.measure(v, { ...valO, weight: 600 });
+      sh.text(v, right, ty, { ...valO, weight: 600, align: 'right', color: t.accent });
+      sh.text(was, right - w1 - 6, ty, { ...valO, align: 'right', color: C.pink });
+      vw = w1 + 6 + sh.measure(was, valO);
+    } else {
+      const v = valueText(o, r), fw = r.state === 'flagged' ? 10 : 0;
+      sh.text(v, right - fw, ty, { ...valO, align: 'right', color: r.state === 'flagged' ? t.flag : t.ink });
+      if (fw) flagMark(ctx, right - 6, ty, 9, t.flag);
+      vw = sh.measure(v, valO) + fw;
+    }
+    sh.text(fits(sh, [o.name, o.short], area.w - vw - 8, nameO) ?? o.short, area.x, ty, { ...nameO, color: t.ink });
+    // the scale: the head's range and diamond, the caliper's dot; a moved caliper ringed, with its arrow
+    ctx.save();
+    ctx.strokeStyle = t.rule;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - half, y); ctx.lineTo(cx + half, y); ctx.stroke();
+    ctx.fillStyle = C.band;
+    rrect(ctx, X(r.lo), y - 3.5, X(r.hi) - X(r.lo), 7, 2);
+    ctx.fill();
+    ctx.restore();
+    diamond(ctx, X(r.head), y, 4.6, t.accent);
+    if (r.state === 'moved') {
+      ring(ctx, X(r.cal), y, 3.8, C.pink);
+      ctx.save();
+      ctx.strokeStyle = C.pink;
+      ctx.fillStyle = C.pink;
+      ctx.lineWidth = 1;
+      const a = X(r.cal) - 5, e = X(r.value) + 5.5;
+      ctx.beginPath(); ctx.moveTo(a, y); ctx.lineTo(e + 3, y); ctx.stroke();
+      arrowHead(ctx, e, y, -1, 0, 4);
+      ctx.restore();
+    }
+    dot(ctx, X(r.value) + 0.6, y, 3, r.state === 'flagged' ? t.flag : C.pink);
+  });
+}
+/** The legend's items [glyph, text, short text]: the head and its range, the caliper, a second peak, a flag. */
+function anchorItems(lines, V) {
+  const r0 = lines.map((o) => V.out[o.key]).find((r) => r.state === 'moved');
+  const flagged = lines.some((o) => V.out[o.key].state === 'flagged');
+  return [['d', 'head, its value ± 10%', 'head ± 10%'], ['c', 'caliper', 'caliper'],
+    ...(r0 ? [['r', `a second peak gave ${calText(r0)} cm`, `second peak ${calText(r0)} cm`]] : []),
+    ...(flagged ? [['f', 'no peak agrees: flagged for review', 'flagged for review']] : [])];
+}
+/** The widths of the anchor's name and value columns in a card w px wide inside. */
+function anchorColumns(sh, w, lines, V) {
+  const nameO = F(11, SANS, 400), valO = F(11, MONO, 500);
+  const nameW = Math.min(w * 0.36, Math.max(...lines.map((o) => sh.measure(o.name, nameO))) + 12);
+  const valW = Math.min(w * 0.32, Math.max(...lines.map((o) => {
+    const r = V.out[o.key];
+    return sh.measure(r.state === 'moved' ? `${calText(r)} → ${valueText(o, r)}` : valueText(o, r), valO);
+  })) + 8);
+  return { nameW, valW };
+}
+/**
+ * The height an anchor card w px wide needs for the most lines a section has (the LV's six, with
+ * the septum's second peak): its header, its lines in one row each (18 px) or two (20 px), and
+ * its legend.
+ */
+function anchorNeed(sh, w, compact) {
+  const V = valuesOf('normal', true), lines = linesOf(0), bw = w - 2 * IN;
+  const { nameW, valW } = anchorColumns(sh, bw, lines, V);
+  const rows = lines.length * (bw - nameW - valW - 10 >= 64 ? 18 : 20);
+  const free = compact ? compactPlan(sh, w, '6', TITLES[6][0], TITLES[6][1]).free : 0;
+  return (compact ? HEAD_C + 2 + 7 : HEAD + 4 + 8) + rows + legendPlan(sh, bw, anchorItems(lines, V), free).h;
+}
+function anchorPanel(sh, t, b, sec, V, head) {
   const ctx = sh.ctx, C = palette(t), lines = linesOf(sec);
   if (!lines.length) {
     // a section of words only: they go to the report as its heads give them
@@ -862,30 +1125,13 @@ function anchorPanel(sh, t, b, sec, V) {
     return;
   }
   // the legend at the foot: the head and its range, the caliper, the second peak
-  const lo = F(10, SANS, 400), ly = b.y + b.h - 3;
-  const r0 = lines.map((o) => V.out[o.key]).find((r) => r.state === 'moved');
-  const flagged = lines.some((o) => V.out[o.key].state === 'flagged');
-  const items = [['d', 'head, its value ± 10%'], ['c', 'caliper'], ...(r0 ? [['r', `a second peak gave ${calText(r0)} cm`]] : []), ...(flagged ? [['f', 'no peak agrees: flagged for review']] : [])];
-  let lx = b.x;
-  for (const [g, s] of items) {
-    const need = 12 + sh.measure(s, lo) + 14;
-    if (lx + need > b.x + b.w + 4) break;
-    if (g === 'd') diamond(ctx, lx + 4, ly - 3.5, 4, t.accent);
-    else if (g === 'c') dot(ctx, lx + 4, ly - 3.5, 2.8, C.pink);
-    else if (g === 'f') flagMark(ctx, lx + 2, ly, 8, t.flag);
-    else ring(ctx, lx + 4, ly - 3.5, 3.4, C.pink);
-    sh.text(s, lx + 11, ly, { ...lo, color: t.ink3 });
-    lx += need;
-  }
-  const area = { x: b.x, y: b.y, w: b.w, h: b.h - 20 };
+  const area = { x: b.x, y: b.y, w: b.w, h: b.h - anchorLegend(sh, t, b, anchorItems(lines, V), head) };
   const lh = clamp(area.h / Math.max(lines.length, 3), 18, 34);
   const nameO = F(11, SANS, 400), valO = F(11, MONO, 500);
-  const nameW = Math.min(area.w * 0.36, Math.max(...lines.map((o) => sh.measure(o.name, nameO))) + 12);
-  const valW = Math.min(area.w * 0.32, Math.max(...lines.map((o) => {
-    const r = V.out[o.key];
-    return sh.measure(r.state === 'moved' ? `${calText(r)} → ${valueText(o, r)}` : valueText(o, r), valO);
-  })) + 8);
+  const { nameW, valW } = anchorColumns(sh, area.w, lines, V);
   const sx0 = area.x + nameW, sx1 = area.x + area.w - valW - 10, half = (sx1 - sx0) / 2, cx = (sx0 + sx1) / 2;
+  // a narrow card: the name and the value in one line, the scale under them
+  if (sx1 - sx0 < 64) { anchorRows(sh, t, area, lines, V); return; }
   lines.forEach((o, i) => {
     const r = V.out[o.key], y = area.y + lh * (i + 0.5) + 2;
     const X = (v) => cx + clamp((v / r.head - 1) / SPAN, -1.05, 1.05) * half;
@@ -926,14 +1172,17 @@ function anchorPanel(sh, t, b, sec, V) {
 }
 
 // 7 · Report: the sentences, EchoPrime's words in the serif, the measured numbers in blue
-/** The report's legend: at the right of the card's header when it fits there, else at the foot. Returns the room it takes at the foot. */
-function reportLegend(sh, t, P, b) {
+/**
+ * The report's legend: at the right of the card's header when it fits there, else at the foot, in
+ * one line or one item a line. Returns the room it takes at the foot.
+ */
+function reportLegend(sh, t, P, b, compact) {
   const lo = F(10, SANS, 400);
   const items = [['serif: ', 'EchoPrime heads', F(11, SERIF, 400), t.ink2], ['blue: ', 'measured, then anchored', F(10, MONO, 500), t.accent]];
   const widths = items.map(([k, s, kO]) => sh.measure(k, kO) + sh.measure(s, lo));
   const titleW = sh.measure('Report', F(18.5, SERIF)) + 44, capsW = 190;
   const right = P.x + P.w - IN;
-  if (P.w - Math.max(titleW, capsW) - Math.max(...widths) >= 36) {
+  if (!compact && P.w - Math.max(titleW, capsW) - Math.max(...widths) >= 36) {
     items.forEach(([k, s, kO, kc], i) => {
       const y = P.y + 19 + i * 15, x = right - widths[i];
       sh.text(k, x, y, { ...kO, color: kc });
@@ -941,19 +1190,17 @@ function reportLegend(sh, t, P, b) {
     });
     return 0;
   }
-  let lx = b.x;
-  const ly = b.y + b.h - 3;
+  const one = widths[0] + 14 + widths[1] <= b.w + 2;
   items.forEach(([k, s, kO, kc], i) => {
-    if (lx + widths[i] > b.x + b.w + 2) return;
+    const lx = one && i ? b.x + widths[0] + 14 : b.x, ly = b.y + b.h - 3 - (one || i ? 0 : 14);
     sh.text(k, lx, ly, { ...kO, color: kc });
     sh.text(s, lx + sh.measure(k, kO), ly, { ...lo, color: t.ink3 });
-    lx += widths[i] + 14;
   });
-  return 20;
+  return one ? 20 : 34;
 }
-function reportPanel(sh, t, P, b, sec, V, hits) {
+function reportPanel(sh, t, P, b, sec, V, hits, compact) {
   const ctx = sh.ctx, C = palette(t), R = reportOf(V);
-  const foot = reportLegend(sh, t, P, b);
+  const foot = reportLegend(sh, t, P, b, compact);
   const area = { x: b.x, y: b.y - 2, w: b.w, h: b.h - foot + 2 };
   // the words of each part, laid out in lines; a section's sentence lit. The largest type whose
   // lines all fit; numbers 1 px smaller in the mono face, never under 9.5 px
@@ -1068,14 +1315,13 @@ function linkNotes(sh, t, b) {
   sh.text(d, x2 + 12, y2, { ...lo, color: t.accent });
 }
 
-/** The tabs of one row, at the top of a small figure. */
+/** The tabs of the two views, at the top of a small figure. */
 const TABS = [
   ['1–4 EchoPrime', 'EchoPrime', '1–4'],
-  ['5 Measurements', 'Measure', '5'],
-  ['6–7 Anchor and report', '6–7 Anchor, report', 'Report', '6–7'],
+  ['5–7 Measurements, anchor and report', '5–7 Measure, anchor, report', '5–7 Measurements', 'Measure', '5–7'],
 ];
 function tabsOf(sh, t, L, hits) {
-  const b = L.tabs, w = b.w / 3, o = F(11.5, SANS, 500);
+  const b = L.tabs, w = b.w / TABS.length, o = F(11.5, SANS, 500);
   const ctx = sh.ctx;
   ctx.save();
   ctx.strokeStyle = t.rule;
@@ -1099,24 +1345,29 @@ function tabsOf(sh, t, L, hits) {
 /**
  * Draw the figure for state S: { sec, step (0 none, 1 to 7), two, row, heart } on sheet sh with
  * tokens t. F1.video(ctx, i, x, y, w, h) draws video i of the study (ch/ai.js). Returns the
- * layout and the hit boxes (a section or a row).
+ * layout and the hit boxes (a section or a view).
  */
 export function drawFigure(sh, t, S, F1) {
-  const L = layoutOf(sh.w, sh.h, S.row), hits = [], V = valuesOf(S.heart, S.two);
+  const L = layoutOf(sh.w, sh.h, S.row, sh), hits = [], V = valuesOf(S.heart, S.two);
   const lit = (k) => S.step === Math.floor(k) || (k === 5.5 && S.step === 5);
-  const rows = { top: 0, h: 0 };
+  const rows = { top: 0, h: 0 }, compact = !!L.compact, level = L.level || 0, ctx = sh.ctx;
   for (const k of [1, 2, 3, 4, 5, 5.5, 6, 7]) {
     const P = L.P[k];
     if (!P) continue;
-    const b = card(sh, t, P, k, lit(k));
+    // in a box too short for view 1, each card keeps its drawing inside it. The clip lies 2 px
+    // outside the card, clear of its frame and of the next card (8 px or more away)
+    const clip = L.clip ? { x: P.x - 2, y: P.y - 2, w: P.w + 4, h: P.h + 4 } : null;
+    if (clip) { ctx.save(); ctx.beginPath(); ctx.rect(clip.x, clip.y, clip.w, clip.h); ctx.clip(); }
+    const b = card(sh, t, P, k, lit(k), compact, k === 5 && L.merged);
     if (k === 1) sortPanel(sh, t, b, F1);
     else if (k === 2) encodePanel(sh, t, b, V.heart, rows);
     else if (k === 3) weighPanel(sh, t, b, S.sec, hits);
     else if (k === 4) answerPanel(sh, t, b, S.sec, V, hits);
-    else if (k === 5) measurePanel(sh, t, b, 'b', S.sec, V, hits);
-    else if (k === 5.5) measurePanel(sh, t, b, 'd', S.sec, V, hits);
-    else if (k === 6) anchorPanel(sh, t, b, S.sec, V);
-    else reportPanel(sh, t, P, b, S.sec, V, hits);
+    else if (k === 5 && L.merged) bothBands(sh, t, b, S.sec, V, hits, level, L.clip ? P : null);
+    else if (k === 5 || k === 5.5) measurePanel(sh, t, b, k === 5 ? 'b' : 'd', S.sec, V, hits, level, !L.all, clip);
+    else if (k === 6) anchorPanel(sh, t, b, S.sec, V, b.head);
+    else reportPanel(sh, t, P, b, S.sec, V, hits, compact);
+    if (clip) ctx.restore();
   }
   if (L.all) links(sh, t, L);
   else {
