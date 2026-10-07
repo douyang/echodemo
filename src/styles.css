@@ -901,7 +901,7 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   /* Automated measurements: the echo view or the recording, the heat map's close-up beside its
      arithmetic, and the measurement on every frame, stacked */
   html[data-ch="measure"] .stage { height: min(64vh, 560px); }
-  /* AI interpretation and measurement: one row of the seven steps at a time, under its tabs */
+  /* AI interpretation and measurement: one of the figure's two views at a time, under its tabs */
   html[data-ch="ai"] .stage { height: min(70vh, 600px); }
   /* Transesophageal echocardiography: the probe in the esophagus above the echo of its plane */
   html[data-ch="tee"] .stage { height: min(64vh, 560px); }

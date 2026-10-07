@@ -208,7 +208,7 @@
     </figure>
     <figure class="fig" id="fig-ai">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">How EchoPrime and EchoNet-Measurements read one study of the heart shown, in seven steps. EchoPrime: the 14 videos of the study, cut from the heart model, each tagged with its view; one video encoder that turns each video into 512 numbers; the public attention weights, a column for each of the 15 report sections and a row for each video, with the chosen section's column lit; and about 150 task heads, ten for each section, with the number heads marked and one head's value. EchoNet-Measurements: the nine B-mode measurements, each on its view at the frame that it reports, with its heat maps and its caliper, and the nine Doppler and M-mode measurements on eight recordings, each with its value and a check against its head. Then each measurement of the chosen section on a scale with its head's value and range and the caliper's value: with a second peak on its heat map, the septum's caliper falls outside the range, and the anchor moves its end to the peak that agrees. Last, the report for the heart, with the words in a serif face and the measured numbers in blue. A click on a column, a tile or a sentence chooses a section; on a small screen, one row shows at a time.</figcaption>
+      <figcaption class="sr-only">How EchoPrime and EchoNet-Measurements read one study of the heart shown, in seven steps. EchoPrime: the 14 videos of the study, cut from the heart model, each tagged with its view; one video encoder that turns each video into 512 numbers; the public attention weights, a column for each of the 15 report sections and a row for each video, with the chosen section's column lit; and about 150 task heads, ten for each section, with the number heads marked and one head's value. EchoNet-Measurements: the nine B-mode measurements, each on its view at the frame that it reports, with its heat maps and its caliper, and the nine Doppler and M-mode measurements on eight recordings, each with its value and a check against its head. Then each measurement of the chosen section on a scale with its head's value and range and the caliper's value: with a second peak on its heat map, the septum's caliper falls outside the range, and the anchor moves its end to the peak that agrees. Last, the report for the heart, with the words in a serif face and the measured numbers in blue. A click on a column, a tile or a sentence chooses a section. On a small screen, EchoPrime shows in one view, and the measurements, the anchor and the report in the other.</figcaption>
     </figure>
     <figure class="fig" id="fig-tee">
       <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
@@ -1185,9 +1185,9 @@
           </div>
         </div>
         <div class="control" data-ai-tab="steps" data-ai-narrow hidden>
-          <span class="label">Row</span>
-          <div class="seg" role="group" aria-label="Row of the figure" data-key="aiRow">
-            <button type="button" data-val="0">EchoPrime</button><button type="button" data-val="1">Measurements</button><button type="button" data-val="2">Anchor, report</button>
+          <span class="label">Steps</span>
+          <div class="seg" role="group" aria-label="Steps of the figure" data-key="aiRow">
+            <button type="button" data-val="0">1–4 EchoPrime</button><button type="button" data-val="1">5–7 Measure, anchor, report</button>
           </div>
         </div>
         <div class="control" data-ai-tab="steps study">
