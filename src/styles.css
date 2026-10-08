@@ -881,7 +881,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="windows"] .stage { height: min(64vh, 560px); }
   /* Stress echocardiography: the quad screen, with the bull's-eye and the protocol under it */
   html[data-ch="stress"] .stage { height: min(64vh, 560px); }
-  /* Doppler hemodynamics: the valve, its three strips and two Doppler panels above the RV systolic pressure */
+  /* Doppler hemodynamics: the valve, its three strips and two Doppler panels, or the IVC's two views,
+     above the RV systolic pressure */
   html[data-ch="pressure"] .stage { height: min(64vh, 560px); }
   /* Right ventricle: two echo views beside three Doppler and M-mode strips */
   html[data-ch="rv"] .stage { height: min(64vh, 560px); }
@@ -1204,9 +1205,10 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 @media (max-width: 820px) and (max-height: 640px) {
   .asx-go { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 12px); }
 }
-/* ------------------------------------------------- Inferior vena cava: the RA pressure from the IVC
+/* ------------------------------------------------- The RA pressure from the IVC
    Mukherjee 2025, Table 4 and Figure 3, in the classes of the diastolic function diagram (.ase-*): the
-   diameter and the collapse with ▲▼ buttons, the secondary signs, the result. src/ch/ivc.js */
+   diameter and the collapse with ▲▼ buttons, the secondary signs, the result. src/ivcfig.js, in the IVC
+   setting of Doppler hemodynamics (and in the hidden chapter src/ch/ivc.js) */
 #ivc-ase .ase-row.is-off .ase-nm, #ivc-ase .ase-row.is-off .ase-v, #ivc-ase .ase-row.is-off .ase-cut { color: var(--ink-3); }
 #ivc-ase .ase-row.is-off .ase-mk { border-style: dashed; }
 .ase-step .ivc-ppv, .ase-step .ivc-rnote { margin-top: 3px !important; }
@@ -1223,16 +1225,15 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 @container ase (max-width: 340px) {
   .ivc-signs, .ivc-sec { padding-left: 0; }
 }
-/* on phones and tablets the figure takes four views: a taller stage, as for Views, and the
-   sticky result under it */
+/* on phones and tablets, the sticky result under the stage of Doppler hemodynamics (its height
+   is set with the other stages) */
 @media (max-width: 820px) {
-  html[data-ch="ivc"] .stage { height: min(60vh, 520px); }
-  html[data-ch="ivc"] .ase-head { top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px)); }
-  html[data-ch="ivc"] .ase-b, html[data-ch="ivc"] .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 110px); }
+  html[data-ch="pressure"] .ase-head { top: calc(env(safe-area-inset-top, 0px) + min(64vh, 560px)); }
+  html[data-ch="pressure"] .ase-b, html[data-ch="pressure"] .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(64vh, 560px) + 110px); }
 }
 @media (max-width: 820px) and (max-height: 640px) {
-  html[data-ch="ivc"] .ase-head { position: static; }
-  html[data-ch="ivc"] .ase-b, html[data-ch="ivc"] .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 12px); }
+  html[data-ch="pressure"] .ase-head { position: static; }
+  html[data-ch="pressure"] .ase-b, html[data-ch="pressure"] .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(64vh, 560px) + 12px); }
 }
 /* ------------------------------------------------- Regurgitation: Figures 18 and 25 (Zoghbi 2017)
    The classes of the aortic stenosis diagram (.asx), with the specific criteria in two sets and

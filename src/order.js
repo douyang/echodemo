@@ -4,12 +4,13 @@
 //
 // The order follows the ASE comprehensive examination (Mitchell 2019): instrumentation, the views,
 // then the measurements. TEE follows the transthoracic views, in the same part: a second set of
-// views, from its own probe. Then the RA pressure (Mukherjee 2025) before the pressures that add
-// it; then function: the LV's systolic and diastolic function and its regional wall motion. Stress
-// echocardiography tests that motion, so it follows it. Myocardial strain follows stress, then the
-// right ventricle. Then the valves by valve as in the ASE report (Taub 2025), each stenosis before
-// its regurgitation, the pericardium and amyloid. Artificial intelligence comes last: a model that
-// reads a whole study draws on every chapter before it.
+// views, from its own probe. Then Doppler hemodynamics, whose second half gives the RA pressure
+// from the IVC (Mukherjee 2025) that the RV systolic pressure adds; then function: the LV's
+// systolic and diastolic function and its regional wall motion. Stress echocardiography tests
+// that motion, so it follows it. Myocardial strain follows stress, then the right ventricle. Then
+// the valves by valve as in the ASE report (Taub 2025), each stenosis before its regurgitation, the
+// pericardium and amyloid. Artificial intelligence comes last: a model that reads a whole study
+// draws on every chapter before it.
 
 // The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come back
 // as the last main chapter, in a part of its own, when this is true. The Normal values table opens from it.
@@ -42,10 +43,24 @@ export const SHOW_SHOCK = false;
 //  4. Run node tools/preload.mjs.
 // Its chapter video is in archive/constrict.html too.
 export const SHOW_CONSTRICT = false;
+// The inferior vena cava is hidden as a chapter of its own: Doppler hemodynamics (src/ch/pressure.js)
+// shows the RA pressure from the IVC on its switch (IVC), with the subcostal long axis and the
+// M-mode, and the text of its second half. The page does not load the old chapter's module
+// (src/ch/ivc.js stays in the repo, with the hepatic veins, the IVC beside the aorta and the
+// meters; both use src/ivcfig.js). The address #ivc and every link to the IVC open Doppler
+// hemodynamics on IVC (src/main.js), and numOf('ivc') gives its number (SHOWN_IN). To restore the
+// chapter:
+//  1. Set SHOW_IVC to true. It then comes back before Doppler hemodynamics, in the part Hemodynamics.
+//  2. Import src/ch/ivc.js in src/chapters.js and add it to BY.
+//  3. Put back the lines in archive/ivc.html: the figure and the article in index.html, its stage
+//     height in src/styles.css and its video in video/chapters.js. The article holds the diagram
+//     (#ivc-ase), so Doppler hemodynamics then needs another id for its own.
+//  4. Run node tools/preload.mjs.
+export const SHOW_IVC = false;
 
 /** The main chapters, in reading order: the numbers 01, 02 ..., the tour, and the chapter bar and its list before B. */
 export const ORDER = [
-  'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'tee', 'cycle', 'loop', 'ivc', 'pressure',
+  'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'tee', 'cycle', 'loop', ...(SHOW_IVC ? ['ivc'] : []), 'pressure',
   'eject', 'fill', 'segments', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', ...(SHOW_CONSTRICT ? ['constrict'] : []), 'hcm', 'amyloid', ...(SHOW_SHOCK ? ['shock'] : []), ...(SHOW_MEASURE ? ['measure'] : []), 'ai', ...(SHOW_REPORT ? ['report'] : []),
 ];
 
@@ -62,9 +77,16 @@ export const BONUS_PAGE = 'bonus';
  */
 export const BONUS = ['lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi'];
 
-/** A chapter's number as the page prints it ("08", "B" for the bonus page, "B3" for a bonus chapter); '' for a chapter that is not shown. */
+/** A hidden chapter that a main chapter shows as one of its settings: a link to it takes that chapter's number. */
+export const SHOWN_IN = SHOW_IVC ? {} : { ivc: 'pressure' };
+
+/**
+ * A chapter's number as the page prints it ("08", "B" for the bonus page, "B3" for a bonus
+ * chapter); the number of the chapter that shows it for a key in SHOWN_IN; '' for a chapter that
+ * is not shown.
+ */
 export function numOf(key) {
-  const i = ORDER.indexOf(key);
+  const i = ORDER.indexOf(SHOWN_IN[key] ?? key);
   if (i >= 0) return String(i + 1).padStart(2, '0');
   if (key === BONUS_PAGE) return 'B';
   const b = BONUS.indexOf(key);
