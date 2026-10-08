@@ -44,7 +44,6 @@
 <link rel="modulepreload" href="src/ch/stress.js">
 <link rel="modulepreload" href="src/ch/rv.js">
 <link rel="modulepreload" href="src/ch/lvad.js">
-<link rel="modulepreload" href="src/ch/constrict.js">
 <link rel="modulepreload" href="src/ch/hcm.js">
 <link rel="modulepreload" href="src/ch/prosthetic.js">
 <link rel="modulepreload" href="src/ch/shunts.js">
@@ -80,6 +79,7 @@
 <link rel="modulepreload" href="src/straintrack.js">
 <link rel="modulepreload" href="src/straincal.js">
 <link rel="modulepreload" href="src/meshjet.js">
+<link rel="modulepreload" href="src/constriction.js">
 <link rel="modulepreload" href="src/ivc2d.js">
 <link rel="modulepreload" href="src/stresscal.js">
 <link rel="modulepreload" href="src/gl/rvpemesh.js">
@@ -104,7 +104,7 @@
 <script>
 // a chapter whose figure needs the heart model at once: its files and modules load from the start
 (() => {
-  const MODEL = ['windows', 'tee', 'eject', 'fill', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'constrict', 'hcm', 'amyloid', 'lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi'];
+  const MODEL = ['windows', 'tee', 'eject', 'fill', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'hcm', 'amyloid', 'lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi'];
   if (!MODEL.includes(location.hash.slice(1))) return;
   const add = (rel, href, as) => {
     const l = document.createElement('link');
@@ -268,11 +268,7 @@
     </figure>
     <figure class="fig" id="fig-peri">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Pericardial effusion from none to tamponade: an apical four-chamber view with the fluid around the heart and, in tamponade, collapse of the right atrium and right ventricle; mitral inflow, tricuspid inflow and hepatic vein flow through one respiratory cycle; a parasternal long-axis view with the fluid behind the left ventricle and, in a large effusion, in front of the right ventricle; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
-    </figure>
-    <figure class="fig" id="fig-constrict">
-      <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">Constrictive pericarditis from a normal pericardium to severe constriction, or restrictive cardiomyopathy from normal to grade 3 diastolic dysfunction: an apical four-chamber view with the pericardium at its measured thickness and the septum shifting with each breath; mitral and tricuspid inflow and hepatic vein flow over two breaths with a respiratory trace; tissue Doppler of the medial and lateral mitral annulus; an M-mode of the septum with breathing; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
+      <figcaption class="sr-only">Pericardial disease, with a switch for the disease. Pericardial effusion from none to tamponade: an apical four-chamber view with the fluid around the heart and, in tamponade, collapse of the right atrium and right ventricle; mitral inflow, tricuspid inflow and hepatic vein flow through one respiratory cycle; a parasternal long-axis view with the fluid behind the left ventricle and, in a large effusion, in front of the right ventricle; the inferior vena cava on M-mode; and the measurements against their cut-offs. Constrictive pericarditis from a normal pericardium to severe constriction: an apical four-chamber view with the pericardium at its measured thickness and the septum shifting with each breath; mitral and tricuspid inflow and hepatic vein flow over two breaths with a respiratory trace; tissue Doppler of the medial and lateral mitral annulus; an M-mode of the septum with breathing; the inferior vena cava on M-mode; and the measurements against their cut-offs.</figcaption>
     </figure>
     <figure class="fig" id="fig-amyloid">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -1853,22 +1849,28 @@
     </article>
 
     <article class="chapter" id="ch-peri">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Pericardial effusion</h2><p class="ch-kicker">Effusion size and tamponade</p></div></div>
-      <p class="dek" data-part="dek">A pericardial effusion appears on echocardiography as an echo-free space around the heart. As the fluid accumulates, the pressure in the pericardial sac rises; when it reaches the pressure in the right heart, the cardiac chambers cannot fill normally, a condition termed tamponade.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">17</span><div><h2 class="ch-title">Pericardial disease</h2><p class="ch-kicker">Effusion, tamponade and constriction</p></div></div>
+      <p class="dek" data-part="dek">A pericardial effusion compresses the heart once the pressure in the sac reaches the pressure in the right heart, a condition termed tamponade. Echocardiography grades the effusion and shows the signs of tamponade. Less often, a thick, rigid pericardium fixes the volume of the heart: constrictive pericarditis.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
-            <label for="periS">Effusion <output data-for="periS"></output></label>
+            <label for="periS"><span id="peri-what">Effusion</span> <output data-for="periS"></output></label>
             <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
           </div>
           <input type="range" id="periS" data-key="periS" min="0" max="1" step="0.005">
           <div class="grades" id="peri-grades" aria-hidden="true"></div>
         </div>
+        <div class="control">
+          <span class="label">Disease</span>
+          <div class="seg" role="group" aria-label="Disease" data-key="periMode">
+            <button type="button" data-val="eff">Effusion</button><button type="button" data-val="cp">Constriction</button>
+          </div>
+        </div>
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <div class="table-wrap"><table class="vt grade" id="peri-table"></table></div>
-      <div class="table-wrap"><table class="vt grade" id="peri-table2"></table></div>
+      <div class="table-wrap" data-peri="eff"><table class="vt grade" id="peri-table"></table></div>
+      <div class="table-wrap" data-peri="eff"><table class="vt grade" id="peri-table2"></table></div>
       <div class="prose" data-part="prose">
         <h3>Effusion size and progression to tamponade</h3>
         <ol class="steps">
@@ -1895,77 +1897,25 @@
         <li>The absence of chamber collapse has a negative predictive value of more than 90% for tamponade. RV hypertrophy, severe pulmonary hypertension or severe LV dysfunction can delay or prevent chamber collapse<span class="cite" data-ref="klein2013"></span>.</li>
         <li>Pericardial fluid is distinguished from pleural fluid in the parasternal long-axis view, in which pericardial fluid lies between the descending aorta and the heart and pleural fluid extends posterior to the descending aorta<span class="cite" data-ref="klein2013"></span>.</li>
         <li>Respiratory variation of inflow is not a diagnostic criterion on its own. During positive-pressure ventilation, the variation is minimal, even in tamponade<span class="cite" data-ref="klein2013"></span>.</li>
+        <li>In effusive-constrictive pericarditis, fluid lies between a thickened visceral and parietal pericardium<span class="cite" data-ref="klein2013"></span>, and after pericardiocentesis the RA pressure does not fall by 50% or to below 10 mmHg<span class="cite" data-ref="schulzmenger2025"></span>.</li>
         </ul>
-        <h3>Key points</h3>
-        <ol class="steps">
-        <li>Effusion size is graded by the end-diastolic echo-free space: mild &lt;10 mm, moderate 10–20 mm and severe (large) &gt;20 mm.</li>
-        <li>RA collapse for more than one third of the cardiac cycle and RV free wall collapse in early diastole indicate tamponade physiology.</li>
-        <li>The rate of fluid accumulation, rather than the size of the effusion, determines how well the effusion is tolerated. Tamponade is a clinical diagnosis.</li>
-        </ol>
-      </div>
-      <div class="quiz"></div>
-    </article>
-
-    <article class="chapter" id="ch-constrict">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">20</span><div><h2 class="ch-title">Constrictive pericarditis</h2><p class="ch-kicker">Septal shift, e′ and the hepatic veins; restrictive cardiomyopathy</p></div></div>
-      <p class="dek" data-part="dek">In constrictive pericarditis a thick, rigid pericardium limits the filling of the heart and couples the two ventricles. The septum shifts with each breath, the hepatic veins reverse in expiration, and the medial mitral annulus keeps a normal or high e′ velocity, which separates constriction from restrictive cardiomyopathy.</p>
-      <div class="controls">
-        <div class="control sev">
-          <div class="sev-head">
-            <label for="conS">Severity <output data-for="conS"></output></label>
-            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the progression"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
-          </div>
-          <input type="range" id="conS" data-key="conS" min="0" max="1" step="0.005">
-          <div class="grades" id="constrict-grades" aria-hidden="true"></div>
-        </div>
-        <div class="control">
-          <span class="label">Disease</span>
-          <div class="seg" role="group" aria-label="Disease" data-key="conMode">
-            <button type="button" data-val="cp">Constriction</button><button type="button" data-val="rcm">Restrictive CM</button>
-          </div>
-        </div>
-      </div>
-      <dl class="readouts"></dl>
-      <p class="live"></p>
-      <div class="table-wrap"><table class="vt grade" id="constrict-table"></table></div>
-      <div class="prose" data-part="prose">
-        <h3>Physiology</h3>
-        <p>In constrictive pericarditis a thickened, scarred, inelastic and often calcified pericardium limits the diastolic filling of the ventricles<span class="cite" data-ref="klein2013"></span>. It fixes the total volume of the heart, so the diastolic pressures of the chambers rise and equalize. Early diastolic filling is faster than normal; from mid-diastole the pericardium restrains the ventricles, and little filling occurs, even with atrial contraction<span class="cite" data-ref="klein2013"></span>. Two hemodynamic features define constriction<span class="cite" data-ref="klein2024"></span>:</p>
+        <h3>Constrictive pericarditis</h3>
+        <p>In constrictive pericarditis a thickened, scarred and often calcified pericardium fixes the total volume of the heart, so the diastolic pressures of the chambers rise and equalize<span class="cite" data-ref="klein2013"></span>. The inspiratory fall in intrathoracic pressure reaches the pulmonary veins but not the heart chambers, so LV filling falls with inspiration, RV filling rises and the septum shifts toward the LV. Expiration reverses both, and blood flows back into the hepatic veins<span class="cite" data-ref="klein2013"></span>.</p>
         <ul>
-        <li><b>Dissociation of intrathoracic and intracardiac pressures.</b> The inspiratory fall in intrathoracic pressure reaches the pulmonary veins outside the pericardium but not the heart chambers. The gradient from the pulmonary veins to the LA falls, and LV filling falls with inspiration<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>Ventricular interdependence.</b> The two ventricles share the fixed volume. As LV filling falls with inspiration, RV filling rises and the septum shifts toward the LV. Expiration reverses both: the RV fills little, and blood flows back into the IVC and the hepatic veins<span class="cite" data-ref="klein2013"></span>.</li>
+        <li><b>Septum.</b> The septum shifts toward the LV with inspiration and moves abruptly toward the LV in early diastole, the septal bounce<span class="cite" data-ref="klein2013"></span>. Without a plethoric IVC and a respiratory septal shift, constriction is unlikely<span class="cite" data-ref="klein2024"></span>.</li>
+        <li><b>Inflow.</b> With inspiration the mitral E velocity falls by more than 25% and the tricuspid E velocity rises by more than 40%<span class="cite" data-ref="klein2013,schulzmenger2025"></span>.</li>
+        <li><b>Annulus and hepatic veins.</b> The medial mitral e′ is normal or increased<span class="cite" data-ref="klein2013"></span>. In expiration the hepatic vein flow reverses at end-diastole<span class="cite" data-ref="klein2013"></span>; the reversal ratio is the end-diastolic reversal velocity ÷ the diastolic forward velocity<span class="cite" data-ref="nagueh2025,klein2024"></span>.</li>
+        <li><b>Pericardium.</b> The normal pericardium is 1–2 mm thick on CT. A thickness above 4 mm on CT or CMR supports constriction, and TTE is unreliable for measuring it<span class="cite" data-ref="klein2013"></span>. Up to 20% of patients with constriction have a pericardium of normal thickness<span class="cite" data-ref="schulzmenger2025"></span>.</li>
         </ul>
-        <h3>Echocardiographic findings</h3>
-        <ul>
-        <li><b>Septum.</b> The septum shifts toward the LV with inspiration and toward the RV with expiration. In early diastole it moves abruptly toward the LV, the septal bounce. An M-mode recording with a respiratory trace shows both<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>IVC and atria.</b> The IVC and the hepatic veins are dilated and collapse little or not at all, a sign of a raised RA pressure (<a href="#ivc" data-go="ivc">chapter 08</a>), and both atria are moderately enlarged<span class="cite" data-ref="klein2013"></span>. A plethoric IVC and a respiratory septal shift are the key findings: without them, constriction is unlikely<span class="cite" data-ref="klein2024"></span>. The LA volume index is normal up to 34 mL/m², mildly enlarged at 35–41, moderately at 42–48 and severely above 48 mL/m²<span class="cite" data-ref="lang2015"></span>.</li>
-        <li><b>Mitral and tricuspid inflow.</b> Both ventricles fill in a restrictive pattern: a high E velocity, a short deceleration time and a small A wave<span class="cite" data-ref="klein2013"></span>. With inspiration the mitral E velocity falls by more than 25% and the tricuspid E velocity rises by more than 40%, and expiration reverses the changes<span class="cite" data-ref="klein2013,schulzmenger2025"></span>. Each variation is (expiration − inspiration) ÷ expiration; for tricuspid inflow the result is negative. The mitral E velocity is lowest on the first beat of inspiration, and the tricuspid E velocity on the first beat of expiration<span class="cite" data-ref="klein2013"></span>. A markedly raised LA pressure can hide the respiratory variation of mitral inflow; preload reduction, with a head-up tilt or a diuretic, can bring it out<span class="cite" data-ref="klein2013"></span>. In chronic obstructive pulmonary disease, SVC systolic flow varies markedly with respiration; in constriction it varies little<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>Hepatic veins.</b> In expiration the diastolic forward flow falls, and the flow reverses at end-diastole<span class="cite" data-ref="klein2013"></span>. The expiratory diastolic reversal ratio is the end-diastolic reversal velocity ÷ the diastolic forward velocity, both in expiration<span class="cite" data-ref="nagueh2025,klein2024"></span>. Diastolic reversals in inspiration suggest restrictive cardiomyopathy instead<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>Tissue Doppler.</b> The medial mitral e′ is normal or increased, often above 7 cm/s<span class="cite" data-ref="nagueh2025"></span>. The lateral e′ is usually lower than the medial e′, annulus reversus: the thick pericardium tethers the lateral annulus<span class="cite" data-ref="klein2013"></span>. In most patients E/e′ falls as the LA pressure rises, annulus paradoxus, because the medial e′ increases as constriction worsens<span class="cite" data-ref="klein2013"></span>.</li>
-        <li><b>Pericardium.</b> On CT the normal pericardium is 1–2 mm thick, and in constriction usually 4–20 mm; a thickness above 4 mm on CT or CMR supports the diagnosis<span class="cite" data-ref="klein2013"></span>. TTE is unreliable for measuring the thickness<span class="cite" data-ref="klein2013"></span>. A thick pericardium alone does not establish constriction<span class="cite" data-ref="klein2013"></span>, and up to 20% of patients with constriction have a pericardium of normal thickness<span class="cite" data-ref="schulzmenger2025"></span>.</li>
-        </ul>
-        <h3>The Mayo Clinic criteria</h3>
-        <p>Welch et al. compared surgically confirmed constriction with restrictive myocardial disease or severe TR. Three echocardiographic variables were independently associated with constriction: respiration-related septal shift, the medial e′ and the hepatic vein expiratory diastolic reversal ratio<span class="cite" data-ref="welch2014"></span>.</p>
-        <ul>
-        <li>Septal shift with a medial e′ of 9 cm/s or more, or with a reversal ratio of 0.79 or more, had a sensitivity of 87% and a specificity of 91%.</li>
-        <li>All three findings together had a specificity of 97% and a sensitivity of 64%<span class="cite" data-ref="welch2014"></span>.</li>
-        </ul>
-        <p>The ESC guideline states the criteria as a septal bounce or septal shift with a medial e′ above 8 cm/s or a ratio above 0.78<span class="cite" data-ref="schulzmenger2025"></span>; at the precision that the page prints, whole cm/s and two decimals, they are the same. In atrial fibrillation or flutter, every variable but the mitral inflow velocity still differed between the groups<span class="cite" data-ref="welch2014"></span>. The guidelines state the septal shift without a size; this page calls it present from 3 mm.</p>
+        <p>In the Mayo Clinic series of surgically confirmed constriction, a respiratory septal shift with a medial e′ of 9 cm/s or more, or with a hepatic vein expiratory diastolic reversal ratio of 0.79 or more, had a sensitivity of 87% and a specificity of 91%<span class="cite" data-ref="welch2014"></span>. The guidelines give the septal shift no size; this page calls it present from 3 mm.</p>
         <h3>Constriction or restrictive cardiomyopathy</h3>
-        <p>In restrictive cardiomyopathy, for example cardiac amyloidosis (<a href="#amyloid" data-go="amyloid">chapter 25</a>), the stiff myocardium, not the pericardium, limits filling. The septal e′ is usually 5 cm/s or less<span class="cite" data-ref="nagueh2025"></span>. Diastolic function goes from grade 1 to grade 3 as the disease advances, and advanced disease shows a mitral E/A above 2.5, a deceleration time below 150 ms, an IVRT below 50 ms and septal and lateral e′ velocities of 3–4 cm/s<span class="cite" data-ref="nagueh2025"></span>. The page grades restrictive cardiomyopathy by the 2025 ASE algorithm (<a href="#fill" data-go="fill">chapter 11</a>), which the guideline does not apply in constriction<span class="cite" data-ref="nagueh2025"></span>.</p>
-        <ul>
-        <li>The marked respiratory changes in mitral and tricuspid E of constriction do not occur in restrictive cardiomyopathy<span class="cite" data-ref="hatle1989"></span>.</li>
-        <li>The atria are more often severely enlarged in restrictive cardiomyopathy<span class="cite" data-ref="klein2013"></span>.</li>
-        <li>An e′ below 6 cm/s, especially without a respiratory septal shift, points to restrictive cardiomyopathy. An e′ of 6–8 cm/s with a septal shift may indicate mixed constrictive and restrictive physiology<span class="cite" data-ref="klein2024"></span>, which occurs after radiation therapy or cardiac surgery<span class="cite" data-ref="klein2013"></span>.</li>
-        </ul>
-        <h3>Effusive-constrictive pericarditis</h3>
-        <p>In effusive-constrictive pericarditis, fluid lies between a thickened visceral and parietal pericardium<span class="cite" data-ref="klein2013"></span>, and the visceral layer constricts the heart<span class="cite" data-ref="schulzmenger2025"></span>. It is defined hemodynamically by an RA pressure that does not fall by 50% or to below 10 mmHg after pericardiocentesis<span class="cite" data-ref="schulzmenger2025"></span>. Before drainage, its Doppler findings lie between those of tamponade and constriction<span class="cite" data-ref="klein2024"></span>. <a href="#peri" data-go="peri">Chapter 22</a> shows the effusion and the signs of tamponade.</p>
+        <p>In restrictive cardiomyopathy, for example cardiac amyloidosis (<a href="#amyloid" data-go="amyloid">chapter 25</a>), the stiff myocardium, not the pericardium, limits filling. The septal e′ is usually 5 cm/s or less<span class="cite" data-ref="nagueh2025"></span>, and the marked respiratory changes in mitral and tricuspid E do not occur<span class="cite" data-ref="hatle1989"></span>.</p>
         <h3>Key points</h3>
         <ol class="steps">
-        <li>Inside a fixed pericardial volume, inspiration shifts the septum toward the LV, lowers mitral E and raises tricuspid E; in expiration the hepatic veins reverse.</li>
-        <li>The Mayo Clinic criteria: a respiratory septal shift with a medial e′ of 9 cm/s or more or a hepatic vein expiratory diastolic reversal ratio of 0.79 or more.</li>
-        <li>The medial e′ is normal or high in constriction, with the lateral e′ below it, and reduced in restrictive cardiomyopathy.</li>
-        <li>Pericardial thickness supports the diagnosis but does not make it: up to 20% of patients with constriction have a normal pericardium.</li>
+        <li>Effusion size is graded by the end-diastolic echo-free space: mild &lt;10 mm, moderate 10–20 mm and severe (large) &gt;20 mm. The rate of fluid accumulation, rather than the size of the effusion, determines how well the effusion is tolerated.</li>
+        <li>RA collapse for more than one third of the cardiac cycle and RV free wall collapse in early diastole indicate tamponade physiology. Tamponade is a clinical diagnosis.</li>
+        <li>A dilated IVC that collapses little is present in more than 90% of patients with tamponade, but many other cardiac diseases also cause it.</li>
+        <li>In constriction, inspiration shifts the septum toward the LV and lowers mitral E. The Mayo Clinic criteria pair the septal shift with a medial e′ of 9 cm/s or more or a hepatic vein reversal ratio of 0.79 or more.</li>
         </ol>
       </div>
       <div class="quiz"></div>
