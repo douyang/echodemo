@@ -74,6 +74,8 @@ QUIET.shS = 0;
 QUIET.strS = 0;
 // no heart of the menu has a disease of the aorta: under a disease heart the aorta page starts with none
 QUIET.aorS = 0;
+// the pericardium page starts on its effusion: none, or the amyloid heart's own small effusion
+QUIET.periMode = 'eff';
 // no heart of the menu has a mechanical complication of infarction: under a disease heart the MI page starts with none
 QUIET.micS = 0;
 /** The chapter state that heart key starts from ({} for the normal heart). */

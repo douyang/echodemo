@@ -1,9 +1,13 @@
-// Pericardial effusion: one slider from no effusion through mild, moderate and severe (large)
-// effusion to tamponade. The fluid layer at end-diastole sets the size grade (ESC 2015 and 2025:
-// <10, 10-20, >20 mm). As the sac fills, the pressure in it rises; when it reaches the right
-// atrial pressure the right heart is compressed first: the RA folds in from late diastole, the
-// RV free wall in early diastole, the IVC stops collapsing, and right and left filling swing in
-// opposite directions with breathing (ASE 2013). The pressures and velocities are illustrative.
+// Pericardial disease: one slider and a switch for the disease. The effusion, the chapter's main
+// disease, runs from no effusion through mild, moderate and severe (large) effusion to tamponade.
+// The fluid layer at end-diastole sets the size grade (ESC 2015 and 2025: <10, 10-20, >20 mm). As
+// the sac fills, the pressure in it rises; when it reaches the right atrial pressure the right
+// heart is compressed first: the RA folds in from late diastole, the RV free wall in early
+// diastole, the IVC stops collapsing, and right and left filling swing in opposite directions
+// with breathing (ASE 2013). The pressures and velocities are illustrative. Constriction, from a
+// normal pericardium to all three Mayo Clinic criteria, takes the slider with the figure and the
+// text of src/constriction.js. Restrictive cardiomyopathy is one paragraph of the text: its
+// setting of src/constriction.js shows only in the hidden chapter (SHOW_CONSTRICT in order.js).
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { tracks, lazyBands, paintBands, playSeverity, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, shown } from '../sev.js';
@@ -11,8 +15,13 @@ import { drawIVC } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { rapEstimate } from '../norms.js';
 import { reducedMotion } from '../state.js';
+import * as CP from '../constriction.js';
 
 const KEY = 'periS';
+const MODE = 'periMode';
+// the switch: the effusion and constriction
+const MODES = ['eff', 'cp'];
+const modeOf = (s) => (s && MODES.includes(s[MODE]) ? s[MODE] : 'eff');
 const RR0 = 857;             // ms, the beat the drawn views are timed on (70 a minute)
 const BREATH = 4000;         // ms, 15 breaths a minute
 const STRIP = 6000;          // ms across each Doppler strip: one and a half breaths
@@ -67,8 +76,12 @@ export function gradeOf(s, m = model(s)) {
   if (m.eff <= 20) return 'moderate';
   return 'severe';
 }
-const LEV = { ...LEVEL, tamponade: 5 };
-let BANDS = [];
+// the slider's bands for each disease (sev.js lazyBands, init), with their levels and short names
+const BANDS = { eff: [], cp: [] };
+const LEVELS_OF = { eff: { ...LEVEL, tamponade: 5 }, cp: CP.LEVELS };
+const SHORT_OF = { eff: { moderate: 'mod.', tamponade: 'tamp.' }, cp: CP.SHORT.cp };
+/** The slider's label: the grade at x of the disease shown. */
+const labelOf = (x, mode) => (mode === 'eff' ? gradeOf(x) : CP.LABEL[mode][CP.gradeOf(x, mode)]);
 
 let sheet = null, st = null;
 // the page's own clock: beats at the page's heart rate, breaths at 15 a minute
@@ -235,15 +248,18 @@ function meterItems(m) {
   ];
 }
 
-function draw(sh, t) {
+function drawEffusion(sh, t) {
   const W = sh.w, H = sh.h, ctx = sh.ctx;
   const m = model(st[KEY]);
   const u = (clock.ms % STRIP) / STRIP;
   if (W < 700) {
-    const [a, b] = cols({ x: 6, y: 6, w: W - 12, h: H - 12 }, [1.25, 1], 8);
+    // a phone: the four-chamber view and the IVC over the two inflow strips, in the grid of the
+    // constriction figure, as tall
+    const [r1, r2, r3] = rows({ x: 6, y: 6, w: W - 12, h: H - 12 }, [1.3, 0.7, 0.7], 8);
+    const [a, b] = cols(r1, [1.25, 1], 8);
     a4c(ctx, a, m);
-    const [p1, p2] = rows(b, [1, 1], 8);
-    for (const bx of [inflowPW(ctx, p1, m, 'mv'), inflowPW(ctx, p2, m, 'tv')]) cursor(ctx, bx, u);
+    drawIVC(ctx, b, { d: m.ivc, collapse: m.coll }, { title: fit(b.w, `IVC · RAP est. ${m.rapIvc} mmHg`, `IVC · RAP ${m.rapIvc}`) });
+    for (const bx of [inflowPW(ctx, r2, m, 'mv'), inflowPW(ctx, r3, m, 'tv')]) cursor(ctx, bx, u);
     return;
   }
   const colL = { x: 16, y: 36, w: W * 0.45 - 16, h: H - 48 };
@@ -258,6 +274,45 @@ function draw(sh, t) {
   // the estimate from the IVC; the RA pressure readout is the pressure the model sets
   drawIVC(ctx, c2, { d: m.ivc, collapse: m.coll }, { title: fit(c2.w, `IVC · M-MODE · RAP estimate ${m.rapIvc} mmHg`, `IVC · RAP est. ${m.rapIvc}`) });
   for (const bx of bxs) cursor(ctx, bx, u);
+}
+
+// constriction: the figure of src/constriction.js, with its own four-chamber view and clock
+const conFig = CP.constrictionFigure(redraw);
+const conValues = CP.valuesCache();
+function draw(sh, t) {
+  const mode = modeOf(st);
+  if (mode === 'eff') drawEffusion(sh, t);
+  else conFig.draw(sh, t, conValues(st[KEY], mode), st.pheno);
+}
+
+// The views of the disease shown load first; the others start when those are ready, at idle, so
+// that the switch shows its views at once.
+const PANELS = { eff: [echoA4C, echoPLAX], cp: [conFig.mesh] };
+const ALL = [echoA4C, echoPLAX, conFig.mesh];
+const idle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 300));
+function startPanels(mode) {
+  const mine = PANELS[mode];
+  for (const p of mine) p.start();
+  const rest = () => {
+    if (mine.every((p) => p.state === 'ready' || p.state === 'failed')) idle(() => { for (const p of ALL) p.start(); });
+    else setTimeout(rest, 250);
+  };
+  rest();
+}
+
+let painted = '';
+/** The slider's bands and its label for the disease shown: again when the switch changes it. */
+function paintFor(s) {
+  const mode = modeOf(s);
+  if (mode !== painted) {
+    painted = mode;
+    paintBands(document.getElementById('peri-grades'), BANDS[mode], LEVELS_OF[mode], SHORT_OF[mode]);
+  }
+  // main.js writes the label when periS changes; the switch changes it alone
+  const o = document.querySelector('output[data-for="periS"]'), lab = labelOf(s[KEY], mode);
+  if (o && o.textContent !== lab) o.textContent = lab;
+  const what = document.getElementById('peri-what'), w = mode === 'eff' ? 'Effusion' : 'Severity';
+  if (what && what.textContent !== w) what.textContent = w;
 }
 
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
@@ -280,44 +335,73 @@ function tampRows(m) {
   ];
 }
 
+// the tour: the start (s) and the length (s) of each disease's sweep of the slider
+const TOUR = { eff: [1, 14], cp: [17, 7] };
+
 export default {
   key: 'peri',
   part: 'pericardium',
   model: true,   // the figure needs the heart model at once (tools/preload.mjs)
-  title: 'Pericardial effusion',
+  title: 'Pericardial disease',
   nav: 'Peri',
-  dwell: 18,
-  defaults: { periS: 0.45, periCine: true },
-  format: { periS: (v) => gradeOf(v) },
-  watch: ['periS', 'periCine'],
+  dwell: 25,
+  defaults: { periS: 0.45, periMode: 'eff', periCine: true },
+  format: { periS: (x, s) => labelOf(x, modeOf(s)) },
+  watch: ['periS', 'periMode', 'periCine', 'pheno'],
   figure(fig) {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
     return sheet;
   },
-  // the heart model and the targets load at idle, before the chapter opens (main.js warms every chapter)
-  enter() { echoA4C.start(); echoPLAX.start(); },
-  warm() { echoA4C.start(); echoPLAX.start(); },
+  // the views of the disease shown first; the heart model and the targets load at idle before the
+  // chapter opens (main.js warmQueue)
+  enter() { startPanels(modeOf(st)); },
+  warm() { for (const p of ALL) p.start(); },
   init({ state }) {
     st = state;
-    BANDS = lazyBands((s) => gradeOf(s));
-    paintBands(document.getElementById('peri-grades'), BANDS, LEV, { moderate: 'mod.', tamponade: 'tamp.' });
+    BANDS.eff = lazyBands((x) => gradeOf(x));
+    BANDS.cp = lazyBands((x) => CP.gradeOf(x, 'cp'));
+    paintFor(state);
   },
-  // the heart for the music: the page's own rate, and its beat while the cine runs
-  pulse: (s) => ({ rr: model(s[KEY]).rr, phase: s.periCine && !reducedMotion ? clock.beats % 1 : null }),
+  onState(s, ch) { if (MODE in ch) paintFor(s); },
+  // the heart for the music: the effusion's own rate and beat, or the constriction figure's beat,
+  // while the cine runs
+  pulse: (s) => (modeOf(s) === 'eff' ? { rr: model(s[KEY]).rr, phase: s.periCine && !reducedMotion ? clock.beats % 1 : null } : conFig.pulse()),
   anim(dt, s, set) {
-    playSeverity(dt, s, set, KEY, BANDS);
-    if (s.periCine && !reducedMotion) {
+    const mode = modeOf(s);
+    playSeverity(dt, s, set, KEY, BANDS[mode]);
+    if (mode !== 'eff') {
+      if (conFig.tick(dt) && sheet) sheet.dirty = true;
+    } else if (s.periCine && !reducedMotion) {
       const m = model(s[KEY]);
       clock.ms = (clock.ms + dt * 1000) % (STRIP * BREATH);
       clock.beats += (dt * 1000) / m.rr;
       if (sheet) sheet.dirty = true;
     }
   },
-  tourEnter(set) { set({ periS: 0, periCine: true }); },
-  tourTick(tt, set) { set({ periS: Math.round(clamp((tt - 1) / 15, 0, 1) * 200) / 200 }); },
+  // the sequence: the effusion to tamponade, then, shorter, constriction from a normal
+  // pericardium to all three Mayo Clinic criteria
+  tourEnter(set) { set({ periS: 0, periMode: 'eff', periCine: true }); },
+  tourTick(tt, set) {
+    const mode = tt < 16 ? 'eff' : 'cp', [t0, len] = TOUR[mode];
+    set({ periMode: mode, periS: Math.round(clamp((tt - t0) / len, 0, 1) * 200) / 200 });
+  },
   // the time of the tour at which tourTick shows this state (its inverse): the tour continues from it
-  tourAt(s) { return 1 + s.periS * 15; },
+  tourAt(s) { const [t0, len] = TOUR[modeOf(s)]; return t0 + s.periS * len; },
   text(s, { cite }) {
+    const mode = modeOf(s);
+    // the tables of the disease shown
+    const tables = (art) => { for (const el of art.querySelectorAll('[data-peri]')) el.hidden = !el.dataset.peri.split(' ').includes(mode); };
+    if (mode !== 'eff') {
+      const v = conValues(s[KEY], mode);
+      return {
+        readouts: CP.readoutsOf(v),
+        live: CP.liveOf(v, cite),
+        extra: (art) => {
+          tables(art);
+          paintFor(s);
+        },
+      };
+    }
     const m = model(s[KEY]);
     const g = m.grade;
     const pd = Math.abs(m.rap - m.ipp) < 1 ? 1 : 0;      // a decimal when the two pressures are close
@@ -340,6 +424,8 @@ export default {
       ],
       live,
       extra: (art) => {
+        tables(art);
+        paintFor(s);
         gradeTable(art.querySelector('#peri-table'), sizeRows(m), 'Effusion size', ['Mild (small)', 'Moderate', 'Severe (large)']);
         gradeTable(art.querySelector('#peri-table2'), tampRows(m), 'Echocardiographic signs of tamponade', ['Without tamponade', 'Tamponade']);
       },
