@@ -887,8 +887,9 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="rv"] .stage { height: min(64vh, 560px); }
   /* Left ventricular assist devices: two echo views and the ramp plot beside four Doppler and M-mode strips */
   html[data-ch="lvad"] .stage { height: min(64vh, 560px); }
-  /* Constrictive pericarditis: the four-chamber view and tissue Doppler above two strips with breathing */
-  html[data-ch="constrict"] .stage { height: min(64vh, 560px); }
+  /* Pericardial disease: the four-chamber view beside three Doppler strips, and with constriction tissue
+     Doppler and two strips with breathing */
+  html[data-ch="peri"] .stage { height: min(64vh, 560px); }
   /* Prosthetic valves: two echo views beside the CW and PW Doppler strips */
   html[data-ch="prosthetic"] .stage { height: min(64vh, 560px); }
   /* Shunts: two echo views beside the Doppler strips or the bubble counts */
