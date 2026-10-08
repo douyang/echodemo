@@ -458,19 +458,30 @@ function plumeColor(v, nyq) {
  * core; 0 by default); pclip: the polygon the convergence zone stays inside (none: it is not cut);
  * a: 0..1 strength over the cycle; pisa: false for no convergence zone; box: false to leave
  * out the outline and return the box's extent { t0, t1, r0, r1 } (radians, px) instead; skip(p):
- * true for a point (cm) the jet and its convergence zone leave out (a dissection flap, ch/aorta.js).
+ * true for a point (cm) the jet and its convergence zone leave out (a dissection flap, ch/aorta.js);
+ * wide: cm from O where the jet is widest (jw), as a jet whose width a caliper reads there (by
+ * default near the middle of its length); fade: the jet ends, fading out, where its axis leaves
+ * its clip (a jet aimed at a leaflet).
  */
 export function jet(ctx, F, j) {
   if (!j || !(j.a > 0.02) || !(j.q > 0)) return;   // a NaN strength draws nothing
   const { k, box, sect } = F;
   const O = j.O, d = unit(j.dir), n = perp(d);
-  const va = j.va, L = j.jl * Math.min(1, j.a * 1.15), Wd = j.jw, w0 = Math.max(0.12, j.vc / 2);
+  const va = j.va, Wd = j.jw, w0 = Math.max(0.12, j.vc / 2);
+  let L = j.jl * Math.min(1, j.a * 1.15);
   const v0 = Math.min(clamp(j.q / (Math.PI * w0 * w0), 90, 600), j.vmax ?? 3.2 * va);   // cm/s at the vena contracta
   // toward the probe or away, as the jet leaves the orifice; a jet across the beam is drawn as if
   // it met the beam at no more than about 40 degrees, so it shows its flame too
   const sgn = Math.sign(dot(d, unit(mul(O, -1)))) || -1;
+  // its convergence zone too: when the jet meets the beam at more than 40 degrees (across), the
+  // zone shows the flow's part along the jet's axis, at 40 degrees to the beam (ax: the axis's
+  // direction toward the probe's side)
+  const ax = mul(d, sgn), COS40 = Math.cos((40 * Math.PI) / 180), across = dot(ax, unit(mul(O, -1))) < COS40;
   const Rp = j.pisa === false ? 0 : Math.min(2.4, Math.sqrt(j.q / (2 * Math.PI * 0.15 * va)));
-  const halfAt = (u) => w0 + (Wd / 2 - w0) * Math.sin(Math.PI * Math.min(1, (u / Math.max(L, 0.01)) * 0.9 + 0.1)) ** 0.8 * Math.min(1, (u / Math.max(L, 0.01)) * 2.2);
+  const halfAt = j.wide > 0
+    // widest at wide cm, then narrowing to the vena contracta's width at its end
+    ? (u) => w0 + (Wd / 2 - w0) * (u <= j.wide ? Math.sin((Math.PI / 2) * (u / j.wide)) : Math.cos((Math.PI / 2) * Math.min(1, (u - j.wide) / Math.max(L - j.wide, 0.01)))) ** 0.8
+    : (u) => w0 + (Wd / 2 - w0) * Math.sin(Math.PI * Math.min(1, (u / Math.max(L, 0.01)) * 0.9 + 0.1)) ** 0.8 * Math.min(1, (u / Math.max(L, 0.01)) * 2.2);
   // the region to color, in px: the jet and the convergence zone
   const pts = [add(O, mul(n, Wd / 2 + 0.2)), add(O, mul(n, -Wd / 2 - 0.2)), add(add(O, mul(d, L + 0.2)), mul(n, Wd / 2 + 0.2)), add(add(O, mul(d, L + 0.2)), mul(n, -Wd / 2 - 0.2)), add(O, mul(d, -Rp - 0.1)), add(add(O, mul(d, -0.1)), mul(n, Rp + 0.1)), add(add(O, mul(d, -0.1)), mul(n, -Rp - 0.1))].map(F.P);
   const x0 = Math.max(box.x, Math.min(...pts.map((p) => p[0]))), x1 = Math.min(box.x + box.w - 30, Math.max(...pts.map((p) => p[0])));
@@ -492,6 +503,18 @@ export function jet(ctx, F, j) {
     return path;
   };
   const clip = pathOf(j.clip), pclip = pathOf(j.pclip), also = (j.clipOr || []).map(pathOf).filter(Boolean);
+  // fade: past the orifice, the jet ends where its axis first leaves its clip or meets a point that
+  // skip leaves out, so that its tip fades out there and does not stop at a straight edge (a
+  // leaflet's line)
+  if (j.fade) {
+    let entered = false;
+    for (let t = 0.05; t < L; t += 0.05) {
+      const p = add(O, mul(d, t)), [X, Y] = F.P(p);
+      const free = !(j.skip && j.skip(p)) && (!clip || g.isPointInPath(clip, X, Y) || also.some((q) => g.isPointInPath(q, X, Y)));
+      if (free) entered = true;
+      else if (entered) { L = t; break; }
+    }
+  }
   const f = cine.live ? Math.floor(performance.now() / 45) : 0;
   for (let jj = 0; jj < H; jj++) {
     for (let ii = 0; ii < W; ii++) {
@@ -518,8 +541,10 @@ export function jet(ctx, F, j) {
         const r = len(rel);
         if (r > Rp || r < 0.04) continue;
         if (pclip && !g.isPointInPath(pclip, X, Y)) continue;
-        const v = (j.q / (2 * Math.PI * r * r)) * j.a;
-        vb = v * dot(unit(sub(O, p)), toward);
+        // across the beam: one hemisphere in the jet's color with its aliasing shell, fading at its
+        // flanks, not a red and a blue lobe either side of the beam through the orifice
+        const v = (j.q / (2 * Math.PI * r * r)) * j.a, flow = unit(sub(O, p));
+        vb = across ? v * COS40 * dot(flow, ax) : v * dot(flow, toward);
         alpha = Math.min(1, j.a * 1.4) * smooth((Math.abs(vb) / va - 0.12) / 0.12);
       }
       if (alpha <= 0.02 || Math.abs(vb) < 0.1 * va) continue;

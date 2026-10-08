@@ -110,26 +110,37 @@ export function blood(ev, p, r = 1.2) {
 
 /**
  * A chamber's cavity on the plane: rays from C (in its blood) to the nearest wall or valve, each
- * cut where it crosses one of the lines cuts ([[a, b], ...]: a valve closes the chamber there),
- * as a polygon in angle order round C. Rays that meet nothing within reach cm are left out, so
- * an opening (a vein, an outflow tract) is bridged by the rays beside it.
+ * cut where it crosses one of the cuts, as a polygon in angle order round C. A cut [a, b] is the
+ * whole line through a and b; a cut { a, b, ends } is the segment from a to b, longer by ends cm
+ * at each end (a valve closes the chamber between its hinges, and the line beyond them would cut
+ * a neighbouring outflow tract off). Rays that meet nothing within reach cm are left out, so an
+ * opening (a vein, an outflow tract) is bridged by the rays beside it.
  */
 export function cavity(ev, C, cuts = [], reach = 9, n = 144) {
   const segs = segments(ev);
-  // each line as its normal toward C and C's distance from it
-  const lines = cuts.map(([a, b]) => {
-    let nl = perp(unit(sub(b, a)));
+  // each cut as its normal toward C and C's distance from it, and a segment's ends
+  const lines = cuts.map((cut) => {
+    const [a, b] = Array.isArray(cut) ? cut : [cut.a, cut.b];
+    const e = unit(sub(b, a));
+    let nl = perp(e);
     if (dot(sub(C, a), nl) < 0) nl = mul(nl, -1);
-    return { nl, d0: dot(sub(C, a), nl) };
+    const seg = Array.isArray(cut) ? null : [sub(a, mul(e, cut.ends || 0)), add(b, mul(e, cut.ends || 0))];
+    return { nl, d0: dot(sub(C, a), nl), seg };
   });
   const P = [];
   for (let k = 0; k < n; k++) {
     const th = (2 * Math.PI * k) / n, dir = [Math.cos(th), Math.sin(th)];
     let t = cast(C, dir, segs);
-    // the ray crosses a line where its distance from it falls to 0
-    for (const { nl, d0 } of lines) {
+    // the ray crosses a line where its distance from it falls to 0; a segment, only between its ends
+    for (const { nl, d0, seg } of lines) {
       const rate = dot(dir, nl);
-      if (rate < -1e-9) t = Math.min(t, d0 / -rate);
+      if (!(rate < -1e-9)) continue;
+      const tc = d0 / -rate;
+      if (seg) {
+        const X = add(C, mul(dir, tc)), e = sub(seg[1], seg[0]), f = dot(sub(X, seg[0]), e) / dot(e, e);
+        if (f < 0 || f > 1) continue;
+      }
+      t = Math.min(t, tc);
     }
     if (t <= reach) P.push(add(C, mul(dir, t)));
   }
@@ -170,6 +181,57 @@ export function closureOf(ev, valve, M, dir) {
     if (d < gap) { gap = d; best = mul(add(p, q), 0.5); }
   }
   return best;
+}
+
+/**
+ * An aortic regurgitant jet on a long-axis view at systolic weight s: from where the shut cusps
+ * meet (closureOf) into the LVOT and the LV, with its flow convergence in the aortic root. The
+ * jet's clips are the blood seen from the LVOT just below the valve and from the LV, closed by
+ * the cusps' line and by the mitral annulus between its hinges; the convergence keeps to the
+ * root above the cusps. Null when the plane shows no cusp. n: across the jet.
+ */
+export function aorticJet(ev, s) {
+  const an = ev.anchors(s), av = onPlane(ev, an.av), lvot = onPlane(ev, an.lvot), lv = onPlane(ev, an.lv);
+  const u = unit(sub(lvot, av));
+  const O = closureOf(ev, 'AorticValve', av, u);
+  if (!O) return null;
+  const dir = unit(add(mul(u, 0.6), mul(unit(sub(lv, O)), 0.4)));
+  const shut = [add(O, perp(u)), sub(O, perp(u))];
+  const cuts = [shut];
+  const h = hingesOf(ev, 'MitralValve');
+  if (h) cuts.push({ a: h[0], b: h[1], ends: 0.3 });
+  const curtain = curtainOf(ev, s);
+  if (curtain) cuts.push(curtain);
+  const clip = cavity(ev, blood(ev, add(O, mul(dir, 0.8)), 0.4), cuts);
+  const also = [cavity(ev, blood(ev, middle([lvot, lv])), cuts)];
+  const aorta = cavity(ev, blood(ev, sub(O, mul(u, 1.2)), 0.5), [shut]);
+  return { O, dir, clip, also, aorta, n: perp(dir) };
+}
+
+/**
+ * The aortomitral curtain on a long-axis view, as a cut ({ a, b, ends }, cavity): the section
+ * draws no wall between the anterior mitral hinge and the posterior wall of the aortic root, so
+ * blood seen from the LVOT would reach the LA through the gap. From the mitral hinge nearer the
+ * aortic valve to the nearest wall point on its side of the LVOT's axis, toward the valve.
+ * Null when the plane shows no mitral hinge or no such wall within 2.5 cm.
+ */
+export function curtainOf(ev, s) {
+  const h = hingesOf(ev, 'MitralValve');
+  if (!h) return null;
+  const an = ev.anchors(s), av = onPlane(ev, an.av), u = unit(sub(onPlane(ev, an.lvot), av));
+  const A = len(sub(h[0], av)) < len(sub(h[1], av)) ? h[0] : h[1];
+  const side = (p) => Math.sign(u[0] * (p[1] - av[1]) - u[1] * (p[0] - av[0]));
+  const sA = side(A), toward = unit(sub(av, A));
+  let best = null, d = 2.5;
+  for (const W of ev.last.tissue) {
+    for (const p of W.pts) {
+      const r = sub(p, A), l = len(r);
+      if (l < 0.2 || l >= d || side(p) !== sA || dot(r, toward) <= 0) continue;
+      best = p;
+      d = l;
+    }
+  }
+  return best ? { a: A, b: best, ends: 0.15 } : null;
 }
 
 // each valve mesh's annulus ring (the smaller connected part of the valve model), found once
