@@ -10,7 +10,7 @@
 import { Sheet, clamp } from '../sketch.js';
 import { panel, spectral, vscale, caliper, tagBox, SC } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
-import { shown, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, note, fit, gradeTable } from '../sev.js';
+import { shown, tracks, lazyBands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, note, fit, gradeTable } from '../sev.js';
 import { cal } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { annulusOf, prosthesisItems, CLOSED, OPEN, SIZE } from '../gl/prostheticmesh.js';
@@ -454,6 +454,7 @@ function ppmRows(v) {
 const prostheticPage = {
   key: 'prosthetic',
   part: 'valves',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Prosthetic valves',
   nav: 'Prosthetic',
   dwell: 31,
@@ -468,7 +469,7 @@ const prostheticPage = {
   },
   init({ state, subscribe }) {
     st = state;
-    for (const valve of ['bio', 'mech']) for (const cause of ['obst', 'ppm']) BANDS_OF[`${valve}|${cause}`] = bands((x) => gradeOf(x, valve, cause));
+    for (const valve of ['bio', 'mech']) for (const cause of ['obst', 'ppm']) BANDS_OF[`${valve}|${cause}`] = lazyBands((x) => gradeOf(x, valve, cause));
     const host = document.getElementById('pro-grades');
     let painted = '';
     const paint = (s) => {

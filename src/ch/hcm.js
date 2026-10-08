@@ -17,7 +17,7 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper, tagBox } from '../scope.js';
 import { RR, EV, cycleAt, lvotV } from '../cyclemodel.js';
-import { tracks, bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit, gradeTable, shown as rnd } from '../sev.js';
+import { tracks, lazyBands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit, gradeTable, shown as rnd } from '../sev.js';
 import { cal, jet, barFor } from '../echo2d.js';
 import { mmode } from '../bmode.js';
 import { MeshPanel } from '../meshpanel.js';
@@ -736,6 +736,7 @@ function samRows(v) {
 const hcmPage = {
   key: 'hcm',
   part: 'cardiomyopathy',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Hypertrophic cardiomyopathy',
   nav: 'HCM',
   dwell: 26,
@@ -752,7 +753,7 @@ const hcmPage = {
       const heart = heartOf(s);
       if (heart === painted) return;
       painted = heart;
-      BANDS = bands((x) => gradeOf(x, heart));
+      BANDS = lazyBands((x) => gradeOf(x, heart));
       paintBands(document.getElementById('hcm-grades'), BANDS, LEV, SHORT);
     };
     paint(state);

@@ -999,12 +999,13 @@ function paintFor(s) {
   if (`${c}|${heart}` === painted || typeof document === 'undefined') return;
   painted = `${c}|${heart}`;
   const L = LABEL[c], named = (o) => Object.fromEntries(Object.entries(o).map(([g, x]) => [L[g] || g, x]));
-  paintBands(document.getElementById('mic-grades'), bandsOf(c, heart).map((b) => ({ ...b, g: L[b.g] || b.g })), named(LEVEL), SHORT[c]);
+  paintBands(document.getElementById('mic-grades'), () => bandsOf(c, heart).map((b) => ({ ...b, g: L[b.g] || b.g })), named(LEVEL), SHORT[c]);
 }
 
 const miPage = {
   key: 'mi',
   part: 'acute',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Complications of myocardial infarction',
   nav: 'MI complications',
   dwell: 40,

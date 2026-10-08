@@ -6,6 +6,7 @@ import { NORM_TABLES } from './norms.js';
 import { QUIZ } from './quiz.js';
 import { PHENOS, PHENO_STORE, presetsFor, PRESET_KEYS } from './pheno.js';
 import { setPheno, onPheno, onPhenoBusy } from './model3d.js';
+import { meshPanelsReady } from './meshpanel.js';
 import { setHeart } from './echo2d.js';
 import { JETS } from './jets.js';
 import { canPlay, setMusic, follow, cue } from './music.js';
@@ -410,6 +411,7 @@ let active = -1;
 function showChapter() {
   const i = state.chapter;
   const c = CHAPTERS[i];
+  openedAt = performance.now();
   document.documentElement.dataset.ch = c.key;
   tourT = 0;
   stepFrom = 0;
@@ -794,6 +796,38 @@ function bindStrip() {
   });
 }
 
+// ---------------------------------------------------------------- warming
+// The other chapters load their models, disease targets and figures ahead of need (warm()), so
+// that a chapter opens at once. They wait until the open chapter is ready, then go one at a time,
+// nearest first. Warmed all together at the first idle moment, they took the CPU from the open
+// chapter for seconds.
+let openedAt = 0;   // when the open chapter opened (performance.now(), showChapter)
+function warmQueue() {
+  const done = new Set();
+  const idle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 300));
+  // ready: every mesh view started so far has its model, the open chapter's and those warmed
+  // before, and the open chapter's own ready() holds. A ready() that takes over 6 s does not hold
+  // the queue (the AI chapter measures its views for seconds).
+  const openReady = () => {
+    if (!meshPanelsReady()) return false;
+    const c = CHAPTERS[state.chapter];
+    if (!c.ready || performance.now() - openedAt > 6000) return true;
+    try { return !!c.ready(); } catch (e) { return true; }
+  };
+  const step = () => {
+    if (!openReady()) { setTimeout(step, 250); return; }
+    const cur = state.chapter;
+    // nearest first; of two at the same distance, the next one
+    const next = CHAPTERS.map((c, i) => i).filter((i) => i !== cur && !done.has(i) && CHAPTERS[i].warm)
+      .sort((a, b) => Math.abs(a - cur) - Math.abs(b - cur) || b - a)[0];
+    if (next === undefined) return;
+    done.add(next);
+    CHAPTERS[next].warm();
+    idle(step);
+  };
+  idle(step);
+}
+
 function start() {
   const saved = store.get('heart-in-sound-theme');
   if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
@@ -827,7 +861,6 @@ function start() {
   document.fonts?.ready?.then(() => dirtyAll());
   document.fonts?.addEventListener?.('loadingdone', () => dirtyAll());
   requestAnimationFrame(frame);
-  const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1200));
-  idle(() => { for (const c of CHAPTERS) c.warm?.(); });
+  warmQueue();
 }
 start();

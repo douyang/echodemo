@@ -12,7 +12,7 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { RR, EV, cycleAt, mitralV } from '../cyclemodel.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, meters, note, fit, shown as rounded, waveLetter } from '../sev.js';
+import { mono, tracks, lazyBands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, meters, note, fit, shown as rounded, waveLetter } from '../sev.js';
 import { cal, jet, barFor } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { onPlane, blood, cavity, sub, add, mul, dot, unit, perp } from '../meshjet.js';
@@ -368,6 +368,7 @@ function liveOf(v, cite) {
 export default {
   key: 'endocarditis',
   part: 'valves',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Infective endocarditis',
   nav: 'IE',
   dwell: 24,
@@ -385,7 +386,7 @@ export default {
   },
   init({ state }) {
     st = state;
-    BANDS = bands((x) => gradeOf(x));
+    BANDS = lazyBands((x) => gradeOf(x));
     paintBands(document.getElementById('ie-grades'), BANDS, LEV, BAND_SHORT);
   },
   // the heart model loads at idle, before the chapter opens (main.js warms every chapter)

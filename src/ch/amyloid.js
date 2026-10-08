@@ -13,7 +13,7 @@ import { Sheet, clamp, MONO } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { panel, spectral, vscale, SC, tagBox } from '../scope.js';
 import { cycleAt, RR, EV } from '../cyclemodel.js';
-import { tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
+import { tracks, lazyBands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
 import { glsBand } from '../norms.js';
 import { loadModel } from '../model3d.js';
 import { round, stepOf, steady as holdPlace, flash } from '../edits.js';
@@ -792,6 +792,7 @@ function flashChanges(P, M, cause) {
 const amyPage = {
   key: 'amyloid',
   part: 'cardiomyopathy',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Cardiac amyloidosis',
   nav: 'Amyloid',
   dwell: 18,
@@ -805,7 +806,7 @@ const amyPage = {
   init({ state, set, subscribe }) {
     st = state;
     setState = set;
-    BANDS = bands((s) => gradeOf(q(s)), 400);
+    BANDS = lazyBands((s) => gradeOf(q(s)), 400);
     paintBands(document.getElementById('amy-grades'), BANDS, LEV, { 'wall <12 mm': '<12 mm', 'wall ≥12 mm': '≥12 mm', 'criteria met': 'met' });
     buildDiagram(document.getElementById('amy-calc'));
     // The slider, Play, the tour or a heart's preset: the values follow the slider again. A store

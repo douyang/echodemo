@@ -10,7 +10,7 @@ import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { mitralV, RR, EV, cycleAt } from '../cyclemodel.js';
 import { MR_MILD, MR_SEVERE, MR_QUANT_LABEL, mrIntegrated } from '../norms.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, waveLetter } from '../sev.js';
+import { mono, tracks, lazyBands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, waveLetter } from '../sev.js';
 import { drawA4C, cal, measures, heartShown, jet, barFor } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { laWeight, lvSizeOf, lvByEf } from '../meshcal.js';
@@ -244,7 +244,7 @@ const SEVERE = new Set(['severe', 'severe, LV dysfunction']);
 let BANDS = [];
 /** The grades along the slider, for the heart shown: a prolapse leak starts late and moves the bands. */
 function paint() {
-  BANDS = bands((x) => gradeOf(x));
+  BANDS = lazyBands((x) => gradeOf(x));
   paintBands(document.getElementById('mr-grades'), BANDS, LEV, { 'severe, LV dysfunction': 'LV dysf.' });
 }
 
@@ -790,6 +790,7 @@ function liveOf(v, s, cite) {
 const mrPage = {
   key: 'mr',
   part: 'valves',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Mitral regurgitation',
   nav: 'MR',
   dwell: 18,

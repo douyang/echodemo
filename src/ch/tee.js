@@ -455,6 +455,7 @@ const side = (v, pos, neg) => { const r = Math.round(v); return r ? `${Math.abs(
 
 export default {
   key: 'tee',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   // in the part Views, after the transthoracic views (order.js)
   part: 'views',
   title: 'Transesophageal echocardiography',

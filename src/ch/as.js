@@ -12,7 +12,7 @@ import { Sheet, clamp, mix, MONO } from '../sketch.js';
 import { panel, spectral, vscale, caliper, tagBox, SC } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
 import { asGrade, asCriteria, AS_BANDS } from '../norms.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
+import { mono, tracks, lazyBands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
 import { drawA5C, drawPSAXav, measures, cal, heartShown, jet, barFor } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { laWeight, lvSizeOf, lvByEf, lvWallOf, asWeights } from '../meshcal.js';
@@ -730,6 +730,7 @@ function liveOf(v, s, cite) {
 const asPage = {
   key: 'as',
   part: 'valves',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Aortic stenosis',
   nav: 'AS',
   dwell: 18,
@@ -743,7 +744,7 @@ const asPage = {
   init({ state, set, subscribe }) {
     st = state;
     setState = set;
-    BANDS = bands((x) => gradeOf(x));
+    BANDS = lazyBands((x) => gradeOf(x));
     paintBands(document.getElementById('as-grades'), BANDS, LEV, SHORT);
     buildDiagram(document.getElementById('as-calc'));
     // The slider, Play, the tour or a heart's preset: the values follow the slider again. A store
