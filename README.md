@@ -508,7 +508,7 @@ The videos go to `video/out/`, which git ignores. Each frame depends on its time
 | 22 Pericardial disease | No pericardial effusion to tamponade; constriction, then all three Mayo Clinic criteria | 1:06 |
 | 23 Hypertrophic cardiomyopathy | A normal wall; a septum of 14 mm; 16 mm without obstruction, then end-diastole; obstruction at rest, then severe; latent obstruction at rest, then with Valsalva and its SAM; severe obstruction with Valsalva | 1:32 |
 | 24 Cardiac amyloidosis | A normal wall to relative apical sparing | 0:48 |
-| 25 AI interpretation and measurement | The tour on the normal heart, with every step in view: views, encoder, the LV and aortic valve weights and task heads; then the 18 measurements, the septum's anchor and the report's LV and aortic valve | 1:15 |
+| 25 AI interpretation and measurement | The tour on the normal heart, with every step in view: views, encoder, the LV and aortic valve weights and task heads; then the 18 measurements, the anchor and the report's LV and aortic valve | 1:15 |
 | B1 Left ventricular assist devices | A working pump at 4,700, 5,300 and 5,900 rpm, then a suction event at 6,200 rpm; RV failure at 6,200 rpm, then at 4,600 rpm; de novo AR at 4,700 and 6,000 rpm; an obstruction of the outflow graft at 4,700 rpm, then no change at 6,100 rpm | 1:33 |
 | B2 Prosthetic valves | A bioprosthesis: normal, possible stenosis and significant stenosis; a mechanical valve: the same three; then moderate and severe prosthesis–patient mismatch | 1:22 |
 | B3 Infective endocarditis | No vegetation; a vegetation below 10 mm; 10 mm or more; diastole, with the vegetation in the LV; leaflet perforation with mild, moderate and severe MR | 1:06 |
@@ -539,7 +539,7 @@ node tools/storyboard.mjs --ch=as                              # one frame of ea
 | 52.6 | 19 Mitral regurgitation | No regurgitation, then severe with LV dysfunction |
 | 59.4 | 22 Pericardial disease | No pericardial effusion, then tamponade |
 | 66.3 | 24 Cardiac amyloidosis | A normal wall, then relative apical sparing |
-| 73.1 | 25 AI interpretation and measurement | The LV section's weights, its task heads and the septum's anchor |
+| 73.1 | 25 AI interpretation and measurement | The LV section's weights, its task heads and the anchor |
 | 82.3 | | End card |
 
 Left out, with the reason:
