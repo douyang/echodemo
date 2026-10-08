@@ -18,8 +18,8 @@
 // the quad screen of a stress test. The right ventricle, added after the review, has no clip, and
 // neither do the chapters added after it, apart from AI interpretation and measurement.
 // AI interpretation and measurement closes the intro: the weights of the LV section, its task heads,
-// then the anchor, which returns the septum's caliper from a second peak. Four bars, so that the
-// score's whole four-bar phrases still end on the end card (36 bars).
+// then the anchor. Four bars, so that the score's whole four-bar phrases still end on the end card
+// (36 bars).
 //
 // A clip has ch (the chapter's key) and bars (its length in bars of the score). A chapter clip has
 // a video in the shape of video/chapters.js. The clip of Views has a cut of the views video
@@ -89,7 +89,7 @@ export const REEL = {
       { set: { amyS: 0.9 }, name: 'Relative apical sparing', line: 'The septum measures {IVSd} mm. {s2}', move: TWO.move, hold: TWO.hold1 },
     ] } },
     { ch: 'ai', bars: 4, video: { pane: 'EchoPrime and EchoNet-Measurements', side: false, zoom: 1.25, discrete: ['aiSec', 'aiStep', 'aiRow'], steps: [
-      { set: { aiTab: 'steps', aiStep: 3, aiSec: 0, aiRow: 0, aiTwo: true }, hold: 1 },
+      { set: { aiTab: 'steps', aiStep: 3, aiSec: 0, aiRow: 0 }, hold: 1 },
       { set: { aiStep: 4 }, move: 0.75, hold: 1 },
       { set: { aiStep: 6, aiRow: 1 }, move: 0.5, hold: 0.75 },
     ] } },

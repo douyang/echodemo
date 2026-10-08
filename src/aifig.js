@@ -28,6 +28,11 @@ const SERIF = '"Newsreader", "Iowan Old Style", "Palatino Linotype", Palatino, G
 export const BAND = 0.1;
 /** The anchor's scale: the head's value ± 70%, so that the septum's second peak stays on it. */
 const SPAN = 0.7;
+/**
+ * The septum's second peak (valuesOf's two): off, and its switch hidden (ch/ai.js). The cards
+ * take the size of the values that can show. The code stays.
+ */
+export const SHOW_TWO = false;
 const SEC = Object.fromEntries(SECTIONS.map((s, i) => [s.key, i]));
 // the short names of the sections, in a caption and on a chip
 export const SEC_SHORT = ['LV', 'Wall motion', 'RV', 'LA', 'RA', 'Atrial septum', 'Mitral valve', 'Aortic valve', 'Tricuspid valve', 'Pulmonic valve', 'Pericardium', 'Aorta', 'IVC', 'PA', 'Pulmonary veins'];
@@ -473,7 +478,7 @@ function layoutFit(W, H, sh) {
  * the rest to the report.
  */
 function layoutFlow(W, H, sh) {
-  const V = valuesOf('normal', true), wide = W >= 800, lane = wide ? 0 : LANE;
+  const V = valuesOf('normal', SHOW_TWO), wide = W >= 800, lane = wide ? 0 : LANE;
   const x0 = PAD + lane, w0 = W - 2 * PAD - lane, half = (w0 - GAP) / 2;
   let merged = w0 < 600, split = 0.5;
   const rows = [];
@@ -576,7 +581,7 @@ function layoutTabs(W, H, row, sh) {
  * so it does not change with the heart.
  */
 function viewFive(sh, box, g, gy = g) {
-  const half = (box.w - g) / 2, V = valuesOf('normal', true);
+  const half = (box.w - g) / 2, V = valuesOf('normal', SHOW_TWO);
   const make = (merged, compact, h3, level) => {
     const P = {}, h2 = box.h - h3 - gy, y3 = box.y + h2 + gy;
     if (merged) P[5] = { x: box.x, y: box.y, w: box.w, h: h2 };
@@ -629,7 +634,7 @@ const REPORT_WS = 12.5;       // px: the type that sets the report's height ther
  * where the cards need more height than it gives.
  */
 function viewSix(sh, box, g, gy) {
-  const V = valuesOf('normal', true), wa = clamp(Math.round(box.w * 0.3), 280, 400), wl = box.w - wa - g;
+  const V = valuesOf('normal', SHOW_TWO), wa = clamp(Math.round(box.w * 0.3), 280, 400), wl = box.w - wa - g;
   const rows = reportLines(sh, { x: 0, w: box.w - 2 * IN }, reportOf(V), REPORT_WS).rows, lh = Math.round(REPORT_WS * 1.32);
   const repH = (compact, n) => (compact ? HEAD_C + 2 + 7 : HEAD + 4 + 8) + reportPlan(sh, box.w, box.w - 2 * IN, compact, true).foot - 2 + n * lh;
   const make = (merged, compact, h2, h3, level) => {
@@ -720,7 +725,7 @@ function bandNeed(sh, w, kind, V) {
  * phone), with a line to spare for a longer report.
  */
 function reportNeed(sh, w) {
-  const bw = w - 2 * IN, lay = reportLines(sh, { x: 0, w: bw }, reportOf(valuesOf('normal', true)), w < 420 ? 13 : 13.5);
+  const bw = w - 2 * IN, lay = reportLines(sh, { x: 0, w: bw }, reportOf(valuesOf('normal', SHOW_TWO)), w < 420 ? 13 : 13.5);
   return HEAD + 12 + reportPlan(sh, w, bw, false).foot - 2 + (lay.rows + 1) * lay.lh;
 }
 /**
@@ -1387,11 +1392,11 @@ function anchorColumns(sh, w, lines, V) {
 }
 /**
  * The height an anchor card w px wide needs for the most lines a section has (the LV's six, with
- * the septum's second peak): its header, its lines in one row each (18 px) or two (20 px), and
- * its legend. roomy: 26 px a line, for a flow.
+ * the septum's second peak where SHOW_TWO): its header, its lines in one row each (18 px) or two
+ * (20 px), and its legend. roomy: 26 px a line, for a flow.
  */
 function anchorNeed(sh, w, compact, roomy = false) {
-  const V = valuesOf('normal', true), lines = linesOf(0), bw = w - 2 * IN;
+  const V = valuesOf('normal', SHOW_TWO), lines = linesOf(0), bw = w - 2 * IN;
   const { nameW, valW } = anchorColumns(sh, bw, lines, V);
   const rows = lines.length * (roomy ? 26 : bw - nameW - valW - 10 >= 64 ? 18 : 20);
   const free = compact ? compactPlan(sh, w, '6', TITLES[6][0], TITLES[6][1]).free : 0;

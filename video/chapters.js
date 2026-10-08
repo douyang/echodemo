@@ -534,8 +534,8 @@ export const VIDEOS = {
   // every step in view: the zoom of 1.25 lays the figure out at 1459 × 542 px, at least the 540 px
   // that its three rows need. The steps sort, encode, and weigh the LV section and then the
   // aortic valve section. The task heads, the 18 measurements, the anchor and the report's LV and
-  // aortic valve follow. The anchor returns the septum's caliper from a second peak. aiRow picks
-  // the view of the figure with tabs (SHOW_TABS in src/aifig.js), which is hidden.
+  // aortic valve follow. aiRow picks the view of the figure with tabs (SHOW_TABS in src/aifig.js),
+  // which is hidden.
   // No step sets another heart: the chapter cuts its videos and tiles for the heart that the
   // page's wait (ready()) sees, and the captions leave the last step's heart there
   ai: {
@@ -544,7 +544,7 @@ export const VIDEOS = {
     zoom: 1.25,
     discrete: ['aiSec', 'aiStep', 'aiRow'],
     steps: [
-      { set: { aiTab: 'steps', aiStep: 1, aiSec: 0, aiRow: 0, aiTwo: true, pheno: 'normal' }, track: 'Sort', hold: 6 },
+      { set: { aiTab: 'steps', aiStep: 1, aiSec: 0, aiRow: 0, pheno: 'normal' }, track: 'Sort', hold: 6 },
       { set: { aiStep: 2 }, track: 'Encode', move: 2, hold: 6 },
       { set: { aiStep: 3 }, track: 'Weigh', move: 2, hold: 6 },
       { set: { aiSec: 7 }, track: 'Aortic valve', move: 2, hold: 6 },
