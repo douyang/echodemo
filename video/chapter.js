@@ -266,23 +266,26 @@ const panes = {};
 function labelTrack() { if (!CLIP) trackEls.forEach((w, i) => { w.lab.textContent = V.steps[i].track || CAPS[i].name; }); }
 
 /**
- * The progress line of the intro, with the fonts in. Each clip is as wide as the name of its
- * chapter, plus an equal share of the room left. So every name fits on one line.
+ * The progress line, with the fonts in. The steps of a chapter video share it equally (build)
+ * while each name fits its part. Else each part is as wide as its name, plus an equal share of
+ * the room left, as each clip of the intro always is. So every name fits on one line. That
+ * share must be 8 px or more, else a chapter video fails. tools/track-fit.mjs checks every line.
  */
-function sizeReelTrack() {
-  if (!CLIP) return;
-  const gap = 14, room = LAY.track.w - gap * (trackEls.length - 1), widths = () => trackEls.map((w) => w.lab.scrollWidth);
-  // names too long for the line: the longest takes its chapter's short name (its nav), as the
-  // site's chapter bar does, until every name fits
+function sizeTrack() {
+  const n = trackEls.length, gap = 14, room = LAY.track.w - gap * (n - 1), widths = () => trackEls.map((w) => w.lab.scrollWidth);
   let need = widths();
-  while ((room - need.reduce((a, b) => a + b, 0)) / trackEls.length < 8) {
+  if (!CLIP && need.every((w) => w <= room / n)) return;
+  // names too long for the line: the longest takes its chapter's short name (its nav), as the
+  // site's chapter bar does, until every name fits. A step has no short name.
+  while ((room - need.reduce((a, b) => a + b, 0)) / n < 8) {
+    if (!CLIP) throw new Error(`chapter ${KEY}: the steps' names (${need.reduce((a, b) => a + b, 0)} px) do not fit on the progress line: shorten a step's track name (video/chapters.js)`);
     const i = need.map((w, j) => [w, j]).filter(([, j]) => RL.clips[j].nav && trackEls[j].lab.textContent !== RL.clips[j].nav)
       .sort((a, b) => b[0] - a[0])[0]?.[1];
     if (i === undefined) throw new Error('the intro\'s chapter names do not fit on the progress line');
     trackEls[i].lab.textContent = RL.clips[i].nav;
     need = widths();
   }
-  const spare = (room - need.reduce((a, b) => a + b, 0)) / trackEls.length;
+  const spare = (room - need.reduce((a, b) => a + b, 0)) / n;
   let x = 0;
   trackEls.forEach((w, i) => {
     Object.assign(w.el.style, { left: `${x.toFixed(1)}px`, width: `${(need[i] + spare).toFixed(1)}px` });
@@ -668,7 +671,7 @@ async function init() {
   set(STATES[0].a);
   fitCaption();
   fitTitle();
-  sizeReelTrack();
+  sizeTrack();
   window.__clock.start();
   return {
     fps: FPS, frames: FRAMES, duration: CLIP ? CLIP.duration : L.duration, width: W, height: H, ch: KEY, name: TITLE, num: NUM, capScale,
