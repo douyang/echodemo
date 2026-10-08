@@ -14,6 +14,7 @@ import { VIEWS } from '../views.js';
 import { loadModel } from '../model3d.js';
 import { meshTrace, biplane } from '../meshtrace.js';
 import { lvSizeFor } from '../meshcal.js';
+import { STRESS_VOLUMES } from '../stresscal.js';
 import { TERRITORY } from '../aha.js';
 import { segmentMap, segmentLabels, periScale, SEG_NAMES } from './segments.js';
 
@@ -229,11 +230,14 @@ function syncLabels() {
 }
 
 // ---------------------------------------------------------------- the volumes, measured
-// The LV volumes at each stage, as chapter 09 measures them: the LV traced on the four- and
-// two-chamber views cut from the mesh at end-diastole and at end-systole (meshtrace.js), and the
-// biplane method of disks. Two small views that are never shown do the cutting.
+// The LV volumes at each stage, as Systolic function (ch/eject.js) measures them: the LV traced
+// on the four- and two-chamber views cut from the mesh at end-diastole and at end-systole
+// (meshtrace.js), and the biplane method of disks. Two small views that are never shown do the
+// cutting. The cuts take seconds, so the volumes of every heart that the header can show come
+// from a table measured the same way (stresscal.js, tools/stress-volumes.mjs); the views measure
+// only a heart that the table lacks.
 const MEAS = { a4c: new MeshPanel('a4c', { diseases: ['lvSize'] }), a2c: new MeshPanel('a2c', { diseases: ['lvSize'] }) };
-const VOL = new Map();          // `${heart version}|${case}` -> { rest: { edv, esv, ef }, ... }
+const VOL = new Map();          // `${heart version}|${case}` -> { rest: { edv, esv, ef }, ... }, measured here
 function traced(ev, s) {
   if (!ev.last || !ev.g) return null;
   const q = ev.toPlane(ev.anchors(s).apex, ev.g);
@@ -264,10 +268,16 @@ function measure(key) {
   return out;
 }
 const volKey = (key) => (geo && geo.m ? `${geo.m.pheno.version}|${key}` : '');
+/** The volumes of case key on the heart shown: the table's, or those measured here; null until the model loads. */
+function volumesOf(key) {
+  if (!geo || !geo.m) return null;
+  return STRESS_VOLUMES[geo.m.pheno.key]?.[key] || VOL.get(volKey(key)) || null;
+}
 /** One case at a time, the case shown first, while the chapter is open (or a video page waits). */
 let measuring = false;
 function measureNext() {
   if (measuring || !geo || !geo.map) return;
+  if (CASE_ORDER.every((k) => volumesOf(k))) return;
   if (MEAS.a4c.state !== 'ready' || MEAS.a2c.state !== 'ready') {
     MEAS.a4c.start();
     MEAS.a2c.start();
@@ -276,7 +286,7 @@ function measureNext() {
     setTimeout(() => { measuring = false; measureNext(); }, 120);
     return;
   }
-  const todo = [st?.sxCase || 'normal', ...CASE_ORDER].filter((k) => !VOL.has(volKey(k)));
+  const todo = [st?.sxCase || 'normal', ...CASE_ORDER].filter((k) => !volumesOf(k));
   if (!todo.length) return;
   measuring = true;
   setTimeout(() => {
@@ -286,6 +296,21 @@ function measureNext() {
     redraw();
     if (open) measureNext();
   }, 0);
+}
+
+/**
+ * The volumes of every case on the heart shown, measured on the mesh as above, whatever the table
+ * holds: tools/stress-volumes.mjs writes them to stresscal.js, and checks the table with them.
+ */
+export async function measureAll() {
+  await startMap();
+  while (geo && geo.loading) await new Promise((r) => setTimeout(r, 50));
+  if (!geo || !geo.map) throw new Error('stress: no segment map');
+  MEAS.a4c.start();
+  MEAS.a2c.start();
+  while (MEAS.a4c.state === 'loading' || MEAS.a2c.state === 'loading') await new Promise((r) => setTimeout(r, 50));
+  if (MEAS.a4c.state !== 'ready' || MEAS.a2c.state !== 'ready') throw new Error('stress: the measuring views failed');
+  return { heart: geo.m.pheno.key, volumes: Object.fromEntries(CASE_ORDER.map((k) => [k, measure(k)])) };
 }
 
 // ---------------------------------------------------------------- time
@@ -595,7 +620,7 @@ function textOf(s, cite) {
   const P = N.peak, pct = Math.round((100 * P.hr) / MAXHR);
   const sc = Object.fromEntries(STAGES.map((S) => [S.key, scoresOf(key, S.key)]));
   const w0 = wmsi(sc.rest), wl = wmsi(sc.low), w1 = wmsi(sc.peak);
-  const vol = VOL.get(volKey(key)) || {};
+  const vol = volumesOf(key) || {};
   const v0 = vol.rest, vl = vol.low, v1 = vol.peak;
   const peakWhat = `${P.dose} µg/kg/min${P.atropine ? ` and atropine ${mg(P.atropine)}` : ''}`;
   const reached = P.hr >= TARGET;
@@ -656,6 +681,7 @@ function textOf(s, cite) {
 export default {
   key: 'stress',
   part: 'function',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Stress echocardiography',
   nav: 'Stress',
   dwell: 21,
@@ -682,7 +708,7 @@ export default {
   ready() {
     if (!geo || !geo.map) { startMap(); return false; }
     if (!open) { open = true; measureNext(); }
-    return QUAD.every((p) => p.state === 'ready') && CASE_ORDER.every((k) => VOL.has(volKey(k)));
+    return QUAD.every((p) => p.state === 'ready') && CASE_ORDER.every((k) => volumesOf(k));
   },
   anim(dt, s, set) {
     if (!reducedMotion) {
@@ -693,7 +719,7 @@ export default {
     }
     // the volumes of the case shown arrived: its text again
     const k = volKey(s.sxCase);
-    if (k && VOL.has(k) && volShown !== k) { volShown = k; set({ sxVol: (s.sxVol || 0) + 1 }); }
+    if (k && volumesOf(s.sxCase) && volShown !== k) { volShown = k; set({ sxVol: (s.sxVol || 0) + 1 }); }
     if (geo && geo.map && open && !measuring) measureNext();
   },
   pulse() {

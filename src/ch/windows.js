@@ -725,6 +725,7 @@ const TOUR = ['plax', 'plax_av', 'rv_in', 'psax_av', 'psax_mv', 'psax_pm', 'a4c'
 export default {
   key: 'windows',
   part: 'views',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Views',
   dwell: 30,
   // wcine: the beat runs all the time (no control); off, the PLAX calipers would show

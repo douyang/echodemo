@@ -531,6 +531,7 @@ function liveOf(v, s, cite) {
 const massesPage = {
   key: 'masses',
   part: 'masses',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Cardiac masses and thrombus',
   nav: 'Masses',
   dwell: 30,
@@ -554,7 +555,7 @@ const massesPage = {
       const type = typeOf(s), heart = heartOf(s);
       if (`${type}|${heart}` === painted) return;
       painted = `${type}|${heart}`;
-      paintBands(host, bandsOf(type, heart), LEVEL, SHORT);
+      paintBands(host, () => bandsOf(type, heart), LEVEL, SHORT);
     };
     paint(state);
     subscribe?.((s, ch) => { if (TYPE in ch || 'pheno' in ch) paint(s); });

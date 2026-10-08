@@ -6,7 +6,7 @@
 // opposite directions with breathing (ASE 2013). The pressures and velocities are illustrative.
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
-import { tracks, bands, paintBands, playSeverity, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, shown } from '../sev.js';
+import { tracks, lazyBands, paintBands, playSeverity, cursor, rows, cols, inner, meters, LEVEL, gradeTable, note, fit, shown } from '../sev.js';
 import { drawIVC } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { rapEstimate } from '../norms.js';
@@ -283,6 +283,7 @@ function tampRows(m) {
 export default {
   key: 'peri',
   part: 'pericardium',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Pericardial effusion',
   nav: 'Peri',
   dwell: 18,
@@ -298,7 +299,7 @@ export default {
   warm() { echoA4C.start(); echoPLAX.start(); },
   init({ state }) {
     st = state;
-    BANDS = bands((s) => gradeOf(s));
+    BANDS = lazyBands((s) => gradeOf(s));
     paintBands(document.getElementById('peri-grades'), BANDS, LEV, { moderate: 'mod.', tamponade: 'tamp.' });
   },
   // the heart for the music: the page's own rate, and its beat while the cine runs

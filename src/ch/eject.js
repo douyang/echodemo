@@ -732,6 +732,7 @@ function rvLive(v, cite) {
 export default {
   key: 'eject',
   part: 'function',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Systolic function',
   nav: 'Systolic',
   dwell: 11,

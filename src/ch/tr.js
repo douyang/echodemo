@@ -12,7 +12,7 @@ import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { RR, EV, mitralV, cycleAt } from '../cyclemodel.js';
 import { TR_MILD, TR_SEVERE, TR_QUANT_LABEL, trIntegrated, rapEstimate, trvGrade } from '../norms.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, waveLetter } from '../sev.js';
+import { mono, tracks, lazyBands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, waveLetter } from '../sev.js';
 import { drawA4C, drawIVC, drawPSAXpm, cal, measures, jet, barFor } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { rvGrowOf, raWeight, sepOf } from '../meshcal.js';
@@ -838,6 +838,7 @@ function liveOf(v, s, cite) {
 const trPage = {
   key: 'tr',
   part: 'valves',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Tricuspid regurgitation',
   nav: 'TR',
   dwell: 18,
@@ -851,7 +852,7 @@ const trPage = {
   init({ state, set, subscribe }) {
     st = state;
     setState = set;
-    BANDS = bands((x) => gradeOf(x));
+    BANDS = lazyBands((x) => gradeOf(x));
     paintBands(document.getElementById('tr-grades'), BANDS, LEV, { moderate: 'mod.', torrential: 'torr.' });
     buildDiagram(document.getElementById('tr-calc'));
     // The slider, Play, the tour or a heart's preset: the values follow the slider again. A store

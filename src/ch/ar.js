@@ -11,7 +11,7 @@ import { Sheet, clamp } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
 import { AR_MILD, AR_SEVERE, AR_QUANT_LABEL, arIntegrated } from '../norms.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
+import { mono, tracks, lazyBands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit } from '../sev.js';
 import { drawPLAX, plaxLV, cal, measures, jet, barFor } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { lvDiamWeights } from '../meshcal.js';
@@ -769,6 +769,7 @@ function liveOf(v, s, cite) {
 const arPage = {
   key: 'ar',
   part: 'valves',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Aortic regurgitation',
   nav: 'AR',
   dwell: 18,
@@ -782,7 +783,7 @@ const arPage = {
   init({ state, set, subscribe }) {
     st = state;
     setState = set;
-    BANDS = bands((x) => gradeOf(x));
+    BANDS = lazyBands((x) => gradeOf(x));
     paintBands(document.getElementById('ar-grades'), BANDS, LEV, { 'severe, LV dysfunction': 'LV dysf.' });
     buildDiagram(document.getElementById('ar-calc'));
     // The slider, Play, the tour or a heart's preset: the values follow the slider again. A store

@@ -19,7 +19,7 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
-import { bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit, shown as rnd } from '../sev.js';
+import { lazyBands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, note, fit, shown as rnd } from '../sev.js';
 import { cal, jet, barFor } from '../echo2d.js';
 import { mmode } from '../bmode.js';
 import { reducedMotion } from '../state.js';
@@ -765,6 +765,7 @@ export const lvadModel = { measure, meshOf, avDrive, opensOn, vinAt, voutAt, rvo
 const lvadPage = {
   key: 'lvad',
   part: 'function',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Left ventricular assist devices',
   nav: 'LVAD',
   dwell: 30,
@@ -777,14 +778,14 @@ const lvadPage = {
   },
   init({ state, subscribe }) {
     st = state;
-    for (const k of CASES) BANDS_OF[k] = bands((x) => gradeOf(x, k)).map((bd) => ({ ...bd, g: bd.g }));
+    for (const k of CASES) BANDS_OF[k] = lazyBands((x) => gradeOf(x, k));
     const host = document.getElementById('lvad-grades');
     let painted = '';
     const paint = (s) => {
       const k = caseOf(s);
       if (k === painted) return;
       painted = k;
-      paintBands(host, BANDS_OF[k].map((bd) => ({ ...bd, g: BAND_NAME[bd.g] })), { neutral: 0, rightward: 2, leftward: 2, suction: 3 }, { rightward: 'right', leftward: 'left' });
+      paintBands(host, () => BANDS_OF[k]().map((bd) => ({ ...bd, g: BAND_NAME[bd.g] })), { neutral: 0, rightward: 2, leftward: 2, suction: 3 }, { rightward: 'right', leftward: 'left' });
     };
     paint(state);
     subscribe?.((s, ch) => { if (CASE in ch) paint(s); });

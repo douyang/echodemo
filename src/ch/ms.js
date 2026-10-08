@@ -12,7 +12,7 @@ import { Sheet, clamp } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
 import { MS_BANDS, msIntegrated } from '../norms.js';
-import { mono, tracks, bands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, shown as shownAt } from '../sev.js';
+import { mono, tracks, lazyBands, paintBands, playSeverity, Beat, cursor, rows, cols, inner, meters, LEVEL, note, fit, shown as shownAt } from '../sev.js';
 import { drawA4C, drawPSAXmv, measures, shownMitralThick, jet, barFor } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { laWeight, rvGrowOf, msWeights, mvOwnThick } from '../meshcal.js';
@@ -640,6 +640,7 @@ function liveOf(v, s, cite) {
 const msPage = {
   key: 'ms',
   part: 'valves',
+  model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Mitral stenosis',
   nav: 'MS',
   dwell: 18,
@@ -654,7 +655,7 @@ const msPage = {
   init({ state, set, subscribe }) {
     st = state;
     setState = set;
-    BANDS = bands((x) => gradeOf(x));
+    BANDS = lazyBands((x) => gradeOf(x));
     paintBands(document.getElementById('ms-grades'), BANDS, LEVEL);
     buildDiagram(document.getElementById('ms-calc'));
     // The severity slider, Play, the tour or a heart's preset: the values follow the slider again.

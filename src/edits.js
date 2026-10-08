@@ -16,10 +16,11 @@ export function stepOf(x, I, dir) {
 
 /**
  * The slider's place for result g: x if it lies in a band of g, else the middle of the nearest band
- * of g. bands: [{ a, b, g }] on 0 to 1; span: the slider's value at 1; per: the slider's steps in 1.
+ * of g. bands: [{ a, b, g }] on 0 to 1, or a function that returns them (sev.js lazyBands); span:
+ * the slider's value at 1; per: the slider's steps in 1.
  */
 export function slideTo(x, g, bands, span = 1, per = 200) {
-  const u = x / span, of = bands.filter((b) => b.g === g);
+  const u = x / span, of = (typeof bands === 'function' ? bands() : bands).filter((b) => b.g === g);
   if (!of.length || of.some((b) => u >= b.a && (u < b.b || b.b === 1))) return x;
   const dist = (b) => (u < b.a ? b.a - u : u - b.b);
   const b = of.reduce((p, q) => (dist(q) < dist(p) ? q : p));
