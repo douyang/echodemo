@@ -587,6 +587,15 @@ node tools/render-video.mjs --reel --stills=7,42.5             # PNG stills at t
 
 Each entry keeps the chapter numbers of the day it was written.
 
+- AI interpretation and measurement: the measurement model's marks in the InVision style, after the request "For AI, make the findings and markers using hte invision style, likely green instad of purple, dont use stars but dots and update annotation style". The pink of the heat maps, of the anchor's caliper dots, of the lit column's frame and of the values before the anchor is now the InVision teal `#2dc1b3` (invision-brand). On paper, text and edges take the readable teal `#0f766e`.
+  - Each caliper end on the images is a teal dot with a dark edge, on a solid teal line over a dark line. The yellow dashed line and the ring with a cross are gone. The Doppler and M-mode peaks take the same dot.
+  - Each number head is a ring in the accent, not a diamond. On a scale, the caliper's dot sits in its head's ring. On slate, the ring takes a deeper blue (the accent mixed half with accent-2): the light accent and the teal were too alike there. The dataviz palette check gives ΔE 16.8 for normal vision and 14.1 for deuteranopia, against 11.1 and 6.1 before.
+  - On paper, `#2dc1b3` has a contrast of 2.0:1, so each dot there has a `#0f766e` edge (4.9:1). On the scanner's images, the teal has 8.3:1.
+  - `blob()` in `src/ch/measure.js` takes a color. The hidden Automated measurements chapter keeps its pink heat maps and yellow calipers.
+  - `node --check` passes on the 2 changed JS files. `node tools/check-state.mjs` and `node tools/preload.mjs --check` pass. The 31 chapters open at 1440 × 900 and 390 × 844 with no page error.
+  - With the two-peaked map off, all 17 values of the five hearts are kept, so no moved or flagged mark shows. With the map on (a test only), the moved septum shows the dashed teal ring, the teal arrow and "1.3 → 0.9 cm".
+  - `docs/screenshots/ai.webp` was taken again, with the state of the screenshot before.
+  - The AI video and the intro still show the marks before this change. They render again after main is merged into this branch, with the AI chapter as 24.
 - Pericardial disease: the effusion first, after the request "Merge the two chapters on pericardium, with priority on pericardial effusion and less priority on cp". The text before held 659 words on the effusion and tamponade and 559 on constriction. Constriction is now one section of 259 words and a paragraph of 39 on restrictive cardiomyopathy: 298 words, 30% of the 985 on the two conditions. The dek leads with the effusion, and three of the four key points are on the effusion and tamponade. Effusive-constrictive pericarditis is one pitfall of the effusion. The chapter holds 1,162 words (cap 1,700).
   - The figure, the live text, the readouts, the quiz and the tour do not change. The sentences that stay keep their citations, and no new source is cited.
   - `node tools/check-state.mjs` and `node tools/preload.mjs --check` pass. The 31 chapters open at 1440 × 900 and 390 × 844 with no page error.

@@ -21,7 +21,7 @@ import { SC, spectral } from './scope.js';
 import { cycleAt, RR } from './cyclemodel.js';
 import { SECTIONS, W as WEIGHT } from './echoprime.js';
 import { buildReport } from './ch/report.js';
-import { B, D, SITE, siteValue, dopplerOf, regionOf, DW, DH, DEEPER, OFF, blob, centerMark, loadViews, warmViews, reportedFrame } from './ch/measure.js';
+import { B, D, SITE, siteValue, dopplerOf, regionOf, DW, DH, DEEPER, OFF, blob, loadViews, warmViews, reportedFrame } from './ch/measure.js';
 
 const SERIF = '"Newsreader", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif';
 /** A head's range in the figure: its value ± 10%. A band chosen for the figure, not the model's error. */
@@ -197,8 +197,11 @@ const mix = (a, b, u) => a.map((x, i) => Math.round(x + (b[i] - x) * u));
 const css = (c, a = 1) => (a >= 1 ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`);
 /**
  * The figure's colors from the sheet's tokens, in both themes: the cards on paper-2; the weights
- * from paper-3 (0) to the accent (1); the heat maps' pink, on the paper and on the scanner.
+ * from paper-3 (0) to the accent (1). The measurement model's marks are in the InVision teal
+ * (invision-brand): #2dc1b3 for the heat maps, the calipers' dots and lines and the frame; on
+ * paper, text and outlines in the readable teal #0f766e.
  */
+const TEAL = '#2dc1b3', TEAL_RGB = [45, 193, 179];
 function palette(t) {
   const key = `${t.paper}|${t.paper2}|${t.paper3}|${t.accent}|${t.dark}`;
   if (PAL.key === key) return PAL;
@@ -207,7 +210,11 @@ function palette(t) {
     key,
     card: t.paper2,
     weight: (w) => css(mix(p3, ac, clamp(w, 0, 1))),
-    pink: t.dark ? '#ff6fb5' : '#d2398c',
+    teal: TEAL,
+    tealInk: t.dark ? TEAL : '#0f766e',
+    // the head's ring beside the teal dot: the accent; on slate a deeper blue, as the light accent
+    // and the teal are too alike there (dataviz palette check: ΔE 11 against 17)
+    head: t.dark ? css(mix(ac, rgbOf(t.accent2), 0.5)) : t.accent,
     band: css(ac, t.dark ? 0.3 : 0.2),
     lit: css(rgbOf(t.accent2), t.dark ? 0.75 : 0.55),
   };
@@ -255,15 +262,6 @@ function rrect(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }
-function diamond(ctx, x, y, r, fill) {
-  ctx.save();
-  ctx.fillStyle = fill;
-  ctx.beginPath();
-  ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.85, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.85, y);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-}
 function dot(ctx, x, y, r, fill) {
   ctx.save();
   ctx.fillStyle = fill;
@@ -279,6 +277,41 @@ function ring(ctx, x, y, r, color) {
   ctx.setLineDash([2, 2]);
   ctx.beginPath();
   ctx.arc(x, y, r, 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.restore();
+}
+/** A number head: a ring in the accent. On a scale, the caliper's dot inside it is a value the head confirms. */
+function headRing(ctx, x, y, r, color) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1.4, r * 0.34);
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.restore();
+}
+/** A caliper's value: a teal dot, edged in the readable teal on paper, where the teal alone is pale. */
+function calDot(ctx, t, x, y, r) {
+  const C = palette(t);
+  dot(ctx, x, y, r, C.teal);
+  if (t.dark) return;
+  ctx.save();
+  ctx.strokeStyle = C.tealInk;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.restore();
+}
+/** A caliper's end on the scanner's image: a teal dot, edged dark so that it holds over bright tissue. */
+function endDot(ctx, x, y, r = 2.4) {
+  ctx.save();
+  ctx.fillStyle = TEAL;
+  ctx.strokeStyle = 'rgba(8,10,12,0.85)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, 2 * Math.PI);
+  ctx.fill();
   ctx.stroke();
   ctx.restore();
 }
@@ -959,8 +992,8 @@ function weighPanel(sh, t, b, sec, hits) {
     hits.push({ x0: b.x + s * cw, y0: b.y, x1: b.x + (s + 1) * cw, y1: b.y + h, sec: s });
   }
   ctx.save();
-  ctx.strokeStyle = C.pink;
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = C.teal;
+  ctx.lineWidth = 2.2;
   rrect(ctx, b.x + sec * cw - 1.5, b.y - 2.5, cw + 1.4, h + 4, 3);
   ctx.stroke();
   ctx.restore();
@@ -981,7 +1014,7 @@ function answerPanel(sh, t, b, sec, V, hits) {
       const x = x0 + c * (s + g), y = gy + r * (s + g);
       ctx.fillStyle = lit ? t.accent : t.paper3;
       ctx.fillRect(x, y, s, s);
-      if (r < nh) diamond(ctx, x + s / 2, y + s / 2, s * 0.32, lit ? t.paper2 : t.ink3);
+      if (r < nh) headRing(ctx, x + s / 2, y + s / 2, s * 0.3, lit ? t.paper2 : t.ink3);
     }
     hits.push({ x0: x0 + c * (s + g) - g / 2, y0: gy, x1: x0 + c * (s + g) + s + g / 2, y1: gy + HEADS_PER * (s + g), sec: c });
   }
@@ -1156,18 +1189,21 @@ function bTile(sh, t, img, o, V, tag = o.tag) {
     ctx.drawImage(T.canvas, sx, sy, sw, shh, img.x, img.y, img.w, img.h);
     // the heat maps: a peak on each end, the second peak on the septum's map
     const sig = Math.max(2.2, 0.15 * k);
-    for (const p of [f.ends[0], f.ends[1], ...(two ? [f.p2] : [])]) { const q = P(p); blob(ctx, q[0], q[1], sig, 0.75); }
-    // the caliper after the anchor; with two peaks, the model's own end (between them) ringed
+    for (const p of [f.ends[0], f.ends[1], ...(two ? [f.p2] : [])]) { const q = P(p); blob(ctx, q[0], q[1], sig, 0.6, TEAL_RGB); }
+    // the caliper after the anchor: a teal line between two teal dots, over a dark line that
+    // keeps it clear of bright tissue; with two peaks, the model's own end (between them) ringed
     const A = P(f.ends[0]), Bq = P(f.ends[1]);
-    ctx.strokeStyle = SC.cal;
-    ctx.lineWidth = 1.2;
-    ctx.setLineDash([3, 2.5]);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(8,10,12,0.6)';
+    ctx.lineWidth = 2.6;
     ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(Bq[0], Bq[1]); ctx.stroke();
-    ctx.setLineDash([]);
-    for (const q of [A, Bq]) centerMark(ctx, q[0], q[1], 2.2);
+    ctx.strokeStyle = TEAL;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(Bq[0], Bq[1]); ctx.stroke();
+    for (const q of [A, Bq]) endDot(ctx, q[0], q[1]);
     if (two) {
       const e = f.two[o.m.two.end], q = P(e);
-      ring(ctx, q[0], q[1], 3.6, palette(t).pink);
+      ring(ctx, q[0], q[1], 3.6, TEAL);
     }
   } else {
     ctx.strokeStyle = SC.frame;
@@ -1217,12 +1253,12 @@ function dTile(sh, t, img, o, V, tag = o.tag) {
       ctx.globalAlpha = 1;
     }
   }
-  // the heat maps on the peaks, and their weighted centers
+  // the heat maps on the peaks, and their weighted centers as teal dots
   const sig = Math.max(2.4, (9 / DH) * bx.h);
   for (const p of Dd.points) {
     const q = regionOf(Dd, p), x = bx.x + (q[0] / DW) * bx.w, y = bx.y + (q[1] / DH) * bx.h;
-    blob(ctx, x, y, sig, 0.8);
-    centerMark(ctx, x, y, 2.2);
+    blob(ctx, x, y, sig, 0.65, TEAL_RGB);
+    endDot(ctx, x, y);
   }
   ctx.restore();
   imgTag(sh, img, tag);
@@ -1245,11 +1281,11 @@ function tileLabel(sh, t, b, o, r, lit, one, level = 0) {
   if (r.state === 'moved') {
     // the caliper's own value before it, where it fits
     const was = `${calText(r)}→`, wO = F(10, MONO, 500), left = one && named ? b.x + nw + 6 : b.x;
-    if (b.x + b.w - vw - 3 - sh.measure(was, wO) >= left) sh.text(was, b.x + b.w - vw - 3, vy, { ...wO, align: 'right', color: C.pink });
+    if (b.x + b.w - vw - 3 - sh.measure(was, wO) >= left) sh.text(was, b.x + b.w - vw - 3, vy, { ...wO, align: 'right', color: C.tealInk });
   }
   if (level === 0) miniAnchor(sh.ctx, t, b.x + 2, vy + 10, b.w - 4, r);
 }
-/** The anchor check: the head's range and diamond on a short scale, the caliper's dot. */
+/** The anchor check: the head's range and ring on a short scale, the caliper's dot. */
 function miniAnchor(ctx, t, x, y, w, r) {
   const C = palette(t), half = Math.min(w / 2 - 6, 60), cx = x + w / 2;
   const X = (v) => cx + clamp((v / r.head - 1) / SPAN, -1.05, 1.05) * half;
@@ -1260,29 +1296,30 @@ function miniAnchor(ctx, t, x, y, w, r) {
   ctx.fillStyle = C.band;
   ctx.fillRect(X(r.lo), y - 3.5, X(r.hi) - X(r.lo), 7);
   ctx.restore();
-  diamond(ctx, X(r.head), y, 4.2, t.accent);
+  headRing(ctx, X(r.head), y, 4, C.head);
   if (r.state === 'moved') {
-    ring(ctx, X(r.cal), y, 3.4, C.pink);
+    ring(ctx, X(r.cal), y, 3.4, C.tealInk);
     ctx.save();
-    ctx.strokeStyle = C.pink;
-    ctx.fillStyle = C.pink;
+    ctx.strokeStyle = C.tealInk;
+    ctx.fillStyle = C.tealInk;
     ctx.lineWidth = 1;
     const a = X(r.cal) - 4.5, bb = X(r.value) + 5;
     ctx.beginPath(); ctx.moveTo(a, y); ctx.lineTo(bb + 3, y); ctx.stroke();
     arrowHead(ctx, bb, y, -1, 0, 4);
     ctx.restore();
   }
-  dot(ctx, X(r.value) + 0.6, y, 2.6, r.state === 'flagged' ? t.flag : C.pink);
+  if (r.state === 'flagged') dot(ctx, X(r.value), y, 2.4, t.flag);
+  else calDot(ctx, t, X(r.value), y, 2.4);
 }
 
 // 6 · Anchor: a line for each output of the section
 /** A legend glyph at (x, y), the baseline of its text: the head, the caliper, a second peak or a flag. */
 function legendGlyph(ctx, t, g, x, y) {
   const C = palette(t);
-  if (g === 'd') diamond(ctx, x + 4, y - 3.5, 4, t.accent);
-  else if (g === 'c') dot(ctx, x + 4, y - 3.5, 2.8, C.pink);
+  if (g === 'd') headRing(ctx, x + 4, y - 3.5, 3.6, C.head);
+  else if (g === 'c') calDot(ctx, t, x + 4, y - 3.5, 2.8);
   else if (g === 'f') flagMark(ctx, x + 2, y, 8, t.flag);
-  else ring(ctx, x + 4, y - 3.5, 3.4, C.pink);
+  else ring(ctx, x + 4, y - 3.5, 3.4, C.tealInk);
 }
 /**
  * The anchor's legend at the foot of box b: its items [glyph, text, short text] in one line, or
@@ -1339,7 +1376,7 @@ function anchorRows(sh, t, area, lines, V) {
     if (r.state === 'moved') {
       const v = valueText(o, r), was = `${calText(r)} →`, w1 = sh.measure(v, { ...valO, weight: 600 });
       sh.text(v, right, ty, { ...valO, weight: 600, align: 'right', color: t.accent });
-      sh.text(was, right - w1 - 6, ty, { ...valO, align: 'right', color: C.pink });
+      sh.text(was, right - w1 - 6, ty, { ...valO, align: 'right', color: C.tealInk });
       vw = w1 + 6 + sh.measure(was, valO);
     } else {
       const v = valueText(o, r), fw = r.state === 'flagged' ? 10 : 0;
@@ -1348,7 +1385,7 @@ function anchorRows(sh, t, area, lines, V) {
       vw = sh.measure(v, valO) + fw;
     }
     sh.text(fits(sh, [o.name, o.short], area.w - vw - 8, nameO) ?? o.short, area.x, ty, { ...nameO, color: t.ink });
-    // the scale: the head's range and diamond, the caliper's dot; a moved caliper ringed, with its arrow
+    // the scale: the head's range and ring, the caliper's dot; a moved caliper ringed, with its arrow
     ctx.save();
     ctx.strokeStyle = t.rule;
     ctx.lineWidth = 1;
@@ -1357,19 +1394,20 @@ function anchorRows(sh, t, area, lines, V) {
     rrect(ctx, X(r.lo), y - 3.5, X(r.hi) - X(r.lo), 7, 2);
     ctx.fill();
     ctx.restore();
-    diamond(ctx, X(r.head), y, 4.6, t.accent);
+    headRing(ctx, X(r.head), y, 4.4, C.head);
     if (r.state === 'moved') {
-      ring(ctx, X(r.cal), y, 3.8, C.pink);
+      ring(ctx, X(r.cal), y, 3.8, C.tealInk);
       ctx.save();
-      ctx.strokeStyle = C.pink;
-      ctx.fillStyle = C.pink;
+      ctx.strokeStyle = C.tealInk;
+      ctx.fillStyle = C.tealInk;
       ctx.lineWidth = 1;
       const a = X(r.cal) - 5, e = X(r.value) + 5.5;
       ctx.beginPath(); ctx.moveTo(a, y); ctx.lineTo(e + 3, y); ctx.stroke();
       arrowHead(ctx, e, y, -1, 0, 4);
       ctx.restore();
     }
-    dot(ctx, X(r.value) + 0.6, y, 3, r.state === 'flagged' ? t.flag : C.pink);
+    if (r.state === 'flagged') dot(ctx, X(r.value), y, 2.6, t.flag);
+    else calDot(ctx, t, X(r.value), y, 2.6);
   });
 }
 /** The legend's items [glyph, text, short text]: the head and its range, the caliper, a second peak, a flag. */
@@ -1435,24 +1473,25 @@ function anchorPanel(sh, t, b, sec, V, head) {
     rrect(ctx, X(r.lo), y - 6, X(r.hi) - X(r.lo), 12, 2);
     ctx.fill();
     ctx.restore();
-    diamond(ctx, X(r.head), y, 6.5, t.accent);
+    headRing(ctx, X(r.head), y, 6, C.head);
     if (r.state === 'moved') {
-      ring(ctx, X(r.cal), y, 5.5, C.pink);
+      ring(ctx, X(r.cal), y, 5.5, C.tealInk);
       ctx.save();
-      ctx.strokeStyle = C.pink;
-      ctx.fillStyle = C.pink;
+      ctx.strokeStyle = C.tealInk;
+      ctx.fillStyle = C.tealInk;
       ctx.lineWidth = 1.2;
       const a = X(r.cal) - 7, e = X(r.value) + 7;
       ctx.beginPath(); ctx.moveTo(a, y); ctx.lineTo(e + 4, y); ctx.stroke();
       arrowHead(ctx, e, y, -1, 0, 5);
       ctx.restore();
     }
-    dot(ctx, X(r.value) + 1, y, 4.2, r.state === 'flagged' ? t.flag : C.pink);
+    if (r.state === 'flagged') dot(ctx, X(r.value), y, 3.6, t.flag);
+    else calDot(ctx, t, X(r.value), y, 3.6);
     const vx = area.x + area.w;
     if (r.state === 'moved') {
       const v = valueText(o, r), vw = sh.measure(v, { ...valO, weight: 600 });
       sh.text(v, vx, y + 4, { ...valO, weight: 600, align: 'right', color: t.accent });
-      sh.text(`${calText(r)} →`, vx - vw - 7, y + 4, { ...valO, align: 'right', color: C.pink });
+      sh.text(`${calText(r)} →`, vx - vw - 7, y + 4, { ...valO, align: 'right', color: C.tealInk });
     } else {
       const v = valueText(o, r);
       sh.text(v, vx - (r.state === 'flagged' ? 10 : 0), y + 4, { ...valO, align: 'right', color: r.state === 'flagged' ? t.flag : t.ink });
@@ -1588,7 +1627,7 @@ function links(sh, t, L) {
   const w2 = sh.measure(s2, lo) + 14;
   const cx = (x4 + xb) / 2;
   if (w2 < x4 - xb - 20) {
-    diamond(ctx, cx - w2 / 2 + 4, ym - 8, 4, t.accent);
+    headRing(ctx, cx - w2 / 2 + 4, ym - 8, 3.6, t.accent);
     sh.text(s2, cx - w2 / 2 + 12, ym - 4.5, { ...lo, color: t.accent });
   }
 }
@@ -1620,7 +1659,7 @@ function arrows(sh, t, L) {
   ctx.restore();
   sh.text(K.s1, K.x1 + 9, ym + 4, { ...F(11, SANS, 400), color: t.ink2 });
   const yb = K.at === 'branch' ? ym - 4.5 : K.at === 1 ? ym + 4 : ym + 20;
-  diamond(ctx, K.l2x + 4, yb - 3.5, 4, t.accent);
+  headRing(ctx, K.l2x + 4, yb - 3.5, 3.6, t.accent);
   sh.text(K.s2, K.l2x + 12, yb, { ...F(11, MONO, 500), color: t.accent });
 }
 
@@ -1638,7 +1677,7 @@ function linkNotes(sh, t, b) {
   arrowHead(ctx, b.x + 4, y1 + 1, 0, 1, 5);
   ctx.restore();
   sh.text(a, b.x + 14, y1, { ...o, color: t.ink2 });
-  diamond(ctx, x2 + 4, y2 - 4, 4, t.accent);
+  headRing(ctx, x2 + 4, y2 - 4, 3.6, t.accent);
   sh.text(d, x2 + 12, y2, { ...lo, color: t.accent });
 }
 
