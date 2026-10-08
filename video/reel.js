@@ -88,7 +88,7 @@ export const REEL = {
       { set: { amyS: 0 }, pick: [2], hold: TWO.hold0 },
       { set: { amyS: 0.9 }, name: 'Relative apical sparing', line: 'The septum measures {IVSd} mm. {s2}', move: TWO.move, hold: TWO.hold1 },
     ] } },
-    { ch: 'ai', bars: 4, video: { pane: 'EchoPrime and EchoNet-Measurements', side: false, discrete: ['aiSec', 'aiStep', 'aiRow'], steps: [
+    { ch: 'ai', bars: 4, video: { pane: 'EchoPrime and EchoNet-Measurements', side: false, zoom: 1.25, discrete: ['aiSec', 'aiStep', 'aiRow'], steps: [
       { set: { aiTab: 'steps', aiStep: 3, aiSec: 0, aiRow: 0, aiTwo: true }, hold: 1 },
       { set: { aiStep: 4 }, move: 0.75, hold: 1 },
       { set: { aiStep: 6, aiRow: 1 }, move: 0.5, hold: 0.75 },
