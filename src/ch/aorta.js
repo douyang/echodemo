@@ -807,7 +807,7 @@ function laxDissection(ctx, box, v, tms) {
         const q = Math.PI * (Math.max(v.vc, 0.24) / 2) ** 2 * 400, Rc = 0.35 + 0.6 * v.vc;
         // no color on the cusps, on the flap or across it, and the convergence zone only near the orifice
         const skip = (p) => near(p, 0.05) || (v.flap && acrossFlap(L, p, band)) || (dot(sub(p, J.O), J.dir) < 0 && len(sub(p, J.O)) > Rc) || (J.aml && behind(J.aml, J.O, p));
-        jet(c, F, { q, va: NYQ, vc: v.vc, jl, jw: 1.5 * v.vc, a, pisa: true, O: J.O, dir: J.dir, clip: J.clip, clipOr: J.also, box: false, skip });
+        jet(c, F, { q, va: NYQ, vc: v.vc, jl, jw: 1.5 * v.vc, a, pisa: true, O: J.O, dir: J.dir, clip: J.clip, clipOr: J.also, box: false, skip, fade: true });
       }
       colorBox(c, F, ext);
       barFor(c, F, -NYQ, NYQ);
