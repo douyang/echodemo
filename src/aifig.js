@@ -969,8 +969,22 @@ function videoRows(b, bottom) {
   const y0 = b.y + ROWS_TOP, h = bottom - 6 - y0;
   return { y0, rh: h / N_VID, h };
 }
-/** The type of the rows' labels at a pitch of rh px: 8.5 px, or 7 px under 10 px; under 7 px on every second row. */
-const rowLabel = (rh) => ({ o: F(rh >= 10 ? 8.5 : 7, MONO, 500), every: rh >= 7 ? 1 : 2 });
+/** The type of the rows' labels at a pitch of rh px: 8.5 px, or 7 px under 10 px. */
+const rowLabel = (rh) => ({ o: F(rh >= 10 ? 8.5 : 7, MONO, 500) });
+/**
+ * The rows that carry a label at a pitch of rh px: every row from 6.5 px, where the 7 px type
+ * still clears the next row. Under 6.5 px, two labels stay 7 px apart, and the rows of the chosen
+ * section's largest weights take theirs first, so that the views and weights that the section
+ * rests on keep their labels in steps 2 and 3.
+ */
+function labelRows(rh, sec) {
+  const d = rh >= 6.5 ? 1 : Math.max(2, Math.ceil(7 / rh));
+  if (d === 1) return new Array(N_VID).fill(true);
+  const show = new Array(N_VID).fill(false), taken = [];
+  const order = [...Array(N_VID).keys()].sort((a, b) => WEIGHT[sec][VG[b]] - WEIGHT[sec][VG[a]] || a - b);
+  for (const i of order) if (taken.every((j) => Math.abs(i - j) >= d)) { taken.push(i); show[i] = true; }
+  return show;
+}
 /** An outlined box over a card's content: its name at the left, a note at the right. */
 function moduleBox(sh, t, b, names, note) {
   const ctx = sh.ctx, tO = F(10.5, SANS, 600), mO = F(9.5, MONO, 500), nw = sh.measure(note, mO);
@@ -989,11 +1003,11 @@ const MODULE_H = 21;
  * The encoder's box, and a row for each video: its view's tag and a stripe of its numbers. The
  * stripe is a sketch, 32 bars for the 512 numbers. A bus leads from the box to each row.
  */
-function encodeRows(sh, t, b, heart, rowsY) {
+function encodeRows(sh, t, b, heart, rowsY, sec) {
   const ctx = sh.ctx;
   const bottom = caption(sh, t, b, ['every video → 512 numbers', '512 numbers a video']);
   moduleBox(sh, t, b, ['Video encoder', 'Encoder'], 'mViT');
-  const R = videoRows(b, bottom), L = rowLabel(R.rh);
+  const R = videoRows(b, bottom), L = rowLabel(R.rh), show = labelRows(R.rh, sec);
   const tagW = Math.max(...VIEW_TAG.map((x) => sh.measure(x, L.o)));
   const bx = b.x + tagW + 7, x1 = bx + 6, n = 32, cw = (b.x + b.w - x1) / n;
   const ac = rgbOf(t.accent), seed = [...heart].reduce((a, ch) => a + ch.charCodeAt(0), 0);
@@ -1008,7 +1022,7 @@ function encodeRows(sh, t, b, heart, rowsY) {
   ctx.restore();
   for (let i = 0; i < N_VID; i++) {
     const y = R.y0 + i * R.rh, r = rng(4000 + i * 31 + seed);
-    if (i % L.every === 0) sh.text(VIEW_TAG[i], b.x + tagW, y + R.rh / 2 + L.o.size * 0.35, { ...L.o, align: 'right', color: t.ink3 });
+    if (show[i]) sh.text(VIEW_TAG[i], b.x + tagW, y + R.rh / 2 + L.o.size * 0.35, { ...L.o, align: 'right', color: t.ink3 });
     for (let k = 0; k < n; k++) {
       ctx.fillStyle = css(ac, 0.14 + 0.86 * r());
       ctx.fillRect(x1 + k * cw, y + 1.5, Math.max(0.8, cw - 1), Math.max(1, R.rh - 3));
@@ -1068,13 +1082,13 @@ function weighLines(sh, t, b, sec, hits) {
     ctx.restore();
     hits.push({ x0: b.x + s * sw, y0: b.y, x1: b.x + (s + 1) * sw, y1: b.y + 20, sec: s });
   }
-  const R = videoRows(b, bottom), L = rowLabel(R.rh), pO = F(10.5, SANS, 600);
+  const R = videoRows(b, bottom), L = rowLabel(R.rh), show = labelRows(R.rh, sec), pO = F(10.5, SANS, 600);
   const name = fits(sh, [SECTIONS[sec].name, SEC_SHORT[sec]], b.w * 0.5, pO) ?? SEC_SHORT[sec];
   const pw = sh.measure(name, pO) + 18, ph = 22, px = b.x + b.w - pw, py = R.y0 + R.h / 2 - ph / 2;
   const x0 = b.x + sh.measure('0.00', L.o) + 6, ac = rgbOf(t.accent);
   for (let i = 0; i < N_VID; i++) {
     const w = WEIGHT[sec][VG[i]], y = R.y0 + R.rh * (i + 0.5);
-    if (i % L.every === 0) sh.text(w.toFixed(2), b.x, y + L.o.size * 0.35, { ...L.o, color: w >= 0.5 ? t.ink : t.ink3 });
+    if (show[i]) sh.text(w.toFixed(2), b.x, y + L.o.size * 0.35, { ...L.o, color: w >= 0.5 ? t.ink : t.ink3 });
     if (w <= 0) continue;
     const ex = px - 1, ey = py + ph / 2, mx = x0 + (ex - x0) * 0.55;
     ctx.save();
@@ -1961,7 +1975,7 @@ export function drawFigure(sh, t, S, F1) {
     if (clip) { ctx.save(); ctx.beginPath(); ctx.rect(clip.x, clip.y, clip.w, clip.h); ctx.clip(); }
     const b = card(sh, t, P, k, lit(k), compact(k), k === 5 && L.merged, !!L.fit);
     if (k === 1) sortPanel(sh, t, b, F1);
-    else if (k === 2) (SHOW_GRIDS ? encodeGrid : encodeRows)(sh, t, b, V.heart, rows);
+    else if (k === 2) (SHOW_GRIDS ? encodeGrid : encodeRows)(sh, t, b, V.heart, rows, S.sec);
     else if (k === 3) (SHOW_GRIDS ? weighGrid : weighLines)(sh, t, b, S.sec, hits);
     else if (k === 4) { if (SHOW_GRIDS) answerGrid(sh, t, b, S.sec, V, hits); else answerList(sh, t, b, S.sec, V); }
     else if (k === 5 && L.merged) bothBands(sh, t, b, S.sec, V, hits, level, clip ? P : null, L.split);
