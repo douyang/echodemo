@@ -18,7 +18,6 @@ import mrPage from './ch/mr.js';
 import trPage from './ch/tr.js';
 import periPage from './ch/peri.js';
 import amyloidPage from './ch/amyloid.js';
-import ivcPage from './ch/ivc.js';
 import stressPage from './ch/stress.js';
 import rvPage from './ch/rv.js';
 import lvadPage from './ch/lvad.js';
@@ -33,6 +32,7 @@ import miPage from './ch/mi.js';
 // load it. To restore it, add `import shockPage from './ch/shock.js';` here and shockPage to BY
 // below, and follow the steps at SHOW_SHOCK in order.js. Constrictive pericarditis is hidden as a
 // chapter of its own (SHOW_CONSTRICT in order.js) in the same way: Pericardial disease shows it.
+// So is the inferior vena cava (SHOW_IVC): Doppler hemodynamics shows it.
 import measurePage from './ch/measure.js';
 import aiPage from './ch/ai.js';
 import teePage from './ch/tee.js';
@@ -43,7 +43,7 @@ import { ORDER, BONUS_PAGE, BONUS, numOf } from './order.js';
 
 export { numOf } from './order.js';
 
-const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, ivcPage, pressure, eject, segments, fill,
+const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, pressure, eject, segments, fill,
   asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, hcmPage, shuntsPage, massesPage, miPage, measurePage, aiPage, teePage, report, bonusPage].map((c) => [c.key, c]));
 /**
  * Every chapter shown, in the order back and next step through them: the main chapters in
