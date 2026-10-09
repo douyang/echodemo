@@ -28,6 +28,8 @@ const SERIF = '"Newsreader", "Iowan Old Style", "Palatino Linotype", Palatino, G
 export const BAND = 0.1;
 /** The anchor's scale: the head's value ± 70%, so that the septum's second peak stays on it. */
 const SPAN = 0.7;
+/** The anchor's one band for all its lines (SHOW_SCALES off): the head's value ± 25%, or ± SPAN with the second peak. */
+const SPAN_BAND = 0.25;
 /**
  * The septum's second peak (valuesOf's two): off, and its switch hidden (ch/ai.js). The cards
  * take the size of the values that can show. The code stays.
@@ -445,6 +447,15 @@ const BANDS = 0.46;         // the bands' share of the height under row 1, as in
  * or more, else one of two views with tabs at the top. Hidden; the code stays.
  */
 export const SHOW_TABS = false;
+/**
+ * Steps 2 to 4 as grids, as before 9 Oct 2026: a grid of numbers for the videos, the weights of
+ * every section in its column, and the 150 heads in a grid. Off: a stripe for each video, a line
+ * from each video to the chosen section, and that section's heads with their output. The code
+ * stays.
+ */
+const SHOW_GRIDS = false;
+/** A scale on each line of the anchor, as before 9 Oct 2026. Off: one band and one head line for all its lines. The code stays. */
+const SHOW_SCALES = false;
 const FIT_W = 840, FIT_H = 540;   // px: the smallest box that shows every step at once
 const LINK = 30;            // px: the band of the two links over the measurements, in one line
 const LINK2 = 46;           // the band in two lines
@@ -736,10 +747,15 @@ function sortNeed(sh, w, tmin) {
   const r = Math.ceil(N_VID / c), th = (bw - (c - 1) * 2) / c / 1.12;
   return Math.ceil(r * th + (r - 1) * 2) + HEAD + 12 + 18;
 }
-/** The heights of the cards of steps 2, 3 and 4, w px wide: 14 rows of numbers; 14 rows of weights, as high as a column is wide up to 11 px; the heads, 6 to 14 px each. */
-const encodeNeed = () => HEAD + 12 + 18 + 14 * 8;
-const weighNeed = (w) => HEAD + 12 + 18 + Math.ceil(14 * clamp((w - 2 * IN) / 15, 6, 11));
-const answerNeed = (w) => HEAD + 12 + Math.ceil(10 * clamp((w - 2 * IN - 33.6) / 15, 6, 14) + 83.6);
+/**
+ * The heights of the cards of steps 2, 3 and 4, w px wide: the encoder's box and the sections'
+ * strip over 14 rows of 11 px; the heads' box over the LV's eight number heads at 15 px and four
+ * lines of words. With the grids (SHOW_GRIDS): 14 rows of numbers; 14 rows of weights, as high as
+ * a column is wide up to 11 px; the heads, 6 to 14 px each.
+ */
+const encodeNeed = () => (SHOW_GRIDS ? HEAD + 12 + 18 + 14 * 8 : HEAD + 12 + 18 + ROWS_TOP + 6 + 14 * 11);
+const weighNeed = (w) => (SHOW_GRIDS ? HEAD + 12 + 18 + Math.ceil(14 * clamp((w - 2 * IN) / 15, 6, 11)) : encodeNeed());
+const answerNeed = (w) => (SHOW_GRIDS ? HEAD + 12 + Math.ceil(10 * clamp((w - 2 * IN - 33.6) / 15, 6, 14) + 83.6) : HEAD + 12 + 18 + 29 + 8 * 15 + 4 * 14);
 const TILE_W = { b: 96, d: 88 };   // px: the width of a band's tiles in a flow
 /**
  * The height of a band's tiles in a card w px wide: the columns whose tiles come nearest TILE_W
@@ -946,8 +962,63 @@ function sortPanel(sh, t, b, F1) {
   }
 }
 
-// 2 · Encode: the encoder, and each video as a row of numbers
-function encodePanel(sh, t, b, heart, rowsY) {
+// 2 · Encode: the encoder, and each video as a stripe of its 512 numbers
+const ROWS_TOP = 30;          // px over the rows of steps 2 and 3: the encoder's box, the sections' strip
+/** The rows of the 14 videos in the cards of steps 2 and 3: the first row's top, the pitch, the height. */
+function videoRows(b, bottom) {
+  const y0 = b.y + ROWS_TOP, h = bottom - 6 - y0;
+  return { y0, rh: h / N_VID, h };
+}
+/** The type of the rows' labels at a pitch of rh px: 8.5 px, or 7 px under 10 px; under 7 px on every second row. */
+const rowLabel = (rh) => ({ o: F(rh >= 10 ? 8.5 : 7, MONO, 500), every: rh >= 7 ? 1 : 2 });
+/** An outlined box over a card's content: its name at the left, a note at the right. */
+function moduleBox(sh, t, b, names, note) {
+  const ctx = sh.ctx, tO = F(10.5, SANS, 600), mO = F(9.5, MONO, 500), nw = sh.measure(note, mO);
+  ctx.save();
+  rrect(ctx, b.x + 0.5, b.y + 0.5, b.w - 1, MODULE_H, 6);
+  ctx.strokeStyle = t.accent;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.restore();
+  const name = fits(sh, names, b.w - nw - 26, tO) ?? [].concat(names).pop();
+  sh.text(name, b.x + 9, b.y + 15, { ...tO, color: t.ink });
+  sh.text(note, b.x + b.w - 9, b.y + 15, { ...mO, align: 'right', color: t.ink3 });
+}
+const MODULE_H = 21;
+/**
+ * The encoder's box, and a row for each video: its view's tag and a stripe of its numbers. The
+ * stripe is a sketch, 32 bars for the 512 numbers. A bus leads from the box to each row.
+ */
+function encodeRows(sh, t, b, heart, rowsY) {
+  const ctx = sh.ctx;
+  const bottom = caption(sh, t, b, ['every video → 512 numbers', '512 numbers a video']);
+  moduleBox(sh, t, b, ['Video encoder', 'Encoder'], 'mViT');
+  const R = videoRows(b, bottom), L = rowLabel(R.rh);
+  const tagW = Math.max(...VIEW_TAG.map((x) => sh.measure(x, L.o)));
+  const bx = b.x + tagW + 7, x1 = bx + 6, n = 32, cw = (b.x + b.w - x1) / n;
+  const ac = rgbOf(t.accent), seed = [...heart].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+  ctx.save();
+  ctx.strokeStyle = t.rule;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(bx, b.y + MODULE_H + 1);
+  ctx.lineTo(bx, R.y0 + R.rh * (N_VID - 0.5));
+  for (let i = 0; i < N_VID; i++) { const y = R.y0 + R.rh * (i + 0.5); ctx.moveTo(bx, y); ctx.lineTo(x1 - 1, y); }
+  ctx.stroke();
+  ctx.restore();
+  for (let i = 0; i < N_VID; i++) {
+    const y = R.y0 + i * R.rh, r = rng(4000 + i * 31 + seed);
+    if (i % L.every === 0) sh.text(VIEW_TAG[i], b.x + tagW, y + R.rh / 2 + L.o.size * 0.35, { ...L.o, align: 'right', color: t.ink3 });
+    for (let k = 0; k < n; k++) {
+      ctx.fillStyle = css(ac, 0.14 + 0.86 * r());
+      ctx.fillRect(x1 + k * cw, y + 1.5, Math.max(0.8, cw - 1), Math.max(1, R.rh - 3));
+    }
+  }
+  rowsY.top = R.y0;
+  rowsY.h = R.h;
+}
+/** The encoder as a filled bar, and each video as a row of 16 numbers (SHOW_GRIDS). */
+function encodeGrid(sh, t, b, heart, rowsY) {
   const ctx = sh.ctx, C = palette(t);
   const bottom = caption(sh, t, b, ['every video → 512 numbers', '512 numbers a video']);
   const top = b.y, h = bottom - top - 4, bw = Math.min(26, b.w * 0.14);
@@ -978,9 +1049,53 @@ function encodePanel(sh, t, b, heart, rowsY) {
   rowsY.h = h;
 }
 
-// 3 · Weigh: the public weights, a row for each video, a column for each section
+// 3 · Weigh: the public weights of the chosen section, a line from each video to it
 const VG = [7, 5, 8, 6, 8, 8, 2, 4, 3, 0, 1, 10, 10, 9];   // each video's view group (echoprime.js GROUPS)
-function weighPanel(sh, t, b, sec, hits) {
+/**
+ * The 15 sections in a strip, the chosen one lit (a click chooses one), and from each video's row
+ * a line to the chosen section's pill, as wide and as dark as the public weight of its view group,
+ * with the weight at its start. The rows are those of step 2.
+ */
+function weighLines(sh, t, b, sec, hits) {
+  const ctx = sh.ctx;
+  const bottom = caption(sh, t, b, ['public weights of the section', 'public weights']);
+  const sw = b.w / SECTIONS.length;
+  for (let s = 0; s < SECTIONS.length; s++) {
+    ctx.save();
+    rrect(ctx, b.x + s * sw + 1, b.y + 4, sw - 2, 10, Math.min(2.5, (sw - 2) / 2));
+    ctx.fillStyle = s === sec ? t.accent : t.paper3;
+    ctx.fill();
+    ctx.restore();
+    hits.push({ x0: b.x + s * sw, y0: b.y, x1: b.x + (s + 1) * sw, y1: b.y + 20, sec: s });
+  }
+  const R = videoRows(b, bottom), L = rowLabel(R.rh), pO = F(10.5, SANS, 600);
+  const name = fits(sh, [SECTIONS[sec].name, SEC_SHORT[sec]], b.w * 0.5, pO) ?? SEC_SHORT[sec];
+  const pw = sh.measure(name, pO) + 18, ph = 22, px = b.x + b.w - pw, py = R.y0 + R.h / 2 - ph / 2;
+  const x0 = b.x + sh.measure('0.00', L.o) + 6, ac = rgbOf(t.accent);
+  for (let i = 0; i < N_VID; i++) {
+    const w = WEIGHT[sec][VG[i]], y = R.y0 + R.rh * (i + 0.5);
+    if (i % L.every === 0) sh.text(w.toFixed(2), b.x, y + L.o.size * 0.35, { ...L.o, color: w >= 0.5 ? t.ink : t.ink3 });
+    if (w <= 0) continue;
+    const ex = px - 1, ey = py + ph / 2, mx = x0 + (ex - x0) * 0.55;
+    ctx.save();
+    ctx.strokeStyle = css(ac, 0.12 + 0.8 * w);
+    ctx.lineWidth = 0.6 + 2.6 * w;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x0, y);
+    ctx.bezierCurveTo(mx, y, mx, ey, ex, ey);
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.save();
+  rrect(ctx, px, py, pw, ph, ph / 2);
+  ctx.fillStyle = t.accent;
+  ctx.fill();
+  ctx.restore();
+  sh.text(name, px + pw / 2, py + 15, { ...pO, align: 'center', color: t.paper2 });
+}
+/** The weights of every section, a column each, the chosen one framed (SHOW_GRIDS). */
+function weighGrid(sh, t, b, sec, hits) {
   const ctx = sh.ctx, C = palette(t);
   const bottom = caption(sh, t, b, [`${SEC_SHORT[sec]} column lit · public weights`, `${SEC_SHORT[sec]} column lit`, 'public weights']);
   const h = bottom - b.y - 4, cw = b.w / SECTIONS.length, rh = h / N_VID;
@@ -999,8 +1114,78 @@ function weighPanel(sh, t, b, sec, hits) {
   ctx.restore();
 }
 
-// 4 · Answer: a column of ten heads for each section; the number heads marked
-function answerPanel(sh, t, b, sec, V, hits) {
+// 4 · Answer: the chosen section's heads and their output
+/** The number heads of section sec: each with its value, and its output (none for the LVEF, which no caliper measures). */
+function headRows(sec, V) {
+  return numHeads(sec).map((h) => {
+    if (h === 'LVEF') return { name: h, value: `${V.ef}%`, o: null };
+    if (h === 'E/A') { const r = V.out.ea; return { name: h, value: fx(r.head / r.A, 2), o: BY.ea }; }
+    const o = OUT.find((x) => x.rpt === h);
+    if (!o) return { name: h, value: '', o: null };
+    const r = V.out[o.key];
+    return { name: h, value: o.key === 'ea' ? `${fx(r.head, 2)} m/s` : valueText(o, { ...r, value: r.head }), o };
+  });
+}
+/**
+ * The word heads' output of section sec: the phrases of its sentences, without the numbers and
+ * their labels, and without the section's name ("Normal size and wall thickness").
+ */
+function wordsOf(V, sec) {
+  const chunks = [];
+  let cur = '';
+  for (const [str, k] of reportOf(V)[sec].parts) {
+    if (k === 'w') cur += str;
+    else { chunks.push([cur, true]); cur = ''; }
+  }
+  chunks.push([cur, false]);
+  const out = [];
+  for (const [c, before] of chunks) {
+    // a chunk before a number ends in the number's label: cut at its last mark ("(" has no label)
+    let ph = c;
+    if (before && !/\(\s*$/.test(c)) { const m = c.match(/^(.*)[;:,.]\s*[^;:,.]*$/s); ph = m ? m[1] : ''; }
+    ph = ph.replace(/^[\s;:,.()]+|[\s;:,.()]+$/g, '').replace(/^[A-Z][a-z]+(?: [a-z]+)?: /, '').replace(/^with /, '');
+    for (const q of ph.split(/(?<=\.)\s+/)) {
+      const x = q.replace(/\.$/, '').trim();
+      if (x.split(/\s+/).length >= 2) out.push(x.charAt(0).toUpperCase() + x.slice(1));
+    }
+  }
+  return out;
+}
+/**
+ * The box of the chosen section's heads, then their output: each number head and its value,
+ * ringed where it anchors a caliper; then the words of the word heads in the serif, in the room
+ * that the number heads leave at 11 px a line or more. Words that do not fit end in an ellipsis.
+ */
+function answerList(sh, t, b, sec, V) {
+  const ctx = sh.ctx, C = palette(t);
+  const bottom = caption(sh, t, b, ['one head per report task', 'one per task']);
+  moduleBox(sh, t, b, [`${SECTIONS[sec].name} heads`, `${SEC_SHORT[sec]} heads`, SEC_SHORT[sec]], 'of ~150');
+  const rows = headRows(sec, V), kO = F(10, MONO, 500), vO = F(10.5, MONO, 500), wO = F(11, SERIF, 400), wh = 14;
+  const top = b.y + MODULE_H + 8, room = bottom - 4 - top;
+  const words = wordsOf(V, sec).flatMap((w) => wrap(sh, `“${w}”`, b.w - 14, wO));
+  const nW = clamp(Math.floor((room - rows.length * 11) / wh), 0, words.length);
+  const lh = rows.length ? clamp((room - nW * wh) / rows.length, 11, 17) : 0;
+  let y = top + 9;
+  for (const r of rows) {
+    if (y > bottom - 4) break;
+    if (r.o) headRing(ctx, b.x + 5, y - 3.5, 3.6, C.head);
+    sh.text(r.name, b.x + 14, y, { ...kO, color: t.ink2 });
+    sh.text(r.value, b.x + b.w - 2, y, { ...vO, align: 'right', color: t.ink });
+    y += lh;
+  }
+  y += rows.length ? 3 : 2;
+  words.slice(0, nW).forEach((l, i) => {
+    let str = l;
+    if (i === nW - 1 && nW < words.length) {
+      while (str.length > 1 && sh.measure(`${str}…`, wO) > b.w - 14) str = str.slice(0, -1);
+      str = `${str.replace(/[\s,;“]+$/, '')}…`;
+    }
+    sh.text(str, b.x + 14, y, { ...wO, color: t.ink2 });
+    y += wh;
+  });
+}
+/** A column of ten heads for each section, the number heads marked, and a chip with one head's value (SHOW_GRIDS). */
+function answerGrid(sh, t, b, sec, V, hits) {
   const ctx = sh.ctx, C = palette(t);
   const bottom = caption(sh, t, b, ['one head per report task', 'one per task']);
   const chipH = 36, gh = bottom - b.y - chipH - 12;
@@ -1325,7 +1510,19 @@ function miniAnchor(ctx, t, x, y, w, r) {
 /** A legend glyph at (x, y), the baseline of its text: the head, the caliper, a second peak or a flag. */
 function legendGlyph(ctx, t, g, x, y) {
   const C = palette(t);
-  if (g === 'd') headRing(ctx, x + 4, y - 3.5, 3.6, C.head);
+  if (g === 'd' && SHOW_SCALES) headRing(ctx, x + 4, y - 3.5, 3.6, C.head);
+  else if (g === 'd') {
+    // the band of the heads' range, with its head line
+    ctx.save();
+    ctx.fillStyle = C.band;
+    rrect(ctx, x, y - 8.5, 9, 10, 2);
+    ctx.fill();
+    ctx.strokeStyle = C.head;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath(); ctx.moveTo(x + 4.5, y - 8.5); ctx.lineTo(x + 4.5, y + 1.5); ctx.stroke();
+    ctx.restore();
+  }
   else if (g === 'c') calDot(ctx, t, x + 4, y - 3.5, 2.8);
   else if (g === 'f') flagMark(ctx, x + 2, y, 8, t.flag);
   else ring(ctx, x + 4, y - 3.5, 3.4, C.tealInk);
@@ -1427,6 +1624,7 @@ function anchorItems(lines, V) {
     ...(r0 ? [['r', `a second peak gave ${calText(r0)} cm`, `second peak ${calText(r0)} cm`]] : []),
     ...(flagged ? [['f', 'no peak agrees: flagged for review', 'flagged for review']] : [])];
 }
+const BAND_LAB = 12;          // px over the anchor's lines: the label of its one band (SHOW_SCALES off)
 /**
  * The widths of the anchor's name and value columns in a card w px wide inside. The values keep
  * their width, and the names give way to keep the scale 64 px long, down to the short names.
@@ -1450,7 +1648,8 @@ function anchorColumns(sh, w, lines, V) {
 function anchorNeed(sh, w, compact, roomy = false) {
   const V = valuesOf('normal', SHOW_TWO), lines = linesOf(0), bw = w - 2 * IN;
   const { nameW, valW } = anchorColumns(sh, bw, lines, V);
-  const rows = lines.length * (roomy ? 26 : bw - nameW - valW - 10 >= 64 ? 18 : 20);
+  const one = bw - nameW - valW - 10 >= 64;
+  const rows = lines.length * (roomy ? 26 : one ? 18 : 20) + (one && !SHOW_SCALES ? BAND_LAB : 0);
   const free = compact ? compactPlan(sh, w, '6', TITLES[6][0], TITLES[6][1]).free : 0;
   return (compact ? HEAD_C + 2 + 7 : HEAD + 4 + 8) + rows + legendPlan(sh, bw, anchorItems(lines, V), free).h;
 }
@@ -1468,26 +1667,45 @@ function anchorPanel(sh, t, b, sec, V, head) {
   }
   // the legend at the foot: the head and its range, the caliper, the second peak
   const area = { x: b.x, y: b.y, w: b.w, h: b.h - anchorLegend(sh, t, b, anchorItems(lines, V), head) };
-  const lh = clamp(area.h / Math.max(lines.length, 3), 18, 34);
+  const lab = SHOW_SCALES ? 0 : BAND_LAB;
+  const lh = clamp((area.h - lab) / Math.max(lines.length, 3), 18, 34);
   const nameO = F(11, SANS, 400), valO = F(11, MONO, 500);
   const { nameW, valW } = anchorColumns(sh, area.w, lines, V);
   const sx0 = area.x + nameW, sx1 = area.x + area.w - valW - 10, half = (sx1 - sx0) / 2, cx = (sx0 + sx1) / 2;
   // a narrow card: the name and the value in one line, the scale under them
   if (sx1 - sx0 < 64) { anchorRows(sh, t, area, lines, V); return; }
+  // each line's scale is its head's value ± the span, the same for every line: one band (the
+  // heads' range) and one head line serve them all, under a label (SHOW_SCALES: a scale a line)
+  const span = SHOW_SCALES || SHOW_TWO ? SPAN : SPAN_BAND, y0 = area.y + lab;
+  const Xn = (u) => cx + clamp(u / span, -1.05, 1.05) * half;
+  if (!SHOW_SCALES) {
+    ctx.save();
+    ctx.fillStyle = C.band;
+    rrect(ctx, Xn(-BAND), y0 + 2, Xn(BAND) - Xn(-BAND), lh * lines.length - 4, 3);
+    ctx.fill();
+    ctx.strokeStyle = C.head;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(cx, y0 + 2); ctx.lineTo(cx, y0 + lh * lines.length - 2); ctx.stroke();
+    ctx.restore();
+    sh.text('head ± 10%', cx, area.y + 9, { ...F(8.5, MONO, 500), align: 'center', color: t.ink2 });
+  }
   lines.forEach((o, i) => {
-    const r = V.out[o.key], y = area.y + lh * (i + 0.5) + 2;
-    const X = (v) => cx + clamp((v / r.head - 1) / SPAN, -1.05, 1.05) * half;
+    const r = V.out[o.key], y = y0 + lh * (i + 0.5) + (SHOW_SCALES ? 2 : 0);
+    const X = (v) => Xn(v / r.head - 1);
     const name = fits(sh, [o.name, o.short], nameW - 8, nameO) ?? o.short;
     sh.text(name, area.x, y + 4, { ...nameO, color: t.ink });
-    ctx.save();
-    ctx.strokeStyle = t.rule;
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(sx0, y); ctx.lineTo(sx1, y); ctx.stroke();
-    ctx.fillStyle = C.band;
-    rrect(ctx, X(r.lo), y - 6, X(r.hi) - X(r.lo), 12, 2);
-    ctx.fill();
-    ctx.restore();
-    headRing(ctx, X(r.head), y, 6, C.head);
+    if (SHOW_SCALES) {
+      ctx.save();
+      ctx.strokeStyle = t.rule;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(sx0, y); ctx.lineTo(sx1, y); ctx.stroke();
+      ctx.fillStyle = C.band;
+      rrect(ctx, X(r.lo), y - 6, X(r.hi) - X(r.lo), 12, 2);
+      ctx.fill();
+      ctx.restore();
+      headRing(ctx, X(r.head), y, 6, C.head);
+    }
     if (r.state === 'moved') {
       ring(ctx, X(r.cal), y, 5.5, C.tealInk);
       ctx.save();
@@ -1743,9 +1961,9 @@ export function drawFigure(sh, t, S, F1) {
     if (clip) { ctx.save(); ctx.beginPath(); ctx.rect(clip.x, clip.y, clip.w, clip.h); ctx.clip(); }
     const b = card(sh, t, P, k, lit(k), compact(k), k === 5 && L.merged, !!L.fit);
     if (k === 1) sortPanel(sh, t, b, F1);
-    else if (k === 2) encodePanel(sh, t, b, V.heart, rows);
-    else if (k === 3) weighPanel(sh, t, b, S.sec, hits);
-    else if (k === 4) answerPanel(sh, t, b, S.sec, V, hits);
+    else if (k === 2) (SHOW_GRIDS ? encodeGrid : encodeRows)(sh, t, b, V.heart, rows);
+    else if (k === 3) (SHOW_GRIDS ? weighGrid : weighLines)(sh, t, b, S.sec, hits);
+    else if (k === 4) { if (SHOW_GRIDS) answerGrid(sh, t, b, S.sec, V, hits); else answerList(sh, t, b, S.sec, V); }
     else if (k === 5 && L.merged) bothBands(sh, t, b, S.sec, V, hits, level, clip ? P : null, L.split);
     else if (k === 5 || k === 5.5) measurePanel(sh, t, b, k === 5 ? 'b' : 'd', S.sec, V, hits, level, !L.old, clip);
     else if (k === 6) anchorPanel(sh, t, b, S.sec, V, b.head);
