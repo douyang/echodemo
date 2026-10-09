@@ -746,12 +746,12 @@ const TILE_W = { b: 96, d: 88 };   // px: the width of a band's tiles in a flow
  * px wide (as a ratio), with every name and value in its tile, as tileGrid then takes them.
  */
 function bandNeed(sh, w, kind, V) {
-  const list = OUT.filter((o) => o.kind === kind), bw = w - 2 * IN, tw = (c) => (bw - (c - 1) * 10) / c;
+  const list = OUT.filter((o) => o.kind === kind), bw = w - 2 * IN, tw = (c) => (bw - (c - 1) * TILE_GX) / c;
   const off = (c) => Math.max(tw(c) / TILE_W[kind], TILE_W[kind] / tw(c));
   const ok = COLS[kind].filter((c) => list.every((o) => labelFits(sh, o, V.out[o.key], tw(c), 0)));
   const c = (ok.length ? ok : [Math.min(...COLS[kind])]).reduce((a, b) => (off(b) < off(a) ? b : a));
   const r = Math.ceil(list.length / c), one = list.every((o) => oneLine(sh, o, V.out[o.key], tw(c)));
-  return Math.ceil(r * (tw(c) / ASPECT[kind] + (one ? LAB1 : LAB2)) + (r - 1) * 8);
+  return Math.ceil(r * (tw(c) / ASPECT[kind] + LABS[0][one ? 0 : 1]) + (r - 1) * TILE_GY);
 }
 /**
  * The height of a report card w px wide that holds the normal heart's report at 13.5 px (13 on a
@@ -1057,16 +1057,23 @@ function firstWords(V, sec) {
   return [first, clause].map((x) => x.charAt(0).toUpperCase() + x.slice(1));
 }
 
-// 5 · Measure: a tile for each output, with its marks, name, value and anchor check
-const LAB1 = 29, LAB2 = 41;   // the label under a tile: name and value in one line, or in two
+// 5 · Measure: a tile for each output, with its marks, name and value
+const LAB1 = 29, LAB2 = 41;   // the label under a tile with its anchor check: name and value in one line, or in two
 /**
- * The label's height under a tile, in one line or in two, at each level. 0: the name, the value
- * and the anchor check. 1, a short box: the name and the value. 2, the shortest boxes: the value,
- * with the name in the image's tag.
+ * Each tile's own anchor check under its value (miniAnchor): off, as step 6 shows the check, and
+ * the images take its room. The code stays.
  */
-const LABS = [[LAB1, LAB2], [17, 30], [17, 17]];
+const SHOW_TILE_CHECK = false;
+/**
+ * The label's height under a tile, in one line or in two, at each level. 0: the name and the value,
+ * with the anchor check where SHOW_TILE_CHECK. 1, a short box: the name and the value. 2, the
+ * shortest boxes: the value, with the name in the image's tag.
+ */
+const LABS = [SHOW_TILE_CHECK ? [LAB1, LAB2] : [17, 30], [17, 30], [17, 17]];
 const IH_MIN = 24;            // px: the smallest image of a tile
+const TILE_GX = 6, TILE_GY = 6;   // px between two tiles, across and down
 const ASPECT = { b: 1.7, d: 2.0 }, COLS = { b: [5, 3, 9, 4], d: [4, 8, 3, 2] };
+const ASPECT_MIN = { b: 1.4, d: 1.4 };   // the tallest shape of an image, where its box has the height
 const labO = (r) => ({ n: F(10, SANS, 600), v: F(10.5, MONO, r.state === 'moved' ? 600 : 500) });
 const TAG_O = { family: MONO, weight: 500, size: 9.5 };
 /** The name and the value fit one line under a tile w px wide. */
@@ -1089,7 +1096,7 @@ function labelFits(sh, o, r, w, level) {
 function tileGrid(sh, b, list, V, aspect, colsList, level = 0, strict = false) {
   let best = null, fill = null;
   for (const c of colsList) {
-    const r = Math.ceil(list.length / c), gx = 10, gy = 8, w = (b.w - (c - 1) * gx) / c;
+    const r = Math.ceil(list.length / c), gx = TILE_GX, gy = TILE_GY, w = (b.w - (c - 1) * gx) / c;
     const one = level === 2 || list.every((o) => oneLine(sh, o, V.out[o.key], w));
     if (strict && !list.every((o) => labelFits(sh, o, V.out[o.key], w, level))) continue;
     const lab = LABS[level][one ? 0 : 1];
@@ -1108,6 +1115,8 @@ function tileGrid(sh, b, list, V, aspect, colsList, level = 0, strict = false) {
 function measurePanel(sh, t, b, kind, sec, V, hits, level = 0, strict = false, clip = null) {
   const list = OUT.filter((o) => o.kind === kind), ctx = sh.ctx;
   const G = tileGrid(sh, b, list, V, ASPECT[kind], COLS[kind], level, strict);
+  // the images take the height that the grid leaves in the box, up to ASPECT_MIN
+  if (G.ok) G.ih = Math.max(G.ih, Math.min(G.w / ASPECT_MIN[kind], (b.h - (G.r - 1) * G.gy) / G.r - G.lab));
   if (clip) { ctx.save(); ctx.beginPath(); ctx.rect(clip.x, clip.y, clip.w, clip.h); ctx.clip(); }
   list.forEach((o, i) => {
     const x = b.x + (i % G.c) * (G.w + G.gx), y = b.y + Math.floor(i / G.c) * (G.ih + G.lab + G.gy);
@@ -1265,8 +1274,8 @@ function dTile(sh, t, img, o, V, tag = o.tag) {
 }
 /**
  * Under a tile: the name, then the value (anchored: in the accent, after the caliper's own value
- * when there is room), in one line or in two; under them, the anchor check. At level 1 no check;
- * at level 2 the value alone, as the name is in the image's tag (LABS).
+ * when there is room), in one line or in two; under them, where SHOW_TILE_CHECK, the anchor check.
+ * At level 1 no check; at level 2 the value alone, as the name is in the image's tag (LABS).
  */
 function tileLabel(sh, t, b, o, r, lit, one, level = 0) {
   const C = palette(t), O = labO(r), nO = { ...O.n, weight: lit ? 600 : 500 }, vO = O.v;
@@ -1283,7 +1292,7 @@ function tileLabel(sh, t, b, o, r, lit, one, level = 0) {
     const was = `${calText(r)}→`, wO = F(10, MONO, 500), left = one && named ? b.x + nw + 6 : b.x;
     if (b.x + b.w - vw - 3 - sh.measure(was, wO) >= left) sh.text(was, b.x + b.w - vw - 3, vy, { ...wO, align: 'right', color: C.tealInk });
   }
-  if (level === 0) miniAnchor(sh.ctx, t, b.x + 2, vy + 10, b.w - 4, r);
+  if (level === 0 && SHOW_TILE_CHECK) miniAnchor(sh.ctx, t, b.x + 2, vy + 10, b.w - 4, r);
 }
 /** The anchor check: the head's range and ring on a short scale, the caliper's dot. */
 function miniAnchor(ctx, t, x, y, w, r) {
@@ -1418,14 +1427,19 @@ function anchorItems(lines, V) {
     ...(r0 ? [['r', `a second peak gave ${calText(r0)} cm`, `second peak ${calText(r0)} cm`]] : []),
     ...(flagged ? [['f', 'no peak agrees: flagged for review', 'flagged for review']] : [])];
 }
-/** The widths of the anchor's name and value columns in a card w px wide inside. */
+/**
+ * The widths of the anchor's name and value columns in a card w px wide inside. The values keep
+ * their width, and the names give way to keep the scale 64 px long, down to the short names.
+ */
 function anchorColumns(sh, w, lines, V) {
   const nameO = F(11, SANS, 400), valO = F(11, MONO, 500);
-  const nameW = Math.min(w * 0.36, Math.max(...lines.map((o) => sh.measure(o.name, nameO))) + 12);
-  const valW = Math.min(w * 0.32, Math.max(...lines.map((o) => {
+  const valW = Math.max(...lines.map((o) => {
     const r = V.out[o.key];
     return sh.measure(r.state === 'moved' ? `${calText(r)} → ${valueText(o, r)}` : valueText(o, r), valO);
-  })) + 8);
+  })) + 8;
+  const full = Math.max(...lines.map((o) => sh.measure(o.name, nameO))) + 12;
+  const short = Math.max(...lines.map((o) => sh.measure(o.short, nameO))) + 8;
+  const nameW = Math.min(w * 0.36, full, Math.max(w - valW - 10 - 64, short));
   return { nameW, valW };
 }
 /**
