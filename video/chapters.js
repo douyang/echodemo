@@ -74,18 +74,21 @@ export const VIDEOS = {
       { set: { vtrue: 2 }, name: 'Aliasing on color Doppler', track: 'Color, 2 m/s', pick: [0, 3], move: 4 },
     ],
   },
-  // Doppler hemodynamics: the valve narrows, then the aorta; then the TR jet and the RA pressure (from the IVC chapter)
+  // Doppler hemodynamics: the valve narrows, then the aorta, and the peak TR velocity rises; then
+  // the IVC setting gives the RA pressure, 3, 8 and then 15 mmHg, and the RVSP rises with it (the
+  // chapter's tour, src/ch/pressure.js)
   pressure: {
-    pane: 'Flow and pressure',
-    quant: { valveA: 0.05, aoD: 0.1, trV: 0.05 },
-    discrete: ['rap'],
+    pane: 'Flow, pressure and the IVC',
+    quant: { valveA: 0.05, aoD: 0.1, trV: 0.05, cavaD: 0.1, cavaSniff: 5 },
     steps: [
-      { set: { sv: 70, lvotD: 2, valveA: 2.5, aoD: 3, trV: 2.4, rap: 3 }, name: 'The same flow at every level', track: 'Flow', pick: [0], hold: 6 },
+      { set: { pressMode: 'flow', sv: 70, lvotD: 2, valveA: 2.5, aoD: 3, trV: 2.4, cavaD: 1.8, cavaSniff: 60, cavaQuiet: 30, cavaBreath: 'sniff', cavaSec: 'unclear' }, name: 'The same flow at every level', track: 'Flow', pick: [0], hold: 6 },
       { set: { valveA: 1.2 }, name: 'A narrower valve: the velocity rises', track: 'Valve 1.2 cm²', pick: [0], move: 4, hold: 6 },
       { set: { valveA: 0.7 }, name: 'The pressure falls where the velocity rises', track: 'Valve 0.7 cm²', pick: [1], move: 4, hold: 6 },
       { set: { aoD: 2.2 }, name: 'A small aorta: more pressure recovery', track: 'Aorta 2.2 cm', pick: [1], move: 4, hold: 6 },
-      { set: { trV: 3, rap: 8 }, name: 'Higher peak TR velocity, RA pressure 8 mmHg', track: 'TR 3.0 m/s', pick: [2], move: 4, hold: 6 },
-      { set: { trV: 3.5, rap: 15 }, name: 'RA pressure 15 mmHg', track: 'TR 3.5 m/s', pick: [2], move: 4, hold: 7 },
+      { set: { trV: 3 }, name: 'Higher peak TR velocity', track: 'TR 3.0 m/s', pick: [2], move: 4, hold: 6 },
+      { set: { pressMode: 'ivc' }, name: 'RA pressure from the IVC: 3 mmHg', track: 'IVC 3 mmHg', pick: [0, 1, 3], move: 3, cut: true, hold: 7 },
+      { set: { cavaD: 2.4 }, name: 'Indeterminate: RA pressure 8 mmHg', track: '8 mmHg', pick: [0, 2, 4], move: 4, hold: 7 },
+      { set: { cavaSniff: 30 }, track: '15 mmHg', pick: [1, 3], move: 4, hold: 7 },
     ],
   },
   // 05: the cursor runs through one beat, phase by phase
@@ -410,23 +413,6 @@ export const VIDEOS = {
       { set: { shType: 'lap', shS: 0 }, track: 'LAP 8 mmHg', line: 'A restrictive communication keeps a gradient between the atria: LA pressure = RA pressure + 4V². {s3}', move: 3, cut: true, hold: 7 },
       { set: { shS: 0.455 }, track: 'LAP 18 mmHg', pick: [1, 2, 3], move: 4, hold: 7 },
       { set: { shS: 0.91 }, track: 'LAP 28 mmHg', pick: [3, 5, 6], move: 4, hold: 8 },
-    ],
-  },
-  // 18: from a normal IVC to a raised RA pressure, severe TR and ventilation (the chapter's tour),
-  // then the IVC and the aorta side by side
-  ivc: {
-    pane: 'IVC and hepatic veins',
-    side: false,
-    quant: { ivcD: 0.1, ivcSniff: 5 },
-    steps: [
-      { set: { ivcD: 1.8, ivcSniff: 60, ivcQuiet: 30, ivcBreath: 'sniff', ivcSec: 'unclear', ivcTR: 'none' }, track: '3 mmHg', pick: [0, 1, 2], hold: 6 },
-      { set: { ivcD: 2.4 }, name: 'Indeterminate: RA pressure 8 mmHg', track: '8 mmHg', pick: [0, 1, 3], move: 4, hold: 6 },
-      { set: { ivcSniff: 30 }, track: '15 mmHg', pick: [0, 1, 3], move: 4, hold: 6 },
-      { set: { ivcTR: 'severe', ivcD: 2.7 }, name: 'Severe tricuspid regurgitation', track: 'Severe TR', pick: [3, 4, 5, 6], move: 4, hold: 7 },
-      // without TR, so that the hepatic veins show no sign that would set the estimate (Mukherjee 2025: 8 mmHg if doubt remains)
-      { set: { ivcBreath: 'ppv', ivcTR: 'none' }, track: 'Ventilation', pick: [0, 1, 2], move: 3, hold: 6 },
-      { set: { ivcD: 1.8, ivcSniff: 60, ivcBreath: 'sniff', ivcTR: 'none' }, name: 'IVC or aorta', track: 'IVC or aorta',
-        line: 'The IVC has a thin wall, lies in the liver, receives the hepatic veins and narrows on a sniff. The aorta has a thick wall, lies outside the liver, gives off the celiac trunk and the SMA, and pulsates with no change on a sniff.', move: 3, hold: 7 },
     ],
   },
   // 19: the seven cases of the chapter's tour, each on the view that shows its territory best

@@ -1,0 +1,137 @@
+<!-- The inferior vena cava, hidden as a chapter of its own: the site does not load this file. Doppler hemodynamics (src/ch/pressure.js) shows the RA pressure from the IVC on its switch. To restore the chapter, do the steps at SHOW_IVC in src/order.js, which put each block below back in its file. -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Archive</title>
+</head>
+<body>
+<!-- Each template holds lines taken out of one file. A template is not drawn. -->
+
+<!-- index.html: the figure. It stood after #fig-loop. -->
+<template data-file="index.html">
+    <figure class="fig" id="fig-ivc">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">The inferior vena cava in four views. The subcostal long axis shows the IVC through the liver into the right atrium, the tricuspid valve and the right ventricle above the atrium, a hepatic vein that joins the IVC, and the diaphragm. A caliper sits 1 to 2 cm from the right atrium, square to the long axis. The IVC narrows with breathing and with a sniff. An M-mode recording shows the IVC through quiet breathing and a sniff, with its largest and smallest diameters. Hepatic vein pulsed-wave Doppler shows the S, D and A waves. Their pattern follows the RA pressure, and S reverses in severe tricuspid regurgitation. The IVC and the abdominal aorta are side by side in long axis, with the features that distinguish them. A strip shows the measurements against their cut-offs.</figcaption>
+    </figure>
+</template>
+
+<!-- index.html: the article. It stood after #ch-loop. Its diagram's id (ivc-ase) is now the id of the diagram of Doppler hemodynamics. -->
+<template data-file="index.html">
+    <article class="chapter" id="ch-ivc">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">07</span><div><h2 class="ch-title">Inferior vena cava</h2><p class="ch-kicker">RA pressure and hepatic veins</p></div></div>
+      <p class="dek" data-part="dek">The inferior vena cava (IVC) drains into the right atrium. Its diameter at end-expiration and its collapse with a sniff estimate the RA pressure, which the RV systolic pressure uses. Hepatic vein flow adds to the estimate. Position, wall, branches and Doppler signal distinguish the IVC from the abdominal aorta.</p>
+      <div class="controls">
+        <div class="control">
+          <span class="label">Breathing</span>
+          <div class="seg" role="group" aria-label="Breathing" data-key="ivcBreath">
+            <button type="button" data-val="quiet">Quiet</button><button type="button" data-val="sniff">Sniff</button><button type="button" data-val="ppv">Ventilation</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Tricuspid regurgitation</span>
+          <div class="seg" role="group" aria-label="Tricuspid regurgitation" data-key="ivcTR">
+            <button type="button" data-val="none">None</button><button type="button" data-val="severe">Severe</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <section class="ase" id="ivc-ase" aria-label="2025 ASE estimate of the RA pressure from the IVC"></section>
+      <div class="prose" data-part="prose">
+        <h3>Imaging the IVC</h3>
+        <ol class="steps">
+        <li><b>Site.</b> In the subcostal long axis, the caliper crosses the IVC perpendicular to its long axis<span class="cite" data-ref="rudski2010"></span>, 1 to 2 cm from the RA<span class="cite" data-ref="mitchell2019"></span>, at end-expiration, where the diameter is usually largest<span class="cite" data-ref="mukherjee2025,mitchell2019"></span>.</li>
+        <li><b>Sniff.</b> A second recording follows the IVC through a sniff<span class="cite" data-ref="mitchell2019"></span>. The collapse is the fall in diameter, as a percentage of the expiratory diameter<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>M-mode.</b> M-mode measures the diameter and its change with breathing more accurately than 2D imaging<span class="cite" data-ref="mukherjee2025"></span>. The M-mode line must cross the IVC at a right angle. An oblique line overestimates the diameter<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>Short axis.</b> A short-axis view shows whether the long-axis plane passes through the center of the IVC, where the diameter is largest<span class="cite" data-ref="mitchell2019"></span>. It also shows whether the IVC moves out of the plane during the sniff<span class="cite" data-ref="mitchell2019"></span>, which changes the measured diameter without a true collapse<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        </ol>
+        <h3>RA pressure from the IVC</h3>
+        <p>The 2025 ASE guideline gives the RA pressure as one of three values<span class="cite" data-ref="mukherjee2025"></span>:</p>
+        <ul>
+        <li><b>3 mmHg</b> (range 0–5): IVC ≤2.1 cm with ≥50% collapse.</li>
+        <li><b>8 mmHg</b> (range 5–10): IVC ≤2.1 cm with &lt;50% collapse, or IVC &gt;2.1 cm with ≥50% collapse.</li>
+        <li><b>15 mmHg</b> (range 10–20): IVC &gt;2.1 cm with &lt;50% collapse<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        </ul>
+        <p>The two mixed patterns are indeterminate. Secondary signs of a raised RA pressure then decide: RA enlargement, an atrial septum that bulges into the LA throughout the cardiac cycle, a restrictive right-sided diastolic filling pattern, a tricuspid E/e′ ratio &gt;6 and a hepatic vein systolic filling fraction &lt;55%<span class="cite" data-ref="mukherjee2025"></span>. With none of these signs, the estimate falls to 3 mmHg. With signs present, it rises to 15 mmHg. If uncertainty remains, the estimate is 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p>A value of 20 mmHg can be considered when the IVC is wider than 2.5 cm and collapses less than 50%, with dilated hepatic veins. Spontaneous echo contrast or color-flow reflux in the vessel supports this value<span class="cite" data-ref="mukherjee2025"></span>. A small, collapsed IVC suggests an RA pressure below 3 mmHg, as in hypovolemia<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p>When the patient cannot sniff, the collapse with quiet breathing replaces the sniff, with a cut-off of 20%. A normal IVC gives 3 mmHg with ≥20% collapse and 8 mmHg with less. A dilated IVC gives 8 and 15 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</p>
+        <p>The report should give the RA pressure as a single value, not as a range<span class="cite" data-ref="mukherjee2025"></span>. It should always state the estimate, as “unable to assess” when the images do not allow it<span class="cite" data-ref="taub2025"></span>.</p>
+        <h3>Uses of the estimate</h3>
+        <p>The RV systolic pressure equals 4 × (peak TR velocity)² plus the RA pressure<span class="cite" data-ref="mukherjee2025"></span> (<a href="#pressure" data-go="pressure">chapter 08</a>). An IVC wider than 2.1 cm is one of the signs that, with the peak TR velocity, suggest pulmonary hypertension<span class="cite" data-ref="mukherjee2025"></span>. In tamponade, the IVC is dilated (&gt;2.1 cm) and collapses by less than 50% with inspiration<span class="cite" data-ref="klein2013"></span> (<a href="#peri" data-go="peri">chapter 17</a>).</p>
+        <h3>Hepatic veins</h3>
+        <p>In the subcostal window, the peak S and D velocities of the hepatic veins should come from end-expiration<span class="cite" data-ref="mitchell2019"></span>. Forward flow toward the RA moves away from the probe and shows below the baseline<span class="cite" data-ref="quinones2002"></span>.</p>
+        <ul>
+        <li><b>Waves.</b> S is forward flow in systole, D is forward flow in early diastole, and A is a reversal with atrial contraction<span class="cite" data-ref="mitchell2019"></span>.</li>
+        <li><b>RA pressure.</b> Normally, S is larger than D<span class="cite" data-ref="mukherjee2025"></span>. A raised RA pressure lowers S/D below 1, and a systolic filling fraction, S/(S + D), below 55% is a sensitive and specific sign of it<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>Tricuspid regurgitation.</b> With increasing TR, S becomes blunted, and in severe TR it reverses<span class="cite" data-ref="zoghbi2017"></span> (<a href="#tr" data-go="tr">chapter 16</a>).</li>
+        </ul>
+        <h3>IVC or aorta</h3>
+        <p><a href="#windows" data-go="windows">Chapter 04</a> cuts both subcostal views from the heart model. The two vessels differ in these features:</p>
+        <ul>
+        <li><b>Side.</b> The IVC runs on the right side of the spine<span class="cite" data-ref="tucker2023"></span> and lies within the liver. The aorta lies in the midline, to the left of the IVC and apart from the liver<span class="cite" data-ref="assavapokee2024"></span>.</li>
+        <li><b>Wall.</b> The IVC is a thin-walled vessel<span class="cite" data-ref="tucker2023"></span>. The aorta has a thicker, pulsatile wall<span class="cite" data-ref="marin2016"></span>.</li>
+        <li><b>Breathing and pulsation.</b> The aorta does not change with respiration<span class="cite" data-ref="mitchell2019"></span>. Pulsation alone does not identify it: in hyperdynamic states and in TR, the IVC can pulse more than the aorta<span class="cite" data-ref="assavapokee2024"></span>.</li>
+        <li><b>Connections.</b> The hepatic veins drain into the IVC, which opens into the RA<span class="cite" data-ref="assavapokee2024"></span>. The celiac trunk and the superior mesenteric artery (SMA) arise from the front of the aorta<span class="cite" data-ref="assavapokee2024"></span>.</li>
+        <li><b>Doppler.</b> Color and PW Doppler show aortic flow moving upward and to the left in the subcostal sector<span class="cite" data-ref="mitchell2019"></span>.</li>
+        </ul>
+        <h3>Pitfalls</h3>
+        <ul>
+        <li><b>Positive-pressure ventilation.</b> The collapse of the IVC does not estimate the RA pressure. If the RA pressure is clinically relevant, an invasive measurement should replace the estimate. Secondary signs can show whether it is normal or raised, and the hepatic vein velocities stay valid when averaged over at least five beats and one respiratory cycle<span class="cite" data-ref="mukherjee2025"></span>. If uncertainty remains, the estimate is 8 mmHg<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>Athletes, young adults and pregnancy.</b> A dilated IVC can be normal in athletes and healthy young adults and is common in pregnancy. Other signs of a raised filling pressure and the clinical findings then decide<span class="cite" data-ref="mukherjee2025"></span>.</li>
+        <li><b>Raised intra-abdominal pressure.</b> It can collapse the IVC despite a raised RA pressure<span class="cite" data-ref="assavapokee2024"></span>.</li>
+        </ul>
+        <h3>The interactive figure</h3>
+        <p>The subcostal long axis shows the IVC through the liver into the RA, with the tricuspid valve and the RV above the RA. A hepatic vein joins the IVC 0.9 cm from the RA. The caliper sits 1.8 cm from the RA, square to the long axis, on the M-mode line. The M-mode shows two quiet breaths and a sniff, quiet breathing alone, or ventilation without collapse. The hepatic veins follow the RA pressure and reverse in severe TR. The values are illustrative and do not come from a patient.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>The IVC is measured 1 to 2 cm from the RA, at end-expiration. An IVC ≤2.1 cm with ≥50% collapse on a sniff gives an RA pressure of 3 mmHg; an IVC &gt;2.1 cm with &lt;50% collapse gives 15 mmHg.</li>
+        <li>The mixed patterns give 8 mmHg. Secondary signs, such as a hepatic vein S/(S + D) below 55%, raise it to 15 mmHg; their absence lowers it to 3 mmHg.</li>
+        <li>Under positive-pressure ventilation, the collapse of the IVC does not estimate the RA pressure.</li>
+        <li>The aorta lies outside the liver and does not change with breathing.</li>
+        </ol>
+        <p class="note">Related chapters: <a href="#windows" data-go="windows">04 Views</a> · <a href="#pressure" data-go="pressure">08 Doppler hemodynamics</a> · <a href="#fill" data-go="fill">11 Diastolic function</a> · <a href="#tr" data-go="tr">16 Tricuspid regurgitation</a> · <a href="#peri" data-go="peri">17 Pericardial effusion</a></p>
+      </div>
+      <div class="quiz"></div>
+    </article>
+</template>
+
+<!-- src/styles.css: the stage height on a phone and the sticky result under it. They stood after the rules of #ivc-ase. -->
+<template data-file="src/styles.css">
+/* on phones and tablets the figure takes four views: a taller stage, as for Views, and the
+   sticky result under it */
+@media (max-width: 820px) {
+  html[data-ch="ivc"] .stage { height: min(60vh, 520px); }
+  html[data-ch="ivc"] .ase-head { top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px)); }
+  html[data-ch="ivc"] .ase-b, html[data-ch="ivc"] .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 110px); }
+}
+@media (max-width: 820px) and (max-height: 640px) {
+  html[data-ch="ivc"] .ase-head { position: static; }
+  html[data-ch="ivc"] .ase-b, html[data-ch="ivc"] .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(60vh, 520px) + 12px); }
+}
+</template>
+
+<!-- video/chapters.js: the chapter video. It stood after the video of shunts. -->
+<template data-file="video/chapters.js">
+  // 18: from a normal IVC to a raised RA pressure, severe TR and ventilation (the chapter's tour),
+  // then the IVC and the aorta side by side
+  ivc: {
+    pane: 'IVC and hepatic veins',
+    side: false,
+    quant: { ivcD: 0.1, ivcSniff: 5 },
+    steps: [
+      { set: { ivcD: 1.8, ivcSniff: 60, ivcQuiet: 30, ivcBreath: 'sniff', ivcSec: 'unclear', ivcTR: 'none' }, track: '3 mmHg', pick: [0, 1, 2], hold: 6 },
+      { set: { ivcD: 2.4 }, name: 'Indeterminate: RA pressure 8 mmHg', track: '8 mmHg', pick: [0, 1, 3], move: 4, hold: 6 },
+      { set: { ivcSniff: 30 }, track: '15 mmHg', pick: [0, 1, 3], move: 4, hold: 6 },
+      { set: { ivcTR: 'severe', ivcD: 2.7 }, name: 'Severe tricuspid regurgitation', track: 'Severe TR', pick: [3, 4, 5, 6], move: 4, hold: 7 },
+      // without TR, so that the hepatic veins show no sign that would set the estimate (Mukherjee 2025: 8 mmHg if doubt remains)
+      { set: { ivcBreath: 'ppv', ivcTR: 'none' }, track: 'Ventilation', pick: [0, 1, 2], move: 3, hold: 6 },
+      { set: { ivcD: 1.8, ivcSniff: 60, ivcBreath: 'sniff', ivcTR: 'none' }, name: 'IVC or aorta', track: 'IVC or aorta',
+        line: 'The IVC has a thin wall, lies in the liver, receives the hepatic veins and narrows on a sniff. The aorta has a thick wall, lies outside the liver, gives off the celiac trunk and the SMA, and pulsates with no change on a sniff.', move: 3, hold: 7 },
+    ],
+  },
+</template>
+
+</body>
+</html>

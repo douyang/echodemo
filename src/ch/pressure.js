@@ -1,16 +1,20 @@
-// Doppler hemodynamics. Left, flow across a valve: the same flow passes the LV outflow tract, the
-// aortic valve and the aorta, so the velocity at each level is the flow divided by the area
-// there (continuity), and the pressure falls where the velocity rises (Bernoulli). From the LVOT
-// to the vena contracta it falls by 4(V2² − V1²); in the aorta part of it returns as the jet
-// slows (pressure recovery: 4V² × 2 EOA/AoA × (1 − EOA/AoA), Baumgartner 2017). PW Doppler
-// before the valve and CW through it, on one scale. Right, RV systolic pressure: the peak
-// tricuspid regurgitation velocity (simplified Bernoulli) plus the RA pressure, one of the three
-// values that the IVC gives (3, 8 or 15 mmHg; the IVC chapter shows how).
+// Doppler hemodynamics, in two settings (pressMode). Flow and pressure, at the left: flow across a
+// valve. The same flow passes the LV outflow tract, the aortic valve and the aorta, so the velocity
+// at each level is the flow divided by the area there (continuity), and the pressure falls where
+// the velocity rises (Bernoulli). From the LVOT to the vena contracta it falls by 4(V2² − V1²); in
+// the aorta part of it returns as the jet slows (pressure recovery: 4V² × 2 EOA/AoA × (1 − EOA/AoA),
+// Baumgartner 2017). PW Doppler before the valve and CW through it, on one scale. IVC, at the left:
+// the subcostal long axis of the IVC and its M-mode, which give the RA pressure (src/ivcfig.js,
+// ASE 2025). At the right in both settings, RV systolic pressure: the peak tricuspid regurgitation
+// velocity (simplified Bernoulli) plus that RA pressure. The hidden chapter ch/ivc.js shows the IVC
+// on a page of its own (SHOW_IVC in order.js).
 import { Sheet, clamp, smooth, rng, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
-import { Beat, cursor } from '../sev.js';
+import { Beat, cursor, rows, cols } from '../sev.js';
 import { trvGrade } from '../norms.js';
-import { numOf } from '../order.js';
+import { drawSubcostal, drawMmode } from '../ivc2d.js';
+import { defaultsOf, valuesOf, model as ivcModel, ivcClock, ivcDiagram, liveOf, readoutsOf, boxLines } from '../ivcfig.js';
+import { reducedMotion } from '../state.js';
 
 const ET = 0.292;            // s, LV ejection time (Alhakak 2025 mean); held constant here
 const RRs = 0.857;
@@ -28,7 +32,24 @@ const [K, K2] = (() => {
 export const BSA = Math.sqrt((175 * 80) / 3600);   // m², Mosteller, 175 cm and 80 kg
 const areaOf = (d) => Math.PI * (d / 2) ** 2;
 
-/** Flow across the valve at peak flow (areas cm², velocities m/s, pressures mmHg), and the RVSP. */
+// the IVC setting's own keys for the estimate's inputs (ivcfig.js)
+const CAVA = { D: 'cavaD', sniff: 'cavaSniff', quiet: 'cavaQuiet', breath: 'cavaBreath', sec: 'cavaSec' };
+/**
+ * The RA pressure that the RVSP adds: the IVC's estimate (3, 8 or 15 mmHg), or null where the IVC
+ * gives no single value (ventilation, with secondary signs that say normal or raised).
+ */
+const rapOf = (s) => ivcModel(valuesOf(s, CAVA)).est.rap;
+/**
+ * The IVC that each RA pressure button sets: 1.8 cm with 60% collapse on a sniff (3 mmHg), 2.4 cm
+ * with 60% (indeterminate; with unclear secondary signs, 8 mmHg), 2.4 cm with 30% (15 mmHg).
+ */
+const PRESET = {
+  3: { cavaD: 1.8, cavaSniff: 60, cavaBreath: 'sniff', cavaSec: 'unclear' },
+  8: { cavaD: 2.4, cavaSniff: 60, cavaBreath: 'sniff', cavaSec: 'unclear' },
+  15: { cavaD: 2.4, cavaSniff: 30, cavaBreath: 'sniff', cavaSec: 'unclear' },
+};
+
+/** Flow across the valve at peak flow (areas cm², velocities m/s, pressures mmHg), and the RVSP (null with no single RA pressure). */
 export function flow(s) {
   const a1 = areaOf(s.lvotD), a3 = areaOf(s.aoD);
   // the valve's effective orifice: a valve wider than the outflow tract does not narrow the flow
@@ -39,10 +60,10 @@ export function flow(s) {
   const x = a2 / a3;
   const pr = 4 * v2 * v2 * 2 * x * (1 - x);            // returns in the aorta
   const p3 = P_AO, p2 = p3 - pr, p1 = p2 + dp;
-  const grad = 4 * s.trV ** 2;
+  const grad = 4 * s.trV ** 2, rap = rapOf(s);
   return {
     a1, a2, a3, q, v1, v2, v3, vti1: s.sv / a1, vti2: s.sv / a2, dp, mg: dp * K2, pr, p1, p2, p3,
-    vr: v1 / v2, wide: s.valveA >= a1, rap: s.rap, grad, rvsp: grad + s.rap,
+    vr: v1 / v2, wide: s.valveA >= a1, rap, grad, rvsp: rap === null ? null : grad + rap,
   };
 }
 
@@ -113,7 +134,8 @@ function advance(dt, s) {
   for (const p of parts) { p.f += dv / vol; if (p.f >= 1) p.f -= 1; }
 }
 
-let sheet = null, st = null;
+let sheet = null, st = null, setState = null, dg = null;
+const panels = ivcClock();   // the clock of the IVC's panels (ivcfig.js)
 
 /** The valve's opening, 0 (shut) to 1 (open to its area), through the beat. */
 const openAt = (t) => smooth(clamp(t / 0.035, 0, 1)) * smooth(clamp((ET - t) / 0.035, 0, 1));
@@ -343,13 +365,15 @@ function drawPressure(sh, t, F, R, narrow) {
   ctx.fillText(`${st.trV.toFixed(2)} m/s → 4V² = ${F.grad.toFixed(0)} mmHg`, rx + rw - 10, ry + 17);
   ctx.restore();
 
-  // the RA pressure (the IVC chapter gives it) under the RV-RA gradient: one bar that
-  // reads the RV systolic pressure on a mmHg scale. A phone keeps the bar, its scale and the sum.
+  // the RA pressure (the IVC gives it) under the RV-RA gradient: one bar that reads the RV systolic
+  // pressure on a mmHg scale. A phone keeps the bar, its scale and the sum. Where the IVC gives no
+  // single RA pressure, the bar holds the gradient alone.
+  const rap = F.rap ?? 0;
   const iy = ry + tph + (narrow ? 14 : 34);
   const ih = H - iy - 30;   // the desktop layout: the height under the CW panel
   const bx0 = rx + (narrow ? 8 : 14), bx1 = rx + rw - (narrow ? 34 : 24);
   if (!narrow) sh.text('RV systolic pressure', bx0, iy + 12, { size: 17 * s, color: t.ink2 });
-  const top = Math.max(60, Math.ceil((F.rvsp + 6) / 20) * 20);
+  const top = Math.max(60, Math.ceil((rap + F.grad + 6) / 20) * 20);
   const X = (mm) => bx0 + (mm / top) * (bx1 - bx0);
   const fs = narrow ? 10.5 : 12;
   const bh = narrow ? bhN : 24, by = narrow ? byN : iy + 54;
@@ -359,8 +383,8 @@ function drawPressure(sh, t, F, R, narrow) {
     if (fill) sh.hatch(r, 0.8, 3.6, fill, 0.8, seed, 0.6);
     sh.rect(X(a), by, Math.max(1, X(b) - X(a)), bh, { width: 1.3, rough: 0.5, seed, stroke: color });
   };
-  seg(0, F.rap, 33, t.ink2, t.ink2);
-  seg(F.rap, F.rvsp, 34, t.flag, null);
+  if (F.rap !== null) seg(0, rap, 33, t.ink2, t.ink2);
+  seg(rap, rap + F.grad, 34, t.flag, null);
   // the scale under the bar, its unit at the right end
   ctx.save();
   ctx.strokeStyle = t.ink3;
@@ -376,14 +400,17 @@ function drawPressure(sh, t, F, R, narrow) {
   ctx.fillText('mmHg', bx1 + (narrow ? 12 : 6), narrow ? yn : by + bh / 2 + 4);
   ctx.restore();
   // the two parts named above the bar: RAP at its left end, the gradient at the middle of its part
-  const lr = `RAP ${F.rap}`, lg = `4V² ${F.grad.toFixed(0)}`;
+  const lr = F.rap === null ? 'RAP –' : `RAP ${F.rap}`, lg = `4V² ${F.grad.toFixed(0)}`;
   const wr = sh.measure(lr, { family: MONO, weight: 500, size: fs });
   const wg = sh.measure(lg, { family: MONO, weight: 500, size: fs });
   sh.text(lr, X(0), by - 5, { family: MONO, weight: 500, size: fs, color: t.ink2 });
-  const gx = Math.max(X(0) + wr + 10 + wg / 2, (X(F.rap) + X(F.rvsp)) / 2);
+  const gx = Math.max(X(0) + wr + 10 + wg / 2, (X(rap) + X(rap + F.grad)) / 2);
   sh.text(lg, Math.min(gx, bx1 - wg / 2), by - 5, { family: MONO, weight: 500, size: fs, color: t.flag, align: 'center' });
-  if (!narrow) sh.text(`RA pressure from the IVC: chapter ${numOf('ivc')}`, bx0, by + bh + 46, { size: 15 * s, color: t.ink3 });
-  const sum = sh.fit([
+  if (!narrow) sh.text(st.pressMode === 'ivc' ? 'RA pressure from the IVC at the left' : 'RA pressure from the IVC (IVC setting)', bx0, by + bh + 46, { size: 15 * s, color: t.ink3 });
+  const sum = sh.fit(F.rap === null ? [
+    `ventilation: no single RA pressure  ·  RVSP ${F.grad.toFixed(0)} + RAP`,
+    `RVSP ${F.grad.toFixed(0)} + RAP (no single value)`,
+  ] : [
     `RA pressure ${F.rap} mmHg  ·  RVSP ${F.grad.toFixed(0)} + ${F.rap} = ${F.rvsp.toFixed(0)} mmHg`,
     `RAP ${F.rap} · RVSP ${F.grad.toFixed(0)} + ${F.rap} = ${F.rvsp.toFixed(0)} mmHg`,
   ], R.x + R.w + (narrow ? 4 : 10) - bx0, { family: MONO, weight: 500, size: 12 }, 0.85);
@@ -391,31 +418,71 @@ function drawPressure(sh, t, F, R, narrow) {
   sh.text(sum.str, bx0, ys, { family: MONO, weight: 500, size: sum.size, color: t.ink });
 }
 
+/** The IVC setting's left half: the subcostal long axis with its caliper, and the IVC on M-mode. */
+function drawIvc(sh, t, F, B, narrow) {
+  const { ctx } = sh;
+  const v = valuesOf(st, CAVA), m = ivcModel(v), P = panels.frame(v, m), e = m.est;
+  const s = narrow ? 0.85 : 1;
+  let y = B.y + (narrow ? 22 : 44);
+  sh.text('IVC', B.x, y, { size: 26 * s });
+  const res = e.rap === null ? `${e.level} RA pressure` : `RA pressure ${e.rap} mmHg`;
+  const eq = sh.fit([`${res}, from the diameter and the collapse`, res], B.w - (narrow ? 56 : 70), { family: MONO, weight: 500, size: 12 }, 0.8);
+  sh.text(eq.str, B.x + (narrow ? 56 : 70), y - 2, { family: MONO, weight: 500, size: eq.size });
+  y += narrow ? 10 : 18;
+  const box = { x: B.x, y, w: B.w, h: B.y + B.h - y };
+  // a phone puts the two side by side; a wider figure stacks them, the long axis on top
+  const [a, b] = narrow ? cols(box, [1.15, 1], 8) : rows(box, [1.5, 1], 12);
+  drawSubcostal(ctx, a, P.sc, { box: boxLines(v, m, !narrow) });
+  drawMmode(ctx, b, P.p, P.u);
+}
+
 function draw(sh, t) {
   const W = sh.w, H = sh.h;
   const narrow = W < 700;
   const F = flow(st);
+  const left = st.pressMode === 'ivc' ? drawIvc : drawFlow;
   if (narrow) {
-    // a phone stacks the two: the flow takes the upper 60%, the pressure the rest
+    // a phone stacks the two: the flow or the IVC takes the upper 60%, the pressure the rest
     const split = Math.round(H * 0.6);
-    drawFlow(sh, t, F, { x: 12, y: 0, w: W - 24, h: split - 6 }, true);
+    left(sh, t, F, { x: 12, y: 0, w: W - 24, h: split - 6 }, true);
     drawPressure(sh, t, F, { x: 12, y: split, w: W - 24, h: H - split }, true);
   } else {
     const colW = W / 2;
-    drawFlow(sh, t, F, { x: 26, y: 0, w: colW - 44, h: H - 10 }, false);
+    left(sh, t, F, { x: 26, y: 0, w: colW - 44, h: H - 10 }, false);
     drawPressure(sh, t, F, { x: colW + 18, y: 0, w: colW - 44, h: H }, false);
   }
 }
 
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '–');
-const DEF = { sv: 70, lvotD: 2.0, valveA: 2.5, aoD: 3.0, trV: 2.4, rap: 3 };
+const DEF = { sv: 70, lvotD: 2.0, valveA: 2.5, aoD: 3.0, trV: 2.4, rap: 3, pressMode: 'flow', ...defaultsOf(CAVA) };
+
+// ---------------------------------------------------------------- the tour
+// Flow and pressure: the valve narrows to 0.7 cm² (0.5-6 s), then the aorta to 2.2 cm (7.2-9.5 s),
+// then the peak TR velocity rises to 3.0 m/s (10.2-12.5 s). The IVC from 13.5 s: the IVC widens to
+// 2.4 cm (15-17.5 s; indeterminate past 2.1 cm, 8 mmHg), then its collapse falls to 30% (18.5-21 s;
+// 15 mmHg below 50%), and the RVSP rises with the RA pressure. The tour does not set rap: the RA
+// pressure follows the IVC (onState).
+const ramp = (tt, t0, len, a, b, q) => Math.round((a + (b - a) * clamp((tt - t0) / len, 0, 1)) / q) * q;
+const IVC_AT = 13.5;
+function tourState(tt) {
+  return {
+    sv: 70, lvotD: 2.0,
+    valveA: Math.round(ramp(tt, 0.5, 5.5, 2.5, 0.7, 0.05) * 100) / 100,
+    aoD: Math.round(ramp(tt, 7.2, 2.3, 3.0, 2.2, 0.1) * 10) / 10,
+    trV: Math.round(ramp(tt, 10.2, 2.3, 2.4, 3.0, 0.05) * 100) / 100,
+    pressMode: tt >= IVC_AT ? 'ivc' : 'flow',
+    ...defaultsOf(CAVA),
+    cavaD: Math.round(ramp(tt, 15, 2.5, 1.8, 2.4, 0.1) * 10) / 10,
+    cavaSniff: ramp(tt, 18.5, 2.5, 60, 30, 5),
+  };
+}
 
 export default {
   key: 'pressure',
   part: 'hemodynamics',
   title: 'Doppler hemodynamics',
   nav: 'Pressure',
-  dwell: 14,
+  dwell: 23,
   defaults: { ...DEF },
   format: {
     sv: (v) => `${Math.round(v)} mL`,
@@ -429,23 +496,56 @@ export default {
     sheet = new Sheet(fig.querySelector('canvas'), (sh, t) => draw(sh, t));
     return sheet;
   },
-  init({ state }) { st = state; },
-  pulse: () => beat.pulse(),
-  // the blood moves and the Doppler cursors sweep on the beat
+  init({ state, set }) {
+    st = state;
+    setState = set;
+    dg = ivcDiagram({ host: document.getElementById('ivc-ase'), K: CAVA, get: () => st, set: (p) => setState(p), live: '#ch-pressure .live', hv: false });
+  },
+  // on the way in and out, the IVC diagram's next drawing sets the baseline: no flash for changes made elsewhere
+  enter() { dg?.reset(); },
+  leave() { dg?.reset(); },
+  // One RA pressure in the chapter. An IVC that gives 3, 8 or 15 mmHg lights its button (none when
+  // the IVC gives no single value); a button sets an IVC that gives its value (PRESET).
+  onState(s, ch) {
+    const rap = rapOf(s);
+    if (Object.values(CAVA).some((k) => k in ch)) { if (s.rap !== rap) setState({ rap }); }
+    else if ('rap' in ch && s.rap !== rap && PRESET[s.rap]) setState({ ...PRESET[s.rap] });
+  },
+  pulse: (s) => (s.pressMode === 'ivc' ? panels.pulse() : beat.pulse()),
+  // the blood moves and the Doppler cursors sweep on the beat; the IVC breathes on its own clock
   anim(dt, s) {
     if (beat.tick(dt, true)) { advance(dt, s); if (sheet) sheet.dirty = true; }
+    if (s.pressMode === 'ivc' && panels.tick(dt) && sheet) sheet.dirty = true;
   },
-  tourEnter(set) { set({ ...DEF }); },
-  // the valve narrows to 0.7 cm², then the aorta to 2.2 cm, then the TR velocity rises with an RA
-  // pressure of 15 mmHg
-  tourTick(tt, set) {
-    if (tt < 7) set({ valveA: Math.round((2.5 - clamp((tt - 0.5) / 5.5, 0, 1) * 1.8) * 20) / 20 });
-    else if (tt < 10) set({ valveA: 0.7, aoD: Math.round((3.0 - clamp((tt - 7.2) / 2.3, 0, 1) * 0.8) * 10) / 10 });
-    else set({ trV: Math.round((2.4 + clamp((tt - 10.2) / 3, 0, 1) * 1.1) * 20) / 20, rap: 15 });
+  tourEnter(set) { set(tourState(0)); },
+  tourTick(tt, set) { set(tourState(tt)); },
+  /** The tour time at which tourTick gives state s (the first such time); else the start of its setting. */
+  tourAt(s) {
+    const dwell = 23;
+    for (let tt = 0; tt <= dwell; tt += 0.05) {
+      const p = tourState(tt);
+      if (Object.keys(p).every((k) => s[k] === p[k])) return Math.round(tt * 100) / 100;
+    }
+    return s.pressMode === 'ivc' ? IVC_AT : 0;
   },
   text(s, { cite }) {
     const F = flow(s);
+    const mode = s.pressMode === 'ivc' ? 'ivc' : 'flow';
+    // the controls and the diagram of the setting shown
+    const shown = (art) => { for (const el of art.querySelectorAll('[data-press]')) el.hidden = el.dataset.press !== mode; };
     const g = trvGrade(s.trV);
+    const rvspIs = F.rap === null
+      ? `the RV–RA pressure gradient is 4 × ${fmt(s.trV, 2)}² = ${fmt(F.grad)} mmHg. Under ventilation with secondary signs, the IVC gives no single RA pressure to add${cite('mukherjee2025')}.`
+      : `the RV–RA pressure gradient is 4 × ${fmt(s.trV, 2)}² = ${fmt(F.grad)} mmHg, and with an RA pressure of ${F.rap} mmHg, estimated from the IVC, the RV systolic pressure is ${fmt(F.rvsp)} mmHg${cite('quinones2002')}.`;
+    const rvspRead = { k: 'RV systolic pressure', v: F.rvsp === null ? '–' : fmt(F.rvsp), u: F.rvsp === null ? '' : 'mmHg', flag: s.trV >= 2.8 };
+    if (mode === 'ivc') {
+      const v = valuesOf(s, CAVA), m = ivcModel(v);
+      return {
+        readouts: [...readoutsOf(v, m), { k: 'Peak TR velocity', v: fmt(s.trV, 2), u: 'm/s', flag: s.trV >= 2.8 }, rvspRead],
+        live: `${liveOf(v, m, cite, { hv: false })} With a peak TR velocity of ${fmt(s.trV, 2)} m/s, ${rvspIs}`,
+        extra: (art) => { shown(art); dg?.render(v, m); },
+      };
+    }
     const prox = F.v1 > 1.5;
     return {
       readouts: [
@@ -454,12 +554,13 @@ export default {
         { k: 'Velocity ratio', v: fmt(F.vr, 2), u: '', flag: F.vr <= 0.25 },
         { k: 'Peak gradient', v: fmt(F.dp), u: 'mmHg', flag: F.dp >= 64 },
         { k: 'Pressure recovery', v: fmt(F.pr), u: 'mmHg', flag: s.aoD < 3 && F.pr >= 5 },
-        { k: 'RV systolic pressure', v: fmt(F.rvsp), u: 'mmHg', flag: s.trV >= 2.8 },
+        rvspRead,
       ],
       live: `${F.wide
         ? `The valve opens as wide as the LVOT, so the flow of ${fmt(F.q)} mL/s at its peak keeps its velocity of ${fmt(F.v1, 2)} m/s through the valve.`
         : `The same flow, ${fmt(F.q)} mL/s at its peak, passes the LVOT (${fmt(F.a1, 2)} cm²) and the valve (${fmt(F.a2, 2)} cm²), so the velocity rises ${fmt(F.v2 / F.v1, 1)} times, from ${fmt(F.v1, 2)} to ${fmt(F.v2, 2)} m/s, as the area falls${cite('baumgartner2017')}.`
-      } From the LVOT to the narrowest part of the jet the pressure falls by 4 × (${fmt(F.v2, 2)}² − ${fmt(F.v1, 2)}²) = ${fmt(F.dp)} mmHg; in the ${fmt(s.aoD, 1)} cm aorta the jet slows and the pressure rises again by ${fmt(F.pr)} mmHg (pressure recovery)${s.aoD < 3 ? ', so in an aorta under 3.0 cm the Doppler gradient can exceed the drop from the LV to the aorta' : ''}${cite('baumgartner2017')}.${prox ? ` <span class="k-red">The LVOT velocity is above 1.5 m/s, so the gradient must include it</span>${cite('baumgartner2017')}.` : ''} A peak TR velocity of ${fmt(s.trV, 2)} m/s is ${g}${cite('mukherjee2025')}; the RV–RA pressure gradient is 4 × ${fmt(s.trV, 2)}² = ${fmt(F.grad)} mmHg, and with an RA pressure of ${F.rap} mmHg, estimated from the IVC (<a href="#ivc" data-go="ivc">chapter ${numOf('ivc')}</a>), the RV systolic pressure is ${fmt(F.rvsp)} mmHg${cite('quinones2002')}.`,
+      } From the LVOT to the narrowest part of the jet the pressure falls by 4 × (${fmt(F.v2, 2)}² − ${fmt(F.v1, 2)}²) = ${fmt(F.dp)} mmHg; in the ${fmt(s.aoD, 1)} cm aorta the jet slows and the pressure rises again by ${fmt(F.pr)} mmHg (pressure recovery)${s.aoD < 3 ? ', so in an aorta under 3.0 cm the Doppler gradient can exceed the drop from the LV to the aorta' : ''}${cite('baumgartner2017')}.${prox ? ` <span class="k-red">The LVOT velocity is above 1.5 m/s, so the gradient must include it</span>${cite('baumgartner2017')}.` : ''} A peak TR velocity of ${fmt(s.trV, 2)} m/s is ${g}${cite('mukherjee2025')}; ${rvspIs}`,
+      extra: (art) => shown(art),
     };
   },
 };
