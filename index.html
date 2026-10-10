@@ -1214,7 +1214,10 @@
           </div>
         </div>
         <div class="control" data-ai-tab="steps study">
-          <label for="aiSec">Section <output data-for="aiSec"></output></label>
+          <div class="sev-head">
+            <label for="aiSec">Section <output data-for="aiSec"></output></label>
+            <button type="button" class="sev-play" data-anim="Play the report's sections" aria-pressed="false" aria-label="Play the report's sections"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
           <input type="range" id="aiSec" data-key="aiSec" min="0" max="14" step="1">
         </div>
         <!-- hidden: the two-peaked map (SHOW_TWO in src/aifig.js) -->

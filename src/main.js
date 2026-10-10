@@ -255,7 +255,7 @@ function syncControls(changed) {
   for (const el of $$('input[type="checkbox"][data-key]')) if (has(el.dataset.key)) el.checked = !!state[el.dataset.key];
   if (has('anim') || has('playing')) {
     const on = !!(state.anim || state.playing);
-    for (const b of $$('button[data-anim]')) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Pause' : 'Play the progression'); }
+    for (const b of $$('button[data-anim]')) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Pause' : b.dataset.anim || 'Play the progression'); }
   }
   for (const el of $$('input[type="number"][data-key]')) {
     const k = el.dataset.key;
@@ -392,10 +392,11 @@ new ResizeObserver(() => drawTrack()).observe($('#track'));
 // chapter. state.anim says that it runs.
 /**
  * Whether chapter c plays its own sequence when it opens: not with reduced motion, not without
- * tour steps, and not on a severity page (a Play button) under a disease heart, which keeps the
- * heart's grade.
+ * tour steps, and not on a severity page (a Play button on its severity slider) under a disease
+ * heart, which keeps the heart's grade. A Play button elsewhere (the AI chapter's sections) does
+ * not stop it.
  */
-const ownPlays = (c) => !reducedMotion && !!c.tourTick && !(state.pheno !== 'normal' && $(`#ch-${c.key} button[data-anim]`));
+const ownPlays = (c) => !reducedMotion && !!c.tourTick && !(state.pheno !== 'normal' && $(`#ch-${c.key} .sev button[data-anim]`));
 // Any input in the open chapter pauses the tour, and stops the chapter's sequence until the
 // chapter opens again (held): a pointer or the wheel on its figure or text, a click there, a
 // control's input or change, and the chapter's own keys. The Play button of a severity page

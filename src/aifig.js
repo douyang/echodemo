@@ -1,11 +1,12 @@
 // The figure of chapter 'ai' (ch/ai.js): EchoPrime and EchoNet-Measurements in seven steps.
 // Row 1, EchoPrime, four panels: 1 sort (the 14 videos of ai.js, each with its view), 2 encode (one
-// video encoder, 512 numbers a video), 3 weigh (the public section weights of echoprime.js, a row
-// for each video, a column for each section) and 4 answer (about 150 task heads). Row 2,
+// video encoder, 512 numbers a video), 3 weigh (the chosen section's mix of the 14 videos: each
+// view's share of the public section weights of echoprime.js) and 4 answer (about 150 task
+// heads). Row 2,
 // EchoNet-Measurements: 5 measure, nine B-mode clips and eight Doppler and M-mode images, with the
 // calipers and peaks of ch/measure.js. Row 3: 6 anchor (each number head checks its measurement)
-// and 7 report (EchoPrime's words, the measured numbers). A report section lights its column in 3,
-// its heads in 4, its tiles in 5, its lines in 6 and its sentence in 7.
+// and 7 report (EchoPrime's words, the measured numbers). A report section lights its cell of the
+// strip and its mix in 3, its heads in 4, its tiles in 5, its lines in 6 and its sentence in 7.
 //
 // The task heads and the anchor are in development and not published: here they are a teaching
 // simulation. A head's value is the site's value for the heart shown (the SITE table and the
@@ -14,12 +15,13 @@
 //
 // A box 840 px wide or more shows every step at once, in the three rows, at least 540 px tall. A
 // narrower box shows the steps in more rows, each as tall as its cards need, and the box scrolls.
-// Arrows link each step to the next. Every text is 9.5 px or larger (9 px for a video's view on a
-// phone).
+// Arrows link each step to the next. Every text is 9.5 px or larger, except a video's view on a
+// phone (9 px), the rows' labels of step 2 and the anchor's band label (8.5 px, 7 px where the
+// rows lie under 10 px apart) and the mix's labels in a narrow card (8.5 px).
 import { MONO, SANS, clamp, rng } from './sketch.js';
 import { SC, spectral } from './scope.js';
 import { cycleAt, RR } from './cyclemodel.js';
-import { SECTIONS, W as WEIGHT } from './echoprime.js';
+import { SECTIONS, GROUPS, W as WEIGHT } from './echoprime.js';
 import { buildReport } from './ch/report.js';
 import { B, D, SITE, siteValue, dopplerOf, regionOf, DW, DH, DEEPER, OFF, blob, loadViews, warmViews, reportedFrame } from './ch/measure.js';
 
@@ -454,6 +456,12 @@ export const SHOW_TABS = false;
  * stays.
  */
 const SHOW_GRIDS = false;
+/**
+ * Step 3 as lines, as before 10 Oct 2026: a line from each video's row to the chosen section, as
+ * wide and as dark as the weight of its view group (weighLines). Off: the study's mix of the
+ * chosen section (weighShare). The code stays.
+ */
+const SHOW_LINES = false;
 /** A scale on each line of the anchor, as before 9 Oct 2026. Off: one band and one head line for all its lines. The code stays. */
 const SHOW_SCALES = false;
 const FIT_W = 840, FIT_H = 540;   // px: the smallest box that shows every step at once
@@ -974,8 +982,8 @@ const rowLabel = (rh) => ({ o: F(rh >= 10 ? 8.5 : 7, MONO, 500) });
 /**
  * The rows that carry a label at a pitch of rh px: every row from 6.5 px, where the 7 px type
  * still clears the next row. Under 6.5 px, two labels stay 7 px apart, and the rows of the chosen
- * section's largest weights take theirs first, so that the views and weights that the section
- * rests on keep their labels in steps 2 and 3.
+ * section's largest weights take theirs first, so that the views that the section rests on keep
+ * their labels in step 2 (and their weights in step 3's lines, SHOW_LINES).
  */
 function labelRows(rh, sec) {
   const d = rh >= 6.5 ? 1 : Math.max(2, Math.ceil(7 / rh));
@@ -1063,17 +1071,11 @@ function encodeGrid(sh, t, b, heart, rowsY) {
   rowsY.h = h;
 }
 
-// 3 · Weigh: the public weights of the chosen section, a line from each video to it
+// 3 · Weigh: the chosen section's mix of the videos (SHOW_LINES: a line from each video to it)
 const VG = [7, 5, 8, 6, 8, 8, 2, 4, 3, 0, 1, 10, 10, 9];   // each video's view group (echoprime.js GROUPS)
-/**
- * The 15 sections in a strip, the chosen one lit (a click chooses one), and from each video's row
- * a line to the chosen section's pill, as wide and as dark as the public weight of its view group,
- * with the weight at its start. The rows are those of step 2.
- */
-function weighLines(sh, t, b, sec, hits) {
-  const ctx = sh.ctx;
-  const bottom = caption(sh, t, b, ['public weights of the section', 'public weights']);
-  const sw = b.w / SECTIONS.length;
+/** The 15 sections in a strip at the top of box b, the chosen one lit; a click chooses one. Returns the y under it. */
+function sectionStrip(sh, t, b, sec, hits) {
+  const ctx = sh.ctx, sw = b.w / SECTIONS.length;
   for (let s = 0; s < SECTIONS.length; s++) {
     ctx.save();
     rrect(ctx, b.x + s * sw + 1, b.y + 4, sw - 2, 10, Math.min(2.5, (sw - 2) / 2));
@@ -1082,6 +1084,17 @@ function weighLines(sh, t, b, sec, hits) {
     ctx.restore();
     hits.push({ x0: b.x + s * sw, y0: b.y, x1: b.x + (s + 1) * sw, y1: b.y + 20, sec: s });
   }
+  return b.y + 20;
+}
+/**
+ * The 15 sections in a strip, the chosen one lit (a click chooses one), and from each video's row
+ * a line to the chosen section's pill, as wide and as dark as the public weight of its view group,
+ * with the weight at its start. The rows are those of step 2 (SHOW_LINES).
+ */
+function weighLines(sh, t, b, sec, hits) {
+  const ctx = sh.ctx;
+  const bottom = caption(sh, t, b, ['public weights of the section', 'public weights']);
+  sectionStrip(sh, t, b, sec, hits);
   const R = videoRows(b, bottom), L = rowLabel(R.rh), show = labelRows(R.rh, sec), pO = F(10.5, SANS, 600);
   const name = fits(sh, [SECTIONS[sec].name, SEC_SHORT[sec]], b.w * 0.5, pO) ?? SEC_SHORT[sec];
   const pw = sh.measure(name, pO) + 18, ph = 22, px = b.x + b.w - pw, py = R.y0 + R.h / 2 - ph / 2;
@@ -1107,6 +1120,81 @@ function weighLines(sh, t, b, sec, hits) {
   ctx.fill();
   ctx.restore();
   sh.text(name, px + pw / 2, py + 15, { ...pO, align: 'center', color: t.paper2 });
+}
+/**
+ * The mix of the study's 14 videos for section sec: each view group's share of the sum of the
+ * videos' weights, that is, the sum of its own videos' weights (a group with three videos counts
+ * three times) over that sum for all 14. The five largest, then the rest as one part when it holds
+ * two or more groups; whole percent that add to 100 (largest remainder). EchoPrime adds the
+ * videos' embeddings, each times its weight (echoprime.js); the shares are this site's arithmetic
+ * on those weights, not an output of EchoPrime. [{ g, n, v, pc }], largest first: g the view group
+ * (-1 for the rest), n its videos (for the rest, its groups), v the sum of its weights, pc percent.
+ */
+export function shareOf(sec) {
+  const all = GROUPS.map((_, g) => {
+    const n = VG.filter((x) => x === g).length;
+    return { g, n, v: n * WEIGHT[sec][g] };
+  }).filter((p) => p.v > 0).sort((a, b) => b.v - a.v || a.g - b.g);
+  const parts = all.length > 6 ? all.slice(0, 5) : all, rest = all.slice(parts.length);
+  if (rest.length) parts.push({ g: -1, n: rest.length, v: rest.reduce((a, p) => a + p.v, 0) });
+  const total = parts.reduce((a, p) => a + p.v, 0), raw = parts.map((p) => (100 * p.v) / total);
+  const pc = raw.map(Math.floor);
+  let left = 100 - pc.reduce((a, x) => a + x, 0);
+  const order = raw.map((x, i) => [x - Math.floor(x), i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  for (const [, i] of order) { if (left <= 0) break; pc[i]++; left--; }
+  return parts.map((p, i) => ({ ...p, pc: pc[i] }));
+}
+/**
+ * The 15 sections in a strip, the chosen one lit (a click chooses one), its name, and one bar of
+ * its mix (shareOf), the largest share at the top. Each part carries its view group's tag, its
+ * videos (×3) and its share; a part's shade grows with its share, and the rest is pale. A label
+ * that moves off its part to clear the next one keeps a line to it.
+ */
+function weighShare(sh, t, b, sec, hits) {
+  const ctx = sh.ctx, C = palette(t);
+  const bottom = caption(sh, t, b, ['each view\'s share of the mix', 'share of the mix']);
+  const y1 = sectionStrip(sh, t, b, sec, hits), nO = F(10.5, SANS, 600);
+  sh.text(fits(sh, [SECTIONS[sec].name, SEC_SHORT[sec]], b.w, nO) ?? SEC_SHORT[sec], b.x, y1 + 10, { ...nO, color: t.ink });
+  const parts = shareOf(sec), top = y1 + 18, h = bottom - 6 - top, vmax = parts[0].v, total = parts.reduce((a, p) => a + p.v, 0);
+  const bw = clamp(Math.round(b.w * 0.14), 18, 30), lx = b.x + bw + 9, right = b.x + b.w;
+  const forms = (p) => (p.g < 0 ? [`${p.n} other views`, `${p.n} others`, 'others'] : p.n > 1 ? [`${GROUPS[p.g].tag} ×${p.n}`, GROUPS[p.g].tag] : [GROUPS[p.g].tag]);
+  // 9.5 px where every label fits beside its percent, else 8.5 px
+  const room = (o) => right - lx - sh.measure('100%', o) - 6;
+  const o = [9.5, 8.5].map((z) => F(z, MONO, 500)).find((q) => parts.every((p) => sh.measure(forms(p)[0], q) <= room(q))) ?? F(8.5, MONO, 500);
+  let y = top;
+  const lab = parts.map((p) => {
+    const ph = (h * p.v) / total, mid = y + ph / 2;
+    ctx.save();
+    ctx.fillStyle = p.g < 0 ? C.weight(0.14) : C.weight(0.3 + (0.7 * p.v) / vmax);
+    ctx.fillRect(b.x, y + 1, bw, Math.max(0.5, ph - 2));
+    ctx.restore();
+    y += ph;
+    return { mid, y: mid, p };
+  });
+  // the labels at their parts' middles, pushed apart where parts are thin, inside the bar's span
+  const gap = o.size + 2.5, lo = top + o.size * 0.5, hi = top + h - o.size * 0.5;
+  for (let k = 1; k < lab.length; k++) lab[k].y = Math.max(lab[k].y, lab[k - 1].y + gap);
+  if (lab.length && lab[lab.length - 1].y > hi) lab[lab.length - 1].y = hi;
+  for (let k = lab.length - 2; k >= 0; k--) lab[k].y = Math.min(lab[k].y, lab[k + 1].y - gap);
+  if (lab.length && lab[0].y < lo) {
+    lab[0].y = lo;
+    for (let k = 1; k < lab.length; k++) lab[k].y = Math.max(lab[k].y, lab[k - 1].y + gap);
+  }
+  for (const l of lab) {
+    if (Math.abs(l.y - l.mid) > 1.5) {
+      ctx.save();
+      ctx.strokeStyle = t.rule;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(b.x + bw + 1.5, l.mid);
+      ctx.lineTo(lx - 2.5, l.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+    const s = fits(sh, forms(l.p), room(o), o) ?? forms(l.p).pop();
+    sh.text(s, lx, l.y + o.size * 0.35, { ...o, color: l.p.g < 0 ? t.ink3 : t.ink2 });
+    sh.text(`${l.p.pc}%`, right, l.y + o.size * 0.35, { ...o, align: 'right', color: l.p.g < 0 ? t.ink2 : t.ink });
+  }
 }
 /** The weights of every section, a column each, the chosen one framed (SHOW_GRIDS). */
 function weighGrid(sh, t, b, sec, hits) {
@@ -1976,7 +2064,7 @@ export function drawFigure(sh, t, S, F1) {
     const b = card(sh, t, P, k, lit(k), compact(k), k === 5 && L.merged, !!L.fit);
     if (k === 1) sortPanel(sh, t, b, F1);
     else if (k === 2) (SHOW_GRIDS ? encodeGrid : encodeRows)(sh, t, b, V.heart, rows, S.sec);
-    else if (k === 3) (SHOW_GRIDS ? weighGrid : weighLines)(sh, t, b, S.sec, hits);
+    else if (k === 3) (SHOW_GRIDS ? weighGrid : SHOW_LINES ? weighLines : weighShare)(sh, t, b, S.sec, hits);
     else if (k === 4) { if (SHOW_GRIDS) answerGrid(sh, t, b, S.sec, V, hits); else answerList(sh, t, b, S.sec, V); }
     else if (k === 5 && L.merged) bothBands(sh, t, b, S.sec, V, hits, level, clip ? P : null, L.split);
     else if (k === 5 || k === 5.5) measurePanel(sh, t, b, k === 5 ? 'b' : 'd', S.sec, V, hits, level, !L.old, clip);
