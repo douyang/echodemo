@@ -8,7 +8,8 @@
 // simulation (aifig.js). Neither model runs here.
 // Two earlier views stay, hidden: Study (the videos, the weights and the share of a section's
 // weight that the videos present carry; SHOW_STUDY) and Retrieval (a map of 2,000 simulated
-// earlier studies, with the k nearest to the heart shown; SHOW_RETRIEVAL).
+// earlier studies, with the k nearest to the heart shown; SHOW_RETRIEVAL). The two-peaked map (a
+// second peak on the septum's heat map, aiTwo) is off, and its switch hidden (SHOW_TWO, aifig.js).
 import { Sheet, MONO, SANS, rng, clamp } from '../sketch.js';
 import { reducedMotion } from '../state.js';
 import { cycleAt, mitralV, lvotV, RR, EV } from '../cyclemodel.js';
@@ -19,7 +20,7 @@ import { onPlane, hingesOf, closureOf, blood, cavity, middle, sub, add, mul, dot
 import { VESSELS } from '../views.js';
 import { GROUPS, SECTIONS, W as WEIGHT, coverage, K_PAPER } from '../echoprime.js';
 import { buildReport, sectionTexts } from './report.js';
-import { drawFigure, bind, measureStep, measureDone, valuesOf, reportOf, linesOf, numHeads, valueText, calText, rowOfStep } from '../aifig.js';
+import { drawFigure, bind, measureStep, measureDone, valuesOf, reportOf, linesOf, numHeads, valueText, calText, rowOfStep, shareOf, SHOW_TWO } from '../aifig.js';
 
 // The figure: the seven steps (aifig.js). The two earlier views are hidden; their code and
 // controls stay (data-ai-tab in index.html), and each comes back with its switch.
@@ -27,6 +28,8 @@ const SHOW_STUDY = false;
 const SHOW_RETRIEVAL = false;
 /** The view shown: the seven steps, or an earlier view that is switched on and chosen. */
 const tabOf = (s) => (SHOW_RETRIEVAL && s?.aiTab === 'retrieval' ? 'retrieval' : SHOW_STUDY && s?.aiTab === 'study' ? 'study' : 'steps');
+/** The septum's heat map with a second peak: only where the map is switched on (SHOW_TWO) and chosen. */
+const twoOf = (s) => SHOW_TWO && !!s?.aiTwo;
 
 const G = Object.fromEntries(GROUPS.map((g, i) => [g.key, i]));
 /**
@@ -462,6 +465,12 @@ const GROUP_TEXT = {
   A2C: 'the apical two-chamber view', A3C: 'the apical three-chamber view', A4C: 'the apical four-chamber view', A5C: 'the apical five-chamber view',
   Apical_Doppler: 'apical color Doppler', Doppler_Parasternal_Long: 'parasternal long-axis color Doppler', Doppler_Parasternal_Short: 'parasternal short-axis color Doppler',
   Parasternal_Long: 'the parasternal long-axis view', Parasternal_Short: 'the parasternal short-axis view', SSN: 'the suprasternal view', Subcostal: 'the subcostal view',
+};
+// a view group's videos in a sentence: "the three parasternal short-axis videos"
+const VIDEO_TEXT = {
+  A2C: 'apical two-chamber', A3C: 'apical three-chamber', A4C: 'apical four-chamber', A5C: 'apical five-chamber',
+  Apical_Doppler: 'apical color Doppler', Doppler_Parasternal_Long: 'parasternal long-axis color Doppler', Doppler_Parasternal_Short: 'parasternal short-axis color Doppler',
+  Parasternal_Long: 'parasternal long-axis', Parasternal_Short: 'parasternal short-axis', SSN: 'suprasternal', Subcostal: 'subcostal',
 };
 
 // ---------------------------------------------------------------- the study: layout
@@ -1169,12 +1178,13 @@ const stepOf = (s) => clamp(Math.round(s?.aiStep ?? 0), 0, 7);
 const rowOf = (s) => clamp(Math.round(s?.aiRow ?? 0), 0, 1);
 /**
  * The controls of the view shown (data-ai-tab: the views each serves). The view switch shows only
- * with a figure of two views (data-ai-narrow).
+ * with a figure of two views (data-ai-narrow), and the two-peaked map's switch only with SHOW_TWO
+ * (data-ai-two).
  */
 function showControls() {
   const tab = tabOf(st);
   for (const el of document.querySelectorAll('#ch-ai [data-ai-tab]')) {
-    el.hidden = !el.dataset.aiTab.split(' ').includes(tab) || ('aiNarrow' in el.dataset && !narrowNow);
+    el.hidden = !el.dataset.aiTab.split(' ').includes(tab) || ('aiNarrow' in el.dataset && !narrowNow) || ('aiTwo' in el.dataset && !SHOW_TWO);
   }
 }
 /** The site's figure scrolls its canvas; a video's pane shows the sheet at its own size. */
@@ -1182,7 +1192,7 @@ const scrolls = () => !!figEl?.closest('.stage');
 /** The height of the box that shows sheet sh: the box's own, or the sheet's in a taller box (a video's pane). */
 const boxOf = (sh) => Math.min(sh.h, figEl ? figEl.clientHeight / (sh.z || 1) : sh.h);
 function drawSteps(sh, t) {
-  const S = { sec: secOf(st), step: stepOf(st), two: !!st.aiTwo, row: rowOf(st), heart: heartCase(st), boxH: boxOf(sh) };
+  const S = { sec: secOf(st), step: stepOf(st), two: twoOf(st), row: rowOf(st), heart: heartCase(st), boxH: boxOf(sh) };
   const { L, hits } = drawFigure(sh, t, S, { video: videoTile });
   stepsHit = hits;
   stepsL = L;
@@ -1307,13 +1317,13 @@ function anchorText(sec, V) {
   }
   if (flagged.length) return { lead: `${flagged.map((o) => o.name).join(', ')}: no peak agrees with the head`, rest: 'The value is flagged for review.' };
   const n = lines.length;
-  return { lead: n === 1 ? 'the caliper lies in its head\'s range' : `all ${NUMBER_WORDS[n] || n} calipers lie in their heads' ranges`, rest: n === 1 ? 'The value stays as measured.' : 'Each value stays as measured.' };
+  return { lead: n === 1 ? 'the caliper lies in its head\'s range' : `${n === 2 ? 'both' : `all ${NUMBER_WORDS[n] || n}`} calipers lie in their heads' ranges`, rest: n === 1 ? 'The value stays as measured.' : 'Each value stays as measured.' };
 }
 /** The section's sentence in the figure's report, as plain text. */
 const sentenceOf = (V, sec) => reportOf(V)[sec].parts.map((p) => p[0]).join('');
 
 function stepsText(s, cite) {
-  const sec = secOf(s), step = stepOf(s), V = valuesOf(heartCase(s), !!s.aiTwo), name = IN_TEXT[sec];
+  const sec = secOf(s), step = stepOf(s), V = valuesOf(heartCase(s), twoOf(s)), name = IN_TEXT[sec];
   const lines = linesOf(sec), moved = lines.filter((o) => V.out[o.key].state === 'moved');
   const C1 = cite('vukadinovic2026'), C2 = cite('sahashi2025');
   const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
@@ -1321,9 +1331,11 @@ function stepsText(s, cite) {
   if (step === 1) live = `<b>Sort: the view classifier names the view of each of the ${N_ALL} videos.</b> It sorts B-mode and color Doppler videos into 58 standard views, and the public code groups them into 11 view groups${C1}.`;
   else if (step === 2) live = `<b>Encode: one video encoder turns each video into 512 numbers.</b> A video transformer (mViT) takes 16 frames of 224 × 224 pixels, from every second frame${C1}.`;
   else if (step === 3) {
-    const [a, b] = ranked(sec);
-    const rest = b.w >= 0.8 ? ` and ${GROUP_TEXT[GROUPS[b.g].key]} (${f2(b.w)})` : `, with ${GROUP_TEXT[GROUPS[b.g].key]} next (${f2(b.w)})`;
-    live = `<b>Weigh: the ${name} section rests on ${GROUP_TEXT[GROUPS[a.g].key]} (${f2(a.w)})${rest}.</b> For each section, EchoPrime multiplies each video's embedding by the weight of its view group and adds the products${C1}.`;
+    // the two largest parts of the section's mix, as the figure shows them (shareOf)
+    const [a, b] = shareOf(sec);
+    const vids = (p) => `the ${p.n > 1 ? `${NUMBER_WORDS[p.n] || p.n} ` : ''}${VIDEO_TEXT[GROUPS[p.g].key]} video${p.n > 1 ? 's' : ''}`;
+    const next = b && b.g >= 0 ? `, ${vids(b)} ${b.pc}%` : '';
+    live = `<b>Weigh: ${vids(a)} ${a.n > 1 ? 'carry' : 'carries'} ${a.pc}% of the ${name} section's mix${next}.</b> For each section, EchoPrime multiplies each video's embedding by the weight of its view group and adds the products${C1}. A view's share is the sum of its videos' weights over the sum for all ${N_ALL} videos. The shares are this site's arithmetic on the public weights, not an output of EchoPrime.`;
   } else if (step === 4) {
     const heads = numHeads(sec);
     live = `<b>Answer: about 150 task heads, one for each task of the report.</b> ${heads.length
@@ -1343,7 +1355,7 @@ function stepsText(s, cite) {
       { k: 'Section', v: SECTIONS[sec].name, text: true },
       { k: 'Measurements', v: String(lines.length) },
       r0 ? { k: moved[0].name, v: `${calText(r0)} → ${valueText(moved[0], r0).replace(/ \S+$/, '')}`, u: r0.unit, text: false }
-        : { k: 'Anchor', v: lines.length ? 'caliper kept' : 'none', text: true },
+        : { k: 'Anchor', v: lines.length > 1 ? 'calipers kept' : lines.length ? 'caliper kept' : 'none', text: true },
       { k: 'LVEF', v: String(V.ef), u: '%' },
     ],
     live,
@@ -1351,10 +1363,17 @@ function stepsText(s, cite) {
 }
 
 // ---------------------------------------------------------------- the tour
-// Steps 1 to 7, each lit in its view: the left ventricle section, the aortic valve section at step 3
-// and at the end. The septum's map keeps its second peak, so the anchor moves its caliper.
+// Steps 1 to 7, each lit in its view: the left ventricle section, and the aortic valve section at
+// step 3. Then step 7 stays lit, and the report's 15 sections follow in its order, the LV at 30 s
+// and each other section PASS s: each lights its cell of the strip and its mix (3), its heads (4),
+// its tiles (5), its anchor (6) and its sentence (7). The septum's map has one peak (aiTwo off).
+// The Play button on the Section control plays this sequence (main.js).
+const PASS = 3;   // s: each section of the pass after the LV's 4.5 s
+/** The time of section sec in the pass, with step 7 lit. */
+const passAt = (sec) => (sec === 0 ? 30 : 34.5 + PASS * (sec - 1));
 const TOUR = [
-  [0, 1, 0], [4.5, 2, 0], [9, 3, 0], [12.5, 3, 7], [16, 4, 0], [20.5, 5, 0], [25, 6, 0], [30, 7, 0], [34.5, 7, 7],
+  [0, 1, 0], [4.5, 2, 0], [9, 3, 0], [12.5, 3, 7], [16, 4, 0], [20.5, 5, 0], [25, 6, 0],
+  ...SECTIONS.map((_, sec) => [passAt(sec), 7, sec]),
 ];
 
 // ---------------------------------------------------------------- the chapter
@@ -1363,8 +1382,8 @@ export default {
   part: 'ai',
   title: 'AI interpretation and measurement',
   nav: 'AI',
-  dwell: 40,
-  defaults: { aiTab: 'steps', aiSec: 0, aiStep: 0, aiRow: 0, aiTwo: true, aiN: 14, aiOnly: false, aiMap: 'lv', aiK: 50 },
+  dwell: passAt(SECTIONS.length - 1) + PASS,
+  defaults: { aiTab: 'steps', aiSec: 0, aiStep: 0, aiRow: 0, aiTwo: false, aiN: 14, aiOnly: false, aiMap: 'lv', aiK: 50 },
   format: {
     aiSec: (x) => SECTIONS[Math.round(x)]?.name ?? '',
     aiN: (x) => `${Math.round(x)} of 14`,
@@ -1441,17 +1460,17 @@ export default {
     }
   },
   pulse() { return { rr: RR, phase: reducedMotion ? null : ((clock * 1000) % RR) / RR }; },
-  tourEnter(set) { set({ aiTab: 'steps', aiStep: TOUR[0][1], aiSec: TOUR[0][2], aiTwo: true, aiRow: rowOfStep(TOUR[0][1]) }); },
+  tourEnter(set) { set({ aiTab: 'steps', aiStep: TOUR[0][1], aiSec: TOUR[0][2], aiTwo: false, aiRow: rowOfStep(TOUR[0][1]) }); },
   tourTick(tt, set) {
     const [, step, sec] = TOUR.filter(([t0]) => tt >= t0).pop();
-    set({ aiTab: 'steps', aiStep: step, aiSec: sec, aiTwo: true, aiRow: rowOfStep(step) });
+    set({ aiTab: 'steps', aiStep: step, aiSec: sec, aiTwo: false, aiRow: rowOfStep(step) });
   },
-  // the time of the sequence at which tourTick shows this state (its inverse); a state off the
-  // sequence starts it from the beginning
+  // the time of the sequence at which tourTick shows this state (its inverse); another step and
+  // section, as a reader leaves them, start the pass at that section
   tourAt(s) {
-    if (tabOf(s) !== 'steps' || !s.aiTwo) return undefined;
+    if (tabOf(s) !== 'steps' || twoOf(s)) return undefined;
     const at = TOUR.find(([, step, sec]) => step === stepOf(s) && sec === secOf(s));
-    return at ? at[0] : undefined;
+    return at ? at[0] : passAt(secOf(s));
   },
   text(s, { cite }) {
     const tab = tabOf(s);
