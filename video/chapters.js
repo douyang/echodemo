@@ -14,11 +14,14 @@
 //   cut     every key changes at the middle of the move: for a step that switches the kind
 //           (a mass, a valve, a defect or a disease) whose slider value means another thing
 //   hold    beats on the step
+//   path    keys over the hold: a function of p, 0 to 1 of the hold, that gives keys over those
+//           of the step (a path that ends where it starts leaves the next step's start alone)
 //   name, line   the caption; by default the chapter's live sentence at the step's state: its
 //           bold lead, then the rest. pick: which sentences of the rest (0 = the first). A line
 //           of the video's own quotes the chapter: {b} the bold lead, {s0} a sentence of the
 //           rest, {LVEF} the readout of that name
 //   track   the step's name on the progress line (by default its caption name)
+//   join    the step shares the place of the step before on the progress line
 // A video: pane (the figure pane's name), zoom (the figure is laid out for a box `zoom` times
 // smaller and drawn larger), side (the measurements pane; false for none), sub (the title
 // card's line; by default the first sentence of the chapter's dek), quant (a step for each
@@ -30,6 +33,7 @@
 // by default the first). The video's key names it; the figure dips to the page between chapters.
 import { BEAT, FPS } from './timeline.js';
 import { SHOW_SHOCK } from '../src/order.js';
+import { MOVES, FREE_BASE, FREE_REST, moveAt } from '../src/teemoves.js';
 
 const STEP = { move: 3, hold: 5 };
 /** The music's tempo (tools/score/pulse.py): the end card falls on a bar line after whole phrases. */
@@ -527,31 +531,45 @@ export const VIDEOS = {
       { set: { aiSec: 7 }, name: 'Report: the aortic valve', track: 'Report: AV', move: 2, hold: 7 },
     ],
   },
-  // Transesophageal echocardiography: the chapter's tour, the 17 views in the order of Hahn 2013. The angle turns within a level
-  // and turn of the probe; the level and the turn change at the middle of a move
+  // Transesophageal echocardiography: the chapter's sequence. The 17 views in the order of Hahn
+  // 2013, about 6 s each: the angle turns within a level and turn of the probe, and the level and
+  // the turn change at the middle of a move. The four smallest turns take 2 beats, so that the
+  // video keeps its length, 159 beats (whole four-bar phrases to the end card). After the four-chamber view, the free probe
+  // (src/teemoves.js): each move out and back across its hold, then all five together. The six
+  // steps share one place on the progress line, and the move out of them holds the probe again
+  // from its start (via)
   tee: {
     // no pane name: the figure's own labels name its halves (the probe and plane, and the view)
     pane: '',
     side: false,
     quant: { teeAngle: 1 },
     steps: [
-      { set: { teeLevel: 'me', teeTurn: 'mid', teeAngle: 5 }, track: '4C', pick: [0], hold: 6 },
-      { set: { teeAngle: 60 }, track: 'MC', pick: [0], move: 4 },
-      { set: { teeAngle: 85 }, track: '2C', pick: [0] },
-      { set: { teeAngle: 140 }, track: 'LAX', pick: [0], move: 4 },
-      { set: { teeTurn: 'right', teeAngle: 120 }, track: 'AV LAX', pick: [0] },
-      { set: { teeLevel: 'ue', teeAngle: 95 }, track: 'Asc LAX', pick: [0] },
-      { set: { teeAngle: 5 }, track: 'Asc SAX', pick: [0], move: 4 },
-      { set: { teeLevel: 'me', teeAngle: 30 }, track: 'AV SAX', pick: [0], hold: 6 },
-      { set: { teeAngle: 55 }, track: 'RV in-out', pick: [0] },
-      { set: { teeAngle: 95 }, track: 'Bicaval', pick: [0] },
-      { set: { teeTurn: 'left', teeAngle: 105 }, track: 'LAA', pick: [0] },
-      { set: { teeLevel: 'tg', teeTurn: 'mid', teeAngle: 10 }, track: 'TG SAX', pick: [0], move: 4, hold: 6 },
-      { set: { teeAngle: 90 }, track: 'TG 2C', pick: [0], move: 4 },
-      { set: { teeTurn: 'left', teeAngle: 0 }, track: 'Desc SAX', pick: [0], move: 4 },
-      { set: { teeAngle: 90 }, track: 'Desc LAX', pick: [0] },
-      { set: { teeLevel: 'ue', teeTurn: 'mid', teeAngle: 0 }, track: 'Arch LAX', pick: [0], move: 4 },
-      { set: { teeAngle: 70 }, track: 'Arch SAX', pick: [0], hold: 6 },
+      { set: { teeLevel: 'me', teeTurn: 'mid', teeFree: false, teeBase: FREE_BASE, ...FREE_REST }, track: '4C', pick: [0], hold: 4 },
+      ...MOVES.map((m, k) => ({
+        // the progress line names the first; the storyboard names each (tools/storyboard.mjs)
+        ...(k ? { join: true, track: m.track } : { set: { teeFree: true }, track: 'Free' }),
+        path: (p) => moveAt(m, p),
+        name: `Free probe: ${m.name.charAt(0).toLowerCase()}${m.name.slice(1)}`,
+        line: m.line,
+        move: 1,
+        hold: m.key === 'all' ? 6 : 5,
+      })),
+      { set: { teeFree: false, teeAngle: 60 }, via: { teeFree: false }, track: 'MC', pick: [0], move: 2, hold: 4 },
+      { set: { teeAngle: 85 }, track: '2C', pick: [0], move: 2, hold: 4 },
+      { set: { teeAngle: 140 }, track: 'LAX', pick: [0], hold: 4 },
+      { set: { teeTurn: 'right', teeAngle: 120 }, track: 'AV LAX', pick: [0], hold: 4 },
+      { set: { teeLevel: 'ue', teeAngle: 95 }, track: 'Asc LAX', pick: [0], hold: 4 },
+      { set: { teeAngle: 5 }, track: 'Asc SAX', pick: [0], hold: 4 },
+      { set: { teeLevel: 'me', teeAngle: 30 }, track: 'AV SAX', pick: [0], hold: 4 },
+      { set: { teeAngle: 55 }, track: 'RV in-out', pick: [0], move: 2, hold: 4 },
+      { set: { teeAngle: 95 }, track: 'Bicaval', pick: [0], move: 2, hold: 4 },
+      { set: { teeTurn: 'left', teeAngle: 105 }, track: 'LAA', pick: [0], hold: 4 },
+      { set: { teeLevel: 'tg', teeTurn: 'mid', teeAngle: 10 }, track: 'TG SAX', pick: [0], hold: 4 },
+      { set: { teeAngle: 90 }, track: 'TG 2C', pick: [0], hold: 4 },
+      { set: { teeTurn: 'left', teeAngle: 0 }, track: 'Desc SAX', pick: [0], hold: 4 },
+      { set: { teeAngle: 90 }, track: 'Desc LAX', pick: [0], hold: 4 },
+      { set: { teeLevel: 'ue', teeTurn: 'mid', teeAngle: 0 }, track: 'Arch LAX', pick: [0], hold: 4 },
+      { set: { teeAngle: 70 }, track: 'Arch SAX', pick: [0], hold: 4 },
     ],
   },
 };

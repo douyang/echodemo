@@ -13,12 +13,14 @@
 // A drag of the slider that stops near a view's angle snaps to it.
 // Free probe: four more sliders move the probe from that pose (advance or withdraw along its path,
 // turn, ante- or retroflex, flex to the side), and the multiplane angle then turns the plane alone.
+// The sequence frees the probe after the four-chamber view and runs each move (teemoves.js).
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { loadModel } from '../model3d.js';
 import { sharedStage } from '../gl/shared.js';
 import { Fan, rgb } from '../gl/fans.js';
 import { TeeScene } from '../gl/teeprobe3d.js';
 import { STD, LEVELS, slotViews, slotFrame, viewAt, planeAt, teeAnatomy, framesOf, probePath, maneuver, mixFrames, freeFrame, FACE } from '../teeviews.js';
+import { FREE_BASE, FREE_REST, MOVES, HOW, moveAt } from '../teemoves.js';
 import { reducedMotion } from '../state.js';
 import { MONO } from '../sketch.js';
 
@@ -45,6 +47,39 @@ const INFO = {
 };
 // The views in the order of Hahn 2013 (its number): the tour and the [ and ] keys
 const TOUR = [...STD].sort((a, b) => a.hahn - b.hahn);
+// The sequence (the tour and Play): each view for an equal share of 48 s; when the next view lies
+// at the same level and turn, the angle turns to it in the last third of the share. The free
+// probe's part comes after the four-chamber view's hold, before its angle turns to the next view:
+// the probe is freed there, each move goes out and back (teemoves.js), and the probe comes back.
+const VIEW_S = 48 / TOUR.length;
+const FREE_T0 = (VIEW_S * 2) / 3;
+// the free part (s): a rest, the six moves with a rest between two, and a last rest
+const FREE_LEAD = 0.6, FREE_GAP = 0.4, FREE_TAIL = 0.4, FREE_DUR = [2.8, 3.2, 3.2, 3.2, 3.2, 5.4];
+const FREE_S = Math.round((FREE_LEAD + FREE_DUR.reduce((a, d) => a + d, 0) + FREE_GAP * (FREE_DUR.length - 1) + FREE_TAIL) * 1000) / 1000;
+/** The free controls at time tf (s) of the free part. */
+function freePose(tf) {
+  let t0 = FREE_LEAD;
+  for (let i = 0; i < MOVES.length && tf >= t0; i++) {
+    if (tf < t0 + FREE_DUR[i]) return moveAt(MOVES[i], (tf - t0) / FREE_DUR[i]);
+    t0 += FREE_DUR[i] + FREE_GAP;
+  }
+  return { ...FREE_REST };
+}
+/**
+ * The time of the sequence at which the free part shows the free probe of s: the first time whose
+ * controls lie nearest to those of s, within one step of each slider; or undefined.
+ */
+function freeTimeOf(s) {
+  if (!s.teeFree || s.teeLevel !== 'me' || s.teeTurn !== 'mid' || s.teeBase !== FREE_BASE) return undefined;
+  const steps = (q) => Math.max(Math.abs(q.teeAdv - s.teeAdv) / 0.1, ...['teeAngle', 'teeRot', 'teeFlex', 'teeLat'].map((k) => Math.abs(q[k] - s[k])));
+  // in steps of 1/240 s: the fastest control moves less than half a slider step in one
+  let best = Infinity, at;
+  for (let i = 0, n = Math.ceil(FREE_S * 240); i < n; i++) {
+    const d = steps(freePose(i / 240));
+    if (d < best - 1e-9) { best = d; at = FREE_T0 + i / 240; }
+  }
+  return best <= 1 + 1e-9 ? at : undefined;
+}
 // A slot of the switches with no standard view: what the guideline shows there
 const EMPTY = {
   'ue|left': 'No standard view lies at this turn of the probe in the upper esophagus.',
@@ -414,6 +449,23 @@ function freeText(s) {
   if (l) out.push(`flexed ${Math.abs(l)}° to the ${l > 0 ? 'right' : 'left'}`);
   return out.join(', ');
 }
+/** The free probe's moves and the plane's rotation from the pose it started from, in words. */
+function freeLead(s) {
+  const d = s.teeAngle - s.teeBase;
+  const ang = Math.abs(d) >= 1 ? `rotated ${d > 0 ? 'forward' : 'back'} to ${s.teeAngle}°` : '';
+  return [freeText(s), ang].filter(Boolean).join(', ');
+}
+/** The free probe in the figure's label: the one moved control, or "moves combined", then the angle. */
+function freeLabel(s) {
+  const n = FREE_KEYS.filter((k) => Math.abs(s[k]) > 1e-6).length + (Math.abs(s.teeAngle - s.teeBase) > 0.5 ? 1 : 0);
+  return [n > 1 ? 'moves combined' : freeText(s), `${s.teeAngle}°`].filter(Boolean).join(' · ');
+}
+/** What the moved controls of the free probe do: the control's own sentence (HOW), or one for several. */
+function freeHow(s) {
+  const on = FREE_KEYS.filter((k) => Math.abs(s[k]) > 1e-6);
+  if (Math.abs(s.teeAngle - s.teeBase) > 0.5) on.push('teeAngle');
+  return on.length > 1 ? 'Each control moves the plane in its own way, and here they move at once.' : HOW[on[0]] || '';
+}
 /**
  * The standard view nearest the plane the probe shows: the larger of the angles between the two
  * beams and between the two screen-rights, and the distance between the two transducers. On a
@@ -460,7 +512,7 @@ export default {
   part: 'views',
   title: 'Transesophageal echocardiography',
   nav: 'TEE',
-  dwell: 48,
+  dwell: 48 + FREE_S,
   // teeGeo: the heart whose probe positions the readouts give (set when its anatomy is built)
   // teeFree: the probe moves freely from the pose the controls gave at teeBase (degrees), by the
   // free controls (FREE_KEYS); the angle then turns the plane alone
@@ -511,15 +563,15 @@ export default {
   },
   onState(s, ch) {
     // freed or held again: the free controls start at rest from the pose at this angle; a new level
-    // or turn takes the free probe there; Play holds the probe to the guided poses
+    // or turn takes the free probe there. The sequence sets the switch itself at each step: it
+    // frees the probe for its free part only (tourTick)
     if ('teeFree' in ch || (s.teeFree && ('teeLevel' in ch || 'teeTurn' in ch))) setState({ teeBase: s.teeAngle, ...REST });
-    if (s.teeFree && ((ch.playing && s.playing) || (ch.anim && s.anim))) setState({ teeFree: false });
     if (['teeFree', 'teeBase', 'teeAngle', 'teeLevel', 'teeTurn', 'teeGeo', 'chapter', ...FREE_KEYS].some((k) => k in ch)) paintFree(s);
     if ('teeLevel' in ch || 'teeTurn' in ch || 'chapter' in ch) paintViews(s);
     if (['teeLevel', 'teeTurn', 'teeAngle', 'chapter', 'teeFree', 'teeBase', ...FREE_KEYS].some((k) => k in ch)) {
       const lab = fig && fig.querySelector('#tee-label');
       const v = viewOf(s).on;
-      if (lab) lab.textContent = v ? v.name : `${moved(s) ? 'Free probe' : levelName(s.teeLevel)} · ${s.teeAngle}°`;
+      if (lab) lab.textContent = v ? v.name : moved(s) ? `Free probe · ${freeLabel(s)}` : `${levelName(s.teeLevel)} · ${s.teeAngle}°`;
     }
   },
   key_(k, set, s) {
@@ -531,24 +583,39 @@ export default {
     set({ teeLevel: w.level, teeTurn: w.turn, teeAngle: w.angle, teeFree: false, playing: false });
   },
   tourEnter(set) { set({ teeLevel: 'me', teeTurn: 'mid', teeAngle: TOUR[0].angle, teeFree: false }); },
-  // each view for an equal share of the dwell; when the next view lies at the same level and
-  // turn, the angle turns to it in the last third of the share
-  tourTick(tt, set) {
-    const n = TOUR.length, step = this.dwell / n;
-    const i = Math.min(n - 1, Math.floor(tt / step)), v = TOUR[i], w = TOUR[i + 1];
-    const u = Math.min(1, Math.max(0, (tt - i * step) / step));
+  // the sequence: the views (VIEW_S each), with the free part after the four-chamber view's hold
+  tourTick(tt, set, s = st) {
+    const tf = tt - FREE_T0;
+    if (tf >= 0 && tf < FREE_S) {
+      // the probe freed at the four-chamber view: the switch first, as it sets the controls to
+      // rest from the pose at this angle (onState), then the controls of the moment
+      if (!s.teeFree || s.teeLevel !== 'me' || s.teeTurn !== 'mid') {
+        set({ teeFree: false });
+        set({ teeLevel: 'me', teeTurn: 'mid', teeAngle: FREE_BASE });
+        set({ teeFree: true });
+      }
+      set({ teeBase: FREE_BASE, ...freePose(tf) });
+      return;
+    }
+    const t = tf < 0 ? tt : tt - FREE_S, n = TOUR.length;
+    const i = Math.min(n - 1, Math.floor(t / VIEW_S)), v = TOUR[i], w = TOUR[i + 1];
+    const u = Math.min(1, Math.max(0, (t - i * VIEW_S) / VIEW_S));
     let ang = v.angle;
     if (w && w.level === v.level && w.turn === v.turn && u > 2 / 3) {
       const k = (u - 2 / 3) * 3;
       ang = Math.round(v.angle + (w.angle - v.angle) * k * k * (3 - 2 * k));
     }
-    set({ teeLevel: v.level, teeTurn: v.turn, teeAngle: ang });
+    set({ teeFree: false, teeLevel: v.level, teeTurn: v.turn, teeAngle: ang });
   },
-  // the time of the tour at which tourTick shows this view (its inverse); none between views
+  // the time of the sequence at which tourTick shows this view or this free probe (its inverse);
+  // none between views, and none for a free probe off the free part's path
   tourAt(s) {
+    if (moved(s)) return freeTimeOf(s);
     const v = viewOf(s).on;
     const i = v ? TOUR.indexOf(v) : -1;
-    return i < 0 ? undefined : ((i + 0.01) * this.dwell) / TOUR.length;
+    if (i < 0) return undefined;
+    const t = (i + 0.01) * VIEW_S;
+    return t < FREE_T0 ? t : t + FREE_S;
   },
   text(s, { cite }) {
     const { on: v, near } = viewOf(s);
@@ -579,8 +646,10 @@ export default {
       const flex = flexText(v);
       if (flex && v.key === 'me4c') live += `To show this heart’s four-chamber plane at ${v.angle}°, the model’s probe is ${flex}. The guideline notes that slight retroflexion may be needed. `;
     } else if (moved(s)) {
-      // the orientation at this angle holds wherever the free probe lies
-      live = `<b>Free probe, ${s.teeAngle}°.</b> ${display(s.teeAngle, 'me', 'mid')} The multiplane angle turns the plane about the beam, and the probe stays where it is. `;
+      // the moves, then what the moved control does; the orientation at this angle holds wherever
+      // the free probe lies
+      const turned = Math.abs(s.teeAngle - s.teeBase) > 0.5;
+      live = `<b>Free probe: ${freeLead(s)}.</b> ${freeHow(s)} ${turned ? `${display(s.teeAngle, 'me', 'mid')} ` : ''}`;
     } else {
       live = `<b>${levelName(s.teeLevel)}, ${s.teeAngle}°.</b> ${display(s.teeAngle, s.teeLevel, s.teeTurn)} `;
       if (EMPTY[key]) live += `${EMPTY[key]} `;

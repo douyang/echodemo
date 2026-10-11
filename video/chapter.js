@@ -245,10 +245,13 @@ function build(src) {
     F.appendChild(track);
     return;
   }
-  const n = V.steps.length, gap = 14, segW = (LAY.track.w - gap * (n - 1)) / n;
-  trackEls = V.steps.map((st, i) => {
+  // a step that joins the step before (its `join`) shares that step's segment
+  const groups = [];
+  V.steps.forEach((st, i) => { if (st.join && groups.length) groups[groups.length - 1].push(i); else groups.push([i]); });
+  const n = groups.length, gap = 14, segW = (LAY.track.w - gap * (n - 1)) / n;
+  trackEls = groups.map((g, j) => {
     const el = h('div', 'win');
-    Object.assign(el.style, { left: `${i * (segW + gap)}px`, width: `${segW}px` });
+    Object.assign(el.style, { left: `${j * (segW + gap)}px`, width: `${segW}px` });
     el.style.setProperty('--wc', 'var(--accent)');
     const ln = h('div', 'line');
     const fill = h('div', 'fill');
@@ -256,14 +259,14 @@ function build(src) {
     const lab = h('div', 'lab');
     el.append(lab, ln);
     track.appendChild(el);
-    return { el, fill, lab, span: spanOf(i) };
+    return { el, fill, lab, step: g[0], span: { a: spanOf(g[0]).a, b: spanOf(g[g.length - 1]).b } };
   });
   F.appendChild(track);
 }
 const panes = {};
 
-/** The steps' names on the progress line: their own, or their captions'. */
-function labelTrack() { if (!CLIP) trackEls.forEach((w, i) => { w.lab.textContent = V.steps[i].track || CAPS[i].name; }); }
+/** The steps' names on the progress line: their own, or their captions'. A joined segment takes its first step's. */
+function labelTrack() { if (!CLIP) trackEls.forEach((w) => { w.lab.textContent = V.steps[w.step].track || CAPS[w.step].name; }); }
 
 /**
  * The progress line of the intro, with the fonts in. Each clip is as wide as the name of its
@@ -331,7 +334,11 @@ function scriptAt(u) {
   const s = segAt(L, u);
   if (s.kind === 'title') return STATES[0].a;
   if (s.kind === 'end') return STATES[STATES.length - 1].b;
-  if (s.kind === 'hold') return mix(STATES[s.i].a, STATES[s.i].b, clamp01((u - s.t0) / (s.t1 - s.t0)));
+  if (s.kind === 'hold') {
+    // a step's path (video/chapters.js) gives its keys across the hold; otherwise the drift
+    const p = clamp01((u - s.t0) / (s.t1 - s.t0)), path = V.steps[s.i].path;
+    return path ? { ...STATES[s.i].a, ...path(p) } : mix(STATES[s.i].a, STATES[s.i].b, p);
+  }
   const to = STATES[s.to], p = ease((u - s.t0) / (s.t1 - s.t0));
   // a step that switches the kind (video/chapters.js `cut`) changes every key at the middle of its
   // move: the slider's value belongs to the kind, so the old kind does not ease into the new one
