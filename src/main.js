@@ -16,10 +16,11 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const KEYS = CHAPTERS.map((c) => c.key);
 // old addresses: Planes is archived and Automated measurements is hidden (order.js), #views names
-// Views (key windows), and Constrictive pericarditis is a setting of Pericardial disease
-const ALIAS = { planes: 'windows', views: 'windows', measure: 'ai', constrict: 'peri' };
+// Views (key windows), Constrictive pericarditis is a setting of Pericardial disease, and the
+// inferior vena cava a setting of Doppler hemodynamics
+const ALIAS = { planes: 'windows', views: 'windows', measure: 'ai', constrict: 'peri', ivc: 'pressure' };
 // the state that an old address opens its chapter in
-const ALIAS_STATE = { constrict: { periMode: 'cp', periS: 0.55 } };
+const ALIAS_STATE = { constrict: { periMode: 'cp', periS: 0.55 }, ivc: { pressMode: 'ivc' } };
 /** The chapter index of an address's #key, or -1. An alias applies only to a key that is not a chapter. */
 const chapterOf = (hash) => { const h = (hash || '').slice(1); return KEYS.indexOf(KEYS.includes(h) ? h : ALIAS[h] || h); };
 const CH = Object.fromEntries(KEYS.map((k, i) => [k, i]));
@@ -140,7 +141,8 @@ document.addEventListener('click', (e) => {
   const dl = e.target.closest('button[data-dialog]');
   if (dl) { openDialog(dl.dataset.dialog); return; }
   const go = e.target.closest('a[data-go]');
-  if (go) { e.preventDefault(); goChapter(CH[go.dataset.go] ?? Number(go.dataset.go)); return; }
+  // a link to an old address (ALIAS) opens its chapter, in the setting that the address names
+  if (go) { e.preventDefault(); const k = go.dataset.go; goChapter(CH[k] ?? CH[ALIAS[k]] ?? Number(k)); aliasState(`#${k}`); return; }
   if (e.target.matches('[data-close]')) e.target.closest('dialog').close();
 });
 for (const d of $$('dialog')) d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
@@ -253,7 +255,7 @@ function syncControls(changed) {
   for (const el of $$('input[type="checkbox"][data-key]')) if (has(el.dataset.key)) el.checked = !!state[el.dataset.key];
   if (has('anim') || has('playing')) {
     const on = !!(state.anim || state.playing);
-    for (const b of $$('button[data-anim]')) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Pause' : 'Play the progression'); }
+    for (const b of $$('button[data-anim]')) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Pause' : b.dataset.anim || 'Play the progression'); }
   }
   for (const el of $$('input[type="number"][data-key]')) {
     const k = el.dataset.key;
@@ -390,10 +392,11 @@ new ResizeObserver(() => drawTrack()).observe($('#track'));
 // chapter. state.anim says that it runs.
 /**
  * Whether chapter c plays its own sequence when it opens: not with reduced motion, not without
- * tour steps, and not on a severity page (a Play button) under a disease heart, which keeps the
- * heart's grade.
+ * tour steps, and not on a severity page (a Play button on its severity slider) under a disease
+ * heart, which keeps the heart's grade. A Play button elsewhere (the AI chapter's sections) does
+ * not stop it.
  */
-const ownPlays = (c) => !reducedMotion && !!c.tourTick && !(state.pheno !== 'normal' && $(`#ch-${c.key} button[data-anim]`));
+const ownPlays = (c) => !reducedMotion && !!c.tourTick && !(state.pheno !== 'normal' && $(`#ch-${c.key} .sev button[data-anim]`));
 // Any input in the open chapter pauses the tour, and stops the chapter's sequence until the
 // chapter opens again (held): a pointer or the wheel on its figure or text, a click there, a
 // control's input or change, and the chapter's own keys. The Play button of a severity page

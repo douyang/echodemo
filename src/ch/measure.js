@@ -539,10 +539,10 @@ const redraw = () => { if (sheet) sheet.dirty = true; };
 const MESH = new MeshPanel('plax', { redraw });
 
 // ---------------------------------------------------------------- drawing helpers
-/** A heat map's peak on the image: a Gaussian of the heat hue, σ = sigma px, up to alpha a. */
-function blob(ctx, x, y, sigma, a = 0.8) {
+/** A heat map's peak on the image: a Gaussian of the heat hue (or of rgb), σ = sigma px, up to alpha a. */
+function blob(ctx, x, y, sigma, a = 0.8, rgb = HEAT) {
   const R = 3 * sigma, g = ctx.createRadialGradient(x, y, 0, x, y, R);
-  for (let i = 0; i <= 6; i++) { const k = i / 2; g.addColorStop(i / 6, heat(a * Math.exp(-(k * k) / 2))); }
+  for (let i = 0; i <= 6; i++) { const k = i / 2; g.addColorStop(i / 6, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a * Math.exp(-(k * k) / 2)})`); }
   ctx.save();
   ctx.fillStyle = g;
   ctx.beginPath();
