@@ -310,7 +310,7 @@
     </figure>
     <figure class="fig" id="fig-ai">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">How EchoPrime and EchoNet-Measurements read one study of the heart shown, in seven steps. EchoPrime: the 14 videos of the study, cut from the heart model, each tagged with its view; one video encoder that turns each video into 512 numbers; the public attention weights, a column for each of the 15 report sections and a row for each video, with the chosen section's column lit; and about 150 task heads, ten for each section, with the number heads marked and one head's value. EchoNet-Measurements: the nine B-mode measurements, each on its view at the frame that it reports, with its heat maps and its caliper, and the nine Doppler and M-mode measurements on eight recordings, each with its value and a check against its head. Then each measurement of the chosen section on a scale with its head's value and range and the caliper's value: with a second peak on its heat map, the septum's caliper falls outside the range, and the anchor moves its end to the peak that agrees. Last, the report for the heart, with the words in a serif face and the measured numbers in blue. A click on a column, a tile or a sentence chooses a section. Arrows link each step to the next. On a small screen, the steps run in more rows, and the figure scrolls.</figcaption>
+      <figcaption class="sr-only">How EchoPrime and EchoNet-Measurements read one study of the heart shown, in seven steps. EchoPrime: the 14 videos of the study, cut from the heart model, each tagged with its view; one video encoder that turns each video into 512 numbers, drawn as a stripe beside the video's view; the public attention weights of the chosen section, a line from each video to the section as wide as its weight, with the weight at its start, under a strip of the 15 sections; and the chosen section's task heads, of about 150: each number head with its value, ringed where it checks a measurement, then the words of its word heads. EchoNet-Measurements: the nine B-mode measurements, each on its view at the frame that it reports, with its heat maps and its caliper, and the nine Doppler and M-mode measurements on eight recordings, each with its value. Then the measurements of the chosen section beside one band, the heads' range of ± 10%, with a dot for each caliper and its value. Last, the report for the heart, with the words in a serif face and the measured numbers in blue. A click on the strip of sections, a tile or a sentence chooses a section. Arrows link each step to the next. The anchor sits beside the measurements, and the report runs across the foot of the figure. On a small screen, the steps run in more rows, and the figure scrolls.</figcaption>
     </figure>
     <figure class="fig" id="fig-tee">
       <img class="poster" src="assets/plates/anterior_normal.webp" alt="" width="1400" height="1500">
@@ -1214,10 +1214,14 @@
           </div>
         </div>
         <div class="control" data-ai-tab="steps study">
-          <label for="aiSec">Section <output data-for="aiSec"></output></label>
+          <div class="sev-head">
+            <label for="aiSec">Section <output data-for="aiSec"></output></label>
+            <button type="button" class="sev-play" data-anim="Play the report's sections" aria-pressed="false" aria-label="Play the report's sections"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
           <input type="range" id="aiSec" data-key="aiSec" min="0" max="14" step="1">
         </div>
-        <div class="control" data-ai-tab="steps">
+        <!-- hidden: the two-peaked map (SHOW_TWO in src/aifig.js) -->
+        <div class="control" data-ai-tab="steps" data-ai-two hidden>
           <span class="label">Two-peaked map</span>
           <div class="seg" role="group" aria-label="A second peak on the heat map of the septum" data-key="aiTwo">
             <button type="button" data-val="false">Off</button><button type="button" data-val="true">On</button>
@@ -1262,10 +1266,10 @@
         <p>The published model drafts each section by retrieval from the earlier studies whose embeddings lie closest to the study's own. A number, such as the LVEF, is the mean of the 50 closest; a finding enters the report when more than half of them carry it<span class="cite" data-ref="vukadinovic2026"></span>. A rare finding is therefore found only when similar studies are in the library. Recent versions, in development and not yet published, replace retrieval with about 150 task heads, one for each task of the report. Their number heads anchor the measurements and adjust them.</p>
         <h3>How EchoNet-Measurements measures</h3>
         <p>Earlier, EchoNet-Dynamic estimated the LVEF over several beats<span class="cite" data-ref="ouyang2020"></span>, and EchoNet-LVH measured LV wall thickness and diameter<span class="cite" data-ref="duffy2022"></span>. EchoNet-Measurements, trained on measurements made in routine practice, has a separate segmentation model for each of 18 measurements, nine in B-mode and nine in Doppler and M-mode<span class="cite" data-ref="sahashi2025"></span>. Each model measures one thing in the view it expects.</p>
-        <p>A model outputs a heat map for each point it looks for: two for a caliper, its two ends, and one for a Doppler peak. In the public code, each point is the weighted center of its heat map. The calibration that the DICOM file stores converts pixels to centimeters or velocities. A heat map with two peaks, for example on the septum and on an RV trabeculation, puts the point between them, on neither structure. An export to a common video format drops the calibration: the points remain, but the model cannot give a number.</p>
+        <p>A model outputs a heat map for each point it looks for: two for a caliper, its two ends, and one for a Doppler peak. In the public code, each point is the weighted center of its heat map. The calibration that the DICOM file stores converts pixels to centimeters or velocities. An export to a common video format drops the calibration: the points remain, but the model cannot give a number.</p>
         <h3>What the figure shows</h3>
-        <p>The figure follows one study of the heart shown through both models to one report, in seven steps. A click on a column, a tile or a sentence chooses a section.</p>
-        <p>The task heads and the anchor are a simulation. Each head's value is the site's own measurement of the heart shown, and its range is that value ± 10%: a band chosen for the figure, not an error of the model. Outside the range, the caliper's end moves to the heat map's peak that agrees with the head; with no such peak, the value is flagged for review. The <i>Two-peaked map</i> switch adds a second peak to the septum's heat map: on the normal heart, the caliper reads 1.3 cm, and the anchor returns it to 0.9 cm. The images and the words of the report are the site's own, and the heat maps are drawn on the site's own caliper points. Neither model processed these images.</p>
+        <p>The figure follows one study of the heart shown through both models to one report, in seven steps. A click on the strip of sections, a tile or a sentence chooses a section.</p>
+        <p>The task heads and the anchor are a simulation. Each head's value is the site's own measurement of the heart shown, and its range is that value ± 10%: a band chosen for the figure, not an error of the model. Outside the range, the caliper's end moves to the heat map's peak that agrees with the head; with no such peak, the value is flagged for review. The images and the words of the report are the site's own, and the heat maps are drawn on the site's own caliper points. Neither model processed these images.</p>
         <h3>Performance</h3>
         <p>Across 17 classification and 11 regression tasks, the mean AUC of EchoPrime was 0.92 at Cedars-Sinai and 0.85 to 0.89 at the external sites. The mean absolute error of the LVEF was 4.79 percentage points in the internal test set and 4.14 to 6.46 at the external sites, against 6.23 to 10.37 for EchoCLIP<span class="cite" data-ref="vukadinovic2026"></span>.</p>
         <p>EchoNet-Measurements was compared with sonographers by the coverage probability: the share of paired measurements that differ by less than an acceptable difference. Across the 18 measurements, the mean coverage probability was 0.796 in held-out studies at Cedars-Sinai and 0.839 in external studies at Stanford Healthcare<span class="cite" data-ref="sahashi2025"></span>.</p>
@@ -1282,7 +1286,7 @@
         <ol class="steps">
         <li>EchoPrime sorts each video by view, turns it into 512 numbers and weights it by view group for each of the 15 report sections.</li>
         <li>The published model drafts each section from the 50 closest earlier studies; the weights show how it mixes views, not which views a finding needs.</li>
-        <li>EchoNet-Measurements has one model for each of 18 measurements. Each point is the weighted center of a heat map, so two peaks put it between them, on neither structure.</li>
+        <li>EchoNet-Measurements has one model for each of 18 measurements. Each point is the weighted center of a heat map, and the calibration stored in the DICOM file converts pixels to centimeters or velocities.</li>
         <li>In a blinded randomized trial, cardiologists changed an AI-first LVEF less often than a sonographer-first LVEF.</li>
         </ol>
       </div>
