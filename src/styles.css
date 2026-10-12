@@ -250,7 +250,21 @@ a:hover { text-decoration-color: var(--accent); }
 /* ------------------------------------------------------------------ stage */
 .fig { position: absolute; inset: 0; margin: 0; display: none; }
 .fig.is-active { display: block; }
-@media (min-width: 821px) { .fig { top: 62px; } }
+/* In a tall stage (a tall window, or a narrow one beside the text) a figure laid out for a wider
+   box stretched: its Doppler strips and plots grew taller than wide, and its echo views zoomed in
+   and lost their sides. A figure stops at --tall times its width (the stage is the container, so
+   100cqw is its width); the stage stays empty below it. Below 700 px the figures take their
+   stacked layout, as on a phone: one tall echo view beside the strips keeps its shape to 1.0 of
+   the width, and a figure that stacks rows of panels to 1.25. Views, TEE and AI lay their panes
+   out for a tall box and keep the whole height. */
+@media (min-width: 821px) {
+  .fig { --tall: 0.85; top: 62px; bottom: auto; height: min(calc(100cqh - 62px), calc(100cqw * var(--tall))); }
+  @container (width < 700px) {
+    .fig { --tall: 1; }
+    #fig-cycle, #fig-pressure, #fig-eject, #fig-stress, #fig-strain, #fig-hcm, #fig-lvad, #fig-endocarditis { --tall: 1.25; }
+  }
+  #fig-windows, #fig-planes, #fig-tee, #fig-ai { bottom: 0; height: auto; }
+}
 .fig canvas.fig-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* AI: in a box narrower than 840 px or shorter than 540 px the steps run below it, and the box
    scrolls them (the canvas's height: src/ch/ai.js) */
