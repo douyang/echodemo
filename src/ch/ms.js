@@ -7,7 +7,9 @@
 // of the slider; and the PA systolic pressure. An edit stores the measurements in msx; the slider
 // then marks a band of their result and does not change them. A move of the severity slider,
 // Play, the tour or a heart's preset clears msx. The heart-rate slider does not: the mean
-// gradient follows it, with the cardiac output held unless the stroke volume was edited.
+// gradient follows it, with the cardiac output held. An edit of the stroke volume sets that
+// output (msx.co: the stroke volume times the heart rate of the edit), so the stroke volume still
+// falls as the heart rate rises.
 import { Sheet, clamp } from '../sketch.js';
 import { panel, spectral, vscale, SC, caliper } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
@@ -66,15 +68,18 @@ const TRK = tracks([0, 0.25, 0.5, 0.75, 1], {
   lvid: [4.8, 4.7, 4.6, 4.5, 4.4],
 });
 
-/** The model at slider position s and heart rate hr: its measurements before rounding, and the rest of the heart. */
-function modelAt(s, hr) {
+/**
+ * The model at slider position s and heart rate hr: its measurements before rounding, and the
+ * rest of the heart. co: the cardiac output (mL/min), the model's or the one an edit set.
+ */
+function modelAt(s, hr, co = CO) {
   const m = TRK(s);
   m.s = s;
   m.mva = round(mvaOf(s), 2);
   m.pht = 220 / m.mva;
-  // the cardiac output is held at 4.9 L/min, so the stroke volume falls as the heart rate rises:
-  // a fixed 70 mL through the shorter filling period gave about 5 times the gradient at 110/min
-  m.sv = CO / hr;
+  // the cardiac output is held, so the stroke volume falls as the heart rate rises: a fixed 70 mL
+  // through the shorter filling period gave about 5 times the gradient at 110/min
+  m.sv = co / hr;
   m.trv = trvOf(m.mva);
   m.rap = m.mva <= 1.5 ? 8 : 3;                      // the RA pressure the figure adds: 8 mmHg once severe
   return m;
@@ -114,13 +119,14 @@ function measure(raw, hr) {
 
 /**
  * The values on screen, from the store: the edited measurements (msx), or the model's at the
- * slider. The stroke volume follows the heart rate, as the model's does, until it is edited.
+ * slider. The stroke volume is always the cardiac output ÷ the heart rate: the model's output, or
+ * the one an edit of the stroke volume set (msx.co).
  */
 function shownOf(s) {
   const ed = s[EDITS];
   if (!ed) return measure(modelAt(s[KEY], s.hr), s.hr);
-  const v = modelAt(ed.base, s.hr);
-  for (const k of [...IN, ...SW]) if (k !== 'sv' || ed.svSet) v[k] = ed[k];
+  const v = modelAt(ed.base, s.hr, ed.co ?? CO);
+  for (const k of [...IN, ...SW]) if (k !== 'sv') v[k] = ed[k];
   return measure(v, s.hr);
 }
 let lastEd = null, lastS = null, lastHr = null, lastShown = null;
@@ -476,13 +482,13 @@ function buildDiagram(host) {
   });
 }
 
-/** The measurements and the switch of the values v, as msx stores them. */
-const valsOf = (v) => Object.fromEntries([...IN, ...SW].map((k) => [k, v[k]]));
+/** The measurements and the switch of the values v, as msx stores them: the stroke volume as an output (co). */
+const valsOf = (v) => Object.fromEntries([...IN, ...SW].filter((k) => k !== 'sv').map((k) => [k, v[k]]));
 
 /** The keys of msx that differ from the model's values where the edits started, at heart rate hr. */
 function editedOf(ed, hr) {
   const m = measure(modelAt(ed.base, hr), hr);
-  return [...IN.filter((k) => (k !== 'sv' || ed.svSet) && Math.abs(ed[k] - m[k]) > 1e-9), ...SW.filter((k) => ed[k] !== m[k])];
+  return [...IN.filter((k) => (k === 'sv' ? ed.co != null : Math.abs(ed[k] - m[k]) > 1e-9)), ...SW.filter((k) => ed[k] !== m[k])];
 }
 
 const freeLive = () => { const live = document.querySelector('#ch-ms .live'); if (live?.style.minHeight) live.style.minHeight = ''; };
@@ -493,10 +499,13 @@ function edit(k, x, btn = null) {
   const base = s[EDITS] ? s[EDITS].base : s[KEY];
   const cur = shown(s);
   const vals = valsOf(cur);
-  const from = vals[k], to = SWITCH[k] ? x : stepOf(from, INPUTS[k], x);
+  const from = cur[k], to = SWITCH[k] ? x : stepOf(from, INPUTS[k], x);
   if (to === from) return;
-  vals[k] = to;
-  const ed = { ...vals, base, svSet: !!s[EDITS]?.svSet || k === 'sv' };
+  // a stroke volume sets the cardiac output at this heart rate; at the model's value, the model's output
+  let co = s[EDITS]?.co ?? null;
+  if (k === 'sv') co = to === round(CO / s.hr, INPUTS.sv.d) ? null : to * s.hr;
+  else vals[k] = to;
+  const ed = { ...vals, base, co };
   const next = shownOf({ ...s, [EDITS]: ed });
   pending = { kind: 'edit', k, from, to };
   steady(btn, () => {
@@ -538,7 +547,8 @@ function renderDiagram(s, v) {
     S.bs.forEach((b, i) => b.setAttribute('aria-pressed', String(SWITCH[k][i] === v[k])));
     S.el.classList.toggle('is-ed', M.eds.includes(k));
   }
-  txt(dg.dur, `The heart rate, ${v.hr}/min, comes from its slider. ${M.eds.includes('sv') ? 'The stroke volume stays as edited.' : `The stroke volume is ${(CO / 1000).toFixed(1)} L/min ÷ the heart rate.`}`);
+  const co = s[EDITS]?.co;
+  txt(dg.dur, `The heart rate, ${v.hr}/min, comes from its slider. The stroke volume is ${round((co ?? CO) / 1000, 2)} L/min ÷ the heart rate${co != null ? ': the edit set this cardiac output' : ''}.`);
   // the bands
   for (const [k, E] of Object.entries(dg.eqs)) {
     txt(E.v, num(k, v[k]));
