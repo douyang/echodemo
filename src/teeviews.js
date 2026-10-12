@@ -28,6 +28,13 @@ const R_TG = 0.75, TG_GAP = 2.0;
 const AVSAX_BELOW = 0.5;
 /** The descending aorta's views: the transducer this far above the modelled aorta's lower end (cm). */
 const DAO_ABOVE = 4.5;
+/**
+ * The probe's head (cm, gl/teeprobe3d.js draws it): long along the tip, wide along the array at
+ * 0 degrees, thin along the beam; its window lies `win` of its length from the tip's end.
+ */
+export const HEAD = { len: 3.2, wide: 1.35, thick: 0.95, win: 0.55 };
+/** The shaft's bending section (cm): the shaft leaves the probe's path this far above the head (shaftLine). */
+const BEND = 3.5;
 
 // ---------------------------------------------------------------- the probe frame
 /**
@@ -291,7 +298,60 @@ export function teeAnatomy(ev) {
   // the stomach's wall and the diaphragm lie between the tip and the heart: the tip stays
   // TG_GAP further down, so the LV's middle lies about 5 cm from it (Hahn 2013, view 17)
   G.tg = P.addScaledVector(G.Y, -TG_GAP);
+  // the esophagus's lowest part follows the transgastric probe into the stomach (intoStomach)
+  const tg = POSE.tgsax(G);
+  G.E = intoStomach(G.E, frameFor(tg.O, tg.F, tg.r, BY_KEY.tgsax.angle));
   return G;
+}
+
+/** The cubic Hermite curve from P0 (tangent m0) to P1 (tangent m1) at x (0 to 1). */
+function hermite(P0, m0, P1, m1, x) {
+  const x2 = x * x, x3 = x2 * x;
+  return P0.clone().multiplyScalar(2 * x3 - 3 * x2 + 1).addScaledVector(m0, x3 - 2 * x2 + x)
+    .addScaledVector(P1, -2 * x3 + 3 * x2).addScaledVector(m1, x3 - x2);
+}
+
+/**
+ * The esophagus's lowest part on the course of the transgastric probe (frame f): from the design
+ * point at y = -2 cm (no view lies so low), one smooth curve (a cubic Hermite whose tangents are
+ * the esophagus's there and the head's axis) to the line of the head's axis, 0.6 cm
+ * behind the head. The probe so passes the cardia and lies along its own axis in the stomach,
+ * with no hook. E.curve stays as it was, for the views above. line: the centre line as dense
+ * points, from the top through the curve and on along the head's axis to 3 cm past the head's
+ * centre (probePath); tube: the esophagus drawn, which ends two thirds of the way down the curve
+ * (the cardia); pts and cardia: its points, the cardia last.
+ */
+function intoStomach(E, f) {
+  const n = E.pts.length, k = n - 4, tk = k / (n - 1);
+  const P0 = E.pts[k], d0 = E.curve.getTangent(tk).normalize();
+  const c = f.O.clone().addScaledVector(f.F, -FACE), d1 = f.u.clone().negate();
+  const A = c.clone().addScaledVector(f.u, HEAD.len * (1 - HEAD.win) + 0.6);
+  // the head's axis passes beside the esophagus's line, so the curve bends one way, then the
+  // other: its tangents' length is the one (of 0.4 to 1.6 chords) whose sharpest bend is gentlest
+  const L = P0.distanceTo(A), curveOf = (g) => (x) => hermite(P0, d0.clone().multiplyScalar(g * L), A, d1.clone().multiplyScalar(g * L), x);
+  const sharpest = (h) => {
+    let w = 0;
+    for (let i = 1; i < 120; i++) {
+      const a = h(i / 120).sub(h((i - 1) / 120)), b = h((i + 1) / 120).sub(h(i / 120));
+      w = Math.max(w, a.angleTo(b) / ((a.length() + b.length()) / 2));
+    }
+    return w;
+  };
+  let H = curveOf(1), best = Infinity;
+  for (let g = 0.4; g <= 1.6001; g += 0.05) { const h = curveOf(g), w = sharpest(h); if (w < best) { best = w; H = h; } }
+  // about 2 mm apart: the design curve to the last point kept, the Hermite, then the head's axis
+  const top = [];
+  for (let i = 0, m = Math.ceil((E.curve.getLength() * tk) / 0.2); i < m; i++) top.push(E.curve.getPoint((tk * i) / m));
+  const m = Math.ceil(L / 0.2), down = [];
+  for (let i = 0; i <= m; i++) down.push(H(i / m));
+  const cut = Math.round((2 * m) / 3);
+  const axis = [];
+  for (let x = 0.2, e = A.distanceTo(c) + 3; x <= e + 1e-6; x += 0.2) axis.push(A.clone().addScaledVector(d1, x));
+  const tube = [...top, ...down.slice(0, cut + 1)];
+  return {
+    ...E, tube: new THREE.CatmullRomCurve3(tube, false, 'centripetal'), line: [...top, ...down, ...axis],
+    pts: [...E.pts.slice(0, k + 1), down[cut]], cardia: down[cut],
+  };
 }
 
 // ---------------------------------------------------------------- the standard views
@@ -566,27 +626,59 @@ export function viewAt(level, turn, ang, tol = 4) {
 }
 
 /**
- * The probe's path, head to stomach: the esophagus, then from the cardia along the stomach to
- * the transgastric tip. { curve, length, sOf(p), cardia }: sOf gives the arc length (cm from the
- * top) of the path point nearest p; cardia, the arc length where the esophagus ends.
+ * The probe's path, head to stomach: 12 cm above the esophagus, the esophagus, then on through
+ * the cardia along the transgastric head's axis to 3 cm past the head (intoStomach). { curve,
+ * length, samples, sOf(p), cardia, at(s), up(s), rot(s), carry(s0, s1) }: sOf gives the arc
+ * length (cm from the top) of the path point nearest p; cardia, the arc length where the
+ * esophagus ends; rot, the
+ * path's frame at s, which turns with the path but does not twist about it (a rotation-minimizing
+ * frame, by double reflection: Wang W, et al. ACM Trans Graph 2008;27(1):2); carry, the turn that
+ * takes the frame at s0 to the frame at s1, so a probe advanced along the path keeps its own turn.
  */
 export function probePath(G) {
-  const E = G.E.pts, last = E[E.length - 1];
-  const below = G.tg.clone().addScaledVector(G.Y, -1.4);
-  const pts = [...E, last.clone().lerp(below, 0.5).add(V3(0, -0.4, 0)), below, G.tg.clone()];
-  const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
-  const N = 400, samples = curve.getSpacedPoints(N), length = curve.getLength();
+  const line = G.E.line, up0 = line[0].clone().sub(line[1]).normalize();
+  // above the esophagus's top, the shaft goes on straight for 12 cm, so a probe withdrawn far
+  // still has its shaft above it
+  const above = [];
+  for (let x = 12; x > 0.01; x -= 0.2) above.push(line[0].clone().addScaledVector(up0, x));
+  const curve = new THREE.CatmullRomCurve3([...above, ...line], false, 'centripetal');
+  curve.arcLengthDivisions = 4000;
+  const N = 600, samples = curve.getSpacedPoints(N), length = curve.getLength(), ds = length / N;
   const sOf = (p) => {
     let best = 0, bd = Infinity;
     for (let i = 0; i <= N; i++) { const d = samples[i].distanceToSquared(p); if (d < bd) { bd = d; best = i; } }
-    return (best / N) * length;
+    // between the samples: the nearer of the two segments next to the nearest sample
+    let s = best * ds, dd = bd;
+    for (const j of [best - 1, best]) {
+      if (j < 0 || j >= N) continue;
+      const a = samples[j], v = samples[j + 1].clone().sub(a), k = Math.max(0, Math.min(1, p.clone().sub(a).dot(v) / v.lengthSq()));
+      const d = a.clone().addScaledVector(v, k).distanceToSquared(p);
+      if (d < dd) { dd = d; s = (j + k) * ds; }
+    }
+    return s;
   };
   const u = (s) => Math.max(0, Math.min(1, s / length));
+  // the frames: x a normal carried along by double reflection, z the tangent toward the stomach
+  const tan = samples.map((_, i) => curve.getTangentAt(i / N).normalize());
+  const R = [];
+  let r = sq(LEFT, tan[0]);
+  for (let i = 0; i <= N; i++) {
+    if (i) {
+      const v1 = samples[i].clone().sub(samples[i - 1]), c1 = v1.lengthSq();
+      const rL = r.clone().addScaledVector(v1, (-2 * v1.dot(r)) / c1), tL = tan[i - 1].clone().addScaledVector(v1, (-2 * v1.dot(tan[i - 1])) / c1);
+      const v2 = tan[i].clone().sub(tL), c2 = v2.lengthSq();
+      r = sq(c2 > 1e-12 ? rL.addScaledVector(v2, (-2 * v2.dot(rL)) / c2) : rL, tan[i]);
+    }
+    const b = new THREE.Vector3().crossVectors(tan[i], r);
+    R.push(new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(r, b, tan[i])));
+  }
+  const rot = (s) => { const x = Math.max(0, Math.min(N, s / ds)), i = Math.min(N - 1, Math.floor(x)); return R[i].clone().slerp(R[i + 1], x - i); };
   return {
-    curve, length, samples, sOf, cardia: sOf(last),
+    curve, length, samples, sOf, cardia: sOf(G.E.cardia), rot,
     at: (s) => curve.getPointAt(u(s)),
     // the path's direction at s, toward the mouth
     up: (s) => curve.getTangentAt(u(s)).negate().normalize(),
+    carry: (s0, s1) => rot(s1).multiply(rot(s0).invert()),
   };
 }
 
@@ -594,30 +686,36 @@ export function probePath(G) {
 const SHAFT_BACK = 3;
 /**
  * Frame f moved by the free probe's controls (ch/tee.js): advanced adv cm along the probe's path
- * (negative: withdrawn), its turn and flexion carried round the path's bends; turned rot degrees
- * about the shaft (positive: to the patient's left); flexed flex degrees, the beam toward the
- * head (positive: anteflexion); and flexed lat degrees to the side (positive: the tip to the
- * patient's right), which turns the plane about the beam. The face stays FACE cm from the path's
- * centre line. With every control at 0 the frame is f itself.
+ * (negative: withdrawn), its turn and flexion carried along the path without twist (path.carry);
+ * turned rot degrees about the shaft (positive: to the patient's left); flexed flex degrees, the
+ * beam toward the head (positive: anteflexion); and flexed lat degrees to the side (positive: the
+ * tip to the patient's right), which turns the plane about the beam. A flexion bends the bending
+ * section above the head: the head turns about its upper end, so the transducer moves with the
+ * tip. With every control at 0 the frame is f itself.
  */
 export function freeFrame(f, path, { adv = 0, rot = 0, flex = 0, lat = 0 } = {}) {
   const c0 = f.O.clone().addScaledVector(f.F, -FACE);
   const s0 = path.sOf(c0), s1 = Math.max(0, Math.min(path.length, s0 + adv));
-  const q = new THREE.Quaternion().setFromUnitVectors(path.up(s0), path.up(s1));
+  const q = path.carry(s0, s1);
   const F = f.F.clone().applyQuaternion(q), t = f.t.clone().applyQuaternion(q), u = f.u.clone().applyQuaternion(q);
-  const turn = (axis, d) => {
-    if (!d || axis.lengthSq() < 1e-9) return;
-    const r = new THREE.Quaternion().setFromAxisAngle(axis.normalize(), rad(d));
-    F.applyQuaternion(r);
-    t.applyQuaternion(r);
-    u.applyQuaternion(r);
-  };
+  const spin = (r) => { F.applyQuaternion(r); t.applyQuaternion(r); u.applyQuaternion(r); };
+  const about = (axis, d) => (axis.lengthSq() < 1e-9 ? new THREE.Quaternion() : new THREE.Quaternion().setFromAxisAngle(axis.normalize(), rad(d)));
+  // the head's offset from the path goes round the path's bends with it
+  const c = path.at(s1).add(c0.sub(path.at(s0)).applyQuaternion(q));
   const shaft = path.up(Math.max(0, s1 - SHAFT_BACK));
-  turn(shaft.clone(), rot);
-  turn(new THREE.Vector3().crossVectors(F, shaft), flex);
-  turn(F.clone(), -lat);
-  const c1 = c0.add(path.at(s1)).sub(path.at(s0));
-  return { O: c1.addScaledVector(F, FACE), F: F.normalize(), t: t.normalize(), u: u.normalize(), T: path.up(s1) };
+  // the turn: about the shaft, through the head's centre
+  if (rot) spin(about(shaft.clone(), rot));
+  // the flexions: about the head's upper end
+  let O = c.clone().addScaledVector(F, FACE);
+  if (flex || lat) {
+    const top = headTop({ O, F, u });
+    const r = new THREE.Quaternion();
+    if (flex) r.premultiply(about(new THREE.Vector3().crossVectors(F, shaft), flex));
+    if (lat) r.premultiply(about(F.clone().applyQuaternion(r), -lat));
+    spin(r);
+    O = top.add(O.sub(top).applyQuaternion(r));
+  }
+  return { O, F: F.normalize(), t: t.normalize(), u: u.normalize(), T: path.up(s1) };
 }
 
 /**
@@ -635,4 +733,53 @@ export function maneuver(f, f0, path) {
   const lateral = deg(Math.atan2(new THREE.Vector3().crossVectors(f.u, u0).dot(f.F), f.u.dot(u0)));
   const ante = deg(Math.asin(Math.max(-1, Math.min(1, f.F.dot(T)))));
   return { depth: s - s0, turn, lateral, ante };
+}
+
+/** The head's orientation for frame f: x the array at 0 degrees, y the tip's axis toward the mouth, z the beam. */
+const quatOf = (f) => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(f.t, f.u, f.F));
+
+/**
+ * Frame fa to frame fb by e (0 to 1) along the probe's path: the head's tube centre advances or
+ * withdraws along the path, while its offset from the path and its turn and flexion against the
+ * path's frame (path.rot) go from fa's to fb's. The probe so slides along the esophagus and into
+ * the stomach as it does in the patient, and does not cross the heart in a straight line. At e 0
+ * and 1 the frames are fa and fb.
+ */
+export function pathMix(path, fa, fb, e) {
+  const part = (f) => {
+    const c = f.O.clone().addScaledVector(f.F, -FACE), s = path.sOf(c), qi = path.rot(s).invert();
+    return { s, off: c.sub(path.at(s)).applyQuaternion(qi), q: qi.multiply(quatOf(f)) };
+  };
+  const a = part(fa), b = part(fb);
+  const s = a.s + (b.s - a.s) * e, R = path.rot(s);
+  const m = new THREE.Matrix4().makeRotationFromQuaternion(R.clone().multiply(a.q.slerp(b.q, e)));
+  const t = V3(), u = V3(), F = V3();
+  m.extractBasis(t, u, F);
+  const c = path.at(s).add(a.off.lerp(b.off, e).applyQuaternion(R));
+  return { O: c.addScaledVector(F, FACE), F, t, u, T: path.up(s) };
+}
+/** How far apart along the path the heads of frames fa and fb lie (cm). */
+export function pathGap(path, fa, fb) {
+  const s = (f) => path.sOf(f.O.clone().addScaledVector(f.F, -FACE));
+  return Math.abs(s(fa) - s(fb));
+}
+
+/** The centre of the head's upper end (toward the mouth) for frame f. */
+export function headTop(f) {
+  return f.O.clone().addScaledVector(f.F, -HEAD.thick / 2).addScaledVector(f.u, HEAD.len * (1 - HEAD.win));
+}
+/**
+ * The shaft's centre line for frame f, from the mouth: the path down to BEND cm above the
+ * head's upper end, then one smooth curve (a cubic Hermite) into that end along the head's axis.
+ * The shaft so bends there as the probe's bending section does, with no kink at the head.
+ */
+export function shaftLine(path, f) {
+  const top = headTop(f), sA = Math.max(0, path.sOf(top) - BEND);
+  const N = path.samples.length - 1, ds = path.length / N;
+  const out = path.samples.filter((p, i) => i % 2 === 0 && i * ds < sA - 0.1);
+  const P0 = path.at(sA), L = Math.max(0.5, P0.distanceTo(top));
+  const m0 = path.up(sA).multiplyScalar(-L), m1 = f.u.clone().multiplyScalar(-L);
+  const n = Math.max(6, Math.ceil(L / 0.15));
+  for (let i = 0; i <= n; i++) out.push(hermite(P0, m0, top, m1, i / n));
+  return out;
 }
