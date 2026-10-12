@@ -4,7 +4,7 @@
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { pencilMaterials } from './heart.js';
 import { TOOL } from './probe3d.js';
-import { R_ESO } from '../teeviews.js';
+import { R_ESO, HEAD, shaftLine } from '../teeviews.js';
 
 const VS = `
 varying vec3 vN;
@@ -31,9 +31,6 @@ void main() {
   float a = uAlpha * (0.35 + 0.65 * rim * rim) * ((hd < 1.0 && gl_FragCoord.z > hd) ? uBehind : 1.0);
   gl_FragColor = vec4(uColor * a, a);
 }`;
-
-/** The probe's head (cm): long along the tip, wide along the array at 0 degrees, thin along the beam. */
-const HEAD = { len: 3.2, wide: 1.35, thick: 0.95 };
 
 /** A rounded box: lofted rounded rectangles along y from 0 (the tip's end) to len. */
 function headGeometry() {
@@ -100,7 +97,7 @@ export class TeeScene {
     this.head = new THREE.Mesh(headGeometry(), headM.data);
     const win = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.08, 24), winM.data);
     win.rotation.x = Math.PI / 2;      // its axis along the beam (+z of the head)
-    win.position.set(0, HEAD.len * 0.55, HEAD.thick / 2 - 0.02);
+    win.position.set(0, HEAD.len * HEAD.win, HEAD.thick / 2 - 0.02);
     this.head.add(win);
     this.headRoot = new THREE.Group();
     this.headRoot.add(this.head);
@@ -126,32 +123,30 @@ export class TeeScene {
   /** The esophagus of the heart shown (teeviews.js esophagus): a tube along its centre line. */
   setEsophagus(E) {
     if (this.tube) { this.tube.geometry.dispose(); this.group.remove(this.tube); }
-    this.tube = new THREE.Mesh(new THREE.TubeGeometry(E.curve, 120, R_ESO, 20, false), this.mat);
+    this.tube = new THREE.Mesh(new THREE.TubeGeometry(E.tube || E.curve, 120, R_ESO, 20, false), this.mat);
     this.tube.frustumCulled = false;
     this.group.add(this.tube);
   }
 
   /**
-   * The probe for frame f ({ O, F, t, u }) whose shaft runs down path (points, head to tip): the
-   * head's window at O facing F, its long axis along u, the array (at 0 degrees) along t.
+   * The probe for frame f ({ O, F, t, u }) on the probe's path (teeviews.js probePath): the head's
+   * window at O facing F, its long axis along u, the array (at 0 degrees) along t; the shaft down
+   * the path and into the head through its bending section (teeviews.js shaftLine).
    */
   setProbe(f, path) {
     const key = `${f.O.toArray().map((x) => x.toFixed(3))}|${f.F.toArray().map((x) => x.toFixed(3))}|${f.u.toArray().map((x) => x.toFixed(3))}`;
     if (key === this.key) return;
     this.key = key;
     // the head: its window (0.55 of its length from the tip's end) on O, set back half its thickness
-    const centre = f.O.clone().addScaledVector(f.F, -HEAD.thick / 2).addScaledVector(f.u, -HEAD.len * 0.55);
+    const centre = f.O.clone().addScaledVector(f.F, -HEAD.thick / 2).addScaledVector(f.u, -HEAD.len * HEAD.win);
     this.headRoot.position.copy(centre);
     this.headRoot.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(f.t, f.u, f.F));
     this.ghost.position.copy(centre);
     this.ghost.quaternion.copy(this.headRoot.quaternion);
-    // the shaft: down the path to the head's upper end, bending into the head's own axis
-    const top = centre.clone().addScaledVector(f.u, HEAD.len);
-    const pts = path.filter((p) => p.distanceTo(top) > 1.2);
-    const bend = top.clone().addScaledVector(f.u, 0.9);
-    const curve = new THREE.CatmullRomCurve3([...pts, bend, top], false, 'centripetal');
+    // the shaft: down the path, then bending into the head's upper end along the head's axis
+    const curve = new THREE.CatmullRomCurve3(shaftLine(path, f), false, 'centripetal');
     this.shaft.geometry.dispose();
-    this.shaft.geometry = new THREE.TubeGeometry(curve, 160, 0.5, 12, false);
+    this.shaft.geometry = new THREE.TubeGeometry(curve, Math.max(160, Math.ceil(curve.getLength() / 0.15)), 0.5, 12, false);
   }
 
   /** Show the scene (the chapter's frames) or hide it. */
