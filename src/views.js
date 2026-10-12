@@ -59,11 +59,14 @@ export const VIEWS = {
     labels: [['lmca', 'LMCA'], ['rca', 'RCA'], ['avroot', 'Ao root']] }),
   psax_mv: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, mitral valve level', lab: 'PSAX_(level_of_MV)', plane: 'psax', level: 0.6, depth: 14,
     labels: [['rv', 'RV'], ['ivs', 'IVS'], ['lv', 'LV'], ['mv', 'MV']] }),
-  psax_pm: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, papillary muscle level', lab: 'PSAX_(level_of_papillary_muscles)', plane: 'psax', level: -0.24, depth: 14,
+  // at the papillary muscles the plane, carried to the RV's inflow, met the tricuspid leaflets and
+  // their chordae near the sector's RV edge, most in the RV-focused sector and in a dilated RV:
+  // loose bars in the RV. A short axis at this level shows no valve, so both leave them out (hide)
+  psax_pm: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, papillary muscle level', lab: 'PSAX_(level_of_papillary_muscles)', plane: 'psax', level: -0.24, depth: 14, hide: ['TricuspidValve', 'TricuspidChordae'],
     labels: [['rv', 'RV'], ['ivs', 'IVS'], ['lv', 'LV'], ['antw', 'anterior'], ['infw', 'inferior'], ['latw', 'lateral']] }),
   // the RV chapter's short axis at the papillary muscles: the sector turns 16 degrees toward the
   // RV and opens to 90 degrees, so the RV's crescent shows whole beside the LV
-  psax_pm_rv: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, papillary muscle level, RV focused', lab: null, plane: 'psax', level: -0.24, depth: 14, angle: 90, turn: -16,
+  psax_pm_rv: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, papillary muscle level, RV focused', lab: null, plane: 'psax', level: -0.24, depth: 14, angle: 90, turn: -16, hide: ['TricuspidValve', 'TricuspidChordae'],
     labels: [['rv', 'RV'], ['ivs', 'IVS'], ['lv', 'LV']] }),
   psax_ap: V({ win: 'psax', short: 'PSAX', name: 'Parasternal short axis, apical level', lab: 'PSAX_(level_of_apex)', plane: 'psax', level: -1.6, slide: true, depth: 14,
     labels: [['lv', 'LV'], ['antw', 'anterior']] }),
