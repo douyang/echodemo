@@ -1,5 +1,6 @@
 // One copy of the heart model for the page: the 3D stage and the offscreen scanner share it.
 import { PHENOS } from './pheno.js';
+import { cacheGet, cachePut } from './idbcache.js';
 
 let modelP = null;
 
@@ -86,13 +87,17 @@ async function take(m) {
   for (const fn of listeners) fn(m);
 }
 
-/** What every built shape needs (phenomesh.js preparePhenotypes), found once: a disease heart and a chapter's disease may ask together. */
+/**
+ * What every built shape needs (phenomesh.js preparePhenotypes), found once: a disease heart and a
+ * chapter's disease may ask together. The browser's IndexedDB keeps its fields from one visit to
+ * the next (idbcache.js).
+ */
 let fieldsP = null;
 function fieldsOf(m, PM, E, apicalTurn, VESSELS) {
   if (!fieldsP) {
     const A = m.anat.normal();
     const geoms = Object.fromEntries(['a4c', 'a2c', 'a3c'].map((k) => [k, E.viewGeometry(A, k)]));
-    fieldsP = PM.preparePhenotypes(m.heart.meshes, m.anat, apicalTurn(A, geoms), VESSELS);
+    fieldsP = PM.preparePhenotypes(m.heart.meshes, m.anat, apicalTurn(A, geoms), VESSELS, { get: cacheGet, put: cachePut });
   }
   return fieldsP;
 }
