@@ -497,8 +497,9 @@ globalThis.document?.fonts?.addEventListener?.('loadingdone', () => LAYOUTS.clea
 /**
  * The three rows in a box W px wide, FIT_H px tall or more. Row 1, EchoPrime: the sort at two
  * fifths of the width, the other three at a fifth each. Under the links, the measurements and the
- * anchor in row 2, and the report across the figure in row 3 (viewSix). Where these cards need
- * more height than the box gives, the content grows and the box scrolls.
+ * anchor in row 2, no taller than row 1, and the report across the figure in row 3 (viewSix). Where
+ * these cards need more height than the box gives, the content grows and the box scrolls. In a
+ * tall box the content ends under the report.
  */
 function layoutFit(W, H, sh) {
   const Hc = Math.max(H, FIT_H), u = (W - 2 * PAD - 3 * GAP) / 5;
@@ -509,7 +510,7 @@ function layoutFit(W, H, sh) {
     const y2 = PAD + h1 + band;
     P = { 1: { x: PAD, y: PAD, w: 2 * u, h: h1 } };
     [2, 3, 4].forEach((k, j) => { P[k] = { x: PAD + (j + 2) * u + (j + 1) * GAP, y: PAD, w: u, h: h1 }; });
-    F6 = viewSix(sh, { x: PAD, y: y2, w: W - 2 * PAD, h: Hc - PAD - y2 }, GAP, GAP_Y);
+    F6 = viewSix(sh, { x: PAD, y: y2, w: W - 2 * PAD, h: Hc - PAD - y2 }, GAP, GAP_Y, h1);
     Object.assign(P, F6.P);
     plan = linkPlan(sh, P, PAD, null, true);
     if (plan.h <= band) break;
@@ -522,12 +523,12 @@ function layoutFit(W, H, sh) {
  * The steps in rows of cards, each row as tall as its cards need, for a box W px wide (narrower
  * than FIT_W). From 800 px the rows are those of the three rows: the sort at two fifths beside the
  * other three of EchoPrime; the bands, in one card or two, whichever row is shorter, with the
- * anchor at their right; the report across the figure. Under 800 px the sort sits over the other
- * three, in a row of three from 486 px or of two and one. The bands take two cards from 600 px,
- * else one, and the anchor and the report follow, each across the figure. Where rows lie between
- * the sort and the measurements, their link runs down a lane at the left. The normal heart's
- * values set the heights, so they do not change with the heart. A flow shorter than the box gives
- * the rest to the report.
+ * anchor at their right, no taller than the row of EchoPrime; the report across the figure. Under
+ * 800 px the sort sits over the other three, in a row of three from 486 px or of two and one. The
+ * bands take two cards from 600 px, else one, and the anchor and the report follow, each across
+ * the figure. Where rows lie between the sort and the measurements, their link runs down a lane at
+ * the left. The normal heart's values set the heights, so they do not change with the heart. A
+ * flow shorter than the box gives the rest to the report.
  */
 function layoutFlow(W, H, sh) {
   const V = valuesOf('normal', SHOW_TWO), wide = W >= 800, lane = wide ? 0 : LANE;
@@ -554,7 +555,17 @@ function layoutFlow(W, H, sh) {
     const two = Math.max(bandNeed(sh, hw, 'b', V), bandNeed(sh, hw, 'd', V)) + HEAD + 12;
     merged = one <= two;
     split = nb / (nb + nd);
-    const h = Math.max(merged ? one : two, anchorNeed(sh, wa, false, true));
+    let h = Math.max(merged ? one : two, anchorNeed(sh, wa, false, true));
+    // no taller than row 1, or than the anchor's need where that is more: the tiles then shrink,
+    // in the form whose images are larger at that height (a tie keeps the form of the needs)
+    const most = Math.max(Math.max(...rows[0].map((c) => c[2])), anchorNeed(sh, wa, false));
+    if (h > most) {
+      const qa = bandsAt(sh, wl, most, true, split, V), qb = bandsAt(sh, hw, most, false, split, V);
+      if (qa || qb) {
+        h = most;
+        if (!(merged ? qa : qb) || Math.abs(qa - qb) > 2) merged = qa > qb;
+      }
+    }
     rows.push(merged ? [[5, wl, h], [6, wa, h]] : [[5, hw, h], [5.5, hw, h], [6, wa, h]]);
   } else {
     const nb = bandNeed(sh, merged ? w0 : half, 'b', V), nd = bandNeed(sh, merged ? w0 : half, 'd', V);
@@ -681,11 +692,12 @@ const REPORT_WS = 12.5;       // px: the type that sets the report's height ther
  * lines where the anchor needs the room. The bands sit side by side, or in one card where that
  * gives larger images. Compact headers come where they give larger images by more than 2 px. The
  * form with the largest tiles wins, at the lowest label level that holds images of IH_MIN px.
- * Where no form holds them, the row of the measurements grows. The normal heart's values set the
- * layout, so it does not change with the heart. bottom: the foot of the report, below the box
+ * Where no form holds them, the row of the measurements grows. Row 2 is no taller than top (the
+ * height of row 1), or than the anchor's need where that is more. The normal heart's values set
+ * the layout, so it does not change with the heart. bottom: the foot of the report, below the box
  * where the cards need more height than it gives.
  */
-function viewSix(sh, box, g, gy) {
+function viewSix(sh, box, g, gy, top = Infinity) {
   const V = valuesOf('normal', SHOW_TWO), wa = clamp(Math.round(box.w * 0.3), 280, 400), wl = box.w - wa - g;
   const rows = reportLines(sh, { x: 0, w: box.w - 2 * IN }, reportOf(V), REPORT_WS).rows, lh = Math.round(REPORT_WS * 1.32);
   const repH = (compact, n) => (compact ? HEAD_C + 2 + 7 : HEAD + 4 + 8) + reportPlan(sh, box.w, box.w - 2 * IN, compact, true).foot - 2 + n * lh;
@@ -708,27 +720,31 @@ function viewSix(sh, box, g, gy) {
     }
     return { P, merged, compact, level, ok, q: Math.min(...q), bottom: y3 + h3 };
   };
-  // the heights for a header form: the report's, its least (lo), and the measurements' row
+  // the heights for a header form: the report's, its least (lo), and the measurements' row, which
+  // takes the rest of the box up to its most. The room that the row leaves goes back to the
+  // report, up to the height of its words.
   const heights = (compact) => {
     const need = anchorNeed(sh, wa, compact), lo = repH(compact, Math.min(4, rows)), hi = repH(compact, rows);
+    const most = Math.max(need, top);
     let h3 = clamp(Math.round(box.h * REPORT_MAX), lo, hi);
     if (box.h - gy - h3 < need) h3 = Math.max(lo, box.h - gy - need);
-    return { h2: Math.max(need, box.h - gy - h3), h3, lo };
+    const h2 = Math.min(Math.max(need, box.h - gy - h3), most);
+    return { h2, h3: clamp(box.h - gy - h2, h3, hi), lo, most };
   };
-  // the best form with the measurements' row extra px taller: the report gives up lines first,
-  // down to 4, then the content grows (grow px)
+  // the best form with the measurements' row extra px taller, up to its most: the report gives up
+  // lines first, down to 4, then the content grows (grow px)
   const search = (extra) => {
     let best = null;
     for (const compact of [false, true]) {
-      const { h2, h3, lo } = heights(compact), h3x = Math.max(lo, h3 - extra);
+      const { h2, h3, lo, most } = heights(compact), h2x = Math.min(h2 + extra, most), h3x = Math.max(lo, h3 - (h2x - h2));
       for (const level of [0, 1, 2]) {
         let c = null;
         for (const merged of [false, true]) {
-          const m = make(merged, compact, h2 + extra, h3x, level);
+          const m = make(merged, compact, h2x, h3x, level);
           if (m.ok && (!c || m.q > c.q + 2)) c = m;
         }
         if (!c) continue;
-        c.grow = Math.max(0, h2 + extra + gy + h3x - box.h);
+        c.grow = Math.max(0, h2x + gy + h3x - box.h);
         if (!best || c.grow < best.grow || (c.grow === best.grow && (c.level < best.level || (c.level === best.level && c.q > best.q + 2)))) best = c;
         break;
       }
@@ -1397,6 +1413,22 @@ function tileGrid(sh, b, list, V, aspect, colsList, level = 0, strict = false) {
   if (strict && fill) return fill;
   const c = colsList[colsList.length - 1];
   return { c, r: Math.ceil(list.length / c), gx: 8, gy: 6, w: (b.w - 8 * (c - 1)) / c, ih: 24, lab: LAB2, one: false, ok: false };
+}
+/**
+ * The smaller image of the two bands in a flow's row of measurements h px tall: in one card w px
+ * wide, the B-mode band at split of its height (bothBands), or in two cards w px wide each. 0
+ * where a band holds no images of IH_MIN px with every name and value in its tile.
+ */
+function bandsAt(sh, w, h, merged, split, V) {
+  const a = { x: 0, y: 0, w: w - 2 * IN, h: h - HEAD - 4 - 8 }, hb = (a.h - SEP) * split;
+  const box = merged ? { b: { ...a, h: hb }, d: { ...a, h: a.h - SEP - hb } } : { b: a, d: a };
+  let q = Infinity;
+  for (const kind of ['b', 'd']) {
+    const G = tileGrid(sh, box[kind], OUT.filter((o) => o.kind === kind), V, ASPECT[kind], COLS[kind], 0, true);
+    if (!G.ok) return 0;
+    q = Math.min(q, G.ih, G.w / ASPECT[kind]);
+  }
+  return q;
 }
 /** A band's tiles in box b, at label level. strict: in a view of two (tileGrid). clip: a box to keep them in. */
 function measurePanel(sh, t, b, kind, sec, V, hits, level = 0, strict = false, clip = null) {
