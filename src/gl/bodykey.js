@@ -256,7 +256,8 @@ export class BodyKey {
 
   /** The key's corner of a w x h view (CSS px, from the top left): the top left, under the pane's name. */
   rect(w, h) {
-    const kw = Math.round(Math.max(96, Math.min(190, w * 0.3)));
+    // 30% of the pane's width, 96 to 190 px; a pane under 213 px wide (Views' left pane in a small figure) keeps 55% of its width for the heart
+    const kw = Math.round(Math.max(Math.min(96, w * 0.45), Math.min(190, w * 0.3)));
     const kh = Math.round(Math.min(h * 0.6, kw * 1.3));
     return { x: 12, y: 36, w: kw, h: kh };
   }

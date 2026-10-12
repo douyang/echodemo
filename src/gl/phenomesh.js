@@ -77,7 +77,11 @@ function slicer(ms = 12) {
 // a cell's three indices packed in one number (each under 1024 in size): a Map lookup by number
 // costs far less than one by a built string, and nearest() makes hundreds per query
 const cellKey = (cx, cy, cz) => ((cx + 1024) * 2048 + (cy + 1024)) * 2048 + (cz + 1024);
-/** A grid of points for neighbour searches. */
+/**
+ * A grid of points for neighbour searches. Its cell size sits in a typed array, not in a number
+ * property: in Chromium 141 the optimized code at times made a grid's cell size read as the size
+ * of a grid built after it, and preparePhenotypes then searched its 0.7 cm grid in 0.8 cm cells.
+ */
 export function grid(pos, keep, cell) {
   const g = new Map();
   const n = pos.length / 3;
@@ -87,7 +91,7 @@ export function grid(pos, keep, cell) {
     if (!g.has(k)) g.set(k, []);
     g.get(k).push(i);
   }
-  return { g, cell, pos };
+  return { g, cellSize: Float64Array.of(cell), pos };
 }
 /**
  * The k nearest points of grid G to (x, y, z) within rMax: [[index, d2], ...], nearest first.
@@ -97,7 +101,7 @@ export function grid(pos, keep, cell) {
  * the list is the one that scan gives.
  */
 export function nearest(G, x, y, z, k, rMax) {
-  const { g, cell, pos } = G;
+  const { g, pos } = G, cell = G.cellSize[0];
   const cx = Math.floor(x / cell), cy = Math.floor(y / cell), cz = Math.floor(z / cell);
   const reach = Math.ceil(rMax / cell), side = 2 * reach + 1;
   const best = [];   // [index, d2, place in the scan], by d2, then by the place
@@ -346,15 +350,86 @@ const targetOf = (mesh, name) => {
  * What every phenotype needs, found once: the heart's frame, the LV wall's weight on each
  * myocardial vertex, and how near each vertex lies to the LA and the aorta. anat: the Anatomy
  * (normal landmarks via raw()); turn: the angle that puts the model's apical planes on the
- * standard walls (aha.js).
+ * standard walls (aha.js). cache: { get(key), put(key, value) }, whose promises always resolve
+ * (idbcache.js), which keeps the four fields from one visit to the next (about 1 s of work,
+ * 384 kB), or null.
  */
-export async function preparePhenotypes(meshes, anat, turn, VESSELS) {
+export async function preparePhenotypes(meshes, anat, turn, VESSELS, cache = null) {
   const tick = slicer();
   const F = frameOf(meshes, anat, turn);
   const myo = meshes.Myocardium.geometry;
   const mpos = myo.attributes.position.array, mcol = myo.attributes.color, nMyo = mpos.length / 3;
   const REG = new Uint8Array(nMyo);
   for (let i = 0; i < nMyo; i++) REG[i] = Math.round(mcol.getX(i) * 10);
+  const aoLine = [F.av, V3(...VESSELS.ascMid), V3(...VESSELS.archTop)];
+  const dA = V3(...VESSELS.desc);
+  const desc = { A: dA, u: V3(...VESSELS.descLow).sub(dA).normalize(), t0: -1.5, t1: 6.8 };
+  // the four fields: from the cache where it holds them for these inputs and this code, else built
+  // and stored. The page does not wait for the store.
+  const key = cache && `fields:${fieldsKey(F, mpos, REG, desc)}`;
+  let M = key ? fieldsFrom(await cache.get(key), nMyo) : null;
+  if (!M) {
+    const { lost, ...built } = await buildFields(F, mpos, REG, nMyo, desc, tick);
+    M = built;
+    // a vertex that did not find itself marks a fault in the search (as grid() above notes): the
+    // page uses the fields, and does not store them
+    if (key && !lost) cache.put(key, { ...M, n: nMyo, sum: fieldsSum(M) });
+  }
+  return { meshes, anat, F, REG, ...M, aoLine, desc, mpos, nMyo };
+}
+const FIELDS = ['lvMask', 'rvMask', 'laNear', 'aoNear'];
+/**
+ * A key for the fields' inputs and code: a 53-bit hash of the source of the functions that build
+ * them, the myocardium's vertices and regions, the frame values they read, the descending aorta's
+ * axis, and the browser (its maths). A change to any of these gives a new key, so the cache never
+ * serves fields of an older model or older code.
+ */
+function fieldsKey(F, mpos, REG, desc) {
+  const H = hasher();
+  H.text([buildFields, frameOf, lvCoords, descAxis, grid, nearest, cellKey, smooth, clamp].map(String).join('\n'));
+  H.text(typeof navigator === 'undefined' ? '' : navigator.userAgent);
+  H.words(new Uint32Array(mpos.buffer, mpos.byteOffset, mpos.length));
+  H.words(Uint32Array.from(REG));
+  const v = (p) => [p.x, p.y, p.z];
+  H.nums([...v(F.apex), ...v(F.Z), F.L, F.h0, ...v(desc.A), ...v(desc.u), desc.t0, desc.t1]);
+  return H.digest();
+}
+/** The fields of a stored value, where they are whole: four arrays of n values whose hash is the stored one. Else null. */
+function fieldsFrom(v, n) {
+  if (!v || v.n !== n || !FIELDS.every((k) => v[k] instanceof Float32Array && v[k].length === n)) return null;
+  const M = Object.fromEntries(FIELDS.map((k) => [k, v[k]]));
+  return fieldsSum(M) === v.sum ? M : null;
+}
+/** A hash of the four fields' values. */
+function fieldsSum(M) {
+  const H = hasher();
+  for (const k of FIELDS) H.words(new Uint32Array(M[k].buffer, M[k].byteOffset, M[k].length));
+  return H.digest();
+}
+/** A 53-bit hash fed in parts (the mixing of cyrb53): 32-bit words, text, numbers. */
+function hasher() {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  const words = (w) => {
+    for (let i = 0; i < w.length; i++) { h1 = Math.imul(h1 ^ w[i], 2654435761); h2 = Math.imul(h2 ^ w[i], 1597334677); }
+  };
+  return {
+    words,
+    text: (s) => words(Uint32Array.from(s, (c) => c.charCodeAt(0))),
+    nums: (a) => words(new Uint32Array(Float64Array.from(a).buffer)),
+    digest() {
+      let a = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      const b = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(a ^ (a >>> 13), 3266489909);
+      a >>>= 0;
+      return (4294967296 * (2097151 & b) + a).toString(36);
+    },
+  };
+}
+/**
+ * The four fields on the myocardium's vertices: the LV wall's weight (lvMask), the RV free wall's
+ * (rvMask), and how near each vertex lies to the LA (laNear) and the aorta (aoNear). lost: the
+ * vertices whose search did not find the vertex itself, at distance 0 (none in a whole build).
+ */
+async function buildFields(F, mpos, REG, nMyo, desc, tick) {
   // the LV wall, smoothed over 0.7 cm so the septum's two faces and the LV-RV junctions blend
   const G = grid(mpos, null, 0.7);
   const lvMask = new Float32Array(nMyo), laNear = new Float32Array(nMyo), aoNear = new Float32Array(nMyo);
@@ -363,10 +438,12 @@ export async function preparePhenotypes(meshes, anat, turn, VESSELS) {
   // the LV cavity's radius (as rvGrow takes the free wall)
   const rvMask = new Float32Array(nMyo);
   const GLA = grid(mpos, (i) => REG[i] === 3, 0.8), GAO = grid(mpos, (i) => REG[i] === 5, 0.8);
+  let lost = 0;
   for (let i = 0; i < nMyo; i++) {
     if ((i & 127) === 0) await tick();
     const x = mpos[3 * i], y = mpos[3 * i + 1], z = mpos[3 * i + 2];
     const nb = nearest(G, x, y, z, 24, 0.7);
+    if (!nb.length || nb[0][1] !== 0) lost++;
     lvMask[i] = nb.length ? nb.filter(([j]) => REG[j] === 1).length / nb.length : REG[i] === 1 ? 1 : 0;
     const rvShare = nb.length ? nb.filter(([j]) => REG[j] === 2).length / nb.length : REG[i] === 2 ? 1 : 0;
     if (rvShare) { const c = lvCoords(F, x, y, z); rvMask[i] = rvShare * smooth((c.r - F.Rref(c.u) - 1.3) / 1.4); }
@@ -377,16 +454,13 @@ export async function preparePhenotypes(meshes, anat, turn, VESSELS) {
     if (REG[i] === 5) aoNear[i] = 1;
     else { const q = nearest(GAO, x, y, z, 1, 2.0); aoNear[i] = q.length ? 1 - smooth((Math.sqrt(q[0][1]) - 0.4) / 1.0) : 0; }
   }
-  const aoLine = [F.av, V3(...VESSELS.ascMid), V3(...VESSELS.archTop)];
-  const dA = V3(...VESSELS.desc);
-  const desc = { A: dA, u: V3(...VESSELS.descLow).sub(dA).normalize(), t0: -1.5, t1: 6.8 };
   // the descending aorta holds its place: the large atrium meets it (descGuard) and does not move it
   for (let i = 0; i < nMyo; i++) {
     if (REG[i] !== 5 || !laNear[i]) continue;
     const [w, r] = descAxis(desc, mpos[3 * i], mpos[3 * i + 1], mpos[3 * i + 2]);
     laNear[i] *= 1 - w * (1 - smooth((r - 1.5) / 0.5));
   }
-  return { meshes, anat, F, REG, lvMask, rvMask, laNear, aoNear, aoLine, desc, mpos, nMyo };
+  return { lvMask, rvMask, laNear, aoNear, lost };
 }
 
 /**

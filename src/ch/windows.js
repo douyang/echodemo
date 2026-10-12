@@ -1,13 +1,14 @@
 // Views: the canonical 2D views. Each view is a plane through one heart, in three panes:
-//  - left, the planes of the nine standard views in one heart, each in the color of its window,
-//    the current view's lit, with the lines where the current plane crosses the others (a click
-//    on a plane takes the probe there); with Probe and body, the whole heart with the probe and
-//    the body figure (gl/bodykey.js) instead;
+//  - left, the narrowest: with Probe and body (the default), the whole heart with the probe and
+//    the body figure (gl/bodykey.js); without it, the planes of the nine standard views in one
+//    heart, each in the color of its window, the current view's lit, with the lines where the
+//    current plane crosses the others (a click on a plane takes the probe there);
 //  - middle, the heart cut on the plane and seen square to it, with the tags;
 //  - right, the echo image that the plane cuts from the same mesh.
 // Free probe: five sliders move the probe from the current view, as the ASE guideline names the
 // moves (rotate, tilt, rock, slide; freeprobe.js), and the three panes follow the moved plane.
-// The panel names the nearest standard view and the moves from the starting view.
+// The panel names the nearest standard view and the moves from the starting view. The left pane
+// shows the planes while the free probe is on, and Probe and body again when it goes off.
 // The left pane is the stage's second pane (gl/stage3d.js, Pane3D): prepare() sets the scene as
 // that pane shows it, and restore() puts it back for the cross-section, in each frame.
 import * as THREE from '../../vendor/three.bundle.min.js';
@@ -83,6 +84,15 @@ const away = (s) => FREE_KEYS.some((k) => Math.abs(s[k] || 0) > 1e-6);
 const moved = (s) => !!s.wfree && away(s);
 // the moves since the last settle on a view (a drag let go near it): the view it left and the moves
 let lastMove = null, settling = false;
+// The free probe shows its plane among the nine standard planes: turned on, it turns Probe and
+// body off; turned off, it turns Probe and body on again if it was the free probe that turned it
+// off. bodyBack: Probe and body comes back when the free probe goes off. A Probe and body choice
+// of the reader's own, during the free probe, cancels the return.
+let bodyBack = false, ownBody = false;
+function setBody(on) {
+  ownBody = true;
+  try { setState({ wbody: on }); } finally { ownBody = false; }
+}
 
 /** The plane of state s moved by its sliders, or null before the 3D view is ready. */
 function freeGeom(s) {
@@ -306,7 +316,7 @@ const OF_NINE = Object.fromEntries(Object.keys(VIEWS).map((k) => [k, NINE.includ
 /** The plane of the nine that the plane shown lies on: the view's, or the one a free probe is on, or null. */
 const curNine = () => (moved(st) ? (shownNear && shownNear.on ? OF_NINE[shownNear.k] : null) : OF_NINE[st.view]);
 const LEFT = {
-  planes: { name: 'Planes', note: 'Drag to orbit · Click a plane' },
+  planes: { name: 'Planes', note: 'Drag to orbit\u00a0· Click a plane' },
   body: { name: 'Probe and body', note: 'Drag to orbit' },
 };
 const cssVar = (k) => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
@@ -731,7 +741,8 @@ export default {
   // wcine: the beat runs all the time (no control); off, the PLAX calipers would show
   // wfree: the free probe; its sliders (FREE_KEYS) move it from the view. wGeo: the heart whose
   // planes the free probe's readouts measure (set when a new heart makes new planes)
-  defaults: { win: 'plax', view: 'plax', wcine: true, wlabels: true, wbody: false, wmeas: '', wfree: false, ...REST, wGeo: '' },
+  // wbody: Probe and body in the left pane, the default; off, the nine planes
+  defaults: { win: 'plax', view: 'plax', wcine: true, wlabels: true, wbody: true, wmeas: '', wfree: false, ...REST, wGeo: '' },
   watch: ['win', 'view', 'wcine', 'wlabels', 'wbody', 'wmeas', 'wfree', ...FREE_KEYS, 'wGeo'],
   format: FORMAT,
   figure(f) { fig = f; return null; },
@@ -787,6 +798,11 @@ export default {
     // the free probe: Play holds the probe to the views. A new view, or the probe held again,
     // brings the sliders back to rest; the moves of a settle stay in the readout until a slider moves
     if (s.wfree && ((ch.playing && s.playing) || (ch.anim && s.anim))) { setState({ wfree: false }); return; }
+    // the free probe on: the planes in the left pane; off: Probe and body again (bodyBack)
+    if ('wfree' in ch && !('wbody' in ch)) {
+      if (s.wfree && s.wbody) { bodyBack = true; setBody(false); }
+      else if (!s.wfree && bodyBack) { bodyBack = false; if (!s.wbody) setBody(true); }
+    } else if ('wbody' in ch && !ownBody) bodyBack = false;
     if ('view' in ch || 'wfree' in ch) { if (!settling) lastMove = null; } else if (FREE_KEYS.some((k) => k in ch) && moved(s)) lastMove = null;
     if (('view' in ch || ('wfree' in ch && !s.wfree)) && away(s)) setState(REST);
     if ('view' in ch || 'chapter' in ch) {
