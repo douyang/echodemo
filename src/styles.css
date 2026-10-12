@@ -281,6 +281,8 @@ a:hover { text-decoration-color: var(--accent); }
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-3);
+  /* in a narrow pane the note takes two lines of about the same length */
+  text-wrap: balance;
 }
 /* labels on the 3D heart: tags beside it, a leader to the point they name */
 .overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
@@ -302,9 +304,10 @@ a:hover { text-decoration-color: var(--accent); }
 .split { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
 .split.wide { grid-template-columns: 1.45fr 1fr; }
 .split > div { position: relative; min-width: 0; }
-/* Views: the planes (or Probe and body), the cross-section and the echo of one plane, side by
-   side; in a taller stage the planes go across the top */
-.split.views3 { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: "planes section echo"; }
+/* Views: Probe and body (or the planes), the cross-section and the echo of one plane, side by
+   side, the left pane the narrowest; in a taller stage, Probe and body beside the cross-section
+   and the echo across the foot */
+.split.views3 { grid-template-columns: minmax(0, 0.6fr) minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "planes section echo"; }
 .split.views3 > .pane-planes { grid-area: planes; }
 .split.views3 > .pane-section { grid-area: section; }
 .split.views3 > .pane-2d { grid-area: echo; }
@@ -313,7 +316,7 @@ a:hover { text-decoration-color: var(--accent); }
 .ink { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 @container (max-aspect-ratio: 19 / 20) {
   .split { grid-template-columns: minmax(0, 1fr); grid-template-rows: 44% 56%; }
-  .split.views3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 48% 52%; grid-template-areas: "planes planes" "section echo"; }
+  .split.views3 { grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr); grid-template-rows: 44% 56%; grid-template-areas: "planes section" "echo echo"; }
 }
 .pane-label {
   position: absolute;
@@ -875,9 +878,9 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .pg-cur { display: flex; }
   .play { width: 38px; height: 38px; }
   .split { grid-template-columns: 1fr; grid-template-rows: 40% 60%; }
-  /* Views: the planes across the top, the cross-section and the echo side by side under
-     them, in a taller figure */
-  .split.views3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 46% 54%; grid-template-areas: "planes planes" "section echo"; }
+  /* Views: Probe and body (or the planes) beside the cross-section, the echo across the foot,
+     in a taller figure */
+  .split.views3 { grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr); grid-template-rows: 44% 56%; grid-template-areas: "planes section" "echo echo"; }
   html[data-ch="windows"] .stage { height: min(64vh, 560px); }
   /* Stress echocardiography: the quad screen, with the bull's-eye and the protocol under it */
   html[data-ch="stress"] .stage { height: min(64vh, 560px); }
