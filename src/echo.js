@@ -1170,16 +1170,19 @@ export class EchoView {
     const tissue = this.myo.section(g, true);
     const lw = (md) => (md.dict.leaflets_mid !== undefined ? leafletWeights(md.mesh.name, state.v, state.drive, a, s) : { leaflets: state.v });
     const valves = [];
+    const viewHide = (VIEWS[this.view] && VIEWS[this.view].hide) || [];
     for (const vd of this.valves) {
       vd.morph(weights(vd, lw(vd)));
-      // a valve that a chapter replaces (a prosthesis, ch/prosthetic.js) moves but is not cut
-      if (this.hideValves && this.hideValves.has(vd.mesh.name)) continue;
+      // a valve that a chapter replaces (a prosthesis, ch/prosthetic.js) moves but is not cut, nor
+      // one that its view leaves out (views.js hide; the chordae below too)
+      if ((this.hideValves && this.hideValves.has(vd.mesh.name)) || viewHide.includes(vd.mesh.name)) continue;
       for (const L of vd.section(g)) { L.valve = vd.mesh.name; valves.push(L); }
     }
     // chordae: those in the middle of the slice show brightest
     const chords = [], chordsCore = [];
     for (const cd of this.chords) {
       cd.morph(weights(cd, lw(cd)));
+      if (viewHide.includes(cd.mesh.name)) continue;
       chords.push(cd.slab(g, SLICE));
       chordsCore.push(cd.slab(g, SLICE * 0.45));
     }
@@ -1405,6 +1408,55 @@ export class EchoView {
       return false;
     };
     const inLumen = (p) => { const k = loopsAround(p[0], p[1]); return k > 0 && k % 2 === 0 && !nearWall(p[0], p[1], 0.12); };
+    // the papillary muscles and the RV's trabeculations: a part whose cut lies in a cavity, clear
+    // of every wall, is the cut of a muscle whose root is off the plane. It showed as a loose blob,
+    // ring or bar in the cavity, most in systole, as the cavity narrows round it. A part fades with
+    // its gap to the walls, or to a part that touches them: in full within PAP_NEAR, gone beyond
+    // PAP_FAR (cm), so a part that leaves a wall through the beat fades rather than blinks.
+    const PAP_NEAR = 0.1, PAP_FAR = 0.35;
+    const wallDist = (x, y, rmax) => {
+      if (inWall(x, y)) return 0;
+      let best = rmax;
+      for (let b = Math.floor((y - rmax) / BAND); b <= Math.floor((y + rmax) / BAND); b++) {
+        for (const [ax, ay, bx, by] of bands.get(b) || []) {
+          const ux = bx - ax, uy = by - ay, l2 = ux * ux + uy * uy || 1e-9;
+          const t = Math.max(0, Math.min(1, ((x - ax) * ux + (y - ay) * uy) / l2));
+          best = Math.min(best, Math.hypot(x - ax - t * ux, y - ay - t * uy));
+        }
+      }
+      return best;
+    };
+    const papGap = pap.map((L) => {
+      let gap = PAP_FAR;
+      for (const [x, y] of L.pts) { gap = Math.min(gap, wallDist(x, y, gap)); if (!gap) break; }
+      return gap;
+    });
+    // through a part that touches a wall: its gap plus the least distance between the two cuts
+    // (0 where one lies inside the other)
+    const boxOf = (P) => P.reduce((b, [x, y]) => [Math.min(b[0], x), Math.min(b[1], y), Math.max(b[2], x), Math.max(b[3], y)], [Infinity, Infinity, -Infinity, -Infinity]);
+    const papBox = pap.map((L) => boxOf(L.pts));
+    const between = (P, Q) => {
+      if (inside(Q, P[0][0], P[0][1]) || inside(P, Q[0][0], Q[0][1])) return 0;
+      let best = Infinity;
+      for (const [x, y] of P) for (const [u, v] of Q) best = Math.min(best, Math.hypot(x - u, y - v));
+      return best;
+    };
+    for (let pass = 0; pass < 3; pass++) {
+      let changed = false;
+      for (let i = 0; i < pap.length; i++) {
+        for (let j = 0; j < pap.length; j++) {
+          const r = papGap[i] - papGap[j], a = papBox[i], b = papBox[j];
+          if (i === j || r <= 0 || a[0] > b[2] + r || b[0] > a[2] + r || a[1] > b[3] + r || b[1] > a[3] + r) continue;
+          const gap = papGap[j] + between(pap[i].pts, pap[j].pts);
+          if (gap < papGap[i]) { papGap[i] = gap; changed = true; }
+        }
+      }
+      if (!changed) break;
+    }
+    const papFade = papGap.map((gap) => { const u = Math.min(1, Math.max(0, (gap - PAP_NEAR) / (PAP_FAR - PAP_NEAR))); return u * u * (3 - 2 * u); });
+    const papHeld = pap.filter((_, i) => papFade[i] === 0);
+    const papLoose = pap.map((L, i) => [L, papFade[i]]).filter(([, f]) => f > 0 && f < 1);
+    const papE = (f) => DB.myo + (DB.blood - DB.myo) * f;
     const periPts = [], periRefs = [];
     for (const L of peri) {
       const pts = clearOf(L.pts);
@@ -1445,11 +1497,13 @@ export class EchoView {
       // the papillary muscles and the RV's trabeculations. Their parts overlap: the moderator band
       // and the RV papillary muscles, and the parts of the LV papillary muscles. The section walk
       // winds each loop either way, so a nonzero fill left the overlap of two loops of opposite
-      // winding as blood. The union rule fills it as muscle.
-      { polys: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, rule: 'union' },
+      // winding as blood. The union rule fills it as muscle. A loose part fades (papFade).
+      { polys: papHeld.map((L) => L.pts), refs: ref(papHeld), e: DB.myo, rule: 'union' },
+      ...papLoose.map(([L, f]) => ({ polys: [L.pts], refs: ref([L]), e: papE(f), rule: 'union' })),
       { borders: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, spec: 8, closed: true },
       { borders: open.map((L) => L.pts), refs: ref(open), e: DB.myo, spec: 8 },
-      { borders: pap.map((L) => L.pts), refs: ref(pap), e: DB.myo, spec: 6, closed: true },
+      { borders: papHeld.map((L) => L.pts), refs: ref(papHeld), e: DB.myo, spec: 6, closed: true },
+      ...papLoose.map(([L, f]) => ({ borders: [L.pts], refs: ref([L]), e: papE(f), spec: 6 * (1 - f), closed: true })),
       // a chapter's own shapes over the walls (setShapes): a septal defect, as blood
       ...(extra.own || []).filter((it) => !it.top),
       // the chordae: the slab's triangles of a chord's near and far faces lie over each other on

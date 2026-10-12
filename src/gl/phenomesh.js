@@ -599,12 +599,43 @@ export async function buildDisease(ctx, key) {
   return out;
 }
 
+/**
+ * A mesh on the walls (a valve, the chordae, the papillary muscles) moved as the myocardial
+ * vertices next to it move (ed: their move, by vertex of mpos): each point takes the inverse-square
+ * mean of its six nearest within 2.5 cm. Returns the target, or null where nothing moves.
+ */
+async function followWalls(mesh, mpos, ed, tick, G = grid(mpos, null, 1.0)) {
+  const p = mesh.geometry.attributes.position.array, n = p.length / 3;
+  const e2 = new Float32Array(p.length);
+  let any = false;
+  for (let j = 0; j < n; j++) {
+    if ((j & 127) === 0) await tick();
+    const nb = nearest(G, p[3 * j], p[3 * j + 1], p[3 * j + 2], 6, 2.5);
+    let wsum = 0;
+    const acc = [0, 0, 0];
+    for (const [i, d2] of nb) {
+      const w = 1 / (d2 + 0.02);
+      wsum += w;
+      for (let k = 0; k < 3; k++) acc[k] += w * ed[3 * i + k];
+    }
+    if (wsum > 0) for (let k = 0; k < 3; k++) { e2[3 * j + k] = acc[k] / wsum; if (e2[3 * j + k]) any = true; }
+  }
+  return any ? e2 : null;
+}
+
+// The moves of the walls alone that the papillary muscles and the RV's trabeculations (one mesh)
+// follow: a fold of the RA or the RV free wall, and the septum's shift. Before, the RV's papillary
+// muscles, the moderator band and the trabeculae kept their place as the wall next to them moved,
+// and their cuts showed loose in the cavity, or through the wall.
+const PAP_FOLLOWS = new Set(['raFold', 'rvFold', 'septum']);
+
 /** A move target: field kind on the meshes it names. The landmarks stay (shift is zero). */
 async function buildMove(ctx, key, kind) {
   const { meshes } = ctx;
   const tick = slicer();
   const M = moveFrame(ctx);
   const d = [0, 0, 0];
+  let myo = null;
   for (const [name, mesh] of Object.entries(meshes)) {
     if (!M.on(kind, name)) continue;
     const p = mesh.geometry.attributes.position.array, n = p.length / 3;
@@ -617,6 +648,11 @@ async function buildMove(ctx, key, kind) {
       if (d[0] || d[1] || d[2]) { any = true; t[3 * i] = d[0]; t[3 * i + 1] = d[1]; t[3 * i + 2] = d[2]; }
     }
     if (any) addTarget(mesh, `dx_${key}`, t);
+    if (any && name === 'Myocardium') myo = { p, t };
+  }
+  if (myo && PAP_FOLLOWS.has(kind) && meshes.Papillary && !M.on(kind, 'Papillary')) {
+    const e2 = await followWalls(meshes.Papillary, myo.p, myo.t, tick);
+    if (e2) addTarget(meshes.Papillary, `dx_${key}`, e2);
   }
   return { shift: () => V3(), pivot: M.pivot.clone(), apexArm: M.Lp };
 }
@@ -793,24 +829,13 @@ async function buildGrow(ctx, key, kind) {
   }
   addTarget(meshes.Myocardium, `dx_${key}`, ed);
   const G = grid(mpos, null, 1.0);
-  for (const name of kind === 'rvthick' ? ['Pericardium', 'Coronaries'] : ['TricuspidValve', 'TricuspidChordae', 'Pericardium', 'Coronaries']) {
+  // the papillary muscles and the RV's trabeculations go with the free wall as the RV grows, as
+  // the tricuspid valve does; before, they kept their place and showed loose in the larger cavity
+  for (const name of kind === 'rvthick' ? ['Pericardium', 'Coronaries'] : ['TricuspidValve', 'TricuspidChordae', 'Papillary', 'Pericardium', 'Coronaries']) {
     const mesh = meshes[name];
     if (!mesh) continue;
-    const p = mesh.geometry.attributes.position.array, n = p.length / 3;
-    const e2 = new Float32Array(p.length);
-    for (let j = 0; j < n; j++) {
-      if ((j & 127) === 0) await tick();
-      const nb = nearest(G, p[3 * j], p[3 * j + 1], p[3 * j + 2], 6, 2.5);
-      let wsum = 0;
-      const acc = [0, 0, 0];
-      for (const [i, d2] of nb) {
-        const w = 1 / (d2 + 0.02);
-        wsum += w;
-        for (let k = 0; k < 3; k++) acc[k] += w * ed[3 * i + k];
-      }
-      if (wsum > 0) for (let k = 0; k < 3; k++) e2[3 * j + k] = acc[k] / wsum;
-    }
-    addTarget(mesh, `dx_${key}`, e2);
+    const e2 = await followWalls(mesh, mpos, ed, tick, G);
+    if (e2 || name !== 'Papillary') addTarget(mesh, `dx_${key}`, e2 || new Float32Array(mesh.geometry.attributes.position.array.length));
   }
   return {
     shift: (name) => {
