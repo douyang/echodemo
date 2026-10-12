@@ -219,7 +219,9 @@ export class Heart {
       peri.material = this.periNormal;
     }
     // the valve skirts: meshes without shape targets, not in this.meshes, so no target is built
-    // on them; setState gives them their shape from the valves and the wall
+    // on them; setState gives them their shape from the valves and the wall. A ring's skirts are
+    // wall (sk.wall): muscle's flag, and a cap where the plane cuts them (_buildCaps), as the wall
+    const skirtMaterial = (sk) => dataMaterial(sk.wall ? FLAG.Myocardium : (FLAG[sk.valve] ?? 0.25), false, this.clip);
     this.skirts = (more.skirts || []).map((sk) => {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(sk.count * 3), 3));
@@ -228,7 +230,7 @@ export class Heart {
       const mesh = new THREE.Mesh(g);
       mesh.name = sk.name;
       mesh.frustumCulled = false;
-      const it = { mesh, data: dataMaterial(FLAG[sk.valve] ?? 0.25, false, this.clip), normal: normalMaterial(this.clip) };
+      const it = { mesh, data: skirtMaterial(sk), normal: normalMaterial(this.clip) };
       mesh.material = it.data;
       this.items.push(it);
       root.add(mesh);
@@ -249,8 +251,9 @@ export class Heart {
     front.clippingPlanes = this.clip;
     this.stencilMats = [back, front];
     this.stencils = [];
-    for (const name of SOLIDS) {
-      const solid = this.meshes[name];
+    // a wall skirt's shell is closed (gl/skirts.js shell), so it takes a cap as a solid does
+    const solids = [...SOLIDS.map((name) => this.meshes[name]), ...this.skirts.filter((S) => S.sk.wall).map((S) => S.mesh)];
+    for (const solid of solids) {
       if (!solid) continue;
       for (const mat of [back, front]) {
         const s = new THREE.Mesh(solid.geometry, mat);

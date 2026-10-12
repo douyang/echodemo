@@ -583,8 +583,9 @@ export class EchoView {
     this.peri = h.meshes.Pericardium ? new MeshData(h.meshes.Pericardium) : null;
     this.cor = h.meshes.Coronaries ? new MeshData(h.meshes.Coronaries) : null;
     // the valve skirts (gl/skirts.js), each with its own shape for this view's frames; the section
-    // walk of MeshData reads pos, sd, index, count and capFrom
-    this.skirts = (h.skirtList || []).map((sk) => ({ sk, pos: new Float32Array(sk.count * 3), sd: new Float32Array(sk.count), index: sk.index, count: sk.count, rest: null, capFrom: Infinity }));
+    // walk of MeshData reads pos, sd, index, count, capFrom and, for a wall skirt, rest (its shape
+    // at rest, which the speckle follows as it follows a wall)
+    this.skirts = (h.skirtList || []).map((sk) => ({ sk, pos: new Float32Array(sk.count * 3), sd: new Float32Array(sk.count), index: sk.index, count: sk.count, rest: sk.wall ? new Float32Array(sk.count * 3) : null, capFrom: Infinity }));
     // below the heart: liver, veins, abdominal aorta and spine (they do not move with the beat)
     this.abd = {};
     for (const [k, m] of Object.entries(buildAbdomen(h))) { const md = new MeshData(m); md.morph({}); this.abd[k] = md; }
@@ -1122,6 +1123,8 @@ export class EchoView {
     const rest = { amyloid: P.a, ...this.disease };
     if (P.mesh) rest[`ph_${P.mesh}`] = 1;
     for (const md of [this.myo, ...this.valves, ...this.chords, this.pap, this.peri, this.cor]) if (md) md.setRest(rest);
+    // a wall skirt's rest shape follows (frame finds it again)
+    for (const S of this.skirts) S.restOk = false;
     // the RV's scales (setRvSys) take the new heart's systolic targets too
     if ((this.rvT ?? 1) !== 1 || (this.rvMaskArr && ((this.rvK ?? 1) !== 1 || this.rvReg))) this.applySys();
     this.geo = this.own ? this.ownGeo : m.sizes;
@@ -1182,22 +1185,25 @@ export class EchoView {
       if ((this.hideValves && this.hideValves.has(vd.mesh.name)) || viewHide.includes(vd.mesh.name)) continue;
       for (const L of vd.section(g)) { L.valve = vd.mesh.name; valves.push(L); }
     }
-    // the valve skirts: a valve's hinge joined to the wall where the model leaves a gap, cut as
-    // valve tissue under the skirt's own name, so a hinge or a leaflet found by the valve's name
-    // is still the valve's own; a skirt goes where its valve goes. Only a loop that joins the
-    // valve to the wall on this plane shows (skirts.js bridges). skirt marks the loops that the
-    // measurements leave out (meshjet.js segments)
+    // the valve skirts: a valve's hinge joined to the wall where the model leaves a gap, cut
+    // under the skirt's own name, so a hinge or a leaflet found by the valve's name is still the
+    // valve's own; a skirt goes where its valve goes. Only a loop that joins the valve to the wall
+    // on this plane shows (skirts.js bridges). skirt marks the loops that the measurements leave
+    // out (meshjet.js segments); wall, those drawn as wall (a ring's skirts, the aortomitral
+    // curtain among them), the rest are drawn as valve
     const ownOf = {};
     for (const S of this.skirts) {
       const vd = this.valves.find((v) => v.mesh.name === S.sk.valve);
       if (!vd || (this.hideValves && this.hideValves.has(S.sk.valve)) || viewHide.includes(S.sk.valve)) continue;
+      if (S.rest && !S.restOk) { skirtShape(S.sk, vd.rest, this.myo.rest, S.rest); S.restOk = true; }
       skirtShape(S.sk, vd.pos, this.myo.pos, S.pos);
       const mine = ownOf[S.sk.valve] || (ownOf[S.sk.valve] = valves.filter((L) => L.valve === S.sk.valve));
       if (!mine.length) continue;
-      for (const L of MeshData.prototype.section.call(S, g)) {
+      for (const L of MeshData.prototype.section.call(S, g, !!S.rest)) {
         if (!bridges(L.pts, tissue, mine)) continue;
         L.valve = S.sk.name;
         L.skirt = true;
+        L.wall = S.sk.wall;
         valves.push(L);
       }
     }
@@ -1313,8 +1319,9 @@ export class EchoView {
       const own = hotOf[k] || [DB.valve, 0];
       hotOf[k] = [Math.max(own[0], DB.valve + 7 * c), Math.max(own[1], 6 * c)];
     }
-    const loopsOfValve = (k) => wound(valves.filter((L) => closed(L) && L.valve === k).map((L) => L.pts));
-    const leaf = [...new Set(valves.map((L) => L.valve))].filter((k) => !hotOf[k]).flatMap(loopsOfValve);
+    // (a skirt drawn as wall is not a leaflet: it is drawn with the walls below)
+    const loopsOfValve = (k) => wound(valves.filter((L) => closed(L) && L.valve === k && !L.wall).map((L) => L.pts));
+    const leaf = [...new Set(valves.filter((L) => !L.wall).map((L) => L.valve))].filter((k) => !hotOf[k]).flatMap(loopsOfValve);
     const hotLayers = Object.entries(hotOf).flatMap(([k, [db, shadow]]) => {
       const pts = loopsOfValve(k);
       return [{ polys: pts, e: db, shadow }, { borders: pts, e: db, spec: 7, w: 0.06, closed: true }];
@@ -1505,6 +1512,23 @@ export class EchoView {
     // a chapter's own structures (this.underWalls): a mass on the heart, or cavities filled with an
     // enhancing agent; drawn before the walls, so a wall covers the part of them inside it
     const wallItems = this.underWalls ? this.underWalls(this, { loops, outer, state }) : [];
+    // a ring's skirts, the aortomitral curtain among them (gl/skirts.js WALL), are wall: filled as
+    // wall over the wall's surface line where they join it, so the two read as one; their own
+    // surface line only where they border blood (their wall end lies inside the wall)
+    const skirtWall = valves.filter((L) => L.wall && closed(L));
+    const skirtEdges = [], skirtEdgeRefs = [];
+    for (const L of skirtWall) {
+      const P = L.pts, R = L.ref, n = P.length;
+      const s0 = P.findIndex((p) => inWall(p[0], p[1]));
+      if (s0 < 0) { skirtEdges.push([...P, P[0]]); skirtEdgeRefs.push(R ? [...R, R[0]] : null); continue; }
+      let run = [], rr = [];
+      for (let k = 1; k <= n; k++) {
+        const i = (s0 + k) % n;
+        if (k < n && !inWall(P[i][0], P[i][1])) { run.push(P[i]); if (R) rr.push(R[i]); continue; }
+        if (run.length > 1) { skirtEdges.push(run); skirtEdgeRefs.push(R ? rr : null); }
+        run = []; rr = [];
+      }
+    }
     const items = [
       { polys: liver, e: DB.liver },
       { borders: liver, e: 6, spec: 9, w: 0.12, closed: true, all: true },
@@ -1525,6 +1549,8 @@ export class EchoView {
       ...papLoose.map(([L, f]) => ({ polys: [L.pts], refs: ref([L]), e: papE(f), rule: 'union' })),
       { borders: loops.map((L) => L.pts), refs: ref(loops), e: DB.myo, spec: 8, closed: true },
       { borders: open.map((L) => L.pts), refs: ref(open), e: DB.myo, spec: 8 },
+      { polys: skirtWall.map((L) => L.pts), refs: ref(skirtWall), e: DB.myo, rule: 'union' },
+      { borders: skirtEdges, refs: skirtEdgeRefs.every(Boolean) ? skirtEdgeRefs : null, e: DB.myo, spec: 8 },
       { borders: papHeld.map((L) => L.pts), refs: ref(papHeld), e: DB.myo, spec: 6, closed: true },
       ...papLoose.map(([L, f]) => ({ borders: [L.pts], refs: ref([L]), e: papE(f), spec: 6 * (1 - f), closed: true })),
       // a chapter's own shapes over the walls (setShapes): a septal defect, as blood

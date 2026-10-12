@@ -10,17 +10,18 @@
 // Two changes close the gaps. The tricuspid fit moves the tricuspid ring and its leaflets' bases
 // out to the RA-RV junction where the ring lies far inside it (there the nearest atrial wall lies
 // high on the RA wall, so a membrane to it would cross the atrium). The skirts then join each
-// valve's hinge to the wall where a gap remains: a thin membrane. Round the valve's axis, each
+// valve's hinge to the wall where a gap remains: a membrane. Round the valve's axis, each
 // half-plane that holds the axis meets the hinge at one point (a station). At rest the skirt there
 // runs to the nearest wall point of that half-plane (for a ring, one skirt to the atrial side of
 // its annulus and one to the ventricular side). For the mitral valve's anterior arc this is the
-// aortomitral curtain. Each frame the station's wall point slides along the wall near that place
-// (WIN either way) to the point nearest the hinge, so the skirt stays a short bridge as the valve
-// and the wall move apart. A skirt keeps no shape of its own: its hinge edge takes the valve's
-// place (the middle of the ring, or the outermost point of a cusp) and its wall edge a point of a
-// wall triangle, so it holds through the beat, the burden, the heart shown and a chapter's
-// targets, in the echo views (echo.js) and in the 3D model (heart.js). The leaflets do not change,
-// so what the chapters measure on them stays.
+// aortomitral curtain. A ring's skirts are wall: drawn as wall and as thick as the atrial wall
+// (WALL). A cusp's skirt is the cusp's base: drawn as valve, thin. Each frame the station's wall
+// point slides along the wall near that place (WIN either way) to the point nearest the hinge, so
+// the skirt stays a short bridge as the valve and the wall move apart. A skirt keeps no shape of
+// its own: its hinge edge takes the valve's place (the middle of the ring, or the outermost point
+// of a cusp) and its wall edge a point of a wall triangle, so it holds through the beat, the
+// burden, the heart shown and a chapter's targets, in the echo views (echo.js) and in the 3D model
+// (heart.js). The leaflets do not change, so what the chapters measure on them stays.
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { cycleAt } from '../cyclemodel.js';
 
@@ -34,7 +35,11 @@ const FAR = 2.0;         // cm: no skirt to a wall farther than this at rest
 const ATRIAL = 0.3;      // cm: a ring's atrial wall point lies no more than this below the hinge, and its ventricular one no more than this above
 const VMAX = 0.6;        // cm: a ring's ventricular skirt closes no wider gap at rest (the outflow tract stays open)
 const NEAR = 5.0;        // cm: the wall triangles searched lie within this of the valve's centre
-const THICK = 0.08;      // cm: the skirt's thickness
+const THICK = 0.08;      // cm: a cusp's skirt's thickness (the cusp's own base, valve tissue)
+// cm: a ring's skirts stand for the wall at the annulus, the aortomitral curtain on the mitral
+// valve's anterior arc: they are drawn as wall (echo.js, heart.js), as thick as the atrial wall
+// beside them (the model's LA wall: median 2.8 mm on 307 rays from the LA's centre; the RA: 3.2 mm)
+const WALL = { MitralValve: 0.28, TricuspidValve: 0.32 };
 const EMBED = 0.06;      // cm: the skirt's wall edge reaches this far into the wall
 const SMOOTH = [1, 2, 3, 2, 1];   // the weights over neighbouring stations of the hinge-to-wall offsets each frame
 const ALONG = 2;         // segments from the hinge to the wall
@@ -650,9 +655,12 @@ function skirtsFrom(list, meshes, anat) {
   return list.filter((d) => frames[d.valve]).map((d) => {
     const { ring, R } = frames[d.valve];
     const { index, count } = shell(d.runs);
+    const wall = (d.side && WALL[d.valve]) || 0;
     return {
       // the runs copied: skirtShape keeps its scratch on them, and the data stays as found
       name: d.name, valve: d.valve, side: d.side, axis: vec(d.axis), runs: d.runs.map((r) => ({ ids: r.ids, cyclic: r.cyclic })), index, count,
+      // wall: drawn as wall, not valve; thick: its thickness (cm)
+      wall: wall > 0, thick: wall || THICK,
       stations: d.stations.map((st, k) => {
         if (!st) return null;
         const hinge = ring ? flat(R.stations[k].hinge) : [st.c[0], 1 - st.c[2], st.c[1], st.c[2]];
@@ -773,7 +781,7 @@ export function bridges(P, walls, own) {
  * shrinks to its hinge.
  */
 export function skirtShape(sk, P, W, out, outN = null) {
-  const J = ALONG + 1, h = (SMOOTH.length - 1) / 2;
+  const J = ALONG + 1, h = (SMOOTH.length - 1) / 2, T = sk.thick || THICK;
   const H = V3(), A = V3();
   let px = sk.axis.x, py = sk.axis.y, pz = sk.axis.z, base = 0;
   for (const r of sk.runs) {
@@ -813,7 +821,7 @@ export function skirtShape(sk, P, W, out, outN = null) {
       for (let j = 0; j < J; j++) {
         const u = j / ALONG, x = hs[c] + u * dx, y = hs[c + 1] + u * dy, z = hs[c + 2] + u * dz;
         for (let s2 = 0; s2 < 2; s2++) {
-          const k = 3 * (base + s2 * n * J + i * J + j), sg = s2 ? -1 : 1, hh = 0.5 * sg * THICK;
+          const k = 3 * (base + s2 * n * J + i * J + j), sg = s2 ? -1 : 1, hh = 0.5 * sg * T;
           out[k] = x + nx * hh; out[k + 1] = y + ny * hh; out[k + 2] = z + nz * hh;
           if (outN) { outN[k] = sg * nx; outN[k + 1] = sg * ny; outN[k + 2] = sg * nz; }
         }
