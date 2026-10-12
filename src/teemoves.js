@@ -38,7 +38,7 @@ export const HOW = {
   teeAdv: 'Advancing or withdrawing moves the probe along the esophagus, and the plane moves with it.',
   teeRot: 'Turning rotates the probe about its shaft: clockwise to the right, counterclockwise to the left.',
   teeFlex: 'Anteflexion tilts the beam toward the head, and retroflexion toward the feet.',
-  teeLat: 'Side flexion bends the tip to the right or left. In this model it turns the plane about the beam, as the multiplane angle does.',
+  teeLat: 'Side flexion bends the tip to the right or left: the plane turns about the beam, and the transducer moves a little to that side.',
 };
 
 /**

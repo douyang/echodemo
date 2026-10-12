@@ -39,6 +39,53 @@ const STEP = { move: 3, hold: 5 };
 /** The music's tempo (tools/score/pulse.py): the end card falls on a bar line after whole phrases. */
 const PHRASE = (16 * 60) / 109.3;   // s: four bars of four beats
 
+// 05 TEE. The video shows the 11 views of the basic perioperative examination (Reeves 2013) in
+// the guideline's order: 5.1 s on each and 2.6 s between them (1:32). TEE_FREE brings back the
+// video of 11 Oct 2026 (2:16): all 17 views, with the free probe's moves after the four-chamber
+// view (src/teemoves.js).
+const TEE_FREE = false;
+const TEE_BASIC = [
+  { set: { teeLevel: 'me', teeTurn: 'mid', teeAngle: 5, teeFree: false, teeBase: FREE_BASE, ...FREE_REST }, track: '4C', pick: [0], hold: 6 },
+  { set: { teeAngle: 85 }, track: '2C', pick: [0], hold: 6 },
+  { set: { teeAngle: 140 }, track: 'LAX', pick: [0], hold: 6 },
+  { set: { teeLevel: 'ue', teeTurn: 'right', teeAngle: 95 }, track: 'Asc LAX', pick: [0], hold: 6 },
+  { set: { teeAngle: 5 }, track: 'Asc SAX', pick: [0], hold: 6 },
+  { set: { teeLevel: 'me', teeAngle: 30 }, track: 'AV SAX', pick: [0], hold: 6 },
+  { set: { teeAngle: 55 }, track: 'RV in-out', pick: [0], hold: 6 },
+  { set: { teeAngle: 95 }, track: 'Bicaval', pick: [0], hold: 6 },
+  { set: { teeLevel: 'tg', teeTurn: 'mid', teeAngle: 10 }, track: 'TG SAX', pick: [0], hold: 6 },
+  { set: { teeTurn: 'left', teeAngle: 0 }, track: 'Desc SAX', pick: [0], hold: 6 },
+  { set: { teeAngle: 90 }, track: 'Desc LAX', pick: [0], hold: 6 },
+];
+const TEE_ALL = [
+  { set: { teeLevel: 'me', teeTurn: 'mid', teeFree: false, teeBase: FREE_BASE, ...FREE_REST }, track: '4C', pick: [0], hold: 4 },
+  ...MOVES.map((m, k) => ({
+    // the progress line names the first; the storyboard names each (tools/storyboard.mjs)
+    ...(k ? { join: true, track: m.track } : { set: { teeFree: true }, track: 'Free' }),
+    path: (p) => moveAt(m, p),
+    name: `Free probe: ${m.name.charAt(0).toLowerCase()}${m.name.slice(1)}`,
+    line: m.line,
+    move: 1,
+    hold: m.key === 'all' ? 6 : 5,
+  })),
+  { set: { teeFree: false, teeAngle: 60 }, via: { teeFree: false }, track: 'MC', pick: [0], move: 2, hold: 4 },
+  { set: { teeAngle: 85 }, track: '2C', pick: [0], move: 2, hold: 4 },
+  { set: { teeAngle: 140 }, track: 'LAX', pick: [0], hold: 4 },
+  { set: { teeTurn: 'right', teeAngle: 120 }, track: 'AV LAX', pick: [0], hold: 4 },
+  { set: { teeLevel: 'ue', teeAngle: 95 }, track: 'Asc LAX', pick: [0], hold: 4 },
+  { set: { teeAngle: 5 }, track: 'Asc SAX', pick: [0], hold: 4 },
+  { set: { teeLevel: 'me', teeAngle: 30 }, track: 'AV SAX', pick: [0], hold: 4 },
+  { set: { teeAngle: 55 }, track: 'RV in-out', pick: [0], move: 2, hold: 4 },
+  { set: { teeAngle: 95 }, track: 'Bicaval', pick: [0], move: 2, hold: 4 },
+  { set: { teeTurn: 'left', teeAngle: 105 }, track: 'LAA', pick: [0], hold: 4 },
+  { set: { teeLevel: 'tg', teeTurn: 'mid', teeAngle: 10 }, track: 'TG SAX', pick: [0], hold: 4 },
+  { set: { teeAngle: 90 }, track: 'TG 2C', pick: [0], hold: 4 },
+  { set: { teeTurn: 'left', teeAngle: 0 }, track: 'Desc SAX', pick: [0], hold: 4 },
+  { set: { teeAngle: 90 }, track: 'Desc LAX', pick: [0], hold: 4 },
+  { set: { teeLevel: 'ue', teeTurn: 'mid', teeAngle: 0 }, track: 'Arch LAX', pick: [0], hold: 4 },
+  { set: { teeAngle: 70 }, track: 'Arch SAX', pick: [0], hold: 4 },
+];
+
 export const VIDEOS = {
   // 01: the tour raises the frequency from 2 to 7 MHz, then turns time gain compensation on
   pulse: {
@@ -543,34 +590,7 @@ export const VIDEOS = {
     pane: '',
     side: false,
     quant: { teeAngle: 1 },
-    steps: [
-      { set: { teeLevel: 'me', teeTurn: 'mid', teeFree: false, teeBase: FREE_BASE, ...FREE_REST }, track: '4C', pick: [0], hold: 4 },
-      ...MOVES.map((m, k) => ({
-        // the progress line names the first; the storyboard names each (tools/storyboard.mjs)
-        ...(k ? { join: true, track: m.track } : { set: { teeFree: true }, track: 'Free' }),
-        path: (p) => moveAt(m, p),
-        name: `Free probe: ${m.name.charAt(0).toLowerCase()}${m.name.slice(1)}`,
-        line: m.line,
-        move: 1,
-        hold: m.key === 'all' ? 6 : 5,
-      })),
-      { set: { teeFree: false, teeAngle: 60 }, via: { teeFree: false }, track: 'MC', pick: [0], move: 2, hold: 4 },
-      { set: { teeAngle: 85 }, track: '2C', pick: [0], move: 2, hold: 4 },
-      { set: { teeAngle: 140 }, track: 'LAX', pick: [0], hold: 4 },
-      { set: { teeTurn: 'right', teeAngle: 120 }, track: 'AV LAX', pick: [0], hold: 4 },
-      { set: { teeLevel: 'ue', teeAngle: 95 }, track: 'Asc LAX', pick: [0], hold: 4 },
-      { set: { teeAngle: 5 }, track: 'Asc SAX', pick: [0], hold: 4 },
-      { set: { teeLevel: 'me', teeAngle: 30 }, track: 'AV SAX', pick: [0], hold: 4 },
-      { set: { teeAngle: 55 }, track: 'RV in-out', pick: [0], move: 2, hold: 4 },
-      { set: { teeAngle: 95 }, track: 'Bicaval', pick: [0], move: 2, hold: 4 },
-      { set: { teeTurn: 'left', teeAngle: 105 }, track: 'LAA', pick: [0], hold: 4 },
-      { set: { teeLevel: 'tg', teeTurn: 'mid', teeAngle: 10 }, track: 'TG SAX', pick: [0], hold: 4 },
-      { set: { teeAngle: 90 }, track: 'TG 2C', pick: [0], hold: 4 },
-      { set: { teeTurn: 'left', teeAngle: 0 }, track: 'Desc SAX', pick: [0], hold: 4 },
-      { set: { teeAngle: 90 }, track: 'Desc LAX', pick: [0], hold: 4 },
-      { set: { teeLevel: 'ue', teeTurn: 'mid', teeAngle: 0 }, track: 'Arch LAX', pick: [0], hold: 4 },
-      { set: { teeAngle: 70 }, track: 'Arch SAX', pick: [0], hold: 4 },
-    ],
+    steps: TEE_FREE ? TEE_ALL : TEE_BASIC,
   },
 };
 

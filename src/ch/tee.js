@@ -19,7 +19,7 @@ import { loadModel } from '../model3d.js';
 import { sharedStage } from '../gl/shared.js';
 import { Fan, rgb } from '../gl/fans.js';
 import { TeeScene } from '../gl/teeprobe3d.js';
-import { STD, LEVELS, slotViews, slotFrame, viewAt, planeAt, teeAnatomy, framesOf, probePath, maneuver, mixFrames, freeFrame, FACE } from '../teeviews.js';
+import { STD, LEVELS, slotViews, slotFrame, viewAt, planeAt, teeAnatomy, framesOf, probePath, maneuver, pathMix, pathGap, freeFrame, FACE } from '../teeviews.js';
 import { FREE_BASE, FREE_REST, MOVES, HOW, moveAt } from '../teemoves.js';
 import { reducedMotion } from '../state.js';
 import { MONO } from '../sketch.js';
@@ -90,6 +90,7 @@ const LABELS = [['la', 'LA'], ['ra', 'RA'], ['lv', 'LV'], ['rv', 'RV'], ['mv', '
   ['ias', 'IAS'], ['lvot', 'LVOT'], ['rvot', 'RVOT'], ['teeLaa', 'LAA'], ['teeAsc', 'Asc Ao'], ['teeDesc', 'Desc Ao'], ['teeArch', 'Arch'], ['teeSvc', 'SVC'], ['teeIvc', 'IVC'], ['rpa', 'RPA'], ['mpa', 'PA']];
 const SNAP = 6;          // degrees: a drag that stops this near a view's angle (or in its range) snaps to it
 const JUMP = 700;        // ms: the probe moves to a new level or turn, or across a jump of the angle, in this time
+const MOVE_CM = 60, MOVE_MAX = 1200;   // ms: and longer on a long way along the esophagus, 60 ms a cm, to 1.2 s at most
 const STEP_MAX = 8;      // degrees: a larger change of the angle at once is a jump; a smaller one shows at once
 // the free probe's controls (cm, then degrees), and how far the probe moves at once before it is a
 // jump (the button back to the view, a switch): beyond 1 cm or 10 degrees
@@ -102,7 +103,8 @@ let st = null, setState = null, on = false, scene3d = null, fan = null;
 // the heart shown: its anatomy (teeviews.js), the views' probe frames, the probe's path
 let G = null, frames = null, path = null, gVer = -1;
 // the probe shown (frame, angle, depth), and a jump in progress: from the probe shown when it began,
-// toward the controls, over JUMP ms of performance.now() (the clock of the chapter videos too)
+// toward the controls, along the probe's path, over move.dur ms of performance.now() (the clock of
+// the chapter videos too)
 let cur = null, move = null, lastKey = '', lastAng = null, lastNow = 0, lastT = null;
 
 // ---------------------------------------------------------------- the views
@@ -199,25 +201,27 @@ function onFrame(stg) {
   // everything after a gap in the frames (a hidden tab, or a chapter video drawn at one moment)
   const key = `${st.teeLevel}|${st.teeTurn}|${gVer}`, gap = now - lastNow > 250;
   if (gap) move = null;
-  else if (cur && !reducedMotion && (key !== lastKey || Math.abs(st.teeAngle - lastAng) > STEP_MAX || (lastT && far(lastT.f, T.f)))) move = { from: cur, t0: now };
+  else if (cur && !reducedMotion && (key !== lastKey || Math.abs(st.teeAngle - lastAng) > STEP_MAX || (lastT && far(lastT.f, T.f)))) {
+    move = { from: cur, t0: now, dur: Math.min(MOVE_MAX, Math.max(JUMP, 400 + MOVE_CM * pathGap(path, cur.f, T.f))) };
+  }
   lastKey = key;
   lastAng = st.teeAngle;
   lastNow = now;
   lastT = T;
   cur = T;
   if (move) {
-    const u = Math.min(1, Math.max(0, (now - move.t0) / JUMP)), e = u * u * (3 - 2 * u), a = move.from;
+    const u = Math.min(1, Math.max(0, (now - move.t0) / move.dur)), e = u * u * (3 - 2 * u), a = move.from;
     if (u >= 1) move = null;
-    else cur = { f: mixFrames(a.f, T.f, e), ang: a.ang + (T.ang - a.ang) * e, depth: a.depth + (T.depth - a.depth) * e };
+    // the probe slides along the esophagus (and into the stomach), turning and flexing on the way
+    else cur = { f: pathMix(path, a.f, T.f, e), ang: a.ang + (T.ang - a.ang) * e, depth: a.depth + (T.depth - a.depth) * e };
   }
   const g = planeAt(cur.f, cur.ang);
   const spec = specFor(st, cur);
   fan.shape(g, spec);
   fan.setRes(stage.pencil.w * stage.pencil.dpr, stage.pencil.h * stage.pencil.dpr);
   scene3d.setRes(stage.pencil.w * stage.pencil.dpr, stage.pencil.h * stage.pencil.dpr);
-  // the shaft: the path from the mouth down to the probe's head
-  const s = path.sOf(cur.f.O.clone().addScaledVector(cur.f.F, -FACE));
-  scene3d.setProbe(cur.f, path.samples.filter((p, i) => (i / (path.samples.length - 1)) * path.length < s - 1.5));
+  // the probe: its head, and the shaft down the path into it (teeviews.js shaftLine)
+  scene3d.setProbe(cur.f, path);
   if (tick++ % 2) return;   // about 30 echo frames a second is enough
   const lab = fig.querySelector('#tee-label');
   if (lab && lab.offsetParent) echo.top = 32 + Math.max(10, lab.offsetHeight);
