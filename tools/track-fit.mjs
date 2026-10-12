@@ -4,10 +4,10 @@
 // For each chapter video (video/chapters.js: the main and the bonus chapters), the tool opens
 // video/chapter.html?ch=<key> and waits for the page as the render does (window.__video.ready:
 // the fonts are in, the names are set and the parts are sized, video/chapter.js). Then it
-// measures each step's name on the progress line. A name whose scrollWidth is larger than its
-// part runs past it, toward the next name, and the check fails. The check also fails if the
-// face of the names (IBM Plex Sans 500, video/fonts) did not load, or if the parts overlap or
-// leave the line.
+// measures each step's name on the progress line. A step that joins the step before (its join)
+// shares that step's part and name. A name whose scrollWidth is larger than its part runs past
+// it, toward the next name, and the check fails. The check also fails if the face of the names
+// (IBM Plex Sans 500, video/fonts) did not load, or if the parts overlap or leave the line.
 // Serve the repository root first: python3 -m http.server 8790
 import { KEYS, VIDEOS } from '../video/chapters.js';
 import { launch, openChapter } from './video-page.mjs';
@@ -45,7 +45,9 @@ let next = 0;
 const lane = async () => {
   while (next < keys.length) {
     const k = keys[next++];
-    const res = { k, problems: [] };
+    // a part for each step, except a step that joins the step before (video/chapter.js)
+    const steps = VIDEOS[k].steps, want = steps.filter((s, i) => !i || !s.join).length;
+    const res = { k, steps: steps.length, problems: [] };
     results.push(res);
     try {
       const { page, info, errors, close } = await openChapter({ ch: k, base, browser });
@@ -53,7 +55,7 @@ const lane = async () => {
       await close();
       Object.assign(res, { num: info.num, name: info.name, ...m, warnings: errors.length });
       if (m.face !== 'loaded') res.problems.push(`the face of the names is ${m.face}, not loaded`);
-      if (m.parts.length !== VIDEOS[k].steps.length) res.problems.push(`${m.parts.length} parts for ${VIDEOS[k].steps.length} steps`);
+      if (m.parts.length !== want) res.problems.push(`${m.parts.length} parts for ${want} (${steps.length} steps)`);
       m.parts.forEach((p, i) => {
         if (p.sw > p.w) res.problems.push(`"${p.name}" ${p.sw} px > ${px(p.w)}`);
         const q = m.parts[i + 1];
@@ -69,7 +71,7 @@ const lane = async () => {
     const clear = P.slice(0, -1).map((p, i) => P[i + 1].x - (p.x + p.tw));
     const wide = P.reduce((a, p) => (!a || p.sw > a.sw ? p : a), null);
     console.log(`${res.k.padEnd(12)} ${String(res.num ?? '').padEnd(3)}`
-      + (P.length ? ` ${String(P.length).padStart(2)} steps · ${sizing} · widest "${wide.name}" ${wide.sw} px` : '')
+      + (P.length ? ` ${String(res.steps).padStart(2)} steps${P.length !== res.steps ? ` in ${P.length} parts` : ''} · ${sizing} · widest "${wide.name}" ${wide.sw} px` : '')
       + (clear.length ? ` · least space between names ${px(Math.min(...clear))}` : '')
       + (res.warnings ? ` · ${res.warnings} console warning(s)` : '')
       + (names && P.length ? `\n  ${P.map((p) => `"${p.name}" ${p.sw}/${Number(p.w.toFixed(1))}`).join(' · ')}` : '')
