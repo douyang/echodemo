@@ -2,6 +2,7 @@
 // and landmarks for labels and echo views.
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { GLTFLoader, MeshoptDecoder } from '../../vendor/three.bundle.min.js';
+import { skirtRefs, skirtShape } from './skirts.js';
 
 // chordae take the valve color without contour slices; the papillary muscles are muscle
 const FLAG = { Myocardium: 0.0, Coronaries: 0.5, MitralValve: 0.25, TricuspidValve: 0.25, AorticValve: 0.25, PulmonaryValve: 0.25, MitralChordae: 0.28, TricuspidChordae: 0.28, Papillary: 0.0, Probe: 0.75 };
@@ -125,13 +126,15 @@ export async function loadHeart(url, opts = {}) {
     for (const o of drop) o.parent.remove(o);
     for (const o of add) gltf.scene.add(o);   // both models share one frame
   }
-  // a last change to the meshes before the heart is built (model3d.js: the aortic valve's turn)
+  // a last change to the meshes before the heart is built (model3d.js: the aortic valve's turn),
+  // which may return more for the heart (the valve skirts)
+  let more = {};
   if (opts.prepare) {
     const meshes = {};
     gltf.scene.traverse((o) => { if (o.isMesh) meshes[o.name] = o; });
-    opts.prepare(meshes);
+    more = opts.prepare(meshes) || {};
   }
-  return new Heart(gltf.scene);
+  return new Heart(gltf.scene, more);
 }
 
 /**
@@ -186,7 +189,8 @@ export function turnValve(mesh, c, axis, deg) {
 }
 
 export class Heart {
-  constructor(root) {
+  /** root: the model's scene; more: { skirts, data } of gl/skirts.js hingesFor. */
+  constructor(root, more = {}) {
     this.group = new THREE.Group();
     this.group.add(root);
     this.clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
@@ -214,6 +218,25 @@ export class Heart {
       this.periNormal = normalMaterial(this.clip);
       peri.material = this.periNormal;
     }
+    // the valve skirts: meshes without shape targets, not in this.meshes, so no target is built
+    // on them; setState gives them their shape from the valves and the wall
+    this.skirts = (more.skirts || []).map((sk) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(sk.count * 3), 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(sk.count * 3), 3));
+      g.setIndex(new THREE.BufferAttribute(sk.index, 1));
+      const mesh = new THREE.Mesh(g);
+      mesh.name = sk.name;
+      mesh.frustumCulled = false;
+      const it = { mesh, data: dataMaterial(FLAG[sk.valve] ?? 0.25, false, this.clip), normal: normalMaterial(this.clip) };
+      mesh.material = it.data;
+      this.items.push(it);
+      root.add(mesh);
+      return { sk, mesh };
+    });
+    this.skirtRefs = skirtRefs(more.skirts || []);
+    this.skirtList = more.skirts || [];
+    this.hingeData = more.data || null;   // what assets/hinges.json keeps (tools/hinges.mjs reads it)
     this._buildCaps();
     this.setState(0, 0, 0);
   }
@@ -280,6 +303,49 @@ export class Heart {
       } else if (dict.leaflets !== undefined) inf[dict.leaflets] = VALVES.includes(name) ? v : 0;
       for (const [key, w] of Object.entries(phenoWeights(Object.keys(dict), P, s, lw))) inf[dict[key]] = w;
     }
+    this.shapeSkirts();
+  }
+
+  /** The skirts' shape (gl/skirts.js) from the valves and the wall, as the shader morphs them. */
+  shapeSkirts() {
+    if (!this.skirts || !this.skirts.length) return;
+    // the same shape weights as last time: the same skirts
+    const key = Object.keys(this.skirtRefs).map((name) => (this.meshes[name] ? (this.meshes[name].morphTargetInfluences || []).join(',') : '')).join('|');
+    if (key === this.skirtKey) return;
+    this.skirtKey = key;
+    const pos = {};
+    for (const [name, ids] of Object.entries(this.skirtRefs)) pos[name] = this.morphedAt(name, ids);
+    for (const { sk, mesh } of this.skirts) {
+      if (!pos[sk.valve] || !pos.Myocardium) continue;
+      const { position, normal } = mesh.geometry.attributes;
+      skirtShape(sk, pos[sk.valve], pos.Myocardium, position.array, normal.array);
+      position.needsUpdate = true;
+      normal.needsUpdate = true;
+    }
+  }
+
+  /**
+   * The positions of vertices ids of mesh name with its morph influences now (the targets are
+   * changes from the base), in an array of the mesh's size that holds only those vertices.
+   */
+  morphedAt(name, ids) {
+    const mesh = this.meshes[name];
+    if (!mesh) return null;
+    const g = mesh.geometry, base = g.attributes.position.array;
+    this.skirtPos = this.skirtPos || {};
+    const out = this.skirtPos[name] && this.skirtPos[name].length === base.length ? this.skirtPos[name] : (this.skirtPos[name] = new Float32Array(base.length));
+    const T = g.morphAttributes.position || [], inf = mesh.morphTargetInfluences || [], on = [];
+    for (let k = 0; k < T.length; k++) if (inf[k]) on.push([T[k].array, inf[k]]);
+    const rel = g.morphTargetsRelative !== false;
+    for (const i of ids) {
+      const bx = base[3 * i], by = base[3 * i + 1], bz = base[3 * i + 2];
+      let x = bx, y = by, z = bz;
+      for (const [t, w] of on) {
+        if (rel) { x += w * t[3 * i]; y += w * t[3 * i + 1]; z += w * t[3 * i + 2]; } else { x += w * (t[3 * i] - bx); y += w * (t[3 * i + 1] - by); z += w * (t[3 * i + 2] - bz); }
+      }
+      out[3 * i] = x; out[3 * i + 1] = y; out[3 * i + 2] = z;
+    }
+    return out;
   }
 
   /** plane: THREE.Plane in world space, or null for the whole heart. */

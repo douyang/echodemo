@@ -9,14 +9,19 @@ export function loadModel() {
     modelP = (async () => {
       // the model's files download beside the modules that read them, not after them (index.html
       // may have started them already: a preload that these fetches take over)
-      const HEART = 'assets/heart.json', VALVES = 'assets/valves.json';
+      const HEART = 'assets/heart.json', VALVES = 'assets/valves.json', HINGES = 'assets/hinges.json';
       const early = { [HEART]: fetch(HEART), [VALVES]: fetch(VALVES) };
       for (const f of Object.values(early)) f.catch(() => {});   // a failure surfaces in loadHeart, not before
-      const [{ loadHeart, Anatomy, turnValve }, { bendPA }, RVD, { openPosteriorLeaflet }, doc] = await Promise.all([
+      // the valve hinges found once on the model (gl/skirts.js, tools/hinges.mjs); without them
+      // the loader finds them again (a few tenths of a second)
+      const hingesP = fetch(HINGES).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const [{ loadHeart, Anatomy, turnValve, leafletWeights }, { bendPA }, RVD, { openPosteriorLeaflet }, { hingesFor }, hinges, doc] = await Promise.all([
         import('./gl/heart.js'),
         import('./gl/pabend.js'),
         import('./gl/rvdetail.js'),
         import('./gl/mvopen.js'),
+        import('./gl/skirts.js'),
+        hingesP,
         fetch('assets/anatomy.json').then((r) => {
           if (!r.ok) throw new Error(`anatomy: HTTP ${r.status}`);
           return r.json();
@@ -40,6 +45,10 @@ export function loadModel() {
         RVD.trabeculate(meshes, anat);
         RVD.holdPapillary(meshes);
         openPosteriorLeaflet(meshes, anat);
+        // every valve's hinge on the wall (gl/skirts.js): the tricuspid ring out to the RA-RV
+        // junction where it lies far inside it, then a membrane wherever a hinge lies off the wall
+        // (tools/hinges.mjs sets __hingesCompute to find them again for the asset)
+        return hingesFor(meshes, anat, leafletWeights, globalThis.__hingesCompute ? undefined : hinges);
       };
       const heart = await loadHeart(HEART, { valves: VALVES, prepare, early });
       const m = { heart, anat, doc, pheno: { key: 'normal', a: 0, mesh: null, version: 0 }, sizes: normalGeo(doc), built: {} };

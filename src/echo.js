@@ -8,6 +8,7 @@ import { ecg as ecgStrip } from './scope.js';
 import { bmode, DB } from './bmode.js';
 import { reducedMotion } from './state.js';
 import { ABD, buildAbdomen, beneath } from './abdomen.js';
+import { skirtShape, bridges } from './gl/skirts.js';
 import { Liver3D } from './gl/liver3d.js';
 import { pencilProbe, placeProbe } from './gl/probe3d.js';
 
@@ -581,6 +582,9 @@ export class EchoView {
     this.pap = h.meshes.Papillary ? new MeshData(h.meshes.Papillary) : null;
     this.peri = h.meshes.Pericardium ? new MeshData(h.meshes.Pericardium) : null;
     this.cor = h.meshes.Coronaries ? new MeshData(h.meshes.Coronaries) : null;
+    // the valve skirts (gl/skirts.js), each with its own shape for this view's frames; the section
+    // walk of MeshData reads pos, sd, index, count and capFrom
+    this.skirts = (h.skirtList || []).map((sk) => ({ sk, pos: new Float32Array(sk.count * 3), sd: new Float32Array(sk.count), index: sk.index, count: sk.count, rest: null, capFrom: Infinity }));
     // below the heart: liver, veins, abdominal aorta and spine (they do not move with the beat)
     this.abd = {};
     for (const [k, m] of Object.entries(buildAbdomen(h))) { const md = new MeshData(m); md.morph({}); this.abd[k] = md; }
@@ -1177,6 +1181,25 @@ export class EchoView {
       // one that its view leaves out (views.js hide; the chordae below too)
       if ((this.hideValves && this.hideValves.has(vd.mesh.name)) || viewHide.includes(vd.mesh.name)) continue;
       for (const L of vd.section(g)) { L.valve = vd.mesh.name; valves.push(L); }
+    }
+    // the valve skirts: a valve's hinge joined to the wall where the model leaves a gap, cut as
+    // valve tissue under the skirt's own name, so a hinge or a leaflet found by the valve's name
+    // is still the valve's own; a skirt goes where its valve goes. Only a loop that joins the
+    // valve to the wall on this plane shows (skirts.js bridges). skirt marks the loops that the
+    // measurements leave out (meshjet.js segments)
+    const ownOf = {};
+    for (const S of this.skirts) {
+      const vd = this.valves.find((v) => v.mesh.name === S.sk.valve);
+      if (!vd || (this.hideValves && this.hideValves.has(S.sk.valve)) || viewHide.includes(S.sk.valve)) continue;
+      skirtShape(S.sk, vd.pos, this.myo.pos, S.pos);
+      const mine = ownOf[S.sk.valve] || (ownOf[S.sk.valve] = valves.filter((L) => L.valve === S.sk.valve));
+      if (!mine.length) continue;
+      for (const L of MeshData.prototype.section.call(S, g)) {
+        if (!bridges(L.pts, tissue, mine)) continue;
+        L.valve = S.sk.name;
+        L.skirt = true;
+        valves.push(L);
+      }
     }
     // chordae: those in the middle of the slice show brightest
     const chords = [], chordsCore = [];

@@ -18,12 +18,16 @@ export function onPlane(ev, p) {
   return [q[0], q[1]];
 }
 
-/** The section's walls, and with valves the leaflets too, as segments [a, b]. */
+/**
+ * The section's walls, and with valves the leaflets too, as segments [a, b]. The valve skirts
+ * (gl/skirts.js) are left out: the chapters' tables were measured without them, and a
+ * measurement closes the gap at a hinge with its own cut (cavity, curtainOf).
+ */
 function segments(ev, valves = true) {
   const segs = [];
   const put = (L) => { const P = L.pts, m = P.length; for (let i = 0; i < m - 1 + (L.closed ? 1 : 0); i++) segs.push([P[i], P[(i + 1) % m]]); };
   for (const W of ev.last.tissue) put(W);
-  if (valves) for (const V of ev.last.valves) put(V);
+  if (valves) for (const V of ev.last.valves) if (!V.skirt) put(V);
   return segs;
 }
 
