@@ -102,6 +102,7 @@
 <link rel="modulepreload" href="src/teemoves.js">
 <link rel="modulepreload" href="vendor/rough.esm.js">
 <link rel="modulepreload" href="src/gl/pencil.js">
+<link rel="modulepreload" href="src/gl/skirts.js">
 <link rel="modulepreload" href="src/gl/probe3d.js">
 <script>
 // a chapter whose figure needs the heart model at once: its files and modules load from the start
@@ -115,7 +116,7 @@
     if (as) { l.as = as; l.crossOrigin = 'anonymous'; }
     document.head.appendChild(l);
   };
-  for (const f of ['assets/anatomy.json', 'assets/heart.json', 'assets/valves.json']) add('preload', f, 'fetch');
+  for (const f of ['assets/anatomy.json', 'assets/heart.json', 'assets/valves.json', 'assets/hinges.json']) add('preload', f, 'fetch');
   for (const f of ['src/gl/pabend.js', 'src/gl/rvdetail.js', 'src/gl/mvopen.js', 'src/gl/phenomesh.js', 'src/echo.js', 'src/gl/liver3d.js']) add('modulepreload', f);
 })();
 </script>

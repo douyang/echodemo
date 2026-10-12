@@ -72,6 +72,7 @@ Hidden chapters keep their code and come back with a flag in `src/order.js`: the
 ## How it works
 
 - **One heart.** One heart mesh, one set of view planes, one echo renderer and one cycle model serve every chapter. Every chapter but 08 cuts its echo views from the mesh. A chapter's disease is a shape target on the mesh, weighted so that the image shows the size that the text prints (the `*cal.js` tables). The mesh, the pencil renderer and the 3D stage come from *The Amyloid Heart*.
+- **Valve hinges.** The valve model leaves gaps between some leaflet hinges and the walls. For example, it has no aortomitral curtain between the anterior mitral leaflet and the aortic root. Membranes join each hinge to the wall in the echo views and in the 3D model (`src/gl/skirts.js`). At the mitral and tricuspid annuli, the aortomitral curtain among them, a membrane is wall: it has the wall's echo and 3D look and the atrial wall's thickness (2.8 mm on the left, 3.2 mm on the right). At an aortic or pulmonary cusp it is thin valve tissue. The tricuspid ring sits at the RA–RV junction. The measurements leave the membranes out, so the `*cal.js` tables stay valid. `tools/hinges.mjs` finds the hinges once and keeps them in `assets/hinges.json`.
 - **Echo images.** `src/bmode.js` forms every frame: echogenicity by structure, specular surfaces, speckle that moves with the wall, beam blur, near-field clutter, noise, time-gain and log compression. Color jets come from a model of their flow (`jet()` in `src/echo2d.js`). A scanner-style color format is kept and off (`JETS` in `src/jets.js`).
 - **Values.** Each severity page runs a one-slider model set inside the guideline bands. It rounds each value to its printed decimals and grades from the rounded values, so a value on screen never contradicts its grade (`shown` in `src/sev.js`). Each page models one lesion, as the guidelines grade one lesion at a time.
 - **State.** One store (`src/state.js`) holds each chapter's own keys and a few shared keys (`SHARED`). A chapter's controls and Play change only its own keys.
@@ -110,7 +111,7 @@ src/music.js      the site's sound (Web Audio)
 src/norms.js      normal values and integrated grades
 src/refs.js       references
 src/idbcache.js   the model's fields in IndexedDB, from one visit to the next
-assets/           heart mesh, landmarks, poster, favicon
+assets/           heart mesh, landmarks, valve hinges, poster, favicon
 video/            the views video, the chapter videos and the intro
 tools/            checks and video tools; tools/score/ the soundtracks (Python)
 archive/          markup of hidden chapters, not loaded by the site
@@ -121,8 +122,10 @@ archive/          markup of hidden chapters, not loaded by the site
 | Command | What it checks |
 | --- | --- |
 | `node tools/check-state.mjs` | Each chapter changes only its own state keys |
-| `node tools/preload.mjs --check` | The preload block of `index.html` lists every module (94) |
+| `node tools/preload.mjs --check` | The preload block of `index.html` lists every module (95) |
 | `node tools/stress-volumes.mjs --check` | Chapter 12's stored LV volumes match the mesh |
+| `node tools/hinges.mjs --check` | The stored valve hinges (`assets/hinges.json`) match the model |
+| `node --input-type=module --check < src/echo.js` | A module parses (`node --check src/echo.js` does not check ES modules in `.js` files) |
 | `node tools/loadtime.mjs [keys]` | The load time of each chapter |
 | `node tools/track-fit.mjs` | Each step name fits its part of a chapter video's progress line |
 
@@ -130,7 +133,7 @@ Before a merge, every chapter is opened in Chromium at phone and desktop sizes. 
 
 ## Load time
 
-Every chapter loads about 115 files: 7.9 MB, or 4.1 MB with gzip, of which the heart model is 2.3 MB. Five changes cut the wait: grade bands built on first use, one chapter warmed at a time, a stored table of the stress volumes, `modulepreload` links with an early model download, and the model's fields kept in IndexedDB. In local tests the median first image fell from 2.92 s to 1.98 s. A next visit shows the heaviest chapters in 0.96 to 1.18 s.
+Every chapter loads about 115 files: 7.9 MB, or 4.1 MB with gzip, of which the heart model is 2.3 MB. The valve hinges add 147 KB, or 30 KB with gzip. Five changes cut the wait: grade bands built on first use, one chapter warmed at a time, a stored table of the stress volumes, `modulepreload` links with an early model download, and the model's fields kept in IndexedDB. In local tests the median first image fell from 2.92 s to 1.98 s. A next visit shows the heaviest chapters in 0.96 to 1.18 s.
 
 ## Videos
 

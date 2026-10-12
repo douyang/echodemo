@@ -753,7 +753,8 @@ function moveFrame(ctx) {
 function growFrame(ctx) {
   if (ctx.grows) return ctx.grows;
   const { meshes, anat, REG, mpos, nMyo } = ctx;
-  const g = meshes.TricuspidValve.geometry, p = g.attributes.position.array;
+  // the ring's place before the tricuspid fit (gl/skirts.js) moved parts of it out to the junction
+  const g = meshes.TricuspidValve.geometry, p = meshes.TricuspidValve.userData.prefit || g.attributes.position.array;
   const part = parts(p.length / 3, g.index.array);
   const cnt = new Map();
   for (let i = 0; i < part.length; i++) cnt.set(part[i], (cnt.get(part[i]) || 0) + 1);

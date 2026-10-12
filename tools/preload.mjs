@@ -38,7 +38,7 @@ const page = closure([path.join(ROOT, 'src/main.js')]);
 // the modules that the heart model's loader and the offscreen views import when they first run
 const model = closure(['src/model3d.js', 'src/scanner.js'].flatMap((f) => importsOf(path.join(ROOT, f), DYNAMIC)), new Set(page));
 const chapters = CHAPTERS.filter((c) => c.model).map((c) => c.key);
-const FILES = ['assets/anatomy.json', 'assets/heart.json', 'assets/valves.json'];
+const FILES = ['assets/anatomy.json', 'assets/heart.json', 'assets/valves.json', 'assets/hinges.json'];
 
 const START = '<!-- preload: tools/preload.mjs writes this block -->';
 const END = '<!-- /preload -->';
