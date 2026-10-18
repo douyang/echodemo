@@ -150,8 +150,8 @@ export function momentOf(kind, hr, insp = 0) {
 // contraction and the IVC's caliber
 export const DIS = ['lvSize', 'rvGrow', 'raGrow', 'sep', 'eff', 'effAnt', 'under', 'raIn', 'rvIn', 'swing', 'bob'];
 const smooth = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
-// the ischemic heart starts from its own LVEF (25%, README "The heart shown"): its tracks take
-// the same share of it as the normal heart's take of 62%
+// the ischemic heart starts from its own LVEF (25%, f08774a:README.md "The heart shown"): its
+// tracks take the same share of it as the normal heart's take of 62%
 const EF0 = { icm: 25 };
 const bump = (t, a, b, pk) => (t > a && t < b ? Math.sin(Math.PI * Math.pow((t - a) / (b - a), Math.log(0.5) / Math.log((pk - a) / (b - a)))) : 0);
 

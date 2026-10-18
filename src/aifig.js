@@ -201,9 +201,9 @@ const mix = (a, b, u) => a.map((x, i) => Math.round(x + (b[i] - x) * u));
 const css = (c, a = 1) => (a >= 1 ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`);
 /**
  * The figure's colors from the sheet's tokens, in both themes: the cards on paper-2; the weights
- * from paper-3 (0) to the accent (1). The measurement model's marks are in the InVision teal
- * (invision-brand): #2dc1b3 for the heat maps, the calipers' dots and lines and the frame; on
- * paper, text and outlines in the readable teal #0f766e.
+ * from paper-3 (0) to the accent (1). The measurement model's marks are teal: #2dc1b3 for the
+ * heat maps, the calipers' dots and lines and the frame; on paper, text and outlines in the
+ * readable teal #0f766e.
  */
 const TEAL = '#2dc1b3', TEAL_RGB = [45, 193, 179];
 function palette(t) {

@@ -1,8 +1,8 @@
-"""Shared synthesis engine (instruments and helpers) for InVision films. Everything is synthesized; no samples.
+"""Shared synthesis engine (instruments and helpers) for the video soundtracks. Everything is
+synthesized; no samples.
 
-The reference engine of the InVision sound brand (the invision-sound skill, section 11), as it is
-there, with one change: master() takes the echo's delay time (delay=, default the brand's 0.375 s,
-a dotted eighth at 120 BPM), so a score at another tempo keeps a dotted-eighth echo."""
+master() takes the echo's delay time (delay=, default 0.375 s, a dotted eighth at 120 BPM), so a
+score at another tempo keeps a dotted-eighth echo."""
 import numpy as np
 from scipy import signal
 from scipy.io import wavfile
@@ -23,7 +23,7 @@ MUSIC_R = np.zeros(N)
 
 
 def set_duration(d):
-    """re-size all buses for a film of d seconds (call before reset/place)."""
+    """re-size all buses for a soundtrack of d seconds (call before reset/place)."""
     global DUR, N, L, R, SEND_L, SEND_R, DLY_L, DLY_R, MUSIC_L, MUSIC_R
     DUR = float(d)
     N = int(DUR * SR)
