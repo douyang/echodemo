@@ -582,5 +582,8 @@ export function constrictionFigure(redraw) {
   };
 }
 
-/** The figure's own functions, for the checks of the image against the printed values (README). */
+/**
+ * The figure's own functions, for the checks of the image against the printed values
+ * (f08774a:README.md).
+ */
 export const checks = { meshOf, inflowFn, hvFn, tissueFn, septumLayers, sepShiftCm, BREATH, STRIP };

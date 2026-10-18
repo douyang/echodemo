@@ -18,7 +18,7 @@
 // TABLE holds, for each heart and track, at the slider positions 0, 0.05 ... 1: the strain of the
 // 18 segments at end-systole (%), and the midline's length in each apical view at end-diastole and
 // at end-systole (cm). It also holds the LV volumes by the biplane method of disks (mL). All are
-// measured on the mesh (the method: README, "Checks run before this commit").
+// measured on the mesh (the method: f08774a:README.md, "Checks run before this commit").
 import { tracks } from './sev.js';
 
 const T = {

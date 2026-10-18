@@ -1,18 +1,17 @@
 // Sound for the page, off until the visitor turns it on: music in time with the heart, and cues
-// for what changes on screen. Built to the InVision sound brand (the invision-sound skill): all of
-// it synthesized here, nothing to download.
+// for what changes on screen. All of it is synthesized here, with nothing to download.
 //  - Music: one beat per heartbeat, at the heart rate the page shows (70 a minute; faster in
 //    tamponade). Where the heart on the page beats in real time, the kick falls on its first heart
 //    sound (mitral closure, EV.mvc in cyclemodel.js); a chapter that slows its beat, or shows no
 //    heart, keeps 70 a minute without the lock. C major, I-V-vi-IV (C, G, Am, F), one chord to a
-//    bar of four beats, in the brand's voicings: a pad of five detuned saws, a sine sub on the
-//    root in eighths, a soft kick on every beat, off-beat hats, and the brand's plucked arpeggio
-//    with a dotted-eighth echo. The pad, the sub and the arpeggio dip on each kick. No claps.
-//  - Cues (cue()): a new chapter sounds the brand's rising fourth, G5 then C6 ("value lands");
+//    bar of four beats: a pad of five detuned saws, a sine sub on the root in eighths, a soft
+//    kick on every beat, off-beat hats, and a plucked arpeggio with a dotted-eighth echo. The
+//    pad, the sub and the arpeggio dip on each kick. No claps.
+//  - Cues (cue()): a new chapter sounds a rising fourth, G5 then C6;
 //    smaller changes (a view or a plane set in Views, any switch or tick box, the heart shown, a
 //    grade while a severity page plays) a single soft bell on a note of the chord that plays. A
 //    bell never follows a chapter cue within 0.6 s, nor another bell within 0.25 s.
-// The brand's films run at 120 BPM; this page keeps the heart's tempo, so the beat is the heart.
+// The page keeps the heart's tempo, so the beat is the heart.
 // A click turns the sound on (browsers start sound only after one). iPhone and iPad play Web Audio
 // as ambient sound, which the ring/silent switch mutes (videos play as media, and it does not mute
 // them): the page asks for media playback there (mediaPlayback()).
@@ -26,24 +25,23 @@ const S1 = EV.mvc / RR;          // where the kick falls, as a fraction of the b
 const AHEAD = 0.12;              // s of sound scheduled ahead of the clock, at the least
 const TICK = 25;                 // ms between scheduling passes, when the page keeps up
 const LEVEL = 1.75;              // master level: about -17.5 LUFS with the cues, as the first music
-// The films' groove leans on the kick and the sub, which phone and laptop speakers barely play.
-// Here the pad and the plucks carry the music, a little brighter, over a softer kick and sub: a
-// calm bed that a laptop still plays. With the panned pad and plucks louder, their pans narrow
-// (width) to keep the mix as near mono as the films. The cues stand above the bed in their own
-// band as in the films (the chapter cue as the brand's value cue); the bells sit lower.
+// Phone and laptop speakers barely play a kick and a sub. So the pad and the plucks carry the
+// music, a little brighter, over a softer kick and sub: a calm bed that a laptop still plays.
+// With the panned pad and plucks louder, their pans narrow (width) to keep the mix near mono.
+// The cues stand above the bed in their own band; the bells sit lower.
 const MIX = { kick: 0.16, sub: [0.075, 0.055], hat: 0.06, pluck: [0.08, 0.056], pad: 0.08, cutoff: 2200, width: 0.55 };
 const CUE = { chapter: [0.15, 0.125], bell: 0.09 };
 
-// The brand's chords (score_helpers.py CH, MIDI): the pad's notes, the sub's root, the
-// arpeggio's notes; and the notes a bell may take on each (the brand's single marks: A4, C5, E5, G5;
-// on G, E5 as well as G5, which the G arpeggio plays itself)
+// The chords (MIDI): the pad's notes, the sub's root, the arpeggio's notes; and the notes a bell
+// may take on each (from A4, C5, E5 and G5; on G, E5 as well as G5, which the G arpeggio plays
+// itself)
 const CHORDS = [
   { pad: [48, 52, 55, 60, 64], root: 36, arp: [72, 76, 79, 83, 84], bell: [79, 76] },   // C
   { pad: [43, 50, 55, 59, 62], root: 31, arp: [67, 71, 74, 79, 83], bell: [76, 79] },   // G
   { pad: [45, 52, 57, 60, 64], root: 33, arp: [69, 72, 76, 79, 81], bell: [76, 69] },   // Am
   { pad: [41, 48, 53, 57, 60], root: 29, arp: [65, 69, 72, 76, 77], bell: [72, 69] },   // F
 ];
-const ARP = [0, 2, 1, 3, 2, 4, 3, 1];   // the brand's arpeggio, one note per eighth
+const ARP = [0, 2, 1, 3, 2, 4, 3, 1];   // the arpeggio, one note per eighth
 const hz = (m) => 440 * 2 ** ((m - 69) / 12);
 
 let ctx = null, out = null, music = null, verb = null, echo = null, echoTaps = [], noise = null;
@@ -122,8 +120,8 @@ export async function setMusic(want) {
 }
 
 /**
- * A cue for a change on screen, while the sound is on: 'chapter' (the brand's rising fourth,
- * G5 then C6) or 'bell' (one soft chime on a note of the chord that plays).
+ * A cue for a change on screen, while the sound is on: 'chapter' (a rising fourth, G5 then C6)
+ * or 'bell' (one soft chime on a note of the chord that plays).
  */
 export function cue(kind) {
   if (!ctx || !playing || ctx.state !== 'running') return;
@@ -164,7 +162,7 @@ function build() {
   ctx = new AC();
   out = ctx.createGain();
   out.gain.value = 0;
-  // the brand's master: nothing below 28 Hz, then tanh (drive 1.15), here scaled so that nothing
+  // the master: nothing below 28 Hz, then tanh (drive 1.15), here scaled so that nothing
   // passes 0.85 (-1.4 dBFS)
   const hp = filter('highpass', 28), clip = ctx.createWaveShaper(), curve = new Float32Array(2049);
   for (let i = 0; i < curve.length; i++) curve[i] = (0.85 * Math.tanh(1.15 * (i / 1024 - 1))) / Math.tanh(1.15);
@@ -176,7 +174,7 @@ function build() {
   noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
   const d = noise.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = rnd();
-  // the brand's room: 2.6 s of noise dying away (0.62 s decay), 20 ms late, soft above 6 kHz,
+  // the room: 2.6 s of noise dying away (0.62 s decay), 20 ms late, soft above 6 kHz,
   // its return cut below 180 Hz; the music bus sends a quarter of itself
   const sr = ctx.sampleRate, pre = Math.round(0.02 * sr), len = Math.round(2.6 * sr);
   const ir = ctx.createBuffer(2, pre + len, sr);
@@ -194,7 +192,7 @@ function build() {
   const ret = ctx.createGain();
   ret.gain.value = 0.9;
   verb.connect(filter('lowpass', 6000)).connect(conv).connect(filter('highpass', 180)).connect(ret).connect(out);
-  // the brand's echo: a dotted eighth, ping-pong, feedback 0.38, soft above 4.5 kHz
+  // the echo: a dotted eighth, ping-pong, feedback 0.38, soft above 4.5 kHz
   echo = ctx.createGain();
   const dl = ctx.createDelay(2), dr = ctx.createDelay(2), fb = ctx.createGain(), soft = filter('lowpass', 4500), merge = ctx.createChannelMerger(2), eo = ctx.createGain();
   fb.gain.value = 0.38;
@@ -285,7 +283,7 @@ function beat(T, P, k) {
   if (bar === 0) pad(T, C.pad, 4 * P, MIX.cutoff);
 }
 
-/** The brand's kick: a sine falling from 132 to 47 Hz, and a click. */
+/** The kick: a sine falling from 132 to 47 Hz, and a click. */
 function kick(T, peak) {
   const o = osc('sine', 132), g = ctx.createGain();
   o.frequency.setValueAtTime(132, T);
@@ -314,7 +312,7 @@ function hiss(T, type, f, peak, tau, dest, rev = 0) {
 }
 const hat = (T, peak) => hiss(T, 'highpass', 7000, peak, 0.045, out, 0.05);
 
-/** The brand's sub: a sine with a little of its octave, on the music bus. */
+/** The sub: a sine with a little of its octave, on the music bus. */
 function sub(T, m, d, peak) {
   const f = hz(m), a = osc('sine', f), b = osc('sine', 2 * f), bg = ctx.createGain(), g = ctx.createGain();
   bg.gain.value = 0.22;
@@ -328,7 +326,7 @@ function sub(T, m, d, peak) {
   for (const o of [a, b]) { o.start(T); o.stop(T + d + 0.2); }
 }
 
-/** The brand's pluck: two saws 7 cents apart, a bright layer that dies fast over a darker one. */
+/** The pluck: two saws 7 cents apart, a bright layer that dies fast over a darker one. */
 function pluck(T, m, peak, p) {
   const f = hz(m), mix = ctx.createGain(), a = osc('sawtooth', f), b = osc('sawtooth', f * 1.004), ag = ctx.createGain(), bg = ctx.createGain();
   ag.gain.value = 0.6; bg.gain.value = 0.4;
@@ -343,7 +341,7 @@ function pluck(T, m, peak, p) {
   for (const o of [a, b]) { o.start(T); o.stop(T + 1.1); }
 }
 
-/** The brand's pad: each note five saws -13 to +13 cents, low-passed, held for the bar. */
+/** The pad: each note five saws -13 to +13 cents, low-passed, held for the bar. */
 function pad(T, notes, d, cutoff) {
   for (const m of notes) {
     const lp = filter('lowpass', cutoff), g = ctx.createGain(), peak = MIX.pad;
@@ -366,7 +364,7 @@ function pad(T, notes, d, cutoff) {
 }
 
 /**
- * The brand's bell (FM): a sine at f, its frequency swung by a sine at 3.5 f (index 2.2, dying
+ * The bell (FM): a sine at f, its frequency swung by a sine at 3.5 f (index 2.2, dying
  * away over 0.25 s), dying away over 0.42 s, with its octave; into the reverb.
  */
 function chime(T, f, peak, p, dur) {
