@@ -114,7 +114,7 @@ src/refs.js       references
 src/idbcache.js   the model's fields in IndexedDB, from one visit to the next
 assets/           heart mesh, landmarks, valve hinges, poster, favicon
 video/            the views video, the chapter videos and the intro
-tools/            checks and video tools; tools/score/ the soundtracks (Python)
+tools/            checks and video tools; tools/score/ the soundtracks (Python); tools/tavr-video/ the TAVR procedure video (Blender)
 archive/          markup of hidden chapters, not loaded by the site
 ```
 
@@ -138,11 +138,12 @@ Every chapter loads about 115 files: 7.9 MB, or 4.1 MB with gzip, of which the h
 
 ## Videos
 
-The site's own code draws every video in headless Chromium. The soundtrack is *Bright pulse* (`tools/score/pulse.py`), synthesized with the InVision sound engine at −15 LUFS. The videos go to `video/out/`, which git ignores.
+The site's own code draws every video in headless Chromium; only the model shots of the TAVR procedure video come from Blender. The soundtrack is *Bright pulse* (`tools/score/pulse.py`), synthesized with the InVision sound engine at −15 LUFS. The videos go to `video/out/`, which git ignores.
 
 - **Views video** (`video/index.html`): the standard views of 04 in three panes. Cut A, the full tour (2:24); B, the core views with the nine planes (1:09), the video of chapter 04; C, a quick cut (0:38); D, vertical (1:06).
 - **Chapter videos** (`video/chapter.html?ch=<key>`): one for each chapter, 0:39 to 2:16. The steps and captions are in `video/chapters.js`.
 - **Intro** (`video/reel.js`): 89 s, a title card, one clip from each of ten chapters, and the end card.
+- **TAVR procedure** (`tools/tavr-video/`): 84 s, a transfemoral TAVR in Blender (Cycles) with the TEE views of the TAVR and TEE chapters, in the frame of the chapter videos. The build is in `tools/tavr-video/README.md`.
 
 Serve the repository root on port 8790, then:
 
