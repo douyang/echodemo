@@ -365,7 +365,7 @@ export default {
    "key": "septum",
    "name": "Transseptal puncture",
    "track": "Puncture",
-   "need": 22.887,
+   "need": 23.57,
    "lines": [
     {
      "text": "From the femoral vein, the transseptal sheath comes up to the right atrium, and its needle tents the fossa ovalis.",
@@ -582,88 +582,98 @@ export default {
      ]
     },
     {
-     "text": "The four-chamber view gives its height above the annulus: for primary MR, 4 to 5 cm.",
-     "dur": 7.04,
+     "text": "The four-chamber view gives its height above the annulus: for a flail leaflet, about 4.5 to 5 cm.",
+     "dur": 7.723,
      "words": [
       [
        "The",
-       0.013,
-       0.067
+       0.017,
+       0.083
       ],
       [
        "four-chamber",
-       0.105,
-       0.707
+       0.125,
+       0.746
       ],
       [
        "view",
-       0.775,
-       0.985
+       0.815,
+       1.025
       ],
       [
        "gives",
-       1.046,
-       1.254
+       1.088,
+       1.312
       ],
       [
        "its",
-       1.313,
-       1.447
+       1.37,
+       1.49
       ],
       [
        "height",
-       1.503,
-       1.737
+       1.547,
+       1.813
       ],
       [
        "above",
-       1.792,
-       2.048
+       1.878,
+       2.182
       ],
       [
        "the",
-       2.11,
-       2.23
+       2.247,
+       2.353
       ],
       [
        "annulus:",
-       2.294,
-       2.706
+       2.414,
+       2.826
       ],
       [
        "for",
-       3.363,
-       3.457
+       2.993,
+       3.527
       ],
       [
-       "primary",
-       3.503,
-       3.777
+       "a",
+       3.72,
+       3.77
       ],
       [
-       "MR,",
-       3.965,
-       4.345
+       "flail",
+       3.814,
+       4.086
       ],
       [
-       "4",
-       4.59,
-       5.37
+       "leaflet,",
+       4.16,
+       4.64
+      ],
+      [
+       "about",
+       4.732,
+       5.148
+      ],
+      [
+       "4.5",
+       5.265,
+       5.825
       ],
       [
        "to",
-       5.469,
-       5.568
+       6.004,
+       6.232
       ],
       [
        "5",
-       5.568,
-       5.972
+       6.232,
+       6.668
       ],
       [
        "cm.",
-       6.105,
-       6.235
+       6.759,
+       7.141
       ]
      ],
      "clip": "septum-2.wav",
@@ -923,7 +933,7 @@ export default {
    "key": "align",
    "name": "Alignment",
    "track": "Align",
-   "need": 17.916,
+   "need": 18.577,
    "lines": [
     {
      "text": "Above the valve, the arms open to 180°, and the clip turns until they are perpendicular to the line of coaptation.",
@@ -1095,63 +1105,68 @@ export default {
      ]
     },
     {
-     "text": "In the commissural view, the two aligned arms show as one.",
-     "dur": 3.776,
+     "text": "In the commissural view, the aligned arms show edge-on, as one line.",
+     "dur": 4.437,
      "words": [
       [
        "In",
-       0.04,
-       0.12
+       0.035,
+       0.105
       ],
       [
        "the",
-       0.177,
-       0.243
+       0.157,
+       0.223
       ],
       [
        "commissural",
-       0.281,
-       0.699
+       0.261,
+       0.679
       ],
       [
        "view,",
-       0.758,
-       0.982
+       0.737,
+       0.962
       ],
       [
        "the",
-       1.49,
-       1.54
-      ],
-      [
-       "two",
-       1.57,
-       1.69
+       1.43,
+       1.48
       ],
       [
        "aligned",
-       1.743,
-       2.017
+       1.5,
+       1.74
       ],
       [
        "arms",
-       2.108,
-       2.512
+       1.818,
+       2.162
       ],
       [
        "show",
-       2.622,
-       2.878
+       2.265,
+       2.535
+      ],
+      [
+       "edge-on,",
+       2.608,
+       3.085
       ],
       [
        "as",
-       2.97,
-       3.07
+       3.27,
+       3.45
       ],
       [
-       "one.",
-       3.16,
-       3.32
+       "one",
+       3.567,
+       3.673
+      ],
+      [
+       "line.",
+       3.745,
+       4.015
       ]
      ],
      "clip": "align-2.wav",
@@ -1411,7 +1426,7 @@ export default {
    "key": "assess",
    "name": "Closing and assessment",
    "track": "Assess",
-   "need": 20.563,
+   "need": 20.413,
    "lines": [
     {
      "text": "The long-axis and commissural views confirm both leaflets in the clip.",
@@ -1605,8 +1620,8 @@ export default {
      ]
     },
     {
-     "text": "The mean gradient is 3.5 mmHg; under 5 is acceptable.",
-     "dur": 5.803,
+     "text": "The mean gradient is 3.5 mmHg, under the target of 5.",
+     "dur": 5.653,
      "words": [
       [
        "The",
@@ -1625,38 +1640,43 @@ export default {
       ],
       [
        "is",
-       0.825,
-       1.035
+       0.82,
+       1.02
       ],
       [
        "3.5",
-       1.176,
+       1.158,
        2.252
       ],
       [
-       "mmHg;",
-       2.43,
-       3.391
+       "mmHg,",
+       2.383,
+       3.449
       ],
       [
        "under",
-       4.078,
-       4.222
+       3.554,
+       4.146
       ],
       [
-       "5",
-       4.295,
-       4.625
+       "the",
+       4.247,
+       4.353
       ],
       [
-       "is",
-       4.74,
-       4.86
+       "target",
+       4.41,
+       4.71
       ],
       [
-       "acceptable.",
-       4.941,
-       5.319
+       "of",
+       4.795,
+       4.905
+      ],
+      [
+       "5.",
+       4.998,
+       5.222
       ]
      ],
      "clip": "assess-3.wav",
@@ -1849,7 +1869,7 @@ export default {
    "key": "after",
    "name": "After the procedure",
    "track": "After",
-   "need": 15.503,
+   "need": 15.354,
    "lines": [
     {
      "text": "On TTE, the short-axis view shows the double orifice, and the four-chamber view shows mild residual MR.",
@@ -1949,83 +1969,68 @@ export default {
      ]
     },
     {
-     "text": "Follow-up TTE comes at one day, at 30 days, and at 6 to 12 months.",
-     "dur": 5.269,
+     "text": "A follow-up TTE at 6 months shows how the left ventricle remodels.",
+     "dur": 5.12,
      "words": [
       [
-       "Follow-up",
-       0.023,
-       0.415
+       "A",
+       0.06,
+       0.11
+      ],
+      [
+       "follow-up",
+       0.142,
+       0.605
       ],
       [
        "TTE",
-       0.547,
-       0.943
-      ],
-      [
-       "comes",
-       1.044,
-       1.556
+       0.767,
+       1.163
       ],
       [
        "at",
-       1.665,
-       1.755
-      ],
-      [
-       "one",
-       1.827,
-       1.933
-      ],
-      [
-       "day,",
-       2.007,
-       2.193
-      ],
-      [
-       "at",
-       2.625,
-       2.675
-      ],
-      [
-       "30",
-       2.66,
-       2.86
-      ],
-      [
-       "days,",
-       2.922,
-       3.178
-      ],
-      [
-       "and",
-       3.663,
-       3.757
-      ],
-      [
-       "at",
-       3.81,
-       3.87
+       1.34,
+       1.62
       ],
       [
        "6",
-       3.943,
-       4.117
+       1.797,
+       1.943
       ],
       [
-       "to",
-       4.2,
-       4.25
+       "months",
+       2.01,
+       2.31
       ],
       [
-       "12",
-       4.28,
-       4.6
+       "shows",
+       2.4,
+       2.88
       ],
       [
-       "months.",
-       4.663,
-       4.897
+       "how",
+       2.99,
+       3.19
+      ],
+      [
+       "the",
+       3.27,
+       3.39
+      ],
+      [
+       "left",
+       3.452,
+       3.648
+      ],
+      [
+       "ventricle",
+       3.714,
+       4.266
+      ],
+      [
+       "remodels.",
+       4.344,
+       4.956
       ]
      ],
      "clip": "after-1.wav",

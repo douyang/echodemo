@@ -1,70 +1,300 @@
 {
-  "about": "The voice-over of the MitraClip video (video/chapters.js mitraclip-vo). tools/voice/vo.py speaks each line and times its words into video/vo/mitraclip.js. In a line, [shown|spoken] gives the caption's words and the words the voice says for them. s: the step position (src/ch/mitraclip.js, 0 to 7) at the start and at the end of the line; the device moves between them while the line plays, and holds between lines. Sources: the chapter's references (src/refs.js).",
+  "about": "The voice-over of the MitraClip video (video/chapters.js mitraclip-vo). tools/voice/vo.py speaks each line and times its words into video/vo/mitraclip.js. In a line, [shown|spoken] gives the caption's words and the words the voice says for them. s: the step position (src/ch/mitraclip.js, 0 to 7) at the start and at the end of the line; the device moves between them while the line plays, and holds between lines. refs: the sources of each line, keys of src/refs.js.",
   "voice": "am_michael",
   "speed": 1.0,
   "title": "[MitraClip|Mitra Clip]: edge-to-edge repair of the mitral valve, step by step on [TEE|T E E].",
   "segments": [
     {
-      "key": "before", "name": "Before the procedure", "track": "Before",
+      "key": "before",
+      "name": "Before the procedure",
+      "track": "Before",
       "lines": [
-        { "text": "This patient has severe primary mitral regurgitation from a flail [P2|P two] scallop.", "s": [0, 0] },
-        { "text": "In [systole|sistalee], the free edge of [P2|P two] moves up into the left atrium, and the jet runs along the anterior wall of the atrium.", "s": [0, 0] },
-        { "text": "The surgical risk is high, so the heart team plans a MitraClip.", "s": [0, 0] }
+        {
+          "text": "This patient has severe primary mitral regurgitation from a flail [P2|P two] scallop.",
+          "s": [
+            0,
+            0
+          ],
+          "refs": [
+            "zoghbi2017"
+          ]
+        },
+        {
+          "text": "In [systole|sistalee], the free edge of [P2|P two] moves up into the left atrium, and the jet runs along the anterior wall of the atrium.",
+          "s": [
+            0,
+            0
+          ],
+          "refs": [
+            "zoghbi2017"
+          ]
+        },
+        {
+          "text": "The surgical risk is high, so the heart team plans a MitraClip.",
+          "s": [
+            0,
+            0
+          ],
+          "refs": [
+            "otto2020",
+            "praz2025"
+          ]
+        }
       ]
     },
     {
-      "key": "septum", "name": "Transseptal puncture", "track": "Puncture",
+      "key": "septum",
+      "name": "Transseptal puncture",
+      "track": "Puncture",
       "lines": [
-        { "text": "From the femoral vein, the transseptal sheath comes up to the right atrium, and its needle tents the fossa [ovalis|ovaylis].", "s": [0.5, 1] },
-        { "text": "The bicaval view shows the site from top to bottom, and the short-axis view from front to back.", "s": [1, 1] },
-        { "text": "The [four-chamber|four chamber] view gives its height above the annulus: for primary [MR|M R], [4|four] to [5|five] [cm|centimeters].", "s": [1, 1] }
+        {
+          "text": "From the femoral vein, the transseptal sheath comes up to the right atrium, and its needle tents the fossa [ovalis|ovaylis].",
+          "s": [
+            0.5,
+            1
+          ],
+          "refs": [
+            "fdap100009",
+            "zamorano2011"
+          ]
+        },
+        {
+          "text": "The bicaval view shows the site from top to bottom, and the short-axis view from front to back.",
+          "s": [
+            1,
+            1
+          ],
+          "refs": [
+            "zamorano2011",
+            "little2026"
+          ]
+        },
+        {
+          "text": "The [four-chamber|four chamber] view gives its height above the annulus: for a flail leaflet, about [4.5|four and a half] to [5|five] [cm|centimeters].",
+          "s": [
+            1,
+            1
+          ],
+          "refs": [
+            "little2026"
+          ]
+        }
       ]
     },
     {
-      "key": "steer", "name": "Steering", "track": "Steer",
+      "key": "steer",
+      "name": "Steering",
+      "track": "Steer",
       "lines": [
-        { "text": "After the puncture, the guide crosses into the left atrium.", "s": [1, 1.45] },
-        { "text": "The clip is steered down to the valve, over the origin of the jet at [A2–P2|A two, P two].", "s": [1.45, 2] },
-        { "text": "The commissural view shows its medial-lateral position, and the long-axis view its anterior-posterior position.", "s": [2, 2] }
+        {
+          "text": "After the puncture, the guide crosses into the left atrium.",
+          "s": [
+            1,
+            1.45
+          ],
+          "refs": [
+            "abbottifu2019"
+          ]
+        },
+        {
+          "text": "The clip is steered down to the valve, over the origin of the jet at [A2–P2|A two, P two].",
+          "s": [
+            1.45,
+            2
+          ],
+          "refs": [
+            "abbottg4guide",
+            "zamorano2011"
+          ]
+        },
+        {
+          "text": "The commissural view shows its medial-lateral position, and the long-axis view its anterior-posterior position.",
+          "s": [
+            2,
+            2
+          ],
+          "refs": [
+            "zamorano2011"
+          ]
+        }
       ]
     },
     {
-      "key": "align", "name": "Alignment", "track": "Align",
+      "key": "align",
+      "name": "Alignment",
+      "track": "Align",
       "lines": [
-        { "text": "Above the valve, the arms open to [180°|one hundred eighty degrees], and the clip turns until they are perpendicular to the line of [coaptation|co-aptation].", "s": [2, 3] },
-        { "text": "The [3D|three D] [en face|ahn fahss] view shows the turn.", "s": [3, 3] },
-        { "text": "In the commissural view, the two aligned arms show as one.", "s": [3, 3] }
+        {
+          "text": "Above the valve, the arms open to [180°|one hundred eighty degrees], and the clip turns until they are perpendicular to the line of [coaptation|co-aptation].",
+          "s": [
+            2,
+            3
+          ],
+          "refs": [
+            "abbottifu2019",
+            "abbottg4guide"
+          ]
+        },
+        {
+          "text": "The [3D|three D] [en face|ahn fahss] view shows the turn.",
+          "s": [
+            3,
+            3
+          ],
+          "refs": [
+            "zamorano2011",
+            "little2026"
+          ]
+        },
+        {
+          "text": "In the commissural view, the aligned arms show [edge-on|edge on], as one line.",
+          "s": [
+            3,
+            3
+          ],
+          "refs": [
+            "abbottg4guide"
+          ]
+        }
       ]
     },
     {
-      "key": "grasp", "name": "Grasping", "track": "Grasp",
+      "key": "grasp",
+      "name": "Grasping",
+      "track": "Grasp",
       "lines": [
-        { "text": "With the arms closed to about [60°|sixty degrees], the clip crosses into the left ventricle.", "s": [3, 3.35] },
-        { "text": "About [2 cm|two centimeters] below the valve, the arms open to [120°|one hundred twenty degrees].", "s": [3.35, 3.5] },
-        { "text": "The clip comes back up under the leaflets, and the grippers drop to hold them.", "s": [3.5, 4] }
+        {
+          "text": "With the arms closed to about [60°|sixty degrees], the clip crosses into the left ventricle.",
+          "s": [
+            3,
+            3.35
+          ],
+          "refs": [
+            "abbottifu2019"
+          ]
+        },
+        {
+          "text": "About [2 cm|two centimeters] below the valve, the arms open to [120°|one hundred twenty degrees].",
+          "s": [
+            3.35,
+            3.5
+          ],
+          "refs": [
+            "abbottifu2019"
+          ]
+        },
+        {
+          "text": "The clip comes back up under the leaflets, and the grippers drop to hold them.",
+          "s": [
+            3.5,
+            4
+          ],
+          "refs": [
+            "abbottifu2019"
+          ]
+        }
       ]
     },
     {
-      "key": "assess", "name": "Closing and assessment", "track": "Assess",
+      "key": "assess",
+      "name": "Closing and assessment",
+      "track": "Assess",
       "lines": [
-        { "text": "The long-axis and commissural views confirm both leaflets in the clip.", "s": [4, 4] },
-        { "text": "The arms close until the leaflets meet.", "s": [4, 5] },
-        { "text": "Two thin jets remain, one on each side of the clip: mild [MR|M R].", "s": [5, 5] },
-        { "text": "The mean gradient is [3.5|three point five] [mmHg|millimeters of mercury]; under [5|five] is acceptable.", "s": [5, 5] }
+        {
+          "text": "The long-axis and commissural views confirm both leaflets in the clip.",
+          "s": [
+            4,
+            4
+          ],
+          "refs": [
+            "zamorano2011"
+          ]
+        },
+        {
+          "text": "The arms close until the leaflets meet.",
+          "s": [
+            4,
+            5
+          ],
+          "refs": [
+            "abbottifu2019"
+          ]
+        },
+        {
+          "text": "Two thin jets remain, one on each side of the clip: mild [MR|M R].",
+          "s": [
+            5,
+            5
+          ],
+          "refs": [
+            "zoghbi2019"
+          ]
+        },
+        {
+          "text": "The mean gradient is [3.5|three point five] [mmHg|millimeters of mercury], under the target of [5|five].",
+          "s": [
+            5,
+            5
+          ],
+          "refs": [
+            "little2026"
+          ]
+        }
       ]
     },
     {
-      "key": "release", "name": "Release", "track": "Release",
+      "key": "release",
+      "name": "Release",
+      "track": "Release",
       "lines": [
-        { "text": "The clip is released, and the delivery system and the guide come back through the septum.", "s": [5, 6.3] },
-        { "text": "Color Doppler shows a small left-to-right shunt across the iatrogenic atrial septal defect.", "s": [6.3, 6.3] }
+        {
+          "text": "The clip is released, and the delivery system and the guide come back through the septum.",
+          "s": [
+            5,
+            6.3
+          ],
+          "refs": [
+            "abbottifu2019"
+          ]
+        },
+        {
+          "text": "Color Doppler shows a small left-to-right shunt across the iatrogenic atrial septal defect.",
+          "s": [
+            6.3,
+            6.3
+          ],
+          "refs": [
+            "schueler2015"
+          ]
+        }
       ]
     },
     {
-      "key": "after", "name": "After the procedure", "track": "After",
+      "key": "after",
+      "name": "After the procedure",
+      "track": "After",
       "lines": [
-        { "text": "On [TTE|T T E], the short-axis view shows the double orifice, and the [four-chamber|four chamber] view shows mild residual [MR|M R].", "s": [7, 7] },
-        { "text": "Follow-up [TTE|T T E] comes at one day, at [30|thirty] days, and at [6|six] to [12|twelve] months.", "s": [7, 7] }
+        {
+          "text": "On [TTE|T T E], the short-axis view shows the double orifice, and the [four-chamber|four chamber] view shows mild residual [MR|M R].",
+          "s": [
+            7,
+            7
+          ],
+          "refs": [
+            "zamorano2011",
+            "zoghbi2019"
+          ]
+        },
+        {
+          "text": "A follow-up [TTE|T T E] at [6|six] months shows how the left ventricle remodels.",
+          "s": [
+            7,
+            7
+          ],
+          "refs": [
+            "zamorano2011"
+          ]
+        }
       ]
     }
   ]

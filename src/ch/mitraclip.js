@@ -889,21 +889,21 @@ function liveOf(k, cite) {
   const h = GEO ? fmt(GEO.height, 1) : '–';
   switch (STEPS[k].key) {
     case 'before':
-      return `<b>Severe primary MR from a flail P2.</b> The free edge of P2 turns into the LA in systole, and an eccentric jet runs away from it, along the anterior wall of the LA. Vena contracta ${fmt(BEFORE.vc, 1)} cm, EROA ${fmt(BEFORE.eroa, 2)} cm²${cite('zoghbi2017')}.`;
+      return `<b>Severe primary MR from a flail P2.</b> The free edge of P2 turns into the LA in systole, and an eccentric jet runs away from it, along the anterior wall of the LA. Vena contracta ${fmt(BEFORE.vc, 2)} cm, EROA ${fmt(BEFORE.eroa, 2)} cm²${cite('zoghbi2017')}.`;
     case 'septum':
-      return `<b>Transseptal puncture.</b> The sheath tents the fossa ovalis, high and toward the back. The bicaval view shows superior and inferior, the short-axis view anterior and posterior; the four-chamber view gives the height above the annulus, ${h} cm here. For primary MR the target is 4.0–5.0 cm${cite('abbottg4guide')}.`;
+      return `<b>Transseptal puncture.</b> The sheath tents the fossa ovalis, high and toward the back. The bicaval view shows superior and inferior, the short-axis view anterior and posterior; the four-chamber view gives the height above the annulus, ${h} cm here. For a flail leaflet the target is about 4.5–5.0 cm${cite('little2026')}.`;
     case 'steer':
       return `<b>Steering.</b> The guide sits across the septum. The clip is steered down to the valve, over the jet's origin at A2–P2. The commissural view shows its medial-lateral position, the long-axis view its anterior-posterior position${cite('zamorano2011')}.`;
     case 'align':
-      return `<b>Alignment.</b> Above the valve the arms open, and the clip turns until the arms are square to the line of coaptation. The 3D en face view shows the turn. In the commissural view the aligned arms show as one line; in the long-axis view both arms show, open${cite('zamorano2011')}.`;
+      return `<b>Alignment.</b> Above the valve the arms open, and the clip turns until the arms are square to the line of coaptation. The 3D en face view shows the turn. In the commissural view the aligned arms show edge-on, as one line; in the long-axis view both arms show, open${cite('abbottg4guide')}.`;
     case 'grasp':
-      return `<b>Grasping.</b> The clip goes into the LV with its arms at 120°, comes back under A2 and P2, the grippers drop and the arms close. The long-axis and commissural views confirm both leaflets in the arms before the clip closes${cite('zamorano2011')}.`;
+      return `<b>Grasping.</b> With its arms at about 60°, the clip crosses into the LV. About 2 cm below the valve the arms open to about 120°, the clip comes back under A2 and P2, and the grippers drop${cite('abbottifu2019')}. The long-axis and commissural views confirm both leaflets in the arms before the clip closes${cite('zamorano2011')}.`;
     case 'assess':
-      return `<b>Assessment before release.</b> Two thin jets remain, one on each side of the clip: mild MR, vena contracta ${fmt(RESID.med, 1)} cm or less${cite('zoghbi2019')}. The mean gradient is ${fmt(MG.after, 1)} mmHg at ${HR} bpm; under 5 mmHg is acceptable${cite('zamorano2011,zoghbi2019')}. The transgastric short axis shows the double orifice.`;
+      return `<b>Assessment before release.</b> Two thin jets remain, one on each side of the clip: mild MR, vena contracta ${fmt(RESID.med, 1)} cm or less${cite('zoghbi2019')}. The mean gradient is ${fmt(MG.after, 1)} mmHg at ${HR} bpm; under 5 mmHg is preferred${cite('little2026')}. The transgastric short axis shows the double orifice.`;
     case 'release':
       return `<b>Release.</b> The clip is released, and the delivery catheter and the guide come back. The puncture leaves an iatrogenic ASD with left-to-right flow; it persisted in 50% of patients at 6 months in one series${cite('schueler2015')}.`;
     default:
-      return `<b>After: TTE.</b> The parasternal short axis shows the double orifice, and the apical four-chamber view the mild residual MR. Mean gradient ${fmt(MG.after, 1)} mmHg at ${HR} bpm. Follow-up TTE: at 1 day, at 30 days and at 6–12 months${cite('zoghbi2019')}.`;
+      return `<b>After: TTE.</b> The parasternal short axis shows the double orifice, and the apical four-chamber view the mild residual MR. Mean gradient ${fmt(MG.after, 1)} mmHg at ${HR} bpm. A TTE at 6 months shows the LV's remodeling${cite('zamorano2011')}.`;
   }
 }
 
@@ -965,8 +965,8 @@ export default {
     const k = stepAt(posOf(s[KEY])), p = poseAt(k), g = GEO;
     const step = STEPS[k].key, after = k >= 5;
     const extra = {
-      before: { k: 'Vena contracta', v: fmt(BEFORE.vc, 1), u: 'cm', flag: true },
-      septum: { k: 'Height above annulus', v: g ? fmt(g.height, 1) : '–', u: 'cm', flag: g ? g.height < 4.0 || g.height > 5.0 : false },
+      before: { k: 'Vena contracta', v: fmt(BEFORE.vc, 2), u: 'cm', flag: true },
+      septum: { k: 'Height above annulus', v: g ? fmt(g.height, 1) : '–', u: 'cm', flag: g ? g.height < 4.5 || g.height > 5.0 : false },
       steer: { k: 'Clip', v: 'above A2–P2', text: true },
       align: { k: 'Arms to coaptation line', v: fmt(90 - p.rot), u: '°' },
       grasp: { k: 'Arms', v: fmt(p.arm), u: '°' },
