@@ -933,10 +933,10 @@ class Composer:
         reg += (img - reg) * m
         blit(fr, Mask(x, y, self.card_edge), RULE, 0.55)
         # the shot's name: the dark frame's ink-3 on a dark picture, the paper's ink-2 where the
-        # picture under it is light (the skin of the groin shots)
+        # picture under it is mid-grey or light (the skin of the groin shots)
         under = img[12:32, 16:320]
         lum = float((under @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean()) / 255
-        k = clamp01((lum - 0.35) / 0.2)
+        k = clamp01((lum - 0.26) / 0.12)
         k = k * k * (3 - 2 * k)
         ink = tuple(a + (b - a) * k for a, b in zip(INK3, PINK2))
         for _, lab, al in parts:

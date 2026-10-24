@@ -143,7 +143,7 @@ The site's own code draws every video in headless Chromium; only the model shots
 - **Views video** (`video/index.html`): the standard views of 04 in three panes. Cut A, the full tour (2:24); B, the core views with the nine planes (1:09), the video of chapter 04; C, a quick cut (0:38); D, vertical (1:06).
 - **Chapter videos** (`video/chapter.html?ch=<key>`): one for each chapter, 0:39 to 2:16. The steps and captions are in `video/chapters.js`.
 - **Intro** (`video/reel.js`): 89 s, a title card, one clip from each of ten chapters, and the end card.
-- **TAVR procedure** (`tools/tavr-video/`): 84 s, a transfemoral TAVR in Blender (Cycles) with the TEE views of the TAVR and TEE chapters, in the frame of the chapter videos. The build is in `tools/tavr-video/README.md`.
+- **TAVR procedure** (`tools/tavr-video/`): 64 s. The TEE views of the TAVR and TEE chapters take most of it: the annulus, the valve's position, its depth as the balloon fills, the leak and effusion checks. Blender (Cycles) shots on a CC0 body show the femoral access, the wires, the delivery and the closure. The frame is the chapter videos'. The build is in `tools/tavr-video/README.md`.
 
 Serve the repository root on port 8790, then:
 
