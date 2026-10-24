@@ -242,10 +242,31 @@ function saxShiftOf(ev, g, tms) {
   // the plane meets the axis where (C + h n - O - k N) . N = 0
   return shown((C[0] - g.O.x) * N[0] + (C[1] - g.O.y) * N[1] + (C[2] - g.O.z) * N[2] + h * nn, 3);
 }
+// The long axis holds the root's axis through the av landmark (teeviews.js), which also moves up
+// to 0.23 cm across that plane in each beat. The plane follows it, so that it cuts the valve
+// through its centre.
+function laxShiftOf(ev, g, tms) {
+  const av = ev.anat.point('av', 0, cycleAt(tms).s);
+  return shown((av.x - g.O.x) * g.n.x + (av.y - g.O.y) * g.n.y + (av.z - g.O.z) * g.n.z, 3);
+}
 
 const HIDE = new Set(['AorticValve']);
-const MESH_LAX = new TeePanel('meavlax', LAX_SPEC, { diseases: ['avSten', 'avThick'], redraw });
+const MESH_LAX = new TeePanel('meavlax', LAX_SPEC, { diseases: ['avSten', 'avThick'], redraw, shift: laxShiftOf });
 const MESH_SAX = new TeePanel('meavsax', SAX_SPEC, { diseases: ['avSten', 'avThick'], redraw, shift: saxShiftOf });
+
+/**
+ * The angle (degrees from ep) of a commissure of the valve. A balloon-expandable valve lands at
+ * any rotation. The model turns both valves so that the long axis crosses each leaflet it cuts 30
+ * degrees from a commissure, where the two leaflets look alike. In the five hearts this puts its
+ * commissures 21 to 24 degrees from those of the native leaflets it draws (tavrmesh.js COMM0).
+ */
+function commOf(F) {
+  const g = planeAt(teeFr.meavlax, BY_KEY.meavlax.angle), N = [g.n.x, g.n.y, g.n.z], { n, ep, eh } = F;
+  // the line on which the long axis crosses the hinge ring's plane
+  const d = [N[1] * n[2] - N[2] * n[1], N[2] * n[0] - N[0] * n[2], N[0] * n[1] - N[1] * n[0]];
+  const cut = Math.atan2(d[0] * eh[0] + d[1] * eh[1] + d[2] * eh[2], d[0] * ep[0] + d[1] * ep[1] + d[2] * ep[2]);
+  return (cut * 180) / Math.PI - 30;
+}
 
 /** How far the valve's leaflets are open (0 shut to 1 open) for the cycle's aortic drive. */
 const openOf = (drive) => Math.min(1, drive / 0.85);
@@ -272,7 +293,7 @@ function procedure(v, t) {
     const apex = ev.anat.point('apex_endo', 0, state.s);
     return tavrItems(F, wall, {
       kind: v.valve, u, drop, system, native: u > 0, open: u >= 1 ? openOf(state.drive.av) : 0,
-      orifice: v.V.eoa / 0.9, apex: [apex.x, apex.y, apex.z],
+      orifice: v.V.eoa / 0.9, apex: [apex.x, apex.y, apex.z], comm: commOf(F),
     }, g);
   };
   o.extraKey = `${v.valve}|${u.toFixed(3)}|${drop.toFixed(3)}|${system}`;

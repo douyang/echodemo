@@ -31,22 +31,23 @@ const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
  * the root's wall narrows it where it meets the wall. leaf: the leaflets' attachment, lowest at
  * each leaflet's middle (base) and highest at the commissures (comm), the height at which they
  * meet shut (coapt) and of their free edges open (open), all above the inflow: inside the
- * annulus (be), above it (se). crimpH: the frame's height crimped. The 26-mm SAPIEN 3 is 27 mm
- * tall crimped and 20 mm expanded (Schymik 2015, Table 1): it shortens as it expands, mostly at
- * its ventricular end, while its outflow stays put (ACC TAVR Handbook, ch. 10). The model gives
- * the self-expanding frame no shortening.
+ * annulus (be), above it (se). Shut, they meet about 0.07 cm above their attachment 30 degrees
+ * from a commissure, so that a long-axis cut there shows them square to the frame. crimpH: the
+ * frame's height crimped. The 26-mm SAPIEN 3 is 27 mm tall crimped and 20 mm expanded (Schymik
+ * 2015, Table 1): it shortens as it expands, mostly at its ventricular end, while its outflow
+ * stays put (ACC TAVR Handbook, ch. 10). The model gives the self-expanding frame no shortening.
  */
 export const DESIGNS = {
   be: { label: 2.6, frameH: 2.0, crimpH: 2.7, base: -0.2, crimpR: 0.3, skirtH: 0.85, profile: [[0, 1.3], [2.0, 1.3]],
-    leaf: { base: 0.35, comm: 1.8, coapt: 1.15, open: 1.7 } },
+    leaf: { base: 0.5, comm: 1.8, coapt: 1.0, open: 1.7 } },
   se: { label: 2.9, frameH: 4.6, crimpH: 4.6, base: -0.3, crimpR: 0.33, skirtH: 1.2, profile: [[0, 1.45], [0.6, 1.38], [1.4, 1.2], [2.6, 1.14], [3.6, 1.45], [4.6, 1.75]],
-    leaf: { base: 1.3, comm: 2.8, coapt: 2.0, open: 2.7 } },
+    leaf: { base: 1.3, comm: 2.8, coapt: 1.86, open: 2.7 } },
 };
 /** The frame's height during deployment (u: 0 crimped, 1 expanded): it shortens as it expands. */
 const heightAt = (D, u) => D.crimpH + (D.frameH - D.crimpH) * smooth(u);
 /** The cm between the frame and the root's wall where the wall narrows it; the native leaflets' thickness. */
 const GAP = 0.03, NATIVE_T = 0.17;
-/** The commissures, native and of the valve (degrees from ep): the valve's posts line up with the native ones. */
+/** The native commissures (degrees from ep); the valve's lie there too unless P.comm turns it. */
 const COMM0 = 90;
 
 // ---------------------------------------------------------------- the root's wall
@@ -132,7 +133,8 @@ function frameR(D, z, phi, wall, u, kind) {
  * ('be' | 'se'), u (deployment, 0 crimped to 1 expanded), drop (cm above its final place, as it
  * crosses), system (the catheter and the wire in place), open (0 shut to 1 open: the cycle's
  * drive), orifice (the open leaflets' orifice, cm²), native (the native leaflets pushed out),
- * apex (world point: the LV apex, where the wire ends) }.
+ * apex (world point: the LV apex, where the wire ends), comm (degrees from ep: a commissure of
+ * the valve) }.
  */
 export function tavrParts(F, wall, P) {
   const { C, n, eh, ep } = F, D = DESIGNS[P.kind], drop = P.drop || 0, u = P.u ?? 1;
@@ -169,7 +171,7 @@ function leaflets(D, R, at, h0, P, u, s) {
   const L = D.leaf, out = [], o = P.open ?? 0, t = 0.05;
   const k = smooth(u);
   for (let j = 0; j < 3; j++) {
-    const p0 = (COMM0 + 120 * j) * DEG, p1 = p0 + 120 * DEG;
+    const p0 = ((P.comm ?? COMM0) + 120 * j) * DEG, p1 = p0 + 120 * DEG;
     out.push({ kind: 'leaflet', mesh: gridMesh(25, 9, (a, b) => {
       const phi = p0 + a * (p1 - p0), mid = Math.abs(2 * a - 1);
       // the attachment: on the frame's inner face, low at the leaflet's middle
