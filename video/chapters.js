@@ -34,18 +34,18 @@
 import { BEAT, FPS } from './timeline.js';
 import { SHOW_SHOCK } from '../src/order.js';
 import { MOVES, FREE_BASE, FREE_REST, moveAt } from '../src/teemoves.js';
-import MITRACLIP_VO from './vo/mitraclip.js';
+import MTEER_VO from './vo/mteer.js';
 
 const STEP = { move: 3, hold: 5 };
 
 /**
- * The Blender frames of the MitraClip procedure pane, made for the video (tools/blender/export.mjs
+ * The Blender frames of the M-TEER procedure pane, made for the video (tools/blender/export.mjs
  * --frames=seq, then render.py): a PNG at each step position s (0 to 7), every 0.1, and every
  * 0.05 through the grasp (3 to 4), where the clip moves most. video/chapter.js loads them, and
  * the pane shows the two frames round the step position, cross-faded.
  */
-export const MITRACLIP_FRAMES = {
-  dir: 'video/out/mitraclip/seq',
+export const MTEER_FRAMES = {
+  dir: 'video/out/mteer/seq',
   at: [...Array(71).keys()].map((i) => i / 10).concat([...Array(10).keys()].map((i) => 3.05 + i / 10))
     .map((s) => Number(s.toFixed(2))).sort((a, b) => a - b),
   name: (s) => `s${String(Math.round(s * 100)).padStart(3, '0')}.png`,
@@ -540,16 +540,16 @@ export const VIDEOS = {
       { set: { micS: 1 }, track: 'Thrombus', pick: [0, 1], move: 4, hold: 7 },
     ],
   },
-  // MitraClip: the chapter's eight steps, from the TTE before to the TTE after. Each move is the
-  // device's motion between two steps (src/ch/mitraclip.js POSE_KEYS): the crossing and the
+  // Mitral TEER: the chapter's eight steps, from the TTE before to the TTE after. Each move is the
+  // device's motion between two steps (src/ch/mteer.js POSE_KEYS): the crossing and the
   // steering, the arms opening and turning, and the grasp (the arms close, the clip goes into the
   // LV, opens and comes back under the leaflets), with longer moves where more happens. The
   // procedure pane shows the Blender frames along the steps (`frames`, tools/blender/); without
   // them, the chapter's own stills. No quant: the device moves smoothly, not in the slider's steps
-  mitraclip: {
+  mteer: {
     pane: 'Procedure, TEE and TTE',
     side: false,
-    frames: MITRACLIP_FRAMES,
+    frames: MTEER_FRAMES,
     steps: [
       { set: { tcS: 0 }, track: 'Before', pick: [0, 1], hold: 7 },
       { set: { tcS: 1 / 7 }, track: 'Puncture', pick: [1, 2], move: 4, hold: 9 },
@@ -561,12 +561,12 @@ export const VIDEOS = {
       { set: { tcS: 1 }, track: 'After', pick: [0, 2], move: 3, hold: 7 },
     ],
   },
-  // MitraClip with a voice-over (video/vo/mitraclip.json, tools/voice/vo.py): the same figure and
+  // Mitral TEER with a voice-over (video/vo/mteer.json, tools/voice/vo.py): the same figure and
   // frames, a step for each part of the script, held for its lines; the device moves while a line
   // tells it, and the caption shows the words as they are spoken
-  'mitraclip-vo': voVideo(MITRACLIP_VO, {
-    chapter: 'mitraclip', key: 'tcS', at: (s) => Number((s / 7).toFixed(6)), move: 2,
-    video: { pane: 'Procedure, TEE and TTE', side: false, frames: MITRACLIP_FRAMES },
+  'mteer-vo': voVideo(MTEER_VO, {
+    chapter: 'mteer', key: 'tcS', at: (s) => Number((s / 7).toFixed(6)), move: 2,
+    video: { pane: 'Procedure, TEE and TTE', side: false, frames: MTEER_FRAMES },
   }),
   // shock: hidden with its chapter (SHOW_SHOCK in src/order.js), and out of this list while hidden.
   // The chapter's tour. Each case from a normal heart to its severe form: hypovolemic,

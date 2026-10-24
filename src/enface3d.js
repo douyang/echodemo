@@ -1,4 +1,4 @@
-// The 3D TEE "surgeon's view" of the mitral valve (chapter mitraclip): the valve seen en face
+// The 3D TEE "surgeon's view" of the mitral valve (chapter mteer): the valve seen en face
 // from the LA, the aortic valve at 12 o'clock, cut from the same morphed meshes as the chapter's
 // 2D echo views (an EchoView after its frame()), with the clip and the delivery system. A 3D
 // echo system renders its volume by depth in a bronze scale, near tissue light and far tissue

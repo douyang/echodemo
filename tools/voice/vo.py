@@ -1,21 +1,29 @@
-"""The voice-over of a chapter video: Kokoro speaks each line of the script, and faster-whisper
-times its words, for the captions that follow the voice (video/chapter.js).
+"""The voice-over of a chapter video: a text-to-speech engine speaks each line of the script,
+and each word of the caption takes the time it is spoken, for the captions that follow the voice
+(video/chapter.js).
 
-  python tools/voice/vo.py video/vo/mitraclip.json
+  python tools/voice/vo.py video/vo/mteer.json
 
 Writes video/vo/<key>.js (the lines, where each starts in its step's hold, and the time of each
 word of the caption: video/chapters.js builds the video from it) and video/out/vo/<key>/*.wav
 (one clip a line, 24 kHz). A line of the script may give [shown|spoken]: the caption shows the
 first, the voice says the second ("[TEE|T E E]", "[4 to 5 cm|four to five centimeters]").
 
-Each line is spoken alone, so its start and end are exact; within it, the words of the caption
-take the times that Whisper gives the spoken words, matched letter by letter (difflib), so a
-word Whisper writes another way ("3D" for "three D") still finds its time. The caption's word
-lights at its start.
+The script's engine:
+- "elevenlabs": the ElevenLabs API (/v1/text-to-speech/<voice>/with-timestamps, 24 kHz PCM) with
+  the script's voice (a voice ID), model and settings. The API key comes from the environment,
+  $ELEVENLABS_API_KEY; it is never written to a file here. The API gives the time of each
+  character it speaks.
+- "kokoro" (the default): Kokoro speaks, and faster-whisper times the words. Needs kokoro-onnx
+  0.4, faster-whisper 1.2 and the models: kokoro-v1.0.onnx and voices-v1.0.bin
+  (github.com/thewh1teagle/kokoro-onnx releases) in $VOICE_MODELS (default ~/.cache/voice), and
+  Whisper base.en, which faster-whisper downloads there.
 
-Needs (Python 3.12 venv): kokoro-onnx 0.4, faster-whisper 1.2, soundfile, scipy, and the models:
-kokoro-v1.0.onnx and voices-v1.0.bin (github.com/thewh1teagle/kokoro-onnx releases) in
-$VOICE_MODELS (default ~/.cache/voice), and Whisper base.en, which faster-whisper downloads there.
+Each line is spoken alone, so its start and end are exact; within it, the words of the caption
+take the times of the spoken letters, matched letter by letter (difflib), so a word written
+another way ("3D" for "three D") still finds its time. The caption's word lights at its start.
+A clip already spoken with the same words, engine, voice and settings is kept, with its times.
+Needs (Python 3.12 venv): soundfile, scipy, numpy.
 """
 import difflib
 import json
@@ -61,6 +69,12 @@ def parse(line):
     for m in re.finditer(r'\[([^|\]]+)\|([^\]]+)\]|([^\[]+)', line):
         if m.group(3) is not None:
             for w in m.group(3).split():
+                # punctuation after a pair ("[MR|M R].") joins the word before it, in the caption
+                # and in the voice's text: a space before it makes a voice say something there
+                if re.fullmatch(r'[.,;:!?]+', w) and spoken:
+                    shown[-1] += w
+                    spoken[-1] += w
+                    continue
                 groups.append((len(shown), len(spoken), len(spoken) + 1))
                 shown.append(w)
                 spoken.append(w)
@@ -128,36 +142,73 @@ def times(spoken, wh, dur):
     return t
 
 
+def eleven(text, S):
+    """ElevenLabs speaks text: (samples, 24000, the time of each character as Whisper-style words)."""
+    import base64
+    import urllib.error
+    import urllib.request
+    key = os.environ.get('ELEVENLABS_API_KEY')
+    if not key:
+        sys.exit('set ELEVENLABS_API_KEY to use the elevenlabs engine')
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{S['voice']}/with-timestamps?output_format=pcm_24000"
+    body = json.dumps({'text': text, 'model_id': S.get('model', 'eleven_multilingual_v2'), 'voice_settings': S.get('settings', {})}).encode()
+    req = urllib.request.Request(url, data=body, headers={'xi-api-key': key, 'Content-Type': 'application/json'})
+    try:
+        with urllib.request.urlopen(req, timeout=180) as r:
+            d = json.load(r)
+    except urllib.error.HTTPError as e:
+        sys.exit(f'ElevenLabs: HTTP {e.code}: {e.read()[:300]!r}')
+    a = np.frombuffer(base64.b64decode(d['audio_base64']), dtype='<i2').astype(np.float32) / 32768
+    al = d['alignment']
+    chars = [{'word': c, 'start': s0, 'end': s1} for c, s0, s1 in zip(al['characters'], al['character_start_times_seconds'], al['character_end_times_seconds'])]
+    return a, 24000, chars
+
+
 def main(path):
-    from kokoro_onnx import Kokoro
-    from faster_whisper import WhisperModel
     S = json.load(open(path))
+    engine = S.get('engine', 'kokoro')
     key = os.path.splitext(os.path.basename(path))[0]
     root = os.path.dirname(os.path.dirname(os.path.abspath(path)))   # video/
     clips = os.path.join(root, 'out', 'vo', key)
     os.makedirs(clips, exist_ok=True)
-    tts = Kokoro(os.path.join(MODELS, 'kokoro-v1.0.onnx'), os.path.join(MODELS, 'voices-v1.0.bin'))
-    asr = WhisperModel('base.en', device='cpu', compute_type='int8', download_root=os.path.join(MODELS, 'whisper'))
+    tts = asr = None
 
     def speak(text, name):
+        nonlocal tts, asr
         shown, spoken, groups = parse(text)
-        # a clip already spoken with the same words, voice and speed is kept (Kokoro is deterministic)
+        # a clip already spoken with the same words, engine, voice and settings is kept, with the
+        # times of its letters
         wav, meta = os.path.join(clips, f'{name}.wav'), os.path.join(clips, f'{name}.json')
-        want = {'spoken': spoken, 'voice': S['voice'], 'speed': S.get('speed', 1.0)}
-        if os.path.exists(wav) and os.path.exists(meta) and json.load(open(meta)) == want:
+        want = {'spoken': spoken, 'engine': engine, 'voice': S['voice'], 'speed': S.get('speed', 1.0),
+                'model': S.get('model'), 'settings': S.get('settings')}
+        old = json.load(open(meta)) if os.path.exists(meta) else None
+        if os.path.exists(wav) and old and {k: old.get(k) for k in want} == want and (engine != 'elevenlabs' or old.get('chars')):
             a, sr = sf.read(wav, dtype='float32')
+            wh = old.get('chars')
+        elif engine == 'elevenlabs':
+            a, sr, wh = eleven(spoken, S)
+            sf.write(wav, a, sr)
+            json.dump({**want, 'chars': wh}, open(meta, 'w'))
         else:
+            if tts is None:
+                from kokoro_onnx import Kokoro
+                tts = Kokoro(os.path.join(MODELS, 'kokoro-v1.0.onnx'), os.path.join(MODELS, 'voices-v1.0.bin'))
             a, sr = tts.create(spoken, voice=S['voice'], speed=S.get('speed', 1.0), lang='en-us')
             sf.write(wav, a, sr)
             json.dump(want, open(meta, 'w'))
+            wh = None
         dur = len(a) / sr
-        # no prompt and no carried text: with the script as a prompt, Whisper repeated it past the clip's end
-        segs, _ = asr.transcribe(resample_poly(a, 16000, sr).astype(np.float32), word_timestamps=True, language='en',
-                                 beam_size=5, condition_on_previous_text=False, temperature=0.0)
-        wh = [{'word': w.word, 'start': w.start, 'end': w.end} for s in segs for w in s.words]
+        if wh is None:
+            if asr is None:
+                from faster_whisper import WhisperModel
+                asr = WhisperModel('base.en', device='cpu', compute_type='int8', download_root=os.path.join(MODELS, 'whisper'))
+            # no prompt and no carried text: with the script as a prompt, Whisper repeated it past the clip's end
+            segs, _ = asr.transcribe(resample_poly(a, 16000, sr).astype(np.float32), word_timestamps=True, language='en',
+                                     beam_size=5, condition_on_previous_text=False, temperature=0.0)
+            wh = [{'word': w.word, 'start': w.start, 'end': w.end} for s in segs for w in s.words]
         t = times(spoken, wh, dur)
         words = [[w, round(t[lo][0], 3), round(t[hi - 1][1], 3)] for w, (lo, hi) in zip(shown, groups)]
-        heard = ' '.join(w['word'].strip() for w in wh)
+        heard = ''.join(w['word'] for w in wh) if engine == 'elevenlabs' else ' '.join(w['word'].strip() for w in wh)
         print(f'{name}: {dur:.2f} s | {heard}')
         return {'text': ' '.join(shown), 'dur': round(dur, 3), 'words': words, 'clip': f'{name}.wav'}
 

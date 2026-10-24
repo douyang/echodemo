@@ -1,5 +1,5 @@
-// Transcatheter edge-to-edge repair (TEER) of the mitral valve with the MitraClip, by the
-// transfemoral, transseptal route. One slider steps through the procedure, and the figure is the
+// Mitral transcatheter edge-to-edge repair (M-TEER) with a clip, by the transfemoral,
+// transseptal route. One slider steps through the procedure, and the figure is the
 // screen that the interventional echocardiographer reads at each step. The case is primary MR
 // from a flail P2 (gl/clipmesh.js tcFlail), in the LA and LV of chronic severe MR: the values of
 // chapter Mitral regurgitation near its severe end.
@@ -18,7 +18,7 @@ import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { RR, EV, cycleAt, mitralV } from '../cyclemodel.js';
 import { Beat, cursor, rows, cols, inner, note, fit, shown as rounded, paintBands, playSeverity } from '../sev.js';
-import { cal, jet, barFor, heartShown } from '../echo2d.js';
+import { cal, jet, pathJet, barFor, heartShown } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { onPlane, blood, cavity, sub, add, mul, dot, unit, perp, len } from '../meshjet.js';
 import { laWeight, lvSizeOf, lvByEf } from '../meshcal.js';
@@ -35,7 +35,7 @@ const KEY = 'tcS';
 const NYQ = 60;              // cm/s, the color scale (ASE 2017: 50-70 cm/s)
 const T_SYS = 250;           // ms after the R wave: the frame held in systole when the cine is off
 /** The disease keys of the chapter's heart (phenomesh.js DISEASE). */
-const DISEASES = ['la', 'lvSize', 'tcFlail', 'tcFossa', 'tcTent', 'tcGrasp', 'tcHalf', 'tcClip'];
+const DISEASES = ['la', 'lvSize', 'tcFlail', 'tcFossa', 'tcSepLa', 'tcTent', 'tcGrasp', 'tcHalf', 'tcClip'];
 const V3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
 
 // ---------------------------------------------------------------- the steps
@@ -141,8 +141,8 @@ const MG = { before: rounded(INFLOW.before, 1), after: rounded(INFLOW.mg, 1) };
 const RESID = { med: 0.2, lat: 0.15 };
 /** The iatrogenic ASD: its flow's vena contracta (cm). */
 const IASD = 0.5;
-/** The beam's thickness across the image plane for the device's echo (cm, each side). */
-const SLAB = 0.15;
+/** The beam's thickness across the image plane for the device's echo (cm, each side; a teaching value): a clip a little off the plane still echoes. */
+const SLAB = 0.2;
 
 // ---------------------------------------------------------------- the panes
 let sheet = null, st = null;
@@ -181,11 +181,13 @@ const startAll = () => { for (const p of Object.values(P)) p.start(); };
 const lvOf = (heart) => lvByEf(heart, lvSizeOf(heart, BEFORE.lvedd), BEFORE.ef);
 /** The disease weights at pose p for heart, at systole share sy: the case's LA and LV, the tenting, the held leaflets. */
 function diseaseOf(p, heart, sy) {
-  const W8 = lvOf(heart);
+  const W8 = lvOf(heart), la = laWeight(BEFORE.lavi, heart);
   return {
-    la: laWeight(BEFORE.lavi, heart),
+    la,
     lvSize: W8.size + (W8.esSize - W8.size) * sy,
+    // the fossa one wall, and the septum's two walls moving together as the LA grows
     tcFossa: 1,
+    tcSepLa: la,
     tcTent: rounded(p.sept * (1 - smooth(p.cross)), 3),
     ...CM.holdWeights(rounded(p.arm, 1), rounded(p.cap, 3)),
   };
@@ -205,7 +207,8 @@ async function buildGeo(ver) {
   const ev = S.make(64, 64, 'a4c', { fill: true });
   ev.setView('a4c', { animate: false });
   const W8 = lvOf(heart);
-  ev.setDisease({ la: laWeight(BEFORE.lavi, heart), lvSize: W8.size, tcFossa: 1 }, shifts);
+  const la = laWeight(BEFORE.lavi, heart);
+  ev.setDisease({ la, lvSize: W8.size, tcFossa: 1, tcSepLa: la }, shifts);
   ev.setMotion({});
   ev.setLvSys(W8.k, mask);
   const c = cycleAt(0);
@@ -319,9 +322,20 @@ function deviceOn(ev, g, p, along = null) {
   const { vm, sm } = motionOf(ev, g);
   return CM.deviceOf(g.site, g.punct, p, vm, sm, CM.CAVA, along, clearanceOf(ev));
 }
+/**
+ * The leaflets that the clip holds, put on its arms after the valve's morph and before its cut
+ * (echo.js valveHook; gl/clipmesh.js snapHeld). The device it builds serves the frame's cut too.
+ */
+const holdHook = (g, p, along = null) => (ev, vd) => {
+  if (vd.mesh.name !== 'MitralValve' || !(p.cap > 0)) return;
+  const D = deviceOn(ev, g, p, along);
+  CM.snapHeld(g.site, vd.pos, D.clip, clamp(p.cap, 0, 1));
+  ev.tcFrameDevice = D;
+};
 /** The B-mode items of the device on plane gg of view ev (echo.js extraItems); the device stays on ev for the labels and the 3D pane. */
 const deviceHook = (g, p, along = null) => (ev, gg) => {
-  const D = deviceOn(ev, g, p, along);
+  const D = ev.tcFrameDevice || deviceOn(ev, g, p, along);
+  ev.tcFrameDevice = null;
   ev.tcDevice = D;
   ev.tcDeviceKey = poseKey(p);
   return CM.deviceItems(D, gg, cutMesh, SLAB).items;
@@ -429,13 +443,27 @@ function chambersOf(ev, g, F = null) {
     for (let i = 0; i < m - 1 + (V.closed ? 1 : 0); i++) cuts.push({ a: V.pts[i], b: V.pts[(i + 1) % m], ends: 0 });
   }
   // the image's edges: a chamber cut short by the zoom stops there
+  let seed = (p) => p, shown = () => true;
   if (F) {
     const bx = F.view.box, k = F.k, u = (X) => (X - F.sect.cx) / k, v = (Y) => (Y - F.sect.top) / k;
     const u0 = u(bx.x), u1 = u(bx.x + bx.w), v0 = Math.max(v(bx.y), 0.4), v1 = v(bx.y + bx.h);
     cuts.push([[u0, v0], [u0, v1]], [[u1, v0], [u1, v1]], [[u0, v0], [u1, v0]], [[u0, v1], [u1, v1]]);
+    // each chamber's blood is looked for inside the image: from outside it, the cuts would keep the outside
+    seed = (p) => [clamp(p[0], u0 + 0.3, u1 - 0.3), clamp(p[1], v0 + 0.3, v1 - 0.3)];
+    shown = (p) => p[0] > u0 + 0.1 && p[0] < u1 - 0.1 && p[1] > v0 + 0.1 && p[1] < v1 - 0.1;
   }
-  const la = cavity(ev, blood(ev, onPlane(ev, Q.clone().addScaledVector(N, 1.6))), cuts);
-  const lv = cavity(ev, blood(ev, onPlane(ev, Q.clone().addScaledVector(N, -1.8))), cuts);
+  // a chamber's blood: in the image, on its own side of the leaflets' line; or the point it was looked for from
+  const side = (p) => ev.g.O.clone().addScaledVector(ev.g.r, p[0]).addScaledVector(ev.g.d, p[1]).sub(Q).dot(N) + 0.05;
+  const inside = (k) => {
+    const p = seed(onPlane(ev, Q.clone().addScaledVector(N, k)));
+    for (const r of [1.2, 0.8, 0.5]) {
+      const b = blood(ev, p, r);
+      if (shown(b) && side(b) * k > 0) return b;
+    }
+    return p;
+  };
+  const la = cavity(ev, inside(1.6), cuts);
+  const lv = cavity(ev, inside(-1.8), cuts);
   return { la, lv, C, N, Q, vm };
 }
 /** The colour box round several jets, from their extents (echo2d.js jet with box: false). */
@@ -458,10 +486,98 @@ function colorBox(ctx, F, list) {
   ctx.restore();
 }
 
+/** Polyline P resampled every h cm along its length. */
+function resample(P, h) {
+  const out = [P[0]];
+  let carry = 0;
+  for (let i = 1; i < P.length; i++) {
+    const a = P[i - 1], e = sub(P[i], a), l = len(e);
+    let t = h - carry;
+    while (t <= l) { out.push(add(a, mul(e, t / l))); t += h; }
+    carry = l - (t - h);
+  }
+  const end = P[P.length - 1];
+  if (len(sub(end, out[out.length - 1])) > 0.25 * h) out.push(end);
+  return out;
+}
+/** Polyline P smoothed n times, its first point and its last kept. */
+function smoothLine(P, n) {
+  let A = P;
+  for (let it = 0; it < n; it++) A = A.map((p, i) => (i === 0 || i === A.length - 1 ? p : mul(add(add(A[i - 1], A[i + 1]), mul(p, 2)), 0.25)));
+  return A;
+}
+/** Whether point p lies inside polygon Pg (even-odd rule). */
+function insidePoly(Pg, p) {
+  let c = false;
+  for (let i = 0, j = Pg.length - 1; i < Pg.length; j = i++) {
+    const [xi, yi] = Pg[i], [xj, yj] = Pg[j];
+    if ((yi > p[1]) !== (yj > p[1]) && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) c = !c;
+  }
+  return c;
+}
+/** Pane F's image in plane cm: [u0, u1, v0, v1]. */
+function imageBox(F) {
+  const bx = F.view.box, k = F.k;
+  return [(bx.x - F.sect.cx) / k, (bx.x + bx.w - F.sect.cx) / k, (bx.y - F.sect.top) / k, (bx.y + bx.h - F.sect.top) / k];
+}
+/**
+ * The axis of a jet that leaves O along d, meets the wall of the chamber Pg (plane cm) and then
+ * runs along it (the Coanda effect): straight to the wall, a bend, and on along the wall off cm
+ * inside it, for up to reach cm, until the wall turns back or leaves the image ([u0, u1, v0, v1]).
+ * { pts, sWall }: the axis, every 0.08 cm, and how far along it the jet lies on the wall; null
+ * when the ray meets the wall within 0.6 cm.
+ */
+function wallPath(Pg, O, d, img, off = 0.3, reach = 4.5) {
+  const n = Pg.length;
+  let hit = null;
+  for (let i = 0; i < n; i++) {
+    const a = Pg[i], b = Pg[(i + 1) % n], e = sub(b, a), den = d[0] * e[1] - d[1] * e[0];
+    if (Math.abs(den) < 1e-12) continue;
+    const w = sub(a, O), t = (w[0] * e[1] - w[1] * e[0]) / den, u = (w[0] * d[1] - w[1] * d[0]) / den;
+    if (t > 1e-3 && u >= 0 && u <= 1 && (!hit || t < hit.t)) hit = { t, i };
+  }
+  if (!hit || hit.t < 0.6) return null;
+  const H = add(O, mul(d, hit.t));
+  // the wall from the hit on, the way the jet runs on; it stops where the chamber ends at the image's edge
+  const step = dot(sub(Pg[(hit.i + 1) % n], Pg[hit.i]), d) >= 0 ? 1 : -1;
+  const atEdge = (p) => img && (p[0] < img[0] + 0.1 || p[0] > img[1] - 0.1 || p[1] < img[2] + 0.1 || p[1] > img[3] - 0.1);
+  let W = [H], run = 0;
+  for (let k = step > 0 ? (hit.i + 1) % n : hit.i, m = 0; m < n && run < reach + 1; m++, k = (k + step + n) % n) {
+    const p = Pg[k];
+    if (atEdge(p)) break;
+    run += len(sub(p, W[W.length - 1]));
+    W.push(p);
+  }
+  if (W.length < 2) W.push(add(H, mul(d, 0.3)));
+  W = smoothLine(resample(W, 0.1), 12);
+  // the jet leaves the wall where the wall turns back on it
+  const T = (i) => unit(sub(W[Math.min(i + 2, W.length - 1)], W[Math.max(i - 2, 0)]));
+  const t0 = T(2);
+  let end = W.length;
+  for (let i = 3; i < W.length; i++) if (dot(T(i), t0) < -0.2) { end = i; break; }
+  W = W.slice(0, Math.max(2, end));
+  // the wall's inner side: where most points just off it lie in the chamber
+  let vote = 0;
+  for (let i = 0; i < W.length; i += 2) vote += insidePoly(Pg, add(W[i], mul(perp(T(i)), 0.25))) ? 1 : -1;
+  const side = vote >= 0 ? 1 : -1;
+  const Wi = W.map((p, i) => add(p, mul(perp(T(i)), side * off)));
+  // the bend: from the straight part, r cm before the wall, round to r cm along it
+  const r = Math.min(0.7, 0.45 * hit.t);
+  const A = add(O, mul(d, hit.t - r));
+  let j = 1, acc = 0;
+  while (j < Wi.length - 1 && acc < r) { acc += len(sub(Wi[j], Wi[j - 1])); j++; }
+  const B = Wi[j - 1], Cp = Wi[0];
+  const bend = [];
+  for (let s = 0; s <= 1.001; s += 1 / 8) bend.push(add(add(mul(A, (1 - s) ** 2), mul(Cp, 2 * s * (1 - s))), mul(B, s * s)));
+  const pts = smoothLine(resample([O, ...bend, ...Wi.slice(j)], 0.08), 3);
+  return { pts, sWall: hit.t };
+}
+
 /**
  * The flail P2's jet: from the gap between A2 and the flail P2, away from the flail leaflet,
  * across the LA to its anterior wall and then along it, an eccentric jet that hugs the wall
- * (Zoghbi 2017). Its flow convergence lies on the LV side of the gap.
+ * (Zoghbi 2017). One jet along one bending axis (echo2d.js pathJet); its flow convergence lies on
+ * the LV side of the gap.
  */
 function drawFlailJet(c, F, ev, g, tt) {
   const cy = cycleAt(tt), a = strengthAt(cy.t, 0.3);
@@ -476,22 +592,21 @@ function drawFlailJet(c, F, ev, g, tt) {
   const antV = sub(onPlane(ev, gap.clone().addScaledVector(Ac, 1)), O);
   const ant = len(antV) > 0.3 ? unit(antV) : null;
   const d1 = ant ? unit(add(mul(up, 0.75), mul(ant, 0.66))) : up;
-  const hit = rayHit(K.la, O, d1);
   const v = BEFORE, q = v.flow || 2 * Math.PI * v.r * v.r * 32;
-  const boxes = [];
-  const first = (jl) => jet(c, F, { q, va: NYQ, vmax: 1.8 * NYQ, keep: 0.6, vc: v.vc, jl, jw: 0.9, a, O, dir: d1, clip: K.la, pclip: K.lv, pisa: K.lv.length > 12, box: false });
-  if (!hit || hit.t < 0.6 || !ant) boxes.push(first(Math.min(4.4, (hit ? hit.t : 3) * 0.95)));
-  else {
-    // along the wall it meets, onward from the orifice (the Coanda effect)
-    let tg = unit(sub(hit.b, hit.a));
-    if (dot(tg, d1) < 0) tg = mul(tg, -1);
-    const nIn = dot(perp(tg), sub(O, hit.a)) > 0 ? perp(tg) : mul(perp(tg), -1);
-    const O2 = add(add(O, mul(d1, hit.t)), mul(nIn, 0.3));
-    const along = rayHit(K.la, O2, tg);
-    boxes.push(first(Math.max(0.4, hit.t - 0.3) + 0.2));
-    boxes.push(jet(c, F, { q, va: NYQ, vmax: 1.5 * NYQ, keep: 0.2, vc: 0.8, jl: Math.min(4.0, (along ? along.t : 3) * 0.92), jw: 1.2, a, O: add(O2, mul(tg, -0.25)), dir: tg, clip: K.la, pisa: false, box: false }));
+  const w0 = Math.max(0.12, v.vc / 2), keep = 0.6;
+  // along the wall it meets (the Coanda effect); a plane across the jet shows it straight
+  let W = ant ? wallPath(K.la, O, d1, imageBox(F)) : null;
+  if (!W) {
+    const hit = rayHit(K.la, O, d1);
+    W = { pts: resample([O, add(O, mul(d1, Math.min(4.4, (hit ? hit.t : 3) * 0.95)))], 0.08), sWall: Infinity };
   }
-  colorBox(c, F, boxes);
+  const sw = Math.min(W.sWall, 3);
+  // the jet widens to about 1 cm by the wall and a little more along it; its core slows as it
+  // spreads, and slower on the wall, where it keeps its momentum
+  const half = (s) => (s < sw ? w0 + (0.48 - w0) * Math.sin((Math.PI / 2) * Math.min(1, s / Math.max(0.6 * sw, 0.3))) : 0.48 + 0.04 * Math.min(1, (s - sw) / 2));
+  const core = (s) => (1 / (1 + (0.35 * Math.max(0, Math.min(s, sw) - keep)) / w0)) * Math.exp(-Math.max(0, s - sw) / 4);
+  const b = pathJet(c, F, { q, va: NYQ, vmax: 1.8 * NYQ, vc: v.vc, a, path: W.pts, half, core, clip: K.la, pclip: K.lv, pisa: K.lv.length > 12, box: false });
+  colorBox(c, F, [b]);
   barFor(c, F, -NYQ, NYQ);
 }
 
@@ -527,7 +642,12 @@ function drawShuntJet(c, F, ev, g, tt) {
   const RA = cavity(ev, blood(ev, onPlane(ev, S.clone().addScaledVector(Nn, 0.7)), 0.5));
   const LA = cavity(ev, blood(ev, onPlane(ev, S.clone().addScaledVector(Nn, -0.8)), 0.5));
   if (RA.length < 12) return;
-  const b = jet(c, F, { q: 30, va: NYQ, vmax: 1.4 * NYQ, vc: IASD, jl: 1.6, jw: 0.8, a, O, dir: d, clip: RA, pclip: LA.length > 12 ? LA : null, pisa: LA.length > 12, box: false });
+  // the defect: the jet starts on the septum's LA face, runs through a channel the defect's width
+  // across the septum, and on into the RA; its flow convergence lies in the LA
+  const back = LA.length > 12 ? rayHit(LA, O, mul(d, -1)) : null, t0 = back && back.t < 1.2 ? back.t : 0;
+  const O1 = add(O, mul(d, -t0)), side = mul(perp(d), IASD / 2);
+  const chan = [[-0.1, 1], [t0 + 0.5, 1], [t0 + 0.5, -1], [-0.1, -1]].map(([u, k]) => add(add(O1, mul(d, u)), mul(side, k)));
+  const b = jet(c, F, { q: 30, va: NYQ, vmax: 1.4 * NYQ, vc: IASD, jl: 1.6 + t0, jw: 1.1, a, O: O1, dir: d, clip: RA, clipOr: [chan], pclip: LA.length > 12 ? LA : null, pisa: LA.length > 12, box: false });
   colorBox(c, F, [b]);
   barFor(c, F, -NYQ, NYQ);
 }
@@ -549,6 +669,8 @@ function planes(g, p) {
   const lax = { ...X.secondary, key: 'lax', name: 'ME LONG AXIS', short: 'LAX', depth: 10 };
   lax.zoom = zoomOn(lax);
   lax.names = [[up(1.9).addScaledVector(g.Ac, -1.9), 'LA'], [up(-2.6), 'LV'], [g.av.clone().addScaledVector(g.N, 0.6), 'Ao']];
+  // before the procedure the view shows more of the LA, where the jet runs along its anterior wall
+  const laxLA = { ...lax, key: 'laxLA', zoom: { uv: [0.5, lax.zoom.uv[1] - 0.9], w: 6.5 } };
   const mc = { ...X.primary, key: 'mc', name: 'ME COMMISSURAL', short: 'MC', depth: 10 };
   mc.zoom = zoomOn(mc);
   mc.names = [[up(2.6).addScaledVector(g.Bc, -1.3), 'LA'], [up(-2.6), 'LV']];
@@ -562,9 +684,10 @@ function planes(g, p) {
   orth.zoom = onS(orth, 4.2);
   const H = TV.height(g.F, g.S, g.C);
   const four = { ...H, key: 'h4c', name: 'ME FOUR-CHAMBER', short: '4C', depth: 12, along, names: [[g.C.clone().addScaledVector(g.N, 2.4), 'LA'], [g.C.clone().addScaledVector(g.N, -3.6), 'LV']] };
-  const T = TV.tgBasal(g.F, planeAt, 10, g.Q.clone().addScaledVector(g.N, -0.15));
+  // the transgastric short axis parallel to the annulus, through the middle of the held leaflets
+  const T = TV.tgBasal(g.F, planeAt, 10, g.Q.clone().addScaledVector(g.N, -0.45), g.N);
   const tg = { ...T, key: 'tg', name: 'TG BASAL SHORT AXIS', short: 'TG SAX', depth: 10, zoom: { uv: [0, g.Q.clone().sub(T.g.O).dot(T.g.d)], w: 6.5 }, names: [] };
-  return { lax, mc, bic, orth, four, tg };
+  return { lax, laxLA, mc, bic, orth, four, tg };
 }
 
 // ---------------------------------------------------------------- the echo panes
@@ -584,7 +707,7 @@ function tte(ctx, box, which, p, tt, g, o = {}) {
   return pane.draw(ctx, box, titleOf(ctx, box.w, titles), {
     tms: tt, disease: (heart) => diseaseOf(p, heart, sy), motion: f > 0 ? { tcFlail: f } : {}, lvK: lvOf(heartShown()).k,
     deeper: which === 'plax' ? 2 : which === 'a4c' ? 1.5 : 0,
-    extra: p.show > 0 ? deviceHook(g, p) : null, extraKey: p.show > 0 ? poseKey(p) : '',
+    extra: p.show > 0 ? deviceHook(g, p) : null, extraKey: p.show > 0 ? poseKey(p) : '', valve: p.cap > 0 ? holdHook(g, p) : null,
     names,
     over: (c, F, ev) => {
       if (o.color === 'flail') drawFlailJet(c, F, ev, g, tt);
@@ -600,7 +723,7 @@ function tee(ctx, box, pane, x, p, tt, g, o = {}) {
   pane.plane(x.g, teeSpec(x.short, x.name, x.depth, x.zoom || null), key);
   const F = pane.draw(ctx, box, titleOf(ctx, box.w, [`TEE · ${x.name}`, `TEE · ${x.short}`, x.short]), {
     tms: tt, disease: (heart) => diseaseOf(p, heart, sy), motion: f > 0 ? { tcFlail: f } : {}, lvK: lvOf(heartShown()).k,
-    extra: p.show > 0 ? deviceHook(g, p, x.along || null) : null, extraKey: `${p.show > 0 ? poseKey(p) : ''}|${x.key}`,
+    extra: p.show > 0 ? deviceHook(g, p, x.along || null) : null, extraKey: `${p.show > 0 ? poseKey(p) : ''}|${x.key}`, valve: p.cap > 0 ? holdHook(g, p, x.along || null) : null,
     names: [...(x.names || []).map(([w, t]) => [(ev) => onPlane(ev, w), t]), ...deviceNames(g, x, p)],
     over: (c, F2, ev) => {
       if (o.color === 'flail') drawFlailJet(c, F2, ev, g, tt);
@@ -627,8 +750,10 @@ function deviceNames(g, x, p) {
   return [[(ev) => {
     const D = ev.tcDevice;
     if (!D || !D.clip) return null;
+    // beside the clip's top, in the LA: toward the front in the long axis, to the lateral side
+    // (screen right) in the commissural view, clear of the leaflets
     const c = V3(D.clip.top);
-    return near(ev, c.addScaledVector(g.N, 0.4).addScaledVector(x.key === 'lax' ? g.Ac : g.Bc, 1.0));
+    return near(ev, x.key === 'lax' ? c.addScaledVector(g.N, 0.4).addScaledVector(g.Ac, 1.0) : c.addScaledVector(g.N, 0.25).addScaledVector(g.Bc, -0.95));
   }, 'clip']];
 }
 
@@ -716,7 +841,7 @@ function inflowCW(ctx, box, tteView) {
 }
 
 // ---------------------------------------------------------------- the procedure pane
-// The Blender stills (assets/mitraclip/<step>.webp), one for each step, loaded when the chapter
+// The Blender stills (assets/mteer/<step>.webp), one for each step, loaded when the chapter
 // first shows. Between two steps the two stills cross-fade. A chapter video gives frames of its
 // own along the steps (video/chapter.js): window.__videoFrames(s) returns the two round step
 // position s and the share of the second.
@@ -750,7 +875,7 @@ function loadStills() {
   if (stillsP) return stillsP;
   stillsP = Promise.all(STEPS.map(async (s) => {
     try {
-      const r = await fetch(`assets/mitraclip/${s.key}.webp`);
+      const r = await fetch(`assets/mteer/${s.key}.webp`);
       if (!r.ok) return;
       STILLS[s.key] = await createImageBitmap(await r.blob());
       redraw();
@@ -828,7 +953,7 @@ function procedurePane(ctx, box, s) {
 /** The panes of step k: B and C are a pair (an X-plane, or two TTE views), D the third. */
 function paneSet(k, x) {
   switch (STEPS[k].key) {
-    case 'before': return { B: ['tte', 'plax', { color: 'flail' }], C: ['tee', x.lax, { color: 'flail' }], D: ['enface'] };
+    case 'before': return { B: ['tte', 'plax', { color: 'flail' }], C: ['tee', x.laxLA, { color: 'flail' }], D: ['enface'] };
     case 'septum': return { B: ['tee', x.bic, {}], C: ['tee', x.orth, {}], D: ['tee', x.four, { height: true }] };
     case 'steer': return { B: ['tee', x.mc, {}], C: ['tee', x.lax, {}], D: ['enface'] };
     case 'align': return { B: ['tee', x.mc, {}], C: ['tee', x.lax, {}], D: ['enface'] };
@@ -919,11 +1044,11 @@ function paint() {
 let BANDS = [];
 
 export default {
-  key: 'mitraclip',
+  key: 'mteer',
   part: 'valves',
   model: true,   // the figure needs the heart model at once (tools/preload.mjs)
-  title: 'MitraClip',
-  nav: 'MitraClip',
+  title: 'Mitral transcatheter edge-to-edge repair',
+  nav: 'M-TEER',
   dwell: 40,
   defaults: { tcS: 0 },
   format: {
@@ -999,5 +1124,7 @@ export function stateAt(s, tt, heart = 'normal') {
 export const caseGeometry = (model) => buildGeo(model.pheno.version);
 /** The device in the frame that view ev holds, at pose p (gl/clipmesh.js deviceOf). */
 export const deviceFor = (ev, g, p, along = null) => deviceOn(ev, g, p, along);
+/** The hook that puts the held leaflets on the clip's arms in a view's frame (echo.js valveHook): set ev.valveHook before ev.frame(). */
+export const holdFor = (g, p) => holdHook(g, p);
 /** The motion from the base mesh to view ev's frame: { vm, sm } (gl/clipmesh.js valveMotion, septumMotion). */
 export const motionFor = (ev, g) => motionOf(ev, g);

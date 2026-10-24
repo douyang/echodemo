@@ -576,7 +576,7 @@ export const DISEASE = {
   // anterior mitral leaflet, a move within the beat (setMotion).
   miAneu: { mi: 'aneu' },
   miFlail: { mi: 'flail' },
-  // Transcatheter edge-to-edge repair (chapter mitraclip; src/gl/clipmesh.js). tcFlail: a flail
+  // Transcatheter edge-to-edge repair (chapter mteer; src/gl/clipmesh.js). tcFlail: a flail
   // P2, a move within the beat (setMotion). tcFossa: the fossa ovalis as one thin wall. tcTent: the
   // fossa tented toward the LA by the transseptal sheath. tcGrasp, tcHalf, tcClip: the leaflets
   // held in the clip with its arms at 120, 60 and 0 degrees, each a valve target as buildValve's
@@ -584,9 +584,26 @@ export const DISEASE = {
   tcFlail: { tc: 'flail' },
   tcTent: { tc: 'tent' },
   tcFossa: { tc: 'fossa' },
+  // tcSepLa: the RA's wall of the septum round the fossa moves with the LA's as the LA grows;
+  // weighted as la is, it keeps the fossa (tcFossa) one wall in a large LA
+  tcSepLa: { tc: 'sepla' },
   tcGrasp: { tc: 'hold' },
   tcHalf: { tc: 'hold' },
   tcClip: { tc: 'hold' },
+};
+/** The LA target's move (DISEASE.la, weight 1) of myocardial vertex i, as buildTargets makes it: for a target that follows it (clipmesh.js tcSepLa). */
+const laShiftOf = (ctx) => (i) => {
+  const { F, REG, laNear, desc, mpos } = ctx, d = [0, 0, 0];
+  const x = mpos[3 * i], y = mpos[3 * i + 1], z = mpos[3 * i + 2];
+  laField(F, DISEASE.la, x, y, z, d, laNear[i]);
+  if (REG[i] === 3 || REG[i] === 7) descGuard(desc, x, y, z, d);
+  return d;
+};
+/** The LA target's move (weight 1) of a point p of the LA's own wall, as buildTargets makes it (clipmesh.js tcSepLa). */
+const laAtOf = (ctx) => (p) => {
+  const d = [0, 0, 0];
+  laField(ctx.F, DISEASE.la, p[0], p[1], p[2], d, 1);
+  return d;
 };
 /** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {
@@ -598,7 +615,7 @@ export async function buildDisease(ctx, key) {
   if (P.strain) return (await import('./strainmesh.js')).buildStrain(ctx, key, P.strain, { addTarget, grid, nearest });
   if (P.ao) return (await import('./aortamesh.js')).buildAorta(ctx, key, P.ao, { addTarget, grid, nearest });
   if (P.mi) return (await import('./mimesh.js')).buildMi(ctx, key, P.mi, { addTarget, grid, nearest });
-  if (P.tc) return (await import('./clipmesh.js')).buildClipTarget(ctx, key, P.tc, { addTarget, grid, nearest });
+  if (P.tc) return (await import('./clipmesh.js')).buildClipTarget(ctx, key, P.tc, { addTarget, grid, nearest, laShift: laShiftOf(ctx), laAt: laAtOf(ctx) });
   const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
   /** The move of landmark name at weight 1 and end-diastole (cm). */
   out.shift = (name) => {

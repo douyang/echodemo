@@ -1,9 +1,9 @@
-# Render the procedure pane of chapter MitraClip in Blender (Cycles): the heart model cut away,
+# Render the procedure pane of chapter M-TEER in Blender (Cycles): the heart model cut away,
 # with the guide from the inferior vena cava across the atrial septum and the clip on the mitral
 # valve. The meshes come from the site itself (tools/blender/export.mjs), so the frames show the
 # heart and the device that the echo panes cut.
 #
-#   python tools/blender/render.py --mesh video/out/mitraclip/mesh_stills --out video/out/mitraclip/stills
+#   python tools/blender/render.py --mesh video/out/mteer/mesh_stills --out video/out/mteer/stills
 #        [--frames before,septum]   only these frames (names from the export)
 #        [--res 1000] [--samples 48]
 #        [--aspect 1.17]            the frame's width over its height (the height keeps the field)

@@ -1,7 +1,7 @@
 """The soundtrack of a chapter video with a voice-over: the voice (tools/voice/vo.py) over the
 Bright pulse bed (tools/score/pulse.py), which ducks under the voice.
 
-  python3 tools/voice/mix.py mitraclip-vo video/out/chapter-mitraclip-vo.wav [--srt-only]
+  python3 tools/voice/mix.py mteer-vo video/out/chapter-mteer-vo.wav [--srt-only]
 
 It also writes the captions as subtitles beside the soundtrack (.srt, one cue a line), for a
 player or a site that shows its own. --srt-only writes only them.

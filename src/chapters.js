@@ -28,7 +28,7 @@ import endocarditisPage from './ch/endocarditis.js';
 import aortaPage from './ch/aorta.js';
 import massesPage from './ch/masses.js';
 import miPage from './ch/mi.js';
-import mitraclipPage from './ch/mitraclip.js';
+import mteerPage from './ch/mteer.js';
 // Shock is hidden (SHOW_SHOCK in order.js), so this file does not import it and the page does not
 // load it. To restore it, add `import shockPage from './ch/shock.js';` here and shockPage to BY
 // below, and follow the steps at SHOW_SHOCK in order.js. Constrictive pericarditis is hidden as a
@@ -45,7 +45,7 @@ import { ORDER, BONUS_PAGE, BONUS, numOf } from './order.js';
 export { numOf } from './order.js';
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, hcmPage, shuntsPage, massesPage, miPage, mitraclipPage, measurePage, aiPage, teePage, report, bonusPage].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, hcmPage, shuntsPage, massesPage, miPage, mteerPage, measurePage, aiPage, teePage, report, bonusPage].map((c) => [c.key, c]));
 /**
  * Every chapter shown, in the order back and next step through them: the main chapters in
  * reading order (ORDER), the bonus page (B), then the bonus chapters (BONUS). state.chapter is an

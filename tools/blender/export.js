@@ -1,4 +1,4 @@
-// The heart and the device of chapter MitraClip, as Blender reads them (tools/blender/export.mjs
+// The heart and the device of chapter M-TEER, as Blender reads them (tools/blender/export.mjs
 // runs this page). For each frame { name, s, t }: the chapter's state at step position s and time
 // t (ms in the beat), the morphed meshes in world cm (glTF frame: x to the patient's left, y to
 // the head, z to the front), the device's parts, and an overlap check of the device against the
@@ -7,7 +7,7 @@ import * as THREE from '../../vendor/three.bundle.min.js';
 import { diseaseTargets, lvMask } from '../../src/model3d.js';
 import { scanner } from '../../src/scanner.js';
 import { cycleAt } from '../../src/cyclemodel.js';
-import * as TC from '../../src/ch/mitraclip.js';
+import * as TC from '../../src/ch/mteer.js';
 import * as CM from '../../src/gl/clipmesh.js';
 
 const b64 = (arr) => {
@@ -112,6 +112,8 @@ window.__run = async (frames) => {
     ev.setDisease(st.disease, shifts);
     ev.setMotion(st.motion);
     ev.setLvSys(st.lvK, mask);
+    // the held leaflets on the clip's arms, as the chapter's panes put them
+    ev.valveHook = TC.holdFor(g, st.pose);
     const c = cycleAt(f.t);
     ev.frame({ s: c.s, v: c.v, drive: c.drive, phase: c.phase, t: c.t });
     for (const [name, md] of list()) await save(`${f.name}/${name}.pos`, md.pos);

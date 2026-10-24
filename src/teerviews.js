@@ -1,5 +1,5 @@
-// The TEE planes of transcatheter edge-to-edge repair (chapter mitraclip), on the heart shown.
-// World cm, the model's frame (teeviews.js). No DOM here: ch/mitraclip.js draws.
+// The TEE planes of transcatheter edge-to-edge repair (chapter mteer), on the heart shown.
+// World cm, the model's frame (teeviews.js). No DOM here: ch/mteer.js draws.
 //
 // Each plane comes from one of the standard probe frames of teeviews.js (framesOf), turned so
 // its beam meets the structure the step looks at: the frame keeps its probe position and its
@@ -105,9 +105,21 @@ export function mitral(frames, aim, cursor, A0, B0) {
   return xplane(frames.memc, aim, B0.clone().negate(), cursor, A0);
 }
 
-/** The transgastric short axis (frame tgsax at its angle) moved along its normal to pass through point P (THREE.Vector3). */
-export function tgBasal(frames, planeAt, ang, P) {
+/**
+ * The transgastric short axis (frame tgsax at its angle) moved along its normal to pass through
+ * point P (THREE.Vector3). With N (the mitral annulus's normal), the plane also turns, about P,
+ * by the least turn that lays it parallel to the annulus, as the probe's flexion does: it cuts
+ * the leaflets at one depth all round, the double orifice after a clip, not the LA on one side
+ * and the LV on the other.
+ */
+export function tgBasal(frames, planeAt, ang, P, N = null) {
   const g = planeAt(frames.tgsax, ang);
   const k = P.clone().sub(g.O).dot(g.n);
-  return { g: { O: g.O.clone().addScaledVector(g.n, k), d: g.d.clone(), r: g.r.clone(), n: g.n.clone() }, ang, shift: k };
+  const O = g.O.clone().addScaledVector(g.n, k);
+  if (!N) return { g: { O, d: g.d.clone(), r: g.r.clone(), n: g.n.clone() }, ang, shift: k };
+  const to = N.clone().normalize();
+  if (to.dot(g.n) < 0) to.negate();
+  const q = new THREE.Quaternion().setFromUnitVectors(g.n.clone().normalize(), to);
+  const O2 = O.clone().sub(P).applyQuaternion(q).add(P);
+  return { g: { O: O2, d: g.d.clone().applyQuaternion(q), r: g.r.clone().applyQuaternion(q), n: to }, ang, shift: k };
 }

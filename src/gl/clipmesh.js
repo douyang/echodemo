@@ -1,4 +1,4 @@
-// Transcatheter edge-to-edge repair of the mitral valve on the heart mesh (chapter mitraclip):
+// Transcatheter edge-to-edge repair of the mitral valve on the heart mesh (chapter mteer):
 // the clip, its delivery system, the septum that the system crosses, and the mitral leaflets
 // before and after the clip holds them. Lengths in cm, in the heart model's world space: x to
 // the patient's left, y to the head, z to the front.
@@ -12,10 +12,14 @@
 // mimesh.js builds the flail anterior leaflet.
 //
 // tcFossa: the fossa ovalis as one thin wall: round the puncture site the LA's and the RA's
-// walls of the mesh's septum, which have a gap between them, move together. A static shape.
+// walls of the mesh's septum, which have a gap between them, move together until they meet,
+// and neither passes the other. A static shape.
+//
+// tcSepLa: the RA's wall of the septum moves with the LA's as the LA grows (the LA target):
+// weighted as the LA target is, so the fossa stays one wall in a large LA.
 //
 // tcTent: the fossa ovalis pushed toward the LA by the transseptal sheath ("tenting"): the
-// septum's two faces round the puncture site move along the septum's axis, most at the site and
+// septum's two walls round the puncture site move along the septum's axis, most at the site and
 // none past TENT.r. A static shape (echo.js setDisease).
 //
 // tcGrasp, tcHalf, tcClip: the leaflets held in the clip with its arms at 120, 60 and 0 degrees
@@ -27,8 +31,8 @@
 // The clip and the catheters are built each frame from the chapter's state (pose), as closed
 // meshes. The echo views cut them on their planes (echo.js extraItems) as metal and plastic,
 // with the shadow and the reverberation behind them; the 3D views draw the same meshes. The
-// sizes of the clip follow the device's labeling where the chapter cites it (MITRACLIP); the
-// rest of the shapes are a drawing.
+// sizes of the clip follow the device's labeling where the chapter cites it (refs abbottifu2019,
+// abbottg4); the rest of the shapes are a drawing.
 
 const V = (x = 0, y = 0, z = 0) => [x, y, z];
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -51,18 +55,21 @@ const turn = (v, k, th) => {
 
 // ---------------------------------------------------------------- the device
 /**
- * The clip (cm). arm: arm length and width of the NT size (MITRACLIP); body: the clip's spine,
+ * The clip (cm). arm: arm length and width of the NT size (abbottg4); body: the clip's spine,
  * radius and length from the arms' hinge; armT: the arms' thickness; grip: the grippers' length,
  * width and thickness. ins: how much of each leaflet the closed clip holds; lat: how far the
  * hold fades out on each side of the clip; hinge: the hinge's depth below the coaptation point
  * when the clip holds the leaflets; r0: where a held leaflet's tip lies along the arm from the
- * hinge; off: a held leaflet's distance from its arm.
+ * hinge; off: a held leaflet's distance from its arm; pivot: each arm's pivot, to its side of the
+ * clip's axis; ant: the clip's axis this far from Q toward the anterior leaflet, so the posterior
+ * arm clears the posterior annulus. A held leaflet runs to just past its arm's end (r0 + ins), so
+ * it leaves the clip over the arm's end and not through the arm.
  */
 export const CLIP = {
   armL: 0.9, armW: 0.4, armT: 0.07,
   bodyR: 0.12, bodyL: 1.0,
   gripL: 0.72, gripW: 0.3, gripT: 0.035,
-  ins: 0.6, lat: 0.55, hinge: 0.8, r0: 0.12, off: 0.06,
+  ins: 0.7, lat: 0.55, hinge: 0.8, r0: 0.25, off: 0.06, pivot: 0.15, ant: 0.12,
 };
 /** The catheters' radii (cm): the steerable guide at the septum, the steerable sleeve, the delivery catheter, the transseptal sheath and needle. */
 export const CATH = { guide: 0.37, sleeve: 0.22, dc: 0.12, sheath: 0.14, needle: 0.04 };
@@ -70,8 +77,8 @@ export const CATH = { guide: 0.37, sleeve: 0.22, dc: 0.12, sheath: 0.14, needle:
 export const FLAIL = { half: 28, soft: 14, at: 0.28, deg: 125, long: 0.45 };
 /** The tenting (tcTent): its height at weight 1 and its reach on the septum (cm). */
 export const TENT = { h: 1.2, r: 1.0 };
-/** The fossa ovalis (tcFossa): how far round the puncture site the two walls move together (cm). */
-export const FOSSA = { r: 1.6 };
+/** The fossa ovalis (tcFossa): how far round the puncture site the two walls move together (cm), and the share of that within which they meet. */
+export const FOSSA = { r: 2.2, full: 0.55 };
 /**
  * The puncture site on the atrial septum (the fossa ovalis, high and toward the back): up, its
  * place between the septum's lowest and highest points above the mitral annular plane (0 to 1);
@@ -248,6 +255,7 @@ export async function buildClipTarget(ctx, key, kind, H) {
   if (kind === 'flail') await buildFlail(ctx, key, site, H);
   else if (kind === 'tent') await buildTent(ctx, key, H);
   else if (kind === 'fossa') await buildFossa(ctx, key, H);
+  else if (kind === 'sepla') await buildSepLa(ctx, key, H);
   else await buildHold(ctx, key, site, HOLD[key] ?? 0, H);
   return { shift: zero };
 }
@@ -398,62 +406,211 @@ function septaFaces(model) {
 }
 
 /**
- * The atrial walls round the puncture site: the myocardium's LA (region 3) and RA (region 4)
- * vertices within reach cm of the axis through the site along the septum's axis, and within
- * 1.2 cm of the site along it. Each: [index, side (1 LA, -1 RA), r (cm from the axis)]. And the
- * middles of the two walls on the axis (cm along Nias from the site).
+ * The atrial septum round the puncture site S on the rest mesh, on lines along its axis (Nias)
+ * through a grid on its plane, every SEPT.step cm out to reach cm from the site. The mesh's
+ * septum is two walls, the LA's (region 3) and the RA's (region 4), with a gap between them that
+ * is 0.4 to 2 cm wide round the fossa. A line crosses the septum where a face of the LA's wall
+ * comes just before a face of the RA's, with no other wall between them; there: la, ra, the two
+ * faces of each wall [h1, h2] (cm along Nias from the site), and m, the middle of the gap,
+ * smoothed over the septum and kept inside the gap. v: the share of the line's neighbours that
+ * cross the septum too, so the targets fade out at the septum's edge. Returns { xyh(p): a
+ * point's [x, y, h] (x, y on the septum's plane), along(x, y, h, fn): the sum over the four lines
+ * round (x, y) of their bilinear weight times v times fn(line, h), mid(x, y): the gap's middle
+ * there (cm along Nias), e1, e2 }.
  */
-function wallsAt(meshes, S, reach) {
-  const myo = meshes.Myocardium, pos = myo.geometry.attributes.position.array, n = pos.length / 3;
-  const col = myo.geometry.attributes.color;
-  const out = [], band = { 1: [], [-1]: [] };
-  for (let i = 0; i < n; i++) {
-    const reg = Math.round(col.getX(i) * 10);
-    if (reg !== 3 && reg !== 4) continue;
-    const d = sub([pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]], S.P), h = dot(d, S.Nias);
-    if (Math.abs(h) > 1.2) continue;
-    const r = len(sub(d, mul(S.Nias, h)));
-    if (r >= reach) continue;
-    const side = reg === 3 ? 1 : -1;
-    out.push([i, side, r]);
-    if (r < 0.6) band[side].push(h);
+const SEPT = { step: 0.2, band: 1.2 };
+const SEPTA = new WeakMap();
+function septumOf(meshes, S, reach) {
+  const myo = meshes.Myocardium;
+  const memo = SEPTA.get(myo);
+  if (memo && memo.reach >= reach) return memo;
+  const pos = myo.geometry.attributes.position.array, ix = myo.geometry.index.array, col = myo.geometry.attributes.color;
+  const n = pos.length / 3, REG = new Uint8Array(n);
+  for (let i = 0; i < n; i++) REG[i] = Math.round(col.getX(i) * 10);
+  const Nn = S.Nias, e1 = unit(cross(Nn, Math.abs(Nn[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0])), e2 = cross(Nn, e1);
+  const xyh = (p) => { const d = sub(p, S.P); return [dot(d, e1), dot(d, e2), dot(d, Nn)]; };
+  // the myocardium's triangles near the site, every region, in 0.4 cm buckets on the septum's plane
+  const B = 0.4, buckets = new Map(), key = (a, b) => `${a},${b}`;
+  for (let t = 0; t < ix.length; t += 3) {
+    const a = ix[t], b = ix[t + 1], c = ix[t + 2];
+    const r = REG[a] === REG[b] || REG[a] === REG[c] ? REG[a] : REG[b] === REG[c] ? REG[b] : REG[a];
+    const P = [a, b, c].map((i) => [pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]]), q = P.map(xyh);
+    if (q.every((v) => Math.abs(v[2]) > 4) || q.every((v) => Math.hypot(v[0], v[1]) > reach + 0.8)) continue;
+    const x0 = Math.floor(Math.min(q[0][0], q[1][0], q[2][0]) / B), x1 = Math.floor(Math.max(q[0][0], q[1][0], q[2][0]) / B);
+    const y0 = Math.floor(Math.min(q[0][1], q[1][1], q[2][1]) / B), y1 = Math.floor(Math.max(q[0][1], q[1][1], q[2][1]) / B);
+    for (let u = x0; u <= x1; u++) for (let v = y0; v <= y1; v++) {
+      const k = key(u, v);
+      if (!buckets.has(k)) buckets.set(k, []);
+      buckets.get(k).push([P[0], P[1], P[2], r]);
+    }
   }
-  const mid = (L) => (L.length ? (Math.min(...L) + Math.max(...L)) / 2 : 0);
-  return { list: out, la: mid(band[1]), ra: mid(band[-1]) };
+  const STEP = SEPT.step, M = Math.ceil((reach + 0.4) / STEP), W = 2 * M + 1;
+  const L = new Array(W * W).fill(null);
+  for (let gi = 0; gi < W; gi++) for (let gj = 0; gj < W; gj++) {
+    const x = (gi - M) * STEP, y = (gj - M) * STEP;
+    const O = add(S.P, add(mul(e1, x), mul(e2, y)));
+    const hits = [];
+    for (const [A, Bv, C, r] of buckets.get(key(Math.floor(x / B), Math.floor(y / B))) || []) {
+      const E1 = sub(Bv, A), E2 = sub(C, A), P = cross(Nn, E2), det = dot(E1, P);
+      if (Math.abs(det) < 1e-9) continue;
+      const T = sub(O, A), u = dot(T, P) / det;
+      if (u < 0 || u > 1) continue;
+      const Q = cross(T, E1), v = dot(Nn, Q) / det;
+      if (v < 0 || u + v > 1) continue;
+      const h = dot(E2, Q) / det;
+      if (Math.abs(h) < 4) hits.push([h, r]);
+    }
+    hits.sort((p, q) => p[0] - q[0]);
+    let best = null;
+    for (let k = 0; k + 1 < hits.length; k++) {
+      if (hits[k][1] !== 3 || hits[k + 1][1] !== 4) continue;
+      const gap = hits[k + 1][0] - hits[k][0], mid = (hits[k][0] + hits[k + 1][0]) / 2;
+      if (gap < 2.2 && Math.abs(mid) < 2.2 && (!best || Math.abs(mid) < Math.abs(best.mid))) best = { k, mid };
+    }
+    if (!best) continue;
+    const k = best.k, h = (j) => hits[j][0];
+    const la = [k > 0 && hits[k - 1][1] === 3 && h(k) - h(k - 1) < 0.8 ? h(k - 1) : h(k) - 0.3, h(k)];
+    const ra = [h(k + 1), k + 2 < hits.length && hits[k + 2][1] === 4 && h(k + 2) - h(k + 1) < 0.8 ? h(k + 2) : h(k + 1) + 0.3];
+    L[gi * W + gj] = { la, ra, mid: best.mid };
+  }
+  // the gap's middle, smoothed over 0.3 cm and kept inside each line's gap; and each line's share
+  // of neighbours that cross the septum
+  const cellOf = (i, j) => (i >= 0 && i < W && j >= 0 && j < W ? L[i * W + j] : null);
+  for (let gi = 0; gi < W; gi++) for (let gj = 0; gj < W; gj++) {
+    const c = L[gi * W + gj];
+    if (!c) continue;
+    let s = 0, w = 0, nb = 0;
+    for (let a = -3; a <= 3; a++) for (let b = -3; b <= 3; b++) {
+      const q = cellOf(gi + a, gj + b);
+      if (Math.abs(a) <= 1 && Math.abs(b) <= 1 && q) nb++;
+      if (!q) continue;
+      const k = Math.exp(-((a * a + b * b) * STEP * STEP) / (2 * 0.3 * 0.3));
+      s += k * q.mid; w += k;
+    }
+    c.m = clamp(s / w, c.la[1], c.ra[0]);
+    c.v = smooth(nb / 9);
+  }
+  /** The sum over the four lines round (x, y) of bilinear weight, times v, times fn(line, h). */
+  const along = (x, y, h, fn) => {
+    const fx = x / STEP + M, fy = y / STEP + M, i0 = Math.floor(fx), j0 = Math.floor(fy), tx = fx - i0, ty = fy - j0;
+    let s = 0;
+    for (const [di, dj, k] of [[0, 0, (1 - tx) * (1 - ty)], [1, 0, tx * (1 - ty)], [0, 1, (1 - tx) * ty], [1, 1, tx * ty]]) {
+      const c = cellOf(i0 + di, j0 + dj);
+      if (c && k > 0) s += k * c.v * fn(c, h);
+    }
+    return s;
+  };
+  const mid = (x, y) => {
+    const w = along(x, y, 0, () => 1);
+    return w > 1e-6 ? along(x, y, 0, (c) => c.m) / w : 0;
+  };
+  const out = { reach, xyh, along, mid, e1, e2 };
+  SEPTA.set(myo, out);
+  return out;
+}
+/**
+ * A line's map along the septum's axis that closes the gap: h to h', piecewise linear and
+ * rising, so no two points pass each other. The LA's wall moves whole until its RA face lies on
+ * the gap's middle, the RA's wall until its LA face does; the blood within SEPT.band cm on either
+ * side stretches or squeezes to make up, and points past it keep their place.
+ */
+function closeGap(c, h) {
+  const b = SEPT.band, tl = c.la[1] - c.la[0], tr = c.ra[1] - c.ra[0];
+  const X = [c.la[0] - b, c.la[0], c.la[1], c.ra[0], c.ra[1], c.ra[1] + b];
+  const Y = [c.la[0] - b, c.m - tl, c.m, c.m, c.m + tr, c.ra[1] + b];
+  if (h <= X[0] || h >= X[5]) return h;
+  let k = 0;
+  while (k < 4 && h > X[k + 1]) k++;
+  const u = X[k + 1] > X[k] ? (h - X[k]) / (X[k + 1] - X[k]) : 0;
+  return Y[k] + (Y[k + 1] - Y[k]) * u;
+}
+/** A line's share of a move of the septum as one: 1 over both walls, none past SEPT.band cm from them. */
+function septBand(c, h) {
+  const b = SEPT.band;
+  if (h < c.la[0]) return smooth(1 - (c.la[0] - 0.1 - h) / (b - 0.1));
+  if (h > c.ra[1]) return smooth(1 - (h - c.ra[1] - 0.1) / (b - 0.1));
+  return 1;
+}
+/** Each myocardial vertex within reach cm of the septum's axis through the site: [i, x, y, h, r]. */
+function nearSeptum(meshes, S, reach) {
+  const sp = septumOf(meshes, S, reach), pos = meshes.Myocardium.geometry.attributes.position.array, out = [];
+  for (let i = 0; i < pos.length / 3; i++) {
+    const [x, y, h] = sp.xyh([pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]]), r = Math.hypot(x, y);
+    if (r < reach && Math.abs(h) < 4) out.push([i, x, y, h, r]);
+  }
+  return { sp, list: out };
+}
+/** A zero target on the meshes that the septum's targets leave as they are, so every mesh knows the key. */
+function zeroOthers(meshes, key, H) {
+  for (const name of ['Pericardium', 'Coronaries', 'Papillary']) if (meshes[name]) H.addTarget(meshes[name], `dx_${key}`, new Float32Array(meshes[name].geometry.attributes.position.array.length));
 }
 
 /**
  * tcFossa: the fossa ovalis as one thin wall. The mesh's atrial septum is the LA's wall and the
- * RA's wall with a gap between them; round the puncture site the two walls move together, each
- * whole, until their middles meet at the site. Most at the site, none past FOSSA.r. A static shape.
+ * RA's wall with a gap between them. Round the puncture site, on each line along the septum's
+ * axis, the two walls move toward the middle of the gap there until they meet (closeGap): each
+ * moves whole, so it keeps its thickness, and nothing passes anything else. All of the gap
+ * closes within FOSSA.full of FOSSA.r from the site, and none past FOSSA.r. A static shape.
  */
 async function buildFossa(ctx, key, H) {
   const { meshes } = ctx;
   const S = punctureOf({ heart: { meshes }, anat: ctx.anat });
   const myo = meshes.Myocardium, t = new Float32Array(myo.geometry.attributes.position.array.length);
-  const W = wallsAt(meshes, S, FOSSA.r);
-  for (const [i, side, r] of W.list) {
-    // each wall's middle onto the site: the LA's wall along +Nias, the RA's along -Nias
-    const k = -(side > 0 ? W.la : W.ra) * (1 - smooth((r / FOSSA.r - 0.3) / 0.7));
+  const { sp, list } = nearSeptum(meshes, S, FOSSA.r);
+  for (const [i, x, y, h, r] of list) {
+    const k = (1 - smooth((r / FOSSA.r - FOSSA.full) / (1 - FOSSA.full))) * sp.along(x, y, h, (c, hh) => closeGap(c, hh) - hh);
     t[3 * i] = k * S.Nias[0]; t[3 * i + 1] = k * S.Nias[1]; t[3 * i + 2] = k * S.Nias[2];
   }
   H.addTarget(myo, `dx_${key}`, t);
-  for (const name of ['Pericardium', 'Coronaries', 'Papillary']) if (meshes[name]) H.addTarget(meshes[name], `dx_${key}`, new Float32Array(meshes[name].geometry.attributes.position.array.length));
+  zeroOthers(meshes, key, H);
 }
 
-/** tcTent: the fossa round the puncture site moved toward the LA, a cone with a round top: both walls, whole. */
+/**
+ * tcTent: the fossa round the puncture site moved toward the LA, a cone with a round top: the
+ * septum as one (both walls, by the same amount on each line, septBand), so the fossa (tcFossa)
+ * stays one wall.
+ */
 async function buildTent(ctx, key, H) {
   const { meshes } = ctx;
   const S = punctureOf({ heart: { meshes }, anat: ctx.anat });
   const myo = meshes.Myocardium, t = new Float32Array(myo.geometry.attributes.position.array.length), toLA = mul(S.Nias, -1);
-  for (const [i, , r] of wallsAt(meshes, S, TENT.r).list) {
+  const { sp, list } = nearSeptum(meshes, S, TENT.r);
+  for (const [i, x, y, h, r] of list) {
     // the septum stretched over the sheath's tip
-    const u = r / TENT.r, k = TENT.h * (1 - u) ** 1.25;
+    const k = TENT.h * (1 - r / TENT.r) ** 1.25 * sp.along(x, y, h, septBand);
     t[3 * i] = k * toLA[0]; t[3 * i + 1] = k * toLA[1]; t[3 * i + 2] = k * toLA[2];
   }
   H.addTarget(myo, `dx_${key}`, t);
-  // the other meshes keep their shape: a zero target, so every mesh knows the key
-  for (const name of ['Pericardium', 'Coronaries', 'Papillary']) if (meshes[name]) H.addTarget(meshes[name], `dx_${key}`, new Float32Array(meshes[name].geometry.attributes.position.array.length));
+  zeroOthers(meshes, key, H);
+}
+
+/**
+ * tcSepLa: the septum moves as one when the LA grows (phenomesh.js DISEASE.la). The LA target
+ * moves the LA's wall, and the RA's wall less, where it lies near the LA (phenomesh.js laNear),
+ * so the two walls of the septum would slide apart. Weighted as the LA target is, this target
+ * gives both walls on each line the LA target's move of the fossa's middle there (H.laAt, a
+ * point's move at weight 1 as the LA's own wall takes it), in place of their own (H.laShift(i),
+ * vertex i's move at weight 1): the fossa stays one wall in a large LA, and the septum bows
+ * toward the RA. Over the fossa and SEP_LA.out cm round it, fading out over SEP_LA.fade cm.
+ */
+const SEP_LA = { out: 0.6, fade: 1.2 };
+async function buildSepLa(ctx, key, H) {
+  const { meshes } = ctx;
+  const S = punctureOf({ heart: { meshes }, anat: ctx.anat });
+  const myo = meshes.Myocardium, t = new Float32Array(myo.geometry.attributes.position.array.length);
+  const r0 = FOSSA.r + SEP_LA.out;
+  const { sp, list } = nearSeptum(meshes, S, r0 + SEP_LA.fade);
+  const tick = slicer();
+  for (const [i, x, y, h, r] of list) {
+    if ((i & 255) === 0) await tick();
+    const w = sp.along(x, y, h, septBand) * (1 - smooth((r - r0) / SEP_LA.fade));
+    if (!(w > 1e-4)) continue;
+    const at = add(S.P, add(add(mul(sp.e1, x), mul(sp.e2, y)), mul(S.Nias, sp.mid(x, y))));
+    const d = mul(sub(H.laAt(at), H.laShift(i)), w);
+    t[3 * i] = d[0]; t[3 * i + 1] = d[1]; t[3 * i + 2] = d[2];
+  }
+  H.addTarget(myo, `dx_${key}`, t);
+  zeroOthers(meshes, key, H);
 }
 
 /**
@@ -466,7 +623,8 @@ async function buildTent(ctx, key, H) {
  */
 function held(site, i, nat, deg) {
   const { N, Ac, Bc, Q } = site, s = site.side[i], phi = (deg / 2) * DEG;
-  const Hc = add(Q, mul(N, -CLIP.hinge));
+  // each arm turns about its own pivot, CLIP.pivot to its side of the clip's axis
+  const Hc = add(add(Q, mul(N, -CLIP.hinge)), mul(Ac, CLIP.ant + s * CLIP.pivot));
   const d = add(mul(N, Math.cos(phi)), mul(Ac, s * Math.sin(phi)));
   const nrm = sub(mul(N, Math.sin(phi)), mul(Ac, s * Math.cos(phi)));
   const b = site.b[i], bh = clamp(b, -CLIP.armW / 2, CLIP.armW / 2);
@@ -701,7 +859,7 @@ export function deviceOf(site, punct, pose0, motion = null, sept = null, cava = 
   const steer = clamp(pose.steer, 0, 1);
   const N = site.N, Q = site.Q;
   const aFree = unit(lerp(mul(tS, -1), N, smooth(steer)));
-  const over = add(Q, mul(N, pose.depth));
+  const over = add(add(Q, mul(N, pose.depth)), mul(site.Ac, CLIP.ant));
   const Hfree = lerp(add(G, mul(tS, 1.2 + CLIP.bodyL)), over, smooth(steer));
   const rot = pose.rot * DEG;
   const eRest = turn(site.Ac, N, rot);
@@ -720,14 +878,17 @@ export function deviceOf(site, punct, pose0, motion = null, sept = null, cava = 
   for (const [name, s] of [['armA', 1], ['armP', -1]]) {
     const d = add(mul(a, Math.cos(phi)), mul(e, s * Math.sin(phi)));
     const nrm = sub(mul(a, Math.sin(phi)), mul(e, s * Math.cos(phi)));
-    const c = add(add(Hc, mul(d, CLIP.armL / 2 + 0.02)), mul(nrm, -CLIP.armT / 2 - (phi < 0.05 ? CLIP.bodyR : 0)));
+    // each arm turns about its own pivot, CLIP.pivot to its side of the axis, so the closed
+    // clip holds both leaflets and both grippers between its arms
+    const Hs = add(Hc, mul(e, s * CLIP.pivot));
+    const c = add(add(Hs, mul(d, CLIP.armL / 2 + 0.02)), mul(nrm, -CLIP.armT / 2));
     parts[name] = box(c, d, w, nrm, CLIP.armL / 2, CLIP.armW / 2, CLIP.armT / 2);
     // the gripper: from near the hinge, up against the body (0) or down on its arm (1)
     const psi = clamp(pose.grip, 0, 1) * phi;
     const dg = add(mul(a, Math.cos(psi)), mul(e, s * Math.sin(psi)));
     const ng = sub(mul(a, Math.sin(psi)), mul(e, s * Math.cos(psi)));
     const lift = (1 - clamp(pose.grip, 0, 1)) * (CLIP.bodyR + CLIP.gripT);
-    const cg = add(add(Hc, mul(dg, CLIP.gripL / 2 + 0.1)), mul(ng, CLIP.gripT / 2 + CLIP.off * 2 + lift * 0));
+    const cg = add(add(Hs, mul(dg, CLIP.gripL / 2 + 0.1)), mul(ng, CLIP.gripT / 2 + CLIP.off * 2 + lift * 0));
     parts[name === 'armA' ? 'gripA' : 'gripP'] = box(cg, dg, w, ng, CLIP.gripL / 2, CLIP.gripW / 2, CLIP.gripT / 2);
   }
   // the delivery catheter and the steerable sleeve from the guide's tip to the clip's top; after
@@ -773,6 +934,48 @@ export function valveMotion(site, rest, pos) {
   const dir = (v) => add(add(mul(B.e, dot(v, A.e)), mul(B.w, dot(v, A.w))), mul(B.n, dot(v, A.n)));
   return { map: (p) => add(B.c, dir(sub(p, A.c))), dir };
 }
+/**
+ * The leaflets that the clip holds, put on its arms in this frame. The hold targets (tcGrasp,
+ * tcHalf, tcClip) put them there on the rest valve, at three arm angles; the heart's shapes, the
+ * disease targets and the blend between the three angles move them up to 2 mm off the arms,
+ * through the metal. This puts each held point where held() puts it on the clip as drawn (clip:
+ * deviceOf's { H, a, e, w, phi }): the last CLIP.ins cm of each leaflet on its arm, faded across
+ * the clip as the targets fade; the part above takes the move of the arm's end, faded out over
+ * 0.6 cm. pos: the morphed valve (world cm), changed in place; share: how much the clip holds (cap).
+ */
+export function snapHeld(site, pos, clip, share) {
+  if (!clip || !(share > 0)) return;
+  const { H, a, e, w, phi } = clip, half = CLIP.armW / 2;
+  const move = new Map(), ends = new Map(), bin = (s, b) => `${s}|${Math.round(b / 0.1)}`;
+  for (let i = 0; i < site.n; i++) {
+    if (!site.leaf[i] || site.ell[i] > CLIP.ins || Math.abs(site.b[i]) > half + CLIP.lat) continue;
+    const s = site.side[i], b = site.b[i], bh = clamp(b, -half, half);
+    const d = add(mul(a, Math.cos(phi)), mul(e, s * Math.sin(phi))), nrm = sub(mul(a, Math.sin(phi)), mul(e, s * Math.cos(phi)));
+    // the lateral axis w is a x e, -Bc on the rest clip: held()'s Bc * b
+    const T = add(add(add(add(H, mul(e, s * CLIP.pivot)), mul(d, CLIP.r0 + site.ell[i])), mul(nrm, CLIP.off)), mul(w, -bh));
+    const m = sub(T, [pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]]);
+    move.set(i, m);
+    if (site.ell[i] > CLIP.ins - 0.2) {
+      const k = bin(s, b), q = ends.get(k) || { m: [0, 0, 0], n: 0 };
+      q.m = add(q.m, m); q.n++;
+      ends.set(k, q);
+    }
+  }
+  for (let i = 0; i < site.n; i++) {
+    if (!site.leaf[i] || Math.abs(site.b[i]) > half + CLIP.lat) continue;
+    let m = move.get(i);
+    if (!m) {
+      const u = (site.ell[i] - CLIP.ins) / 0.6;
+      if (u >= 1) continue;
+      let q = null;
+      for (const db of [0, 1, -1, 2, -2]) { q = ends.get(`${site.side[i]}|${Math.round(site.b[i] / 0.1) + db}`); if (q) break; }
+      if (!q) continue;
+      m = mul(q.m, (1 - smooth(u)) / q.n);
+    }
+    const k = share * (1 - smooth((Math.abs(site.b[i]) - half) / CLIP.lat));
+    pos[3 * i] += k * m[0]; pos[3 * i + 1] += k * m[1]; pos[3 * i + 2] += k * m[2];
+  }
+}
 /** The motion of the septum near the puncture: the move of its RA-face vertex, no turn. */
 export function septumMotion(punct, rest, pos) {
   const mv = (i) => [pos[3 * i] - rest[3 * i], pos[3 * i + 1] - rest[3 * i + 1], pos[3 * i + 2] - rest[3 * i + 2]];
@@ -785,12 +988,13 @@ export function septumMotion(punct, rest, pos) {
 /**
  * The echo of each part (dB against myocardium): fill, its bright edge (spec), the shadow it
  * casts, and reverberation behind faces that meet the beam. The clip is metal under polyester
- * fabric; the catheters are polymer over a braid of wire.
+ * fabric; the catheters are polymer over a braid of wire, hollow: their fill is the lumen.
  */
 export const TONE = {
-  clip: { e: 24, spec: 8, shadow: 14, reverb: { n: 3, step: 0.18, e: 14, fade: 5, w: 0.07 } },
+  clip: { e: 24, spec: 8, shadow: 14, reverb: { n: 3, step: 0.2, e: 10, fade: 6, w: 0.06 } },
   grip: { e: 20, spec: 6, shadow: 6 },
-  cath: { e: 16, spec: 7, shadow: 9, reverb: { n: 3, step: 0.16, e: 11, fade: 4, w: 0.06 } },
+  // a catheter is a hollow tube: bright walls round a dark lumen (lumen, dB), not a solid band
+  cath: { e: 16, spec: 7, shadow: 9, lumen: -24, reverb: { n: 2, step: 0.18, e: 8, fade: 5, w: 0.06 } },
 };
 const PART_TONE = { body: 'clip', armA: 'clip', armP: 'clip', gripA: 'grip', gripP: 'grip', dc: 'cath', sleeve: 'cath', guide: 'cath', sheath: 'cath' };
 
@@ -836,7 +1040,7 @@ export function deviceItems(dev, g, cut, slab = 0) {
       if (!L.length) continue;
       const e = off ? T.e - 4 : T.e;
       if (!off) loops[name] = L;
-      items.push({ polys: L, e, shadow: off ? T.shadow * 0.5 : T.shadow }, { borders: L, e, spec: off ? 0 : T.spec, w: 0.05, closed: true, all: true });
+      items.push({ polys: L, e: T.lumen ?? e, shadow: off ? T.shadow * 0.5 : T.shadow }, { borders: L, e, spec: off ? 0 : T.spec, w: T.lumen != null ? 0.07 : 0.05, closed: true, all: true });
       if (!off && T.reverb) {
         const back = facing(L), Rv = T.reverb;
         if (back.length) for (let k = 1; k <= Rv.n; k++) items.push({ lines: echoes(back, k, Rv.step), e: Rv.e - Rv.fade * (k - 1), w: Rv.w });

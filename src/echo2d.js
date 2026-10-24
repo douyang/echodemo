@@ -578,6 +578,121 @@ export function jet(ctx, F, j) {
   ctx.restore();
 }
 
+/**
+ * A jet whose axis bends, as jet() draws a straight one: an eccentric jet that meets a chamber's
+ * wall and runs on along it (the Coanda effect). path: the jet's axis, [u, v] points (plane cm)
+ * from the orifice downstream, close together and smooth. half(s): the jet's half-width (cm) at
+ * s cm along its axis; core(s): its core's velocity at s, a share of the velocity at the vena
+ * contracta. The jet grows along its axis over the cycle with a. Its color is the velocity along
+ * the beam with the sign it has where it leaves the orifice, so one jet shows one color along its
+ * whole length as it bends. q, va, vmax, vc, a, clip, pclip, pisa and box as in jet().
+ */
+export function pathJet(ctx, F, j) {
+  if (!j || !(j.a > 0.02) || !(j.q > 0) || !j.path || j.path.length < 2) return;
+  const { k, box, sect } = F;
+  const P = j.path, m = P.length;
+  // the axis's arc length at each point, and each segment's direction
+  const S = [0], D = [];
+  for (let i = 1; i < m; i++) {
+    const e = sub(P[i], P[i - 1]), l = len(e) || 1e-6;
+    S.push(S[i - 1] + l);
+    D.push(mul(e, 1 / l));
+  }
+  const L = S[m - 1] * Math.min(1, j.a * 1.15);
+  if (!(L > 0.05)) return;
+  const va = j.va, w0 = Math.max(0.12, j.vc / 2), O = P[0], d0 = D[0];
+  const v0 = Math.min(clamp(j.q / (Math.PI * w0 * w0), 90, 600), j.vmax ?? 3.2 * va);
+  const sgn = Math.sign(dot(d0, unit(mul(O, -1)))) || -1;
+  const ax = mul(d0, sgn), COS40 = Math.cos((40 * Math.PI) / 180), across = dot(ax, unit(mul(O, -1))) < COS40;
+  const Rp = j.pisa === false ? 0 : Math.min(2.4, Math.sqrt(j.q / (2 * Math.PI * 0.15 * va)));
+  // the segments the jet reaches now, and the region to color (px): the jet and the convergence zone
+  let last = 1;
+  while (last < m - 1 && S[last] < L) last++;
+  let hmax = 0;
+  for (let i = 0; i <= last; i++) hmax = Math.max(hmax, j.half(Math.min(S[i], L)));
+  const pts = [];
+  for (let i = 0; i <= last; i++) for (const sg of [-1, 1]) pts.push(F.P(add(P[i], mul(perp(D[Math.min(i, m - 2)]), sg * (hmax + 0.2)))));
+  for (const q of [add(O, mul(d0, -Rp - 0.1)), add(add(O, mul(d0, -0.1)), mul(perp(d0), Rp + 0.1)), add(add(O, mul(d0, -0.1)), mul(perp(d0), -Rp - 0.1))]) pts.push(F.P(q));
+  const x0 = Math.max(box.x, Math.min(...pts.map((p) => p[0]))), x1 = Math.min(box.x + box.w - 30, Math.max(...pts.map((p) => p[0])));
+  const y0 = Math.max(box.y + 20, Math.min(...pts.map((p) => p[1]))), y1 = Math.min(box.y + box.h, Math.max(...pts.map((p) => p[1])));
+  if (!(x1 > x0 && y1 > y0)) return;
+  const cell = Math.max(2, k * 0.09);
+  const W = Math.ceil((x1 - x0) / cell), H = Math.ceil((y1 - y0) / cell);
+  if (!JC) JC = document.createElement('canvas');
+  if (JC.width < W || JC.height < H) { JC.width = Math.max(JC.width, W); JC.height = Math.max(JC.height, H); }
+  const g = JC.getContext('2d', { willReadFrequently: true });
+  g.clearRect(0, 0, JC.width, JC.height);
+  const img = g.createImageData(W, H), px = img.data;
+  const pathOf = (poly) => {
+    if (!poly) return null;
+    const path = new Path2D();
+    poly.forEach((p, i) => { const q = F.P(p); if (i) path.lineTo(q[0], q[1]); else path.moveTo(q[0], q[1]); });
+    path.closePath();
+    return path;
+  };
+  const clip = pathOf(j.clip), pclip = pathOf(j.pclip);
+  const f = cine.live ? Math.floor(performance.now() / 45) : 0;
+  for (let jj = 0; jj < H; jj++) {
+    for (let ii = 0; ii < W; ii++) {
+      const X = x0 + (ii + 0.5) * cell, Y = y0 + (jj + 0.5) * cell;
+      const p = [(X - sect.cx) / k, (Y - sect.top) / k];
+      // the nearest point of the axis: s along it, c across it
+      let best = Infinity, s = 0, c = 0, dl = d0;
+      for (let i = 0; i < last; i++) {
+        const r = sub(p, P[i]), e = D[i], seg = S[i + 1] - S[i];
+        const al = dot(r, e), t = i === 0 ? Math.min(al, seg) : clamp(al, 0, seg);
+        const q = sub(r, mul(e, t)), d2 = q[0] * q[0] + q[1] * q[1];
+        if (d2 < best) { best = d2; s = S[i] + t; c = dot(r, perp(e)); dl = e; }
+      }
+      const toward = unit(mul(p, -1));
+      let vb = 0, alpha = 0;
+      if (s >= -0.02) {
+        if (s > L) continue;
+        const half = j.half(s);
+        if (Math.abs(c) > half) continue;
+        if (clip && !g.isPointInPath(clip, X, Y)) continue;
+        const vcl = v0 * j.core(s);
+        const v = vcl * Math.exp(-((c / (0.55 * half)) ** 2)) * j.a;
+        const nz = blob(ii, jj, 2.2, f) - 0.5, nz2 = blob(ii + 50, jj + 50, 1.3, f) - 0.5;
+        vb = v * sgn * Math.max(Math.abs(dot(dl, toward)), 0.75) + 0.08 * vcl * (1.6 * nz + 0.8 * nz2);
+        alpha = Math.min(1, j.a * 1.5) * (1 - smooth((Math.abs(c) / half - 0.75) / 0.25)) * (1 - smooth((s - (L - Math.min(1, 0.25 * L))) / Math.min(1, 0.25 * L)));
+      } else if (Rp > 0) {
+        const rel = sub(p, O), r = len(rel);
+        if (r > Rp || r < 0.04) continue;
+        if (pclip && !g.isPointInPath(pclip, X, Y)) continue;
+        const v = (j.q / (2 * Math.PI * r * r)) * j.a, flow = unit(sub(O, p));
+        vb = across ? v * COS40 * dot(flow, ax) : v * dot(flow, toward);
+        alpha = Math.min(1, j.a * 1.4) * smooth((Math.abs(vb) / va - 0.12) / 0.12);
+      }
+      if (alpha <= 0.02 || Math.abs(vb) < 0.1 * va) continue;
+      const [cr, cg, cb] = plumeColor(vb / 100, va / 100);
+      const o = 4 * (jj * W + ii);
+      px[o] = cr; px[o + 1] = cg; px[o + 2] = cb; px[o + 3] = Math.round(255 * alpha);
+    }
+  }
+  g.putImageData(img, 0, 0);
+  ctx.save();
+  ctx.clip(F.clipBox);
+  ctx.clip(F.fan);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(JC, 0, 0, W, H, x0, y0, W * cell, H * cell);
+  ctx.restore();
+  const polar = pts.map((q) => { const x = (q[0] - sect.cx) / k, y = (q[1] - sect.top) / k; return [Math.atan2(x, y), Math.hypot(x, y)]; });
+  const t0 = Math.min(...polar.map((q) => q[0])) - 0.04, t1 = Math.max(...polar.map((q) => q[0])) + 0.04;
+  const r0 = Math.max(0.5, Math.min(...polar.map((q) => q[1])) - 0.3) * k, r1 = (Math.max(...polar.map((q) => q[1])) + 0.3) * k;
+  if (j.box === false) return { t0, t1, r0, r1 };
+  ctx.save();
+  ctx.clip(F.clipBox);
+  ctx.strokeStyle = 'rgba(205,212,216,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(sect.cx, sect.top, r0, Math.PI / 2 - t0, Math.PI / 2 - t1, true);
+  ctx.arc(sect.cx, sect.top, r1, Math.PI / 2 - t1, Math.PI / 2 - t0, false);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+}
+
 // ---------------------------------------------------------------- the beat
 /** Contraction 0 (end-diastole) .. 1 (end-systole), valve drives, at ms after the R wave. */
 export function phase(t) {

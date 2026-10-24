@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart by Ultrasound</title>
-<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, transesophageal echocardiography, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function, stress echocardiography, myocardial strain and cardio-oncology, the right ventricle and acute pulmonary embolism, valvular disease, diseases of the aorta, pericardial disease, hypertrophic cardiomyopathy, cardiac amyloidosis and artificial intelligence in echocardiography. Bonus chapters: left ventricular assist devices, prosthetic valves, infective endocarditis, intracardiac shunts, cardiac masses and the complications of myocardial infarction.">
+<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, transesophageal echocardiography, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function, stress echocardiography, myocardial strain and cardio-oncology, the right ventricle and acute pulmonary embolism, valvular disease, diseases of the aorta, pericardial disease, hypertrophic cardiomyopathy, cardiac amyloidosis and artificial intelligence in echocardiography. Bonus chapters: left ventricular assist devices, prosthetic valves, infective endocarditis, intracardiac shunts, cardiac masses, the complications of myocardial infarction and mitral transcatheter edge-to-edge repair.">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -50,7 +50,7 @@
 <link rel="modulepreload" href="src/ch/aorta.js">
 <link rel="modulepreload" href="src/ch/masses.js">
 <link rel="modulepreload" href="src/ch/mi.js">
-<link rel="modulepreload" href="src/ch/mitraclip.js">
+<link rel="modulepreload" href="src/ch/mteer.js">
 <link rel="modulepreload" href="src/ch/measure.js">
 <link rel="modulepreload" href="src/ch/ai.js">
 <link rel="modulepreload" href="src/ch/tee.js">
@@ -111,7 +111,7 @@
 <script>
 // a chapter whose figure needs the heart model at once: its files and modules load from the start
 (() => {
-  const MODEL = ['windows', 'tee', 'eject', 'fill', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'hcm', 'amyloid', 'lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', 'mitraclip'];
+  const MODEL = ['windows', 'tee', 'eject', 'fill', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'hcm', 'amyloid', 'lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', 'mteer'];
   if (!MODEL.includes(location.hash.slice(1))) return;
   const add = (rel, href, as) => {
     const l = document.createElement('link');
@@ -311,9 +311,9 @@
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Mechanical complications of myocardial infarction from none to the end stage, one at a time: a rupture of the apical septum in the apical four-chamber view with its left-to-right color jet, the CW jet across it and the PW velocities of the two outflow tracts for Qp/Qs; a papillary muscle rupture with a flail anterior mitral leaflet, the torn head of the muscle and an eccentric MR jet in the apical three-chamber view, with the CW MR jet and the pulmonary vein flow; a pseudoaneurysm of the inferolateral wall in the parasternal long axis, with calipers on its neck and sac, and the pericardial effusion and the signs of tamponade in the apical four-chamber view; a true apical aneurysm in the apical four- and two-chamber views, with calipers on its mouth and width, a mural thrombus at the end stage, and the wall motion of the 17 segments.</figcaption>
     </figure>
-    <figure class="fig" id="fig-mitraclip">
+    <figure class="fig" id="fig-mteer">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
-      <figcaption class="sr-only">MitraClip repair of a flail posterior mitral leaflet, step by step, from the transthoracic study before the procedure to the one after it. Left: the heart model cut away, with the guide from the inferior vena cava across the atrial septum and the clip on the mitral valve, at the step shown. Right, at each step, the images that guide it: before, the parasternal long axis and the TEE long-axis view with the flail P2 and its eccentric jet, and the 3D en face view of the valve; the transseptal puncture in the bicaval view, its short-axis view and the four-chamber view with the height of the puncture site above the leaflets; steering, alignment and grasping in the commissural and long-axis X-plane views and the 3D en face view; the assessment before release with the residual jets, the continuous-wave Doppler of the inflow with its mean gradient and the transgastric short axis of the double orifice; the release with the left-to-right flow across the iatrogenic atrial septal defect; and after the procedure, the parasternal short axis of the double orifice, the apical four-chamber view with the residual jets and the inflow's mean gradient.</figcaption>
+      <figcaption class="sr-only">Mitral transcatheter edge-to-edge repair of a flail posterior leaflet, step by step, from the transthoracic study before the procedure to the one after it. Left: the heart model cut away, with the guide from the inferior vena cava across the atrial septum and the clip on the mitral valve, at the step shown. Right, at each step, the images that guide it: before, the parasternal long axis and the TEE long-axis view with the flail P2 and its eccentric jet, and the 3D en face view of the valve; the transseptal puncture in the bicaval view, its short-axis view and the four-chamber view with the height of the puncture site above the leaflets; steering, alignment and grasping in the commissural and long-axis X-plane views and the 3D en face view; the assessment before release with the residual jets, the continuous-wave Doppler of the inflow with its mean gradient and the transgastric short axis of the double orifice; the release with the left-to-right flow across the iatrogenic atrial septal defect; and after the procedure, the parasternal short axis of the double orifice, the apical four-chamber view with the residual jets and the inflow's mean gradient.</figcaption>
     </figure>
     <figure class="fig" id="fig-measure">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -1764,9 +1764,9 @@
       <div class="quiz"></div>
     </article>
 
-    <article class="chapter" id="ch-mitraclip">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">B7</span><div><h2 class="ch-title">MitraClip</h2><p class="ch-kicker">Transcatheter edge-to-edge repair: what TEE shows at each step</p></div></div>
-      <p class="dek" data-part="dek">Transcatheter edge-to-edge repair (TEER) with the MitraClip joins the anterior and posterior mitral leaflets with a clip, brought from the femoral vein across the atrial septum. TEE guides each step of the procedure, and TTE shows the result.</p>
+    <article class="chapter" id="ch-mteer">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">B7</span><div><h2 class="ch-title">Mitral transcatheter <span style="white-space: nowrap">edge-to-edge</span> repair</h2><p class="ch-kicker">M-TEER, step by step: what TEE shows at each step</p></div></div>
+      <p class="dek" data-part="dek">Mitral transcatheter edge-to-edge repair (<span style="white-space: nowrap">M-TEER</span>) joins the anterior and posterior mitral leaflets with a clip, brought from the femoral vein across the atrial septum. TEE guides each step of the procedure, and TTE shows the result.</p>
       <div class="controls">
         <div class="control sev">
           <div class="sev-head">
@@ -1781,7 +1781,7 @@
       <p class="live"></p>
       <div class="prose" data-part="prose">
         <h3>The device</h3>
-        <p>The MitraClip System has two parts: a steerable guide catheter, and a clip delivery system that carries the clip on a delivery catheter inside a steerable sleeve<span class="cite" data-ref="abbottifu2019"></span>. The guide enters the femoral vein and runs up the inferior vena cava to the right atrium<span class="cite" data-ref="fdap100009"></span>. In the third-generation system it is 24 Fr along its shaft and 22 Fr where it crosses the septum<span class="cite" data-ref="abbottifu2019"></span>. The clip is made of metal alloys with a polyester fabric cover, and each of its two arms has a gripper above it<span class="cite" data-ref="abbottifu2019"></span>. The fourth generation (G4) has arms 9 mm long (NT, NTW) or 12 mm long (XT, XTW), and 4 mm wide or, in the W sizes, 6 mm wide<span class="cite" data-ref="abbottg4,sharma2022"></span>. Its grippers drop together or one at a time<span class="cite" data-ref="abbottg4"></span>. A fifth generation (G5) came to market in 2025<span class="cite" data-ref="massdevice2025"></span>.</p>
+        <p>The MitraClip (Abbott) system has two parts: a steerable guide catheter, and a clip delivery system that carries the clip on a delivery catheter inside a steerable sleeve<span class="cite" data-ref="abbottifu2019"></span>. The guide enters the femoral vein and runs up the inferior vena cava to the right atrium<span class="cite" data-ref="fdap100009"></span>. In the third-generation system it is 24 Fr along its shaft and 22 Fr where it crosses the septum<span class="cite" data-ref="abbottifu2019"></span>. The clip is made of metal alloys with a polyester fabric cover, and each of its two arms has a gripper above it<span class="cite" data-ref="abbottifu2019"></span>. The fourth generation (G4) has arms 9 mm long (NT, NTW) or 12 mm long (XT, XTW), and 4 mm wide or, in the W sizes, 6 mm wide<span class="cite" data-ref="abbottg4,sharma2022"></span>. Its grippers drop together or one at a time<span class="cite" data-ref="abbottg4"></span>. A fifth generation (G5) came to market in 2025<span class="cite" data-ref="massdevice2025"></span>.</p>
         <h3>Who is treated</h3>
         <p>EVEREST II randomly assigned 279 patients with grade 3+ or 4+ MR to the clip or to surgery<span class="cite" data-ref="feldman2011"></span>; most had primary MR<span class="cite" data-ref="fdap100009"></span>. At 12 months, freedom from death, from surgery for mitral dysfunction and from grade 3+ or 4+ MR was 55% with the clip and 73% with surgery; major adverse events at 30 days were 15% and 48%<span class="cite" data-ref="feldman2011"></span>. The FDA approved the clip in 2013 for primary MR at prohibitive surgical risk<span class="cite" data-ref="fdap100009"></span>, and in 2019 for secondary MR<span class="cite" data-ref="fdap100009s028"></span>.</p>
         <p>In secondary MR, COAPT (614 patients) lowered the rate of heart failure hospitalization within 24 months, 35.8% against 67.9% per patient-year, and death, 29.1% against 46.1%<span class="cite" data-ref="stone2018"></span>. MITRA-FR (304 patients) found no difference in death or heart failure hospitalization at 12 months<span class="cite" data-ref="obadia2018"></span>. RESHAPE-HF2 (505 patients, moderate to severe secondary MR) lowered the rate of heart failure hospitalization or cardiovascular death, 37.0 against 58.9 events per 100 patient-years<span class="cite" data-ref="anker2024"></span>.</p>

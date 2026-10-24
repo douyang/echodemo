@@ -1180,6 +1180,8 @@ export class EchoView {
     const viewHide = (VIEWS[this.view] && VIEWS[this.view].hide) || [];
     for (const vd of this.valves) {
       vd.morph(weights(vd, lw(vd)));
+      // a chapter's own change to the morphed valve (the leaflets held in a clip, ch/mteer.js)
+      if (this.valveHook) this.valveHook(this, vd);
       // a valve that a chapter replaces (a prosthesis, ch/prosthetic.js) moves but is not cut, nor
       // one that its view leaves out (views.js hide; the chordae below too)
       if ((this.hideValves && this.hideValves.has(vd.mesh.name)) || viewHide.includes(vd.mesh.name)) continue;
