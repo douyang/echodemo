@@ -1021,9 +1021,9 @@ function liveOf(k, cite) {
     case 'steer':
       return `<b>Steering.</b> The guide sits across the septum. The clip is steered down to the valve, over the jet's origin at A2–P2. The commissural view shows its medial-lateral position, the long-axis view its anterior-posterior position${cite('zamorano2011')}.`;
     case 'align':
-      return `<b>Alignment.</b> Above the valve the arms open, and the clip turns until the arms are square to the line of coaptation. The 3D en face view shows the turn. In the commissural view the aligned arms show edge-on, as one line; in the long-axis view both arms show, open${cite('abbottg4guide')}.`;
+      return `<b>Alignment.</b> Above the valve the arms open, and the clip turns until the arms are square to the line of coaptation. The 3D en face view shows the turn${cite('little2026')}. In the commissural view the aligned arms show edge-on, as one line; in the long-axis view both arms show, open.`;
     case 'grasp':
-      return `<b>Grasping.</b> With its arms at about 60°, the clip crosses into the LV. About 2 cm below the valve the arms open to about 120°, the clip comes back under A2 and P2, and the grippers drop${cite('abbottifu2019')}. The long-axis and commissural views confirm both leaflets in the arms before the clip closes${cite('zamorano2011')}.`;
+      return `<b>Grasping.</b> With its arms at about 60°, the clip crosses into the LV. About 2 cm below the valve the arms open to about 120°, the clip comes back under A2 and P2, and the grippers drop. The long-axis and commissural views confirm both leaflets in the arms before the clip closes${cite('zamorano2011')}.`;
     case 'assess':
       return `<b>Assessment before release.</b> Two thin jets remain, one on each side of the clip: mild MR, vena contracta ${fmt(RESID.med, 1)} cm or less${cite('zoghbi2019')}. The mean gradient is ${fmt(MG.after, 1)} mmHg at ${HR} bpm; under 5 mmHg is preferred${cite('little2026')}. The transgastric short axis shows the double orifice.`;
     case 'release':

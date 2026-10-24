@@ -31,8 +31,8 @@
 // The clip and the catheters are built each frame from the chapter's state (pose), as closed
 // meshes. The echo views cut them on their planes (echo.js extraItems) as metal and plastic,
 // with the shadow and the reverberation behind them; the 3D views draw the same meshes. The
-// sizes of the clip follow the device's labeling where the chapter cites it (refs abbottifu2019,
-// abbottg4); the rest of the shapes are a drawing.
+// sizes of the clip follow a manufacturer's labeling (src/refs.js abbottifu2019, abbottg4); the
+// rest of the shapes are a drawing.
 
 const V = (x = 0, y = 0, z = 0) => [x, y, z];
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
