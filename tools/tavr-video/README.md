@@ -62,7 +62,8 @@ scipy for the score.
    cd ../tavr-cut1 && EGL_PLATFORM=surfaceless python tools/tavr-video/anim.py --engine cycles \
      --samples 8 --out <this repo>/video/out/tavr-procedure/frames1 --shot position,deploy
    ```
-4. Render this cut's Blender frames. On 4 CPU cores, Cycles takes about 3 h:
+4. Render this cut's Blender frames: 600 frames. On 4 CPU cores, Cycles takes about 2.5 h (about
+   14 s a frame; 23 s in the pacing shot, which shows the whole body):
    ```
    EGL_PLATFORM=surfaceless python tools/tavr-video/anim.py --engine cycles --samples 8 \
      --out video/out/tavr-procedure/frames \
