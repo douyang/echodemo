@@ -643,7 +643,7 @@ function viewsTable(host, key, c) {
 
 const tavrPage = {
   key: 'tavr',
-  part: 'valves',
+  part: 'structural',
   model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Transcatheter aortic valve replacement',
   nav: 'TAVR',
