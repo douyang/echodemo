@@ -16,7 +16,7 @@ import { cal, jet } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { asWeights } from '../meshcal.js';
 import { annulusOf } from '../gl/prostheticmesh.js';
-import { DESIGNS, wallOf, tavrItems, frameAt } from '../gl/tavrmesh.js';
+import { DESIGNS, wallOf, tavrItems, frameAt, inflowAt } from '../gl/tavrmesh.js';
 import { teeAnatomy, framesOf, planeAt, BY_KEY } from '../teeviews.js';
 
 const T_KEY = 'tavrT';
@@ -62,7 +62,6 @@ const SV = 72;         // mL, the stroke volume with no leak
 const BSA = 1.8;       // m²
 const ET = 0.292;      // s, the model's ejection time (cyclemodel.js)
 const AVA0 = 0.75;     // cm², the native valve before TAVR
-const DEPTH = { be: 0.2, se: 0.3 };    // cm the frame's inflow lies below the annulus (gl/tavrmesh.js)
 // A new leak in a small, stiff ventricle: the LV takes up half of its volume as a larger stroke
 // volume, and the forward volume falls by the other half (a model choice). The total crosses the
 // valve in systole, so the flow and the gradient rise with the leak; the regurgitant fraction
@@ -107,8 +106,10 @@ function modelAt(t, valve, leak) {
   const k = valve === 'se' ? u : after ? 1 : 0;
   const atet = 0.42 + (0.27 - 0.42) * k, p = 0.62 + (0.95 - 0.62) * k;
   const vtiL = flow / csa, vtiA = flow / eoa;
+  // from the end of Cross the valve sits at its place
+  const placed = t >= STEPS[1].a && dropAt(t) < 0.02;
   return {
-    t, valve, leak, after, u, paced: valve === 'be' && u > 0 && !after, eoa, flow, rvol, rf: rvol / flow, vtiL, vtiA, atet, p,
+    t, valve, leak, after, u, placed, paced: valve === 'be' && u > 0 && !after, eoa, flow, rvol, rf: rvol / flow, vtiL, vtiA, atet, p,
     vmax: vtiA / (100 * ET * gMean(qOf(atet), p)), vL: vtiL / (100 * ET * gMean(1, 0.8)),
   };
 }
@@ -116,7 +117,8 @@ function modelAt(t, valve, leak) {
 /** The values as reported, each calculation from the rounded values before it; none during pacing. */
 function measure(m) {
   const v = { ...m, L: LEAKS[m.leak], V: VALVES[m.valve], step: stepOf(m.t) };
-  v.depth = DEPTH[m.valve] * 10;   // mm
+  // mm the frame's inflow lies below the annulus, live as the frame expands and shortens
+  v.depth = -inflowAt(m.valve, m.u) * 10;
   if (m.paced) {
     Object.assign(v, { vmax: NaN, vtiL: NaN, vtiA: NaN, vL: NaN, dvi: NaN, eoaShown: NaN, ieoa: NaN, mg: NaN, qA: qOf(m.atet), pA: m.p });
     v.crit = { mg: false, vmax: false, dvi: false, ar: true };
@@ -320,7 +322,8 @@ function lax(ctx, box, v, tt) {
   // the annulus is measured on a frame held in mid-systole
   const tms = measuring ? MID_SYS : tt, s = cycleAt(tms).s;
   const mm = annMm[teeKey] ?? null;
-  const lines = measuring ? (mm ? [[`Annulus ${mm} mm`, `${mm} mm`]] : null) : expandAt(t) >= 1 ? [[`Depth ${fmt(v.depth, 0)} mm`, `${fmt(v.depth, 0)} mm`]] : null;
+  const u = expandAt(t), placed = v.placed, dmm = fmt(v.depth, 0);
+  const lines = measuring ? (mm ? [[`Annulus ${mm} mm`, `${mm} mm`]] : null) : placed ? [[`Depth ${dmm} mm`, `${dmm} mm`]] : null;
   const title = fit(box.w, `ME AV LAX · 120° · ${v.V.label}-MM ${v.valve === 'be' ? 'BALLOON-EXPANDABLE' : 'SELF-EXPANDING'}`, 'ME AV LAX');
   const F = MESH_LAX.draw(ctx, box, title, {
     tms, ...procedure(v, t), lines: lines || undefined,
@@ -333,9 +336,9 @@ function lax(ctx, box, v, tt) {
         // the annulus: hinge point to hinge point, in the plane of the long axis
         const a = toPlane(g, atF(A, A.R, back, 0)), b = toPlane(g, atF(A, A.R, back + Math.PI, 0));
         cal(c, F, a, b, '');
-      } else if (expandAt(t) >= 1) {
-        // the implant depth on the anterior side: from the annulus to the frame's inflow
-        const fr = frameAt(v.valve, wallOf(ev, A)), front = back + Math.PI;
+      } else if (placed) {
+        // the depth on the anterior side: from the annulus to the frame's inflow
+        const fr = frameAt(v.valve, wallOf(ev, A), u), front = back + Math.PI;
         const r = fr.r(fr.lo, front) + 0.3;
         cal(c, F, toPlane(g, atF(A, r, front, 0)), toPlane(g, atF(A, r, front, fr.lo)), '');
         if (step.key === 'check' && v.L.jets.length) leakLax(c, F, A, g, v, tt, fr, back);
@@ -576,7 +579,7 @@ const LIVE = {
   measure: (v, c, mm) => `<b>Measure.</b> The calcified native valve opens little: a peak velocity of ${fmt(v.vmax, 1)} m/s and a mean gradient of ${v.mg} mmHg, severe stenosis${c('baumgartner2017')}. On the long axis, held in systole, the annulus measures ${mm ? `${mm} mm` : '–'} from hinge point to hinge point${c('hahn2022')}; the short axis shows the three cusps and their calcium${c('zamorano2011')}.`,
   cross: (v, c) => `<b>Cross.</b> A stiff guidewire lies across the valve with its end curved in the LV apex; TEE watches it for entanglement in the mitral apparatus${c('hahn2015')}. The crimped valve comes down over it to the annulus, positioned against the cusps' hinge points${c('hahn2015')}.`,
   deploy: (v, c) => (v.valve === 'be'
-    ? `<b>Deploy.</b> Under rapid ventricular pacing, the balloon is inflated once the systolic pressure is 50 mmHg or less and held full for 3 seconds${c('fdas3')}: the frame expands along its whole length at once. Its ventricular end lies 2 mm below the annulus, a 90/10 position (aortic/ventricular) inside the 80/20 to 90/10 target${c('blackman2021')}.`
+    ? `<b>Deploy.</b> Under rapid ventricular pacing, the balloon is inflated once the systolic pressure is 50 mmHg or less and held full for 3 seconds${c('fdas3')}. The frame expands along its whole length at once and shortens from 27 to 20 mm, mostly at its ventricular end${c('schymik2015')}. That end rises from 9 to 2 mm below the annulus: a 90/10 position (aortic/ventricular), inside the 80/20 to 90/10 target${c('blackman2021')}.`
     : `<b>Deploy.</b> The capsule draws back and the frame expands from its inflow up, without rapid pacing${c('zoghbi2019')}; until release it can be recaptured and placed again${c('fdaevolut')}. The target depth is 3 mm below the noncoronary cusp${c('grubb2025')}; the leaflets sit above the annulus${c('popma2019')}.`),
   check: (v, c) => {
     const where = { mild: 'One jet at the frame\'s ventricular edge', moderate: 'Two jets', severe: 'Three jets' }[v.leak];
@@ -683,7 +686,7 @@ const tavrPage = {
         { k: 'Step', v: v.step.name, text: true },
         { k: 'Annulus, 2D TEE', v: mm ? `${mm}` : '–', u: 'mm' },
         { k: 'Valve', v: `${v.V.label} mm, ${v.V.name}`, text: true },
-        { k: 'Implant depth', v: v.after ? fmt(v.depth, 0) : '–', u: 'mm' },
+        { k: 'Implant depth', v: v.placed ? fmt(v.depth, 0) : '–', u: 'mm' },
         { k: 'Peak velocity', v: fmt(v.vmax, 1), u: 'm/s', flag: v.after ? !v.crit.vmax : v.vmax >= 4 },
         { k: 'Mean gradient', v: fmt(v.mg), u: 'mmHg', flag: v.after ? !v.crit.mg : v.mg >= 40 },
         { k: 'DVI', v: fmt(v.dvi, 2), flag: v.dvi < 0.25 },
