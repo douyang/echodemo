@@ -23,6 +23,7 @@ import rvPage from './ch/rv.js';
 import lvadPage from './ch/lvad.js';
 import hcmPage from './ch/hcm.js';
 import prostheticPage from './ch/prosthetic.js';
+import tavrPage from './ch/tavr.js';
 import shuntsPage from './ch/shunts.js';
 import endocarditisPage from './ch/endocarditis.js';
 import aortaPage from './ch/aorta.js';
@@ -30,8 +31,6 @@ import massesPage from './ch/masses.js';
 import miPage from './ch/mi.js';
 import mteerPage from './ch/mteer.js';
 import tteerPage from './ch/tteer.js';
-// TAVR is in preparation: a placeholder page until its chapter lands
-import tavrPage from './ch/tavr-soon.js';
 // Shock is hidden (SHOW_SHOCK in order.js), so this file does not import it and the page does not
 // load it. To restore it, add `import shockPage from './ch/shock.js';` here and shockPage to BY
 // below, and follow the steps at SHOW_SHOCK in order.js. Constrictive pericarditis is hidden as a

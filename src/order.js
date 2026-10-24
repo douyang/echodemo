@@ -11,11 +11,6 @@
 // repairs of the mitral and the tricuspid valve. Then the aorta. Artificial intelligence comes
 // last: a model that reads a whole study draws on every chapter before it. Stress
 // echocardiography, strain, the cardiomyopathies and the pericardium are bonus chapters (BONUS).
-//
-// TAVR is a placeholder until its chapter lands (src/ch/tavr-soon.js, index.html #ch-tavr): a
-// page with its number, title and part, and links to the chapters next to it. Its own module
-// then takes the place of tavr-soon.js in src/chapters.js, and its article and figure that of
-// the placeholder's article; the order needs no change.
 
 // The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come back
 // as the last main chapter, in a part of its own, when this is true. The Normal values table opens from it.

@@ -45,6 +45,7 @@
 <link rel="modulepreload" href="src/ch/lvad.js">
 <link rel="modulepreload" href="src/ch/hcm.js">
 <link rel="modulepreload" href="src/ch/prosthetic.js">
+<link rel="modulepreload" href="src/ch/tavr.js">
 <link rel="modulepreload" href="src/ch/shunts.js">
 <link rel="modulepreload" href="src/ch/endocarditis.js">
 <link rel="modulepreload" href="src/ch/aorta.js">
@@ -52,7 +53,6 @@
 <link rel="modulepreload" href="src/ch/mi.js">
 <link rel="modulepreload" href="src/ch/mteer.js">
 <link rel="modulepreload" href="src/ch/tteer.js">
-<link rel="modulepreload" href="src/ch/tavr-soon.js">
 <link rel="modulepreload" href="src/ch/measure.js">
 <link rel="modulepreload" href="src/ch/ai.js">
 <link rel="modulepreload" href="src/ch/tee.js">
@@ -91,13 +91,14 @@
 <link rel="modulepreload" href="src/gl/lvadmesh.js">
 <link rel="modulepreload" href="src/hcmcal.js">
 <link rel="modulepreload" href="src/gl/prostheticmesh.js">
+<link rel="modulepreload" href="src/gl/tavrmesh.js">
+<link rel="modulepreload" href="src/teeviews.js">
 <link rel="modulepreload" href="src/gl/shuntsmesh.js">
 <link rel="modulepreload" href="src/gl/endocarditismesh.js">
 <link rel="modulepreload" href="src/aortacal.js">
 <link rel="modulepreload" href="src/gl/massesmesh.js">
 <link rel="modulepreload" href="src/gl/mimesh.js">
 <link rel="modulepreload" href="src/mical.js">
-<link rel="modulepreload" href="src/teeviews.js">
 <link rel="modulepreload" href="src/teerviews.js">
 <link rel="modulepreload" href="src/gl/clipmesh.js">
 <link rel="modulepreload" href="src/enface3d.js">
@@ -115,7 +116,7 @@
 <script>
 // a chapter whose figure needs the heart model at once: its files and modules load from the start
 (() => {
-  const MODEL = ['windows', 'eject', 'fill', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'tee', 'mteer', 'tteer', 'aorta', 'stress', 'strain', 'hcm', 'amyloid', 'peri', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', 'lvad'];
+  const MODEL = ['windows', 'eject', 'fill', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'tee', 'tavr', 'mteer', 'tteer', 'aorta', 'stress', 'strain', 'hcm', 'amyloid', 'peri', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', 'lvad'];
   if (!MODEL.includes(location.hash.slice(1))) return;
   const add = (rel, href, as) => {
     const l = document.createElement('link');
@@ -268,6 +269,10 @@
     <figure class="fig" id="fig-prosthetic">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">A prosthetic aortic valve from normal function to significant stenosis, or a normal valve that is small for the patient: a zoomed parasternal long-axis view and a short-axis view of the valve, cut from the heart model, with the sewing ring and the stent and leaflets of a bioprosthesis or the housing and discs of a bileaflet mechanical valve, and the shadow and reverberation behind the metal; continuous-wave Doppler through the valve with its peak velocity, acceleration time and ejection time; pulsed-wave Doppler in the LVOT; and the measurements against their cut-offs.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-tavr">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Transcatheter aortic valve replacement for aortic stenosis, step by step: the mid-esophageal aortic valve long-axis and short-axis views of transesophageal echo, cut from the heart model. Measure: the calcified native valve and the annulus from hinge point to hinge point. Cross: the guidewire and the crimped valve over the annulus. Deploy: a balloon-expandable or a self-expanding frame that expands and pushes the native leaflets out. Check: color Doppler of paravalvular jets outside the frame in diastole and their share of the circumference; continuous-wave Doppler through the valve and pulsed-wave Doppler in the LVOT from the deep transgastric view; and the measurements against the criteria of a successful result.</figcaption>
     </figure>
     <figure class="fig" id="fig-aorta">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -1772,13 +1777,65 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== Structural heart: TAVR (in preparation, src/ch/tavr-soon.js) -->
+    <!-- ======================================================== Structural heart: TAVR -->
     <article class="chapter" id="ch-tavr">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Transcatheter aortic valve replacement</h2><p class="ch-kicker">In preparation</p></div></div>
-      <p class="dek" data-part="dek">This chapter is in preparation.</p>
-      <div class="prose" data-part="prose">
-        <p>Aortic stenosis is in <a href="#as" data-go="as">chapter 12</a>, and prosthetic valves are in <a href="#prosthetic" data-go="prosthetic">bonus chapter B6</a>. The TEE views are in <a href="#tee" data-go="tee">chapter 17</a>.</p>
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Transcatheter aortic valve replacement</h2><p class="ch-kicker">TAVR: TEE guidance and the result</p></div></div>
+      <p class="dek" data-part="dek">TAVR replaces a stenotic aortic valve with a valve on a catheter. Echo measures the annulus, follows the valve to its place, and checks its function and the paravalvular seal.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="tavrT">Procedure <output data-for="tavrT"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the procedure"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="tavrT" data-key="tavrT" min="0" max="1" step="0.005">
+          <div class="grades" id="tavr-steps" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Valve</span>
+          <div class="seg" role="group" aria-label="Type of transcatheter valve" data-key="tavrValve">
+            <button type="button" data-val="be">Balloon-expandable</button><button type="button" data-val="se">Self-expanding</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Leak</span>
+          <div class="seg" role="group" aria-label="Paravalvular regurgitation at the check" data-key="tavrLeak">
+            <button type="button" data-val="none">None</button><button type="button" data-val="mild">Mild</button><button type="button" data-val="moderate">Moderate</button><button type="button" data-val="severe">Severe</button>
+          </div>
+        </div>
       </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="tavr-table"></table></div>
+      <div class="table-wrap"><table class="vt grade" id="tavr-views"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>The procedure</h3>
+        <p>A bioprosthesis on a metal frame is crimped onto a catheter and expanded inside the stenotic native valve. From 2019 to 2022, 96.2% of TAVRs in the US registry used transfemoral access<span class="cite" data-ref="arnold2024"></span>. TAVR lowered the 1-year mortality of patients who could not have surgery from 50.7% with standard therapy to 30.7%<span class="cite" data-ref="leon2010"></span>, and the 1-year death, stroke or rehospitalization of patients at low surgical risk from 15.1% after surgery to 8.5%<span class="cite" data-ref="mack2019"></span>. The 2025 ESC/EACTS guideline recommends TAVR from 70 years of age with a tricuspid valve and suitable anatomy, and surgery below 70 at low surgical risk<span class="cite" data-ref="praz2025"></span>.</p>
+        <p>A balloon-expandable valve, the SAPIEN 3 (a cobalt-chromium frame with bovine pericardial leaflets), opens with one balloon inflation under rapid ventricular pacing<span class="cite" data-ref="fdas3"></span>. A self-expanding valve, the Evolut (a nitinol frame with porcine pericardial leaflets<span class="cite" data-ref="fdaevolut"></span> that sit above the annulus<span class="cite" data-ref="popma2019"></span>), is released slowly from its capsule without rapid pacing<span class="cite" data-ref="zoghbi2019"></span>, and can be recaptured before its release<span class="cite" data-ref="fdaevolut"></span>.</p>
+        <h3>TEE or TTE</h3>
+        <p>Fluoroscopy guides most of the procedure; TEE or TTE helps to place the pacing wire, the guidewire and the valve, and checks the result at once<span class="cite" data-ref="little2023"></span>. TEE gives continuous images and finds complications at once, but needs sedation or anesthesia, and its probe can obstruct fluoroscopy<span class="cite" data-ref="zoghbi2019"></span>; it can be withdrawn during the implant<span class="cite" data-ref="zamorano2011"></span>. In the US registry, conscious sedation for transfemoral TAVR rose from 33.4% to 64.1% of cases between 2016 and 2019<span class="cite" data-ref="butala2020"></span>, and TTE guidance became more common<span class="cite" data-ref="little2023"></span>. The EACVI prefers this minimalist approach, converting to TEE for complications; TEE suits new programs and patients at higher risk<span class="cite" data-ref="agricola2023"></span>.</p>
+        <h3>The TEE views, step by step</h3>
+        <p>The second table lists the views of each step (<a href="#tee" data-go="tee">chapter 17</a>). The midesophageal long axis of the aortic valve, at 120–140°, and its short axis, at 30–60°, are often acquired together as a biplane image<span class="cite" data-ref="agricola2023"></span>. The deep transgastric views align the Doppler beam with the LVOT and the valve<span class="cite" data-ref="hahn2013"></span>.</p>
+        <p><b>Measure.</b> The annulus that sizes the valve is the diameter at the hinge points of the cusps, measured in systole<span class="cite" data-ref="zamorano2011"></span>: from the right cusp's hinge anteriorly to the base of the interleaflet trigone posteriorly, inner edge to inner edge, on a zoomed long axis<span class="cite" data-ref="hahn2022"></span>. A TEE annulus of 21–25 mm takes a 26-mm SAPIEN 3<span class="cite" data-ref="fdas3"></span>, and an annulus of 23–26 mm a 29-mm Evolut R<span class="cite" data-ref="fdaevolut"></span>. CT is the reference for sizing; 3D TEE measures 3.5–7.4% smaller, usually without a change of valve size<span class="cite" data-ref="agricola2023"></span>. A left main height below 10–11 mm warns of coronary obstruction<span class="cite" data-ref="hahn2022"></span>.</p>
+        <p><b>Cross.</b> TEE confirms the pacing wire in the RV<span class="cite" data-ref="agricola2023"></span> and watches the stiff wire in the LV for entanglement in the mitral apparatus, its commonest complication, seen as a new change in the mitral leaflets or in MR<span class="cite" data-ref="hahn2015"></span>. Echo places the crimped valve by the hinge points of the cusps, which can lie slightly aortic to the fluoroscopic landmark<span class="cite" data-ref="hahn2015"></span>.</p>
+        <p><b>Deploy.</b> A SAPIEN 3 is placed for a final depth of 80/20 to 90/10 of its frame height, aortic to ventricular<span class="cite" data-ref="blackman2021"></span>. Its frame shortens as it expands, mostly at its ventricular end: from 27 to 20 mm for the 26-mm valve<span class="cite" data-ref="schymik2015"></span>. With the cusp-overlap technique, an Evolut targets 3 mm below the noncoronary cusp, and is recaptured at less than 1 mm or more than 5 mm<span class="cite" data-ref="grubb2025"></span>.</p>
+        <p><b>Check.</b> Immediately after the implant, TEE confirms that all the prosthetic cusps move, that the frame is circular and that there is no significant valvular or paravalvular regurgitation. Central regurgitation is common while the wire crosses the valve and for minutes after, as the crimped leaflets recover. Transgastric views with color, PW and CW Doppler complete the check before the probe is removed<span class="cite" data-ref="zamorano2011"></span>.</p>
+        <h3>The paravalvular leak</h3>
+        <p>The whole valve is scanned from its aortic to its ventricular end. A paravalvular jet arises at the frame's ventricular edge and counts only when it enters the LV; color in the sinuses above the skirt is not a leak<span class="cite" data-ref="zoghbi2019"></span>. Its circumferential extent is the sum of the jets' vena contracta arcs divided by the circumference of the valve's outer edge: less than 10% is mild, 10–29% moderate and 30% or more severe, best read with the vena contracta<span class="cite" data-ref="zoghbi2024"></span>. The frame shadows posterior jets on TTE and anterior jets on TEE; the deep transgastric view finds anterior jets that the esophageal views miss<span class="cite" data-ref="zoghbi2019"></span>.</p>
+        <p>The regurgitant volume and fraction cannot be measured during the procedure<span class="cite" data-ref="zoghbi2019"></span>. With the SAPIEN 3, at least moderate paravalvular regurgitation at 30 days carried a hazard ratio of 2.40 for death at 1 year, and mild regurgitation did not raise mortality; at least moderate regurgitation is corrected at the procedure, by balloon post-dilatation for example<span class="cite" data-ref="pibarot2017"></span>.</p>
+        <h3>A successful result</h3>
+        <p>VARC-3 defines the intended performance of the valve as a mean gradient below 20 mmHg, a peak velocity below 3 m/s, a DVI of 0.25 or more and less than moderate regurgitation<span class="cite" data-ref="genereux2021"></span>. For the EOA, the LVOT diameter is measured outer edge to outer edge at the ventricular end of the frame, with the PW sample just proximal to the flow acceleration at the frame's inlet; a sample inside the frame records that acceleration and overestimates the EOA<span class="cite" data-ref="zoghbi2024"></span>. The normal values depend on the valve and its size: a mean gradient of 10.6 mmHg and an EOA of 1.74 cm² for a 26-mm SAPIEN 3, and 7.9 mmHg and 1.97 cm² for a 29-mm Evolut R<span class="cite" data-ref="zoghbi2024"></span>. Mismatch is graded from the indexed EOA, as after surgery (<a href="#prosthetic" data-go="prosthetic">bonus chapter B6</a>).</p>
+        <p>A TTE soon after the implant sets the baseline<span class="cite" data-ref="zoghbi2019"></span>. Later, a mean gradient that rises by 10 mmHg or more from the study at 1–3 months, to 20 mmHg or more, with a fall of the EOA or the DVI, is moderate hemodynamic valve deterioration<span class="cite" data-ref="genereux2021"></span>.</p>
+        <h3>Complications</h3>
+        <p>A periaortic hematoma, a fast-growing pericardial effusion and atypical flow from the annulus indicate annular rupture<span class="cite" data-ref="hahn2015"></span>. A new regional wall-motion abnormality suggests coronary obstruction<span class="cite" data-ref="agricola2023"></span>. New MR can come from RV pacing, from a low valve that presses on the anterior mitral leaflet, or from damage to the subvalvular apparatus<span class="cite" data-ref="zamorano2011"></span>. A perforation of the RV by the pacing wire can appear only after the wire's removal<span class="cite" data-ref="hahn2015"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>The annulus is measured in systole at the cusps' hinge points, inner edge to inner edge.</li>
+        <li>A paravalvular jet counts where it enters the LVOT; an extent below 10% of the circumference is mild, 10–29% moderate and 30% or more severe.</li>
+        <li>The frame shadows anterior jets on TEE and posterior jets on TTE; the deep transgastric view completes the TEE check.</li>
+        <li>Intended performance: a mean gradient below 20 mmHg, a peak velocity below 3 m/s, a DVI of 0.25 or more and less than moderate regurgitation.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
     </article>
 
     <!-- ======================================================== Structural heart: M-TEER and T-TEER -->

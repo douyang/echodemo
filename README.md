@@ -27,7 +27,7 @@ An illustrated, interactive guide to echocardiography. 22 chapters in nine parts
 | | 15 Mitral regurgitation | Mild to severe with LV dysfunction: PISA, pulmonary vein flow reversal |
 | | 16 Tricuspid regurgitation | Mild to torrential: PISA, RV and RA dilation, hepatic vein flow reversal |
 | VII Structural heart | 17 Transesophageal echocardiography | 17 views of Hahn 2013, with all 11 views of the basic perioperative examination. Level, turn and multiplane angle; a free probe that advances, turns and flexes |
-| | 18 Transcatheter aortic valve replacement (TAVR) | In preparation: the page holds the chapter's place and links to 12, B6 and 17 |
+| | 18 Transcatheter aortic valve replacement (TAVR) | TEE guidance of a balloon-expandable or a self-expanding valve in four steps: measure, cross, deploy, check. Paravalvular regurgitation from none to severe; the VARC-3 intended performance |
 | | 19 Mitral transcatheter edge-to-edge repair (M-TEER) | Repair of a flail P2 with a clip, step by step: the TEE views that guide each step, the 3D en face view, TTE before and after, and the procedure in a cut-away heart rendered in Blender |
 | | 20 Tricuspid transcatheter edge-to-edge repair (T-TEER) | Repair of massive secondary TR with a clip on the anteroseptal line, step by step: the TEE views that guide each step, the 3D en face view from the RA, TTE before and after, and the procedure in a cut-away heart rendered in Blender |
 | VIII Aorta | 21 Diseases of the aorta | Dilation, dissection and coarctation |
@@ -44,7 +44,7 @@ An illustrated, interactive guide to echocardiography. 22 chapters in nine parts
 | | B10 Complications of myocardial infarction | Septal rupture, papillary muscle rupture, free-wall rupture with pseudoaneurysm, apical aneurysm |
 | | B11 Left ventricular assist devices | A HeartMate 3 from 4,600 to 6,200 rpm; RV failure, de novo AR, outflow graft obstruction |
 
-Chapters 09, 11 to 16 and 21, and B2 to B10, each follow one disease or one load from normal to its end stage. 19 and 20 follow an M-TEER and a T-TEER procedure through their steps, and B11 an LVAD through its pump speeds.
+Chapters 09, 11 to 16 and 21, and B2 to B10, each follow one disease or one load from normal to its end stage. 18 to 20 follow a TAVR, an M-TEER and a T-TEER procedure through their steps, and B11 an LVAD through its pump speeds.
 
 Hidden chapters keep their code and come back with a flag in `src/order.js`: the report (`SHOW_REPORT`), Planes (`SHOW_PLANES`), Automated measurements (`SHOW_MEASURE`) and Shock (`SHOW_SHOCK`). Constriction and the IVC were chapters of their own (`SHOW_CONSTRICT`, `SHOW_IVC`); B5 and 07 now show them. In 11, the PH calculator and the ESC/ERS probability of PH are hidden (`SHOW_CALC` and `SHOW_PROB` in `src/ch/rv.js`).
 
@@ -55,12 +55,12 @@ Hidden chapters keep their code and come back with a flag in `src/order.js`: the
 | ![08 Systolic function](docs/screenshots/eject.webp) | ![09 Diastolic function](docs/screenshots/fill.webp) | ![10 Regional wall motion](docs/screenshots/segments.webp) |
 | ![11 Right ventricle](docs/screenshots/rv.webp) | ![12 Aortic stenosis](docs/screenshots/as.webp) | ![13 Aortic regurgitation](docs/screenshots/ar.webp) |
 | ![14 Mitral stenosis](docs/screenshots/ms.webp) | ![15 Mitral regurgitation](docs/screenshots/mr.webp) | ![16 Tricuspid regurgitation](docs/screenshots/tr.webp) |
-| ![17 Transesophageal echocardiography](docs/screenshots/tee.webp) | ![19 Mitral transcatheter edge-to-edge repair](docs/screenshots/mteer.webp) | ![20 Tricuspid transcatheter edge-to-edge repair](docs/screenshots/tteer.webp) |
-| ![21 Diseases of the aorta](docs/screenshots/aorta.webp) | ![22 AI interpretation and measurement](docs/screenshots/ai.webp) | ![B1 Stress echocardiography](docs/screenshots/stress.webp) |
-| ![B2 Strain](docs/screenshots/strain.webp) | ![B3 Hypertrophic cardiomyopathy](docs/screenshots/hcm.webp) | ![B4 Cardiac amyloidosis](docs/screenshots/amyloid.webp) |
-| ![B5 Pericardial disease](docs/screenshots/peri.webp) | ![B6 Prosthetic valves](docs/screenshots/prosthetic.webp) | ![B7 Infective endocarditis](docs/screenshots/endocarditis.webp) |
-| ![B8 Shunts: ASD, VSD and PFO](docs/screenshots/shunts.webp) | ![B9 Cardiac masses and thrombus](docs/screenshots/masses.webp) | ![B10 Complications of myocardial infarction](docs/screenshots/mi.webp) |
-| ![B11 Left ventricular assist devices](docs/screenshots/lvad.webp) | | |
+| ![17 Transesophageal echocardiography](docs/screenshots/tee.webp) | ![18 Transcatheter aortic valve replacement](docs/screenshots/tavr.webp) | ![19 Mitral transcatheter edge-to-edge repair](docs/screenshots/mteer.webp) |
+| ![20 Tricuspid transcatheter edge-to-edge repair](docs/screenshots/tteer.webp) | ![21 Diseases of the aorta](docs/screenshots/aorta.webp) | ![22 AI interpretation and measurement](docs/screenshots/ai.webp) |
+| ![B1 Stress echocardiography](docs/screenshots/stress.webp) | ![B2 Strain](docs/screenshots/strain.webp) | ![B3 Hypertrophic cardiomyopathy](docs/screenshots/hcm.webp) |
+| ![B4 Cardiac amyloidosis](docs/screenshots/amyloid.webp) | ![B5 Pericardial disease](docs/screenshots/peri.webp) | ![B6 Prosthetic valves](docs/screenshots/prosthetic.webp) |
+| ![B7 Infective endocarditis](docs/screenshots/endocarditis.webp) | ![B8 Shunts: ASD, VSD and PFO](docs/screenshots/shunts.webp) | ![B9 Cardiac masses and thrombus](docs/screenshots/masses.webp) |
+| ![B10 Complications of myocardial infarction](docs/screenshots/mi.webp) | ![B11 Left ventricular assist devices](docs/screenshots/lvad.webp) | |
 
 ## Use
 
@@ -86,7 +86,7 @@ Hidden chapters keep their code and come back with a flag in `src/order.js`: the
 - The main sources are Lang 2015, Mitchell 2019, Zoghbi 2017, Baumgartner 2017, Otto 2020, Pandian 2023, Nagueh 2025, Mukherjee 2025, Thomas 2025, Klein 2013, Adler 2015, Schulz-Menger 2025, Garcia-Pavia 2021, Moody 2023, Pellikka 2020, Lancellotti 2017 and Taub 2025. The full list, with DOI and PubMed links, opens from **Sources** on the page (`src/refs.js`). Each reference was checked against PubMed and Crossref.
 - All images are simulated; there are no patient images. The models are illustrative and set to agree with the sources.
 - The AI chapter follows the papers and the public code of EchoPrime (Vukadinovic 2026) and EchoNet-Measurements (Sahashi 2025). Neither model ran on the site's images. The figure simulates their outputs from the site's own values.
-- The text reads as a clinical echocardiography text: third person, with the chamber, view, method and unit named. Each concept has one home chapter, and other chapters link to it. A chapter holds 1,100 words or fewer; 07 and B5 join two chapters and hold 1,700 or fewer.
+- The text reads as a clinical echocardiography text: third person, with the chamber, view, method and unit named. Each concept has one home chapter, and other chapters link to it. A chapter holds 1,100 words or fewer; 07 and B5 join two chapters and hold 1,700 or fewer. A structural heart procedure chapter, such as 18 (TAVR), may hold more: its steps, its imaging and its criteria need the room.
 
 ## Run it
 

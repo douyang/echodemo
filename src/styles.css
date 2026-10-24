@@ -397,8 +397,8 @@ a:hover { text-decoration-color: var(--accent); }
   font: 500 0.875rem/1.5 var(--mono);
   overflow-x: auto;
 }
-/* a page with no figure (main.js data-nofig: the bonus page, src/ch/bonus.js, and a chapter in
-   preparation, src/ch/tavr-soon.js): the stage hides, and the text takes its place. The bonus page's
+/* a page with no figure (main.js data-nofig: the bonus page, src/ch/bonus.js, or a chapter in
+   preparation): the stage hides, and the text takes its place. The bonus page's
    list of the bonus chapters (main.js buildBonus): each one's number, title and kicker, as a
    link, in columns on wider screens. A rule over each entry; none under the head */
 html[data-nofig] .stage { display: none; }
@@ -915,6 +915,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="peri"] .stage { height: min(64vh, 560px); }
   /* Prosthetic valves: two echo views beside the CW and PW Doppler strips */
   html[data-ch="prosthetic"] .stage { height: min(64vh, 560px); }
+  /* TAVR: the TEE long and short axes beside the CW and PW Doppler strips */
+  html[data-ch="tavr"] .stage { height: min(64vh, 560px); }
   /* Shunts: two echo views beside the Doppler strips or the bubble counts */
   html[data-ch="shunts"] .stage { height: min(64vh, 560px); }
   /* Infective endocarditis: two echo views beside two Doppler strips */
