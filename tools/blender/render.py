@@ -1,7 +1,10 @@
-# Render the procedure pane of chapter M-TEER in Blender (Cycles): the heart model cut away,
-# with the guide from the inferior vena cava across the atrial septum and the clip on the mitral
-# valve. The meshes come from the site itself (tools/blender/export.mjs), so the frames show the
-# heart and the device that the echo panes cut.
+# Render the procedure pane of chapter M-TEER or T-TEER in Blender (Cycles): the heart model cut
+# away, with the guide from the inferior vena cava across the atrial septum and the clip on the
+# mitral valve, or the guide in the right atrium and the clip on the tricuspid valve (the export's
+# geo.ch). The meshes come from the site itself (tools/blender/export.mjs), so the frames show the
+# heart and the device that the echo panes cut. A frame of the export may carry its own camera
+# (cam: { at: [x, y, z] in the site's cm, width (cm), yaw and pitch (deg) about the step's view }),
+# for a video with camera moves.
 #
 #   python tools/blender/render.py --mesh video/out/mteer/mesh_stills --out video/out/mteer/stills
 #        [--frames before,septum]   only these frames (names from the export)
@@ -24,6 +27,7 @@ import time
 
 import numpy as np
 import bpy
+from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector, Matrix
 
 ap = argparse.ArgumentParser()
@@ -34,6 +38,10 @@ ap.add_argument('--res', type=int, default=1000)
 ap.add_argument('--samples', type=int, default=48)
 ap.add_argument('--aspect', type=float, default=1.0)
 ap.add_argument('--allow-overlap', action='store_true')
+ap.add_argument('--bounces', type=int, default=6)
+ap.add_argument('--engine', default='CYCLES', help='CYCLES, or BLENDER_EEVEE_NEXT for a fast draft')
+ap.add_argument('--fieldk', type=float, default=1.0, help='the field scaled by this (a tall frame shows more)')
+ap.add_argument('--shift-y', type=float, default=0.0, help="the camera's vertical shift, in Blender's units (the frame's larger side): > 0 puts the subject lower")
 args = ap.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:])
 
 M = json.load(open(os.path.join(args.mesh, 'manifest.json')))
@@ -59,11 +67,14 @@ def to_blender(pos):
 # ---------------------------------------------------------------- the scene
 bpy.ops.wm.read_factory_settings(use_empty=True)
 sc = bpy.context.scene
-sc.render.engine = 'CYCLES'
+sc.render.engine = args.engine
 sc.cycles.device = 'CPU'
 sc.cycles.samples = args.samples
 sc.cycles.use_denoising = True
-sc.cycles.max_bounces = 6
+if args.engine != 'CYCLES':
+    sc.eevee.taa_render_samples = max(8, args.samples)
+sc.cycles.max_bounces = args.bounces
+sc.render.use_persistent_data = True
 sc.cycles.transparent_max_bounces = 24
 sc.render.film_transparent = True
 sc.render.resolution_y = args.res
@@ -79,13 +90,35 @@ w.node_tree.nodes['Background'].inputs[0].default_value = (0.05, 0.055, 0.065, 1
 w.node_tree.nodes['Background'].inputs[1].default_value = 0.25
 
 G = M['geo']
-C, Sx, apex = V(G['C']), V(G['S']), V(G['apex'])
-# the cut: the plane through the mitral annulus's middle, the puncture site and the LV apex; the
-# half toward the front goes, so the chambers show from the front
-n = (Sx - C).cross(apex - C).normalized()
-if n.dot(Vector((0, -1, 0))) < 0:
-    n = -n
+TRI = G.get('ch') == 'tteer'
+TILT = (0.8, 0.6)
+if TRI:
+    # the cut: the plane through the clip's site square to the anteroseptal line of coaptation; the
+    # half toward the patient's right and front goes, so the RA, the anterior and septal leaflets
+    # in section, the clip's arms and the RV show from that side
+    Bc = Vector((G['Bc'][0], -G['Bc'][2], G['Bc'][1])).normalized()
+    Nb0 = Vector((G['N'][0], -G['N'][2], G['N'][1])).normalized()
+    # a slanted cut: through a point 2 mm above the clip's site, its normal between the valve's
+    # axis (into the RA) and the far end of the line of coaptation, so the camera sees the valve
+    # from the RA at a slant, with the anterior and septal leaflets cut near the clip
+    C = V(G['Q']) + Nb0 * 0.002
+    n = (Nb0 * TILT[0] - Bc * TILT[1]).normalized()
+else:
+    C, Sx, apex = V(G['C']), V(G['S']), V(G['apex'])
+    # the cut: the plane through the mitral annulus's middle, the puncture site and the LV apex; the
+    # half toward the front goes, so the chambers show from the front
+    n = (Sx - C).cross(apex - C).normalized()
+    if n.dot(Vector((0, -1, 0))) < 0:
+        n = -n
 CUT_O, CUT_N = C.copy(), n.copy()
+CUT_NODES = []
+
+
+def set_cut(off):
+    """The cut moved off cm along its normal (a frame's cam.cut): far off, the heart shows whole."""
+    for sub_, dot_ in CUT_NODES:
+        sub_.inputs[1].default_value = CUT_O + CUT_N * (off * 0.01)
+        dot_.inputs[1].default_value = CUT_N
 
 def principled(nt, col, rough=0.45, metal=0.0, coat=0.0, sheen=0.0, spec=0.5):
     b = nt.nodes.new('ShaderNodeBsdfPrincipled')
@@ -143,6 +176,7 @@ def material(name, col, inner=None, cut=True, bump=0.0, **kw):
         geo = nt.nodes.new('ShaderNodeNewGeometry')
         sub = nt.nodes.new('ShaderNodeVectorMath'); sub.operation = 'SUBTRACT'; sub.inputs[1].default_value = CUT_O
         dot = nt.nodes.new('ShaderNodeVectorMath'); dot.operation = 'DOT_PRODUCT'; dot.inputs[1].default_value = CUT_N
+        CUT_NODES.append((sub, dot))
         gt = nt.nodes.new('ShaderNodeMath'); gt.operation = 'GREATER_THAN'; gt.inputs[1].default_value = 0.0
         nt.links.new(geo.outputs['Position'], sub.inputs[0])
         nt.links.new(sub.outputs[0], dot.inputs[0])
@@ -211,13 +245,14 @@ for name in M['topo']:
         fm = np.array([lut.get(int(r), lut[1]) for r in face_reg], dtype=np.int32)
         ob = make(name, pos, idx, [MAT[k] for k in keys], fm)
     elif 'Chordae' in name:
-        ob = make(name, pos, idx, [CHORD if 'Mitral' in name else CHORD_CUT])
+        ob = make(name, pos, idx, [CHORD if ('Tricuspid' if TRI else 'Mitral') in name else CHORD_CUT])
     elif name == 'Papillary':
-        ob = make(name, pos, idx, [MAT[1]])
+        ob = make(name, pos, idx, [MAT[2] if TRI else MAT[1]])
     elif name.startswith('skirt_') and ('Aortic' in name or 'Pulmonary' in name):
         ob = make(name, pos, idx, [MAT[5]])
     else:
-        ob = make(name, pos, idx, [VALVE if 'Mitral' in name else VALVE_CUT])
+        # the tricuspid valve is cut with the walls, so its leaflets show in section round the clip
+        ob = make(name, pos, idx, [VALVE_CUT if TRI or 'Mitral' not in name else VALVE])
     tissue[name] = ob
 
 # ---------------------------------------------------------------- the camera and the lights
@@ -255,9 +290,41 @@ def framing(f):
     u = u * u * (3 - 2 * u)
     return a[1].lerp(b[1], u), a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u
 
+def framing_tri(f):
+    Q, Q0, Cf, N = V(f['Q']), V(f['Q0']), V(f['C']), Vector((f['N'][0], -f['N'][2], f['N'][1])).normalized()
+    tip = V(f['tip']) if f.get('tip') else Q + N * 0.03
+    s = f['s']
+    # (step, the point looked at, the field's width in cm, the camera's height over the cut)
+    keys = [
+        (0, Q0 + N * 0.004, 9.5, 0.25),
+        (1, (tip * 0.45 + Q * 0.55), 11.0, 0.3),
+        (2, Q + N * 0.01, 8.0, 0.3),
+        (3, Q + N * 0.005, 6.5, 0.35),
+        (4, Q + N * 0.001, 5.5, 0.3),
+        (5, Q + N * 0.001, 5.5, 0.3),
+        (6, Q + N * 0.004, 6.5, 0.3),
+        (7, Q0 + N * 0.003, 9.0, 0.3),
+    ]
+    i = max(0, min(len(keys) - 2, int(math.floor(s))))
+    a, b = keys[i], keys[i + 1]
+    u = max(0.0, min(1.0, s - a[0]))
+    u = u * u * (3 - 2 * u)
+    return a[1].lerp(b[1], u), a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u
+
 def place(f):
-    at, width, lift = framing(f)
-    view = (CUT_N + Vector((0, 0, lift)) + Vector((-0.18, 0, 0))).normalized()
+    at, width, lift = framing_tri(f) if TRI else framing(f)
+    cam_o = f.get('cam') or {}
+    if 'at' in cam_o:
+        at = V(cam_o['at'])
+    width = cam_o.get('width', width * args.fieldk)
+    set_cut(cam_o.get('cut', 0.0))
+    view = (CUT_N + Vector((0, 0, lift)) + (Vector((0, 0, 0)) if TRI else Vector((-0.18, 0, 0)))).normalized()
+    # a frame's own turn of the view: yaw about the body's up axis, pitch toward it
+    if cam_o.get('yaw'):
+        view = Matrix.Rotation(math.radians(cam_o['yaw']), 3, 'Z') @ view
+    if cam_o.get('pitch'):
+        side = view.cross(Vector((0, 0, 1))).normalized()
+        view = Matrix.Rotation(math.radians(cam_o['pitch']), 3, side) @ view
     dist = 0.36
     cam.location = at + view * dist
     aim(cam, at)
@@ -266,6 +333,7 @@ def place(f):
     cam.data.sensor_fit = 'VERTICAL'
     cam.data.sensor_height = 36
     cam.data.lens = 36 * dist / (width * 0.01)
+    cam.data.shift_y = args.shift_y
     return at
 
 def light(name, d, energy, col, size):
@@ -300,6 +368,18 @@ for f in frames:
         device.append(make(f'dev_{k}', pos, idx, [DEV[PART.get(k, 'dc')]]))
     at = place(f)
     lights(at)
+    # the landmarks' places in the frame (px from the top left, and the depth in m), for labels
+    bpy.context.view_layer.update()
+    marks = {k: f.get(k) for k in ('Q', 'Q0', 'clipTop', 'tip')}
+    marks.update({k: G.get(k) for k in ('ra', 'tv', 'ivc', 'svc', 'av', 'apex')})
+    rx, ry = sc.render.resolution_x, sc.render.resolution_y
+    proj = {}
+    for k, p in marks.items():
+        if p:
+            v = world_to_camera_view(sc, cam, V(p))
+            proj[k] = [round(v.x * rx, 1), round((1 - v.y) * ry, 1), round(v.z, 4)]
+    with open(os.path.join(args.out, f"{f['name']}.json"), 'w') as fh:
+        json.dump(proj, fh)
     sc.render.filepath = os.path.join(args.out, f"{f['name']}.png")
     bpy.ops.render.render(write_still=True)
     print(f"{f['name']}: {time.time() - t0:.1f} s", flush=True)

@@ -29,6 +29,9 @@ import aortaPage from './ch/aorta.js';
 import massesPage from './ch/masses.js';
 import miPage from './ch/mi.js';
 import mteerPage from './ch/mteer.js';
+import tteerPage from './ch/tteer.js';
+// TAVR is in preparation: a placeholder page until its chapter lands
+import tavrPage from './ch/tavr-soon.js';
 // Shock is hidden (SHOW_SHOCK in order.js), so this file does not import it and the page does not
 // load it. To restore it, add `import shockPage from './ch/shock.js';` here and shockPage to BY
 // below, and follow the steps at SHOW_SHOCK in order.js. Constrictive pericarditis is hidden as a
@@ -45,7 +48,7 @@ import { ORDER, BONUS_PAGE, BONUS, numOf } from './order.js';
 export { numOf } from './order.js';
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, hcmPage, shuntsPage, massesPage, miPage, mteerPage, measurePage, aiPage, teePage, report, bonusPage].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, hcmPage, shuntsPage, massesPage, miPage, tavrPage, mteerPage, tteerPage, measurePage, aiPage, teePage, report, bonusPage].map((c) => [c.key, c]));
 /**
  * Every chapter shown, in the order back and next step through them: the main chapters in
  * reading order (ORDER), the bonus page (B), then the bonus chapters (BONUS). state.chapter is an
@@ -66,9 +69,9 @@ export const BAR = [...MAIN, BONUS_AT];
 export const barOf = (i) => (BAR.includes(i) ? i : BONUS_AT);
 
 // Each chapter names its part (its module's `part`). A part with no chapter in the bar is left
-// out, and the numerals follow the parts that remain. Congenital, Masses and Acute care hold only
-// bonus chapters now. The bonus page has the part Bonus. TEE is in the part Views, after Views
-// (order.js).
+// out, and the numerals follow the parts that remain. Pericardium, Cardiomyopathy, Congenital,
+// Masses and Acute care hold only bonus chapters now. The bonus page has the part Bonus.
+// Structural heart follows the valves: TEE, TAVR and the two edge-to-edge repairs (order.js).
 const ALL_PARTS = [
   { key: 'physics', name: 'Physics' },
   { key: 'views', name: 'Views' },
@@ -76,6 +79,7 @@ const ALL_PARTS = [
   { key: 'hemodynamics', name: 'Hemodynamics' },
   { key: 'function', name: 'Function' },
   { key: 'valves', name: 'Valves' },
+  { key: 'structural', name: 'Structural heart' },
   { key: 'aorta', name: 'Aorta' },
   { key: 'pericardium', name: 'Pericardium' },
   { key: 'cardiomyopathy', name: 'Cardiomyopathy' },

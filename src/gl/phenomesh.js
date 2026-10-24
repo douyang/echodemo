@@ -590,6 +590,14 @@ export const DISEASE = {
   tcGrasp: { tc: 'hold' },
   tcHalf: { tc: 'hold' },
   tcClip: { tc: 'hold' },
+  // Transcatheter edge-to-edge repair of the tricuspid valve (chapter tteer; src/gl/tteermesh.js).
+  // ttGap: a central coaptation gap, the free edges drawn back and down in the shut and middle
+  // shapes. ttGrasp, ttHalf, ttClip: the anterior and septal leaflets held in the clip on the
+  // anteroseptal line with its arms at 120, 60 and 0 degrees, each a valve target as buildValve's.
+  ttGap: { tt: 'gap' },
+  ttGrasp: { tt: 'hold' },
+  ttHalf: { tt: 'hold' },
+  ttClip: { tt: 'hold' },
 };
 /** The LA target's move (DISEASE.la, weight 1) of myocardial vertex i, as buildTargets makes it: for a target that follows it (clipmesh.js tcSepLa). */
 const laShiftOf = (ctx) => (i) => {
@@ -616,6 +624,7 @@ export async function buildDisease(ctx, key) {
   if (P.ao) return (await import('./aortamesh.js')).buildAorta(ctx, key, P.ao, { addTarget, grid, nearest });
   if (P.mi) return (await import('./mimesh.js')).buildMi(ctx, key, P.mi, { addTarget, grid, nearest });
   if (P.tc) return (await import('./clipmesh.js')).buildClipTarget(ctx, key, P.tc, { addTarget, grid, nearest, laShift: laShiftOf(ctx), laAt: laAtOf(ctx) });
+  if (P.tt) return (await import('./tteermesh.js')).buildTricuspidTarget(ctx, key, P.tt, { addTarget, grid, nearest });
   const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
   /** The move of landmark name at weight 1 and end-diastole (cm). */
   out.shift = (name) => {

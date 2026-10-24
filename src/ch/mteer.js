@@ -1046,7 +1046,7 @@ let BANDS = [];
 
 export default {
   key: 'mteer',
-  part: 'valves',
+  part: 'structural',
   model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Mitral transcatheter edge-to-edge repair',
   nav: 'M-TEER',

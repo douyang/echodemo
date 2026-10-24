@@ -561,6 +561,26 @@ export const VIDEOS = {
       { set: { tcS: 1 }, track: 'After', pick: [0, 2], move: 3, hold: 7 },
     ],
   },
+  // T-TEER: the chapter's eight steps, from the TTE before to the TTE after. Each move is the
+  // device's motion between two steps (src/ch/tteer.js POSE_KEYS): the guide up the IVC, the
+  // steering, the arms opening and turning, and the grasp (the arms close, the clip goes into the
+  // RV, opens and comes back under the leaflets), with longer moves where more happens. The
+  // procedure pane shows the chapter's own Blender stills (assets/tteer/), cross-faded between
+  // steps. No quant: the device moves smoothly, not in the slider's steps
+  tteer: {
+    pane: 'Procedure, TEE and TTE',
+    side: false,
+    steps: [
+      { set: { ttS: 0 }, track: 'Before', pick: [0, 1], hold: 7 },
+      { set: { ttS: 1 / 7 }, track: 'Guide', pick: [0, 1], move: 4, hold: 7 },
+      { set: { ttS: 2 / 7 }, track: 'Steer', pick: [0, 1], move: 5, hold: 7 },
+      { set: { ttS: 3 / 7 }, track: 'Align', pick: [0, 1], move: 5, hold: 7 },
+      { set: { ttS: 4 / 7 }, track: 'Grasp', pick: [0, 1], move: 7, hold: 8 },
+      { set: { ttS: 5 / 7 }, track: 'Assess', pick: [0, 1], move: 4, hold: 8 },
+      { set: { ttS: 6 / 7 }, track: 'Release', pick: [0, 1], move: 5, hold: 7 },
+      { set: { ttS: 1 }, track: 'After', pick: [0, 1], move: 3, hold: 7 },
+    ],
+  },
   // Mitral TEER with a voice-over (video/vo/mteer.json, tools/voice/vo.py): the same figure and
   // frames, a step for each part of the script, held for its lines; the device moves while a line
   // tells it, and the caption shows the words as they are spoken
