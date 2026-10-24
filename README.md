@@ -1,6 +1,6 @@
 # The Heart by Ultrasound
 
-An illustrated, interactive guide to echocardiography. 24 chapters in ten parts follow the order of the ASE guidelines, from ultrasound physics to two AI models that measure and read a study. Six bonus chapters follow in part B. Every echo image is simulated, all but chapter 08's cut from one 3D heart, and every guideline value carries its source.
+An illustrated, interactive guide to echocardiography. 24 chapters in ten parts follow the order of the ASE guidelines, from ultrasound physics to two AI models that measure and read a study. Seven bonus chapters follow in part B. Every echo image is simulated, all but chapter 08's cut from one 3D heart, and every guideline value carries its source.
 
 **Site:** <https://intro2echo.com>
 
@@ -40,8 +40,9 @@ An illustrated, interactive guide to echocardiography. 24 chapters in ten parts 
 | | B4 Shunts: ASD, VSD and PFO | Small to large shunts; the saline study; the LA pressure across a restrictive atrial communication |
 | | B5 Cardiac masses and thrombus | Left atrial myxoma, LV thrombus, papillary fibroelastoma |
 | | B6 Complications of myocardial infarction | Septal rupture, papillary muscle rupture, free-wall rupture with pseudoaneurysm, apical aneurysm |
+| | B7 MitraClip | Transcatheter edge-to-edge repair of a flail P2, step by step: the TEE views that guide each step, the 3D en face view, TTE before and after, and the procedure in a cut-away heart rendered in Blender |
 
-Chapters 10, 13 to 23 and B2 to B6 each follow one disease or one load from normal to its end stage. B1 follows an LVAD through its pump speeds.
+Chapters 10, 13 to 23 and B2 to B6 each follow one disease or one load from normal to its end stage. B1 follows an LVAD through its pump speeds, and B7 a MitraClip procedure through its steps.
 
 Hidden chapters keep their code and come back with a flag in `src/order.js`: the report (`SHOW_REPORT`), Planes (`SHOW_PLANES`), Automated measurements (`SHOW_MEASURE`) and Shock (`SHOW_SHOCK`). Constriction and the IVC were chapters of their own (`SHOW_CONSTRICT`, `SHOW_IVC`); 21 and 08 now show them. In 14, the PH calculator and the ESC/ERS probability of PH are hidden (`SHOW_CALC` and `SHOW_PROB` in `src/ch/rv.js`).
 
@@ -56,7 +57,7 @@ Hidden chapters keep their code and come back with a flag in `src/order.js`: the
 | ![20 Diseases of the aorta](docs/screenshots/aorta.webp) | ![21 Pericardial disease](docs/screenshots/peri.webp) | ![22 Hypertrophic cardiomyopathy](docs/screenshots/hcm.webp) |
 | ![23 Cardiac amyloidosis](docs/screenshots/amyloid.webp) | ![24 AI interpretation and measurement](docs/screenshots/ai.webp) | ![B1 Left ventricular assist devices](docs/screenshots/lvad.webp) |
 | ![B2 Prosthetic valves](docs/screenshots/prosthetic.webp) | ![B3 Infective endocarditis](docs/screenshots/endocarditis.webp) | ![B4 Shunts: ASD, VSD and PFO](docs/screenshots/shunts.webp) |
-| ![B5 Cardiac masses and thrombus](docs/screenshots/masses.webp) | ![B6 Complications of myocardial infarction](docs/screenshots/mi.webp) | |
+| ![B5 Cardiac masses and thrombus](docs/screenshots/masses.webp) | ![B6 Complications of myocardial infarction](docs/screenshots/mi.webp) | ![B7 MitraClip](docs/screenshots/mitraclip.webp) |
 
 ## Use
 
@@ -113,7 +114,8 @@ src/refs.js       references
 src/idbcache.js   the model's fields in IndexedDB, from one visit to the next
 assets/           heart mesh, landmarks, valve hinges, poster, favicon
 video/            the views video, the chapter videos and the intro
-tools/            checks and video tools; tools/score/ the soundtracks (Python)
+tools/            checks and video tools; tools/score/ the soundtracks, tools/voice/ the voice-over,
+                  tools/blender/ the MitraClip procedure frames (Python)
 archive/          markup of hidden chapters, not loaded by the site
 ```
 
@@ -122,7 +124,7 @@ archive/          markup of hidden chapters, not loaded by the site
 | Command | What it checks |
 | --- | --- |
 | `node tools/check-state.mjs` | Each chapter changes only its own state keys |
-| `node tools/preload.mjs --check` | The preload block of `index.html` lists every module (95) |
+| `node tools/preload.mjs --check` | The preload block of `index.html` lists every module (99) |
 | `node tools/stress-volumes.mjs --check` | Chapter 12's stored LV volumes match the mesh |
 | `node tools/hinges.mjs --check` | The stored valve hinges (`assets/hinges.json`) match the model |
 | `node --input-type=module --check < src/echo.js` | A module parses (`node --check src/echo.js` does not check ES modules in `.js` files) |
@@ -141,6 +143,7 @@ The site's own code draws every video in headless Chromium. The soundtrack is *B
 
 - **Views video** (`video/index.html`): the standard views of 04 in three panes. Cut A, the full tour (2:24); B, the core views with the nine planes (1:09), the video of chapter 04; C, a quick cut (0:38); D, vertical (1:06).
 - **Chapter videos** (`video/chapter.html?ch=<key>`): one for each chapter, 0:39 to 2:16. The steps and captions are in `video/chapters.js`.
+- **MitraClip with a voice-over** (`?ch=mitraclip-vo`, 2:53): the B7 figure with a narrator. Kokoro speaks the script (`video/vo/mitraclip.json`), and faster-whisper times each word, so the caption lights each word as it is spoken (`tools/voice/vo.py`). The Bright pulse bed ducks 15 dB under the voice (`tools/voice/mix.py`). Both MitraClip videos show the procedure pane as Blender frames along the steps (`tools/blender/`).
 - **Intro** (`video/reel.js`): 89 s, a title card, one clip from each of ten chapters, and the end card.
 
 Serve the repository root on port 8790, then:
@@ -154,7 +157,17 @@ node tools/render-video.mjs --reel --jobs=3 --audio=auto
 node tools/storyboard.mjs --ch=as
 ```
 
-Rendering needs Node 22, Playwright with Chromium, ffmpeg, and Python 3 with numpy and scipy.
+The MitraClip frames and voice-over:
+
+```
+node tools/blender/export.mjs --frames=seq --out=video/out/mitraclip/mesh_seq
+python tools/blender/render.py --mesh video/out/mitraclip/mesh_seq --out video/out/mitraclip/seq --res 560 --aspect 1.17 --samples 10
+python tools/voice/vo.py video/vo/mitraclip.json
+python tools/voice/mix.py mitraclip-vo video/out/chapter-mitraclip-vo.wav
+node tools/render-video.mjs --ch=mitraclip-vo --audio=video/out/chapter-mitraclip-vo.wav
+```
+
+Rendering needs Node 22, Playwright with Chromium, ffmpeg, and Python 3 with numpy and scipy. The MitraClip frames need Blender's Python module (`pip install bpy`); the voice-over needs kokoro-onnx and faster-whisper with their models (`tools/voice/vo.py`).
 
 ## Deploy
 

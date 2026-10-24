@@ -105,6 +105,8 @@ html, body { margin: 0; padding: 0; background: var(--ground); overflow: hidden;
 /* ---------------------------------------------------------------- chapter videos (video/chapter.js) */
 /* the caption's line under the step's name */
 .cap-text { margin-top: 16px; font: 400 25px/1.32 var(--sans); color: var(--ink-2); text-wrap: pretty; }
+/* the voice-over's line: larger, at full ink; its words light as they are spoken (video/chapter.js) */
+.vo .cap-text { font-size: 29px; line-height: 1.3; color: var(--ink); }
 /* the chapter's number and part over the title */
 .card-eye { position: absolute; margin: 0; font: 500 20px/1 var(--sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3); }
 .card-eye span { color: var(--accent); }

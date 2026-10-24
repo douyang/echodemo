@@ -175,7 +175,13 @@ async function chapters(list) {
     return;
   }
   const k = keys[0], stem = `chapter-${k}`;
-  const open = () => openChapter({ ch: k, base });
+  // a video with frames of its own for a pane (video/chapters.js `frames`): every one must be there
+  const F = VIDEOS[k].frames;
+  if (F) {
+    const missing = F.at.map((s) => path.join(F.dir, F.name(s))).filter((f) => !fs.existsSync(f));
+    if (missing.length) throw new Error(`chapter ${k}: ${missing.length} of ${F.at.length} frames missing, the first ${missing[0]} (tools/blender/render.py)`);
+  }
+  const open = () => openChapter({ ch: k, base, frames: !!F });
   const wav = audio === 'auto' ? path.join(out, `${stem}.wav`) : audio;
   if (stills) {
     const { info, capture, frame, errors, close } = await open();

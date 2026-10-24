@@ -576,6 +576,17 @@ export const DISEASE = {
   // anterior mitral leaflet, a move within the beat (setMotion).
   miAneu: { mi: 'aneu' },
   miFlail: { mi: 'flail' },
+  // Transcatheter edge-to-edge repair (chapter mitraclip; src/gl/clipmesh.js). tcFlail: a flail
+  // P2, a move within the beat (setMotion). tcFossa: the fossa ovalis as one thin wall. tcTent: the
+  // fossa tented toward the LA by the transseptal sheath. tcGrasp, tcHalf, tcClip: the leaflets
+  // held in the clip with its arms at 120, 60 and 0 degrees, each a valve target as buildValve's
+  // (open, middle and shut shapes).
+  tcFlail: { tc: 'flail' },
+  tcTent: { tc: 'tent' },
+  tcFossa: { tc: 'fossa' },
+  tcGrasp: { tc: 'hold' },
+  tcHalf: { tc: 'hold' },
+  tcClip: { tc: 'hold' },
 };
 /** Add disease key's target to the meshes (ctx from preparePhenotypes); returns how far a landmark moves at weight 1. */
 export async function buildDisease(ctx, key) {
@@ -587,6 +598,7 @@ export async function buildDisease(ctx, key) {
   if (P.strain) return (await import('./strainmesh.js')).buildStrain(ctx, key, P.strain, { addTarget, grid, nearest });
   if (P.ao) return (await import('./aortamesh.js')).buildAorta(ctx, key, P.ao, { addTarget, grid, nearest });
   if (P.mi) return (await import('./mimesh.js')).buildMi(ctx, key, P.mi, { addTarget, grid, nearest });
+  if (P.tc) return (await import('./clipmesh.js')).buildClipTarget(ctx, key, P.tc, { addTarget, grid, nearest });
   const out = await buildTargets(ctx, P, { ed: `dx_${key}`, sys: null, mid: null, far: null });
   /** The move of landmark name at weight 1 and end-diastole (cm). */
   out.shift = (name) => {

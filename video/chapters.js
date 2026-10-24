@@ -34,8 +34,22 @@
 import { BEAT, FPS } from './timeline.js';
 import { SHOW_SHOCK } from '../src/order.js';
 import { MOVES, FREE_BASE, FREE_REST, moveAt } from '../src/teemoves.js';
+import MITRACLIP_VO from './vo/mitraclip.js';
 
 const STEP = { move: 3, hold: 5 };
+
+/**
+ * The Blender frames of the MitraClip procedure pane, made for the video (tools/blender/export.mjs
+ * --frames=seq, then render.py): a PNG at each step position s (0 to 7), every 0.1, and every
+ * 0.05 through the grasp (3 to 4), where the clip moves most. video/chapter.js loads them, and
+ * the pane shows the two frames round the step position, cross-faded.
+ */
+export const MITRACLIP_FRAMES = {
+  dir: 'video/out/mitraclip/seq',
+  at: [...Array(71).keys()].map((i) => i / 10).concat([...Array(10).keys()].map((i) => 3.05 + i / 10))
+    .map((s) => Number(s.toFixed(2))).sort((a, b) => a - b),
+  name: (s) => `s${String(Math.round(s * 100)).padStart(3, '0')}.png`,
+};
 /** The music's tempo (tools/score/pulse.py): the end card falls on a bar line after whole phrases. */
 const PHRASE = (16 * 60) / 109.3;   // s: four bars of four beats
 
@@ -526,6 +540,34 @@ export const VIDEOS = {
       { set: { micS: 1 }, track: 'Thrombus', pick: [0, 1], move: 4, hold: 7 },
     ],
   },
+  // MitraClip: the chapter's eight steps, from the TTE before to the TTE after. Each move is the
+  // device's motion between two steps (src/ch/mitraclip.js POSE_KEYS): the crossing and the
+  // steering, the arms opening and turning, and the grasp (the arms close, the clip goes into the
+  // LV, opens and comes back under the leaflets), with longer moves where more happens. The
+  // procedure pane shows the Blender frames along the steps (`frames`, tools/blender/); without
+  // them, the chapter's own stills. No quant: the device moves smoothly, not in the slider's steps
+  mitraclip: {
+    pane: 'Procedure, TEE and TTE',
+    side: false,
+    frames: MITRACLIP_FRAMES,
+    steps: [
+      { set: { tcS: 0 }, track: 'Before', pick: [0, 1], hold: 7 },
+      { set: { tcS: 1 / 7 }, track: 'Puncture', pick: [1, 2], move: 4, hold: 9 },
+      { set: { tcS: 2 / 7 }, track: 'Steer', pick: [1, 2], move: 5, hold: 7 },
+      { set: { tcS: 3 / 7 }, track: 'Align', pick: [0, 1], move: 5, hold: 7 },
+      { set: { tcS: 4 / 7 }, track: 'Grasp', pick: [0, 1], move: 7, hold: 8 },
+      { set: { tcS: 5 / 7 }, track: 'Assess', pick: [0, 1], move: 4, hold: 8 },
+      { set: { tcS: 6 / 7 }, track: 'Release', pick: [0, 1], move: 5, hold: 8 },
+      { set: { tcS: 1 }, track: 'After', pick: [0, 2], move: 3, hold: 7 },
+    ],
+  },
+  // MitraClip with a voice-over (video/vo/mitraclip.json, tools/voice/vo.py): the same figure and
+  // frames, a step for each part of the script, held for its lines; the device moves while a line
+  // tells it, and the caption shows the words as they are spoken
+  'mitraclip-vo': voVideo(MITRACLIP_VO, {
+    chapter: 'mitraclip', key: 'tcS', at: (s) => Number((s / 7).toFixed(6)), move: 2,
+    video: { pane: 'Procedure, TEE and TTE', side: false, frames: MITRACLIP_FRAMES },
+  }),
   // shock: hidden with its chapter (SHOW_SHOCK in src/order.js), and out of this list while hidden.
   // The chapter's tour. Each case from a normal heart to its severe form: hypovolemic,
   // cardiogenic, tamponade, acute pulmonary embolism and distributive; the calipers at
@@ -598,10 +640,48 @@ export const VIDEOS = {
 export const KEYS = Object.keys(VIDEOS);
 
 /**
+ * A chapter video with a voice-over (video/vo/<key>.js): the title card holds the title line;
+ * then a step for each part of the script, held for as long as its lines take, in whole beats.
+ * A line gives the step positions where it starts and ends (s), and the chapter's slider (o.key,
+ * o.at(s)) moves between them while the line plays, easing; between lines it holds. The video
+ * keeps the script (vo) for its caption and its soundtrack (tools/voice/mix.py).
+ */
+function voVideo(vo, o) {
+  const intro = Math.ceil((vo.title.at + vo.title.dur + 0.5) / BEAT);
+  const smooth = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+  const steps = vo.segments.map((g, k) => {
+    const first = g.lines[0].s, last = g.lines[g.lines.length - 1].s;
+    // the step position at t s into the hold
+    const at = (t) => {
+      let s = first[0];
+      for (const ln of g.lines) {
+        if (t < ln.at) break;
+        s = ln.s[0] + (ln.s[1] - ln.s[0]) * smooth((t - ln.at) / ln.dur);
+      }
+      return s;
+    };
+    const longest = g.lines.map((ln) => ln.text).sort((a, b) => b.length - a.length)[0];
+    return {
+      set: { [o.key]: o.at(first[0]) },
+      drift: { [o.key]: o.at(last[1]) },
+      path: (p, H) => ({ [o.key]: o.at(at(p * H)) }),
+      name: g.name,
+      line: longest,
+      track: g.track,
+      vo: g,
+      hold: Math.ceil(g.need / BEAT),
+      ...(k ? { move: o.move } : {}),
+    };
+  });
+  // exact: the holds follow the voice, so the last one takes no beats for the music's phrases
+  return { ...o.video, chapters: [o.chapter], intro, vo, steps, exact: true };
+}
+
+/**
  * Holds, moves and the two cards of a chapter video, in beats and in seconds, and its length.
  * The last hold takes up to 6 more beats, so that the music's tempo (whole phrases of four bars
- * to the end card) comes closest to 109.3 BPM; an `exact` video (a clip of the intro, video/reel.js)
- * keeps its own lengths.
+ * to the end card) comes closest to 109.3 BPM; an `exact` video (a clip of the intro, video/reel.js,
+ * or a video with a voice-over) keeps its own lengths.
  */
 export function chapterLayout(v) {
   const intro = v.intro ?? 4, outro = v.outro ?? 5;
