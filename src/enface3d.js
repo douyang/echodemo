@@ -2,9 +2,10 @@
 // from the LA, the aortic valve at 12 o'clock, cut from the same morphed meshes as the chapter's
 // 2D echo views (an EchoView after its frame()), with the clip and the delivery system. A 3D
 // echo system renders its volume by depth in a bronze scale, near tissue light and far tissue
-// dark; this renderer draws the surfaces that way: the LA floor and the aortic root next to the
-// annulus, the leaflets, their skirts and chordae, and the device, inside a crop box from below
-// the leaflets' tips to a height above the annulus, as a zoomed 3D acquisition crops them.
+// dark; this renderer draws the surfaces that way: the LA floor, the LV's rim and the aortic root
+// next to the annulus, the leaflets, their skirts and chordae, and the device, inside a crop box
+// from below the leaflets' tips to a height above the annulus, as a zoomed 3D acquisition crops
+// them.
 // The canvas is offscreen (WebGL); a chapter draws it into its own figure (drawImage).
 import * as THREE from '../vendor/three.bundle.min.js';
 
@@ -83,9 +84,10 @@ export class EnFace {
   }
 
   /**
-   * The crop on the rest heart, found once for view ev: the myocardium's triangles of the LA
-   * and the aortic root (regions 3 and 5) within reach of the annulus's middle C, from below the
-   * annular plane (N) up to top cm above it.
+   * The crop on the rest heart, found once for view ev: the myocardium's triangles of the LA,
+   * the aortic root and the LV (regions 3, 5 and 1) within reach of the annulus's middle C, from
+   * below the annular plane (N) up to top cm above it. The LV's rim at the annulus joins the LA
+   * floor to the valve: without it, a dilated LA's floor leaves a black ring round the annulus.
    */
   crop(ev, C, N, reach = 2.9, top = 3.0, bottom = -0.6) {
     const md = ev.myo, P = md.rest, idx = md.index, col = md.mesh.geometry.attributes.color;
@@ -95,7 +97,7 @@ export class EnFace {
       let ok = true;
       for (let k = 0; k < 3; k++) {
         const i = idx[t + k], r = reg(i);
-        if (r !== 3 && r !== 5) { ok = false; break; }
+        if (r !== 3 && r !== 5 && r !== 1) { ok = false; break; }
         const x = P[3 * i] - C[0], y = P[3 * i + 1] - C[1], z = P[3 * i + 2] - C[2];
         const h = x * N[0] + y * N[1] + z * N[2], rr = Math.hypot(x - h * N[0], y - h * N[1], z - h * N[2]);
         if (h > top || h < bottom || rr > reach) { ok = false; break; }

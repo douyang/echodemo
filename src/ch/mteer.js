@@ -673,7 +673,8 @@ function planes(g, p) {
   const laxLA = { ...lax, key: 'laxLA', zoom: { uv: [0.5, lax.zoom.uv[1] - 0.9], w: 6.5 } };
   const mc = { ...X.primary, key: 'mc', name: 'ME COMMISSURAL', short: 'MC', depth: 10 };
   mc.zoom = zoomOn(mc);
-  mc.names = [[up(2.6).addScaledVector(g.Bc, -1.3), 'LA'], [up(-2.6), 'LV']];
+  // the LA's name on the medial side (screen left): the clip's name sits on the lateral side
+  mc.names = [[up(2.6).addScaledVector(g.Bc, 1.3), 'LA'], [up(-2.6), 'LV']];
   const SX = TV.septal(g.F, g.S, CM.CAVA, g.av);
   const along = { O: SX.primary.g.O.toArray(), n: SX.primary.g.n.toArray() };
   const la = g.S.clone().addScaledVector(g.Nias, -1.6), ra = g.S.clone().addScaledVector(g.Nias, 1.9);

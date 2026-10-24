@@ -496,9 +496,13 @@ function cuspDirs(model) {
  * inside another runs the other way and so cuts a hole. A leaflet funnel cut across then shows
  * as a ring (the mitral orifice in short axis at diastasis), not a disc. Loops that only overlap
  * (two leaflets in contact) keep one winding and fill as one. The section walk (MeshData.section)
- * gives each loop either winding.
+ * gives each loop either winding. most < 1: a loop round an orifice (more than ORIFICE cm², far
+ * more than a leaflet's cut) is inside another when that share of it is. Where a chapter lays a
+ * leaflet's two faces together (the leaflets held in a clip, valveHook), the funnel's inner loop
+ * runs along its outer loop there and crosses it, and the orifices would fill as a disc.
  */
-function wound(loops) {
+const ORIFICE = 1;
+function wound(loops, most = 1) {
   const area = (P) => { let a = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += P[j][0] * P[i][1] - P[i][0] * P[j][1]; return a; };
   const inside = (P, x, y) => {
     let c = false;
@@ -511,12 +515,14 @@ function wound(loops) {
   if (loops.length < 2) return loops;
   return loops.map((P, i) => {
     const step = Math.max(1, Math.floor(P.length / 12));
+    // area() is twice the area
+    const need = Math.abs(area(P)) / 2 > ORIFICE ? most : 1;
     let depth = 0;
     for (let j = 0; j < loops.length; j++) {
       if (j === i) continue;
-      let all = true;
-      for (let k = 0; k < P.length && all; k += step) all = inside(loops[j], P[k][0], P[k][1]);
-      if (all) depth++;
+      let n = 0, m = 0;
+      for (let k = 0; k < P.length; k += step, m++) if (inside(loops[j], P[k][0], P[k][1])) n++;
+      if (n >= need * m) depth++;
     }
     return (area(P) > 0) === (depth % 2 === 0) ? P : P.slice().reverse();
   });
@@ -1322,7 +1328,8 @@ export class EchoView {
       hotOf[k] = [Math.max(own[0], DB.valve + 7 * c), Math.max(own[1], 6 * c)];
     }
     // (a skirt drawn as wall is not a leaflet: it is drawn with the walls below)
-    const loopsOfValve = (k) => wound(valves.filter((L) => closed(L) && L.valve === k && !L.wall).map((L) => L.pts));
+    // with a chapter's hook on the leaflets, an orifice's loop counts as inside when 60% of it is
+    const loopsOfValve = (k) => wound(valves.filter((L) => closed(L) && L.valve === k && !L.wall).map((L) => L.pts), this.valveHook ? 0.6 : 1);
     const leaf = [...new Set(valves.filter((L) => !L.wall).map((L) => L.valve))].filter((k) => !hotOf[k]).flatMap(loopsOfValve);
     const hotLayers = Object.entries(hotOf).flatMap(([k, [db, shadow]]) => {
       const pts = loopsOfValve(k);
