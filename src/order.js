@@ -3,14 +3,14 @@
 // new order needs no edit in the text.
 //
 // The order follows the ASE comprehensive examination (Mitchell 2019): instrumentation, the views,
-// then the measurements. TEE follows the transthoracic views, in the same part: a second set of
-// views, from its own probe. Then Doppler hemodynamics, whose second half gives the RA pressure
-// from the IVC (Mukherjee 2025) that the RV systolic pressure adds; then function: the LV's
-// systolic and diastolic function and its regional wall motion. Stress echocardiography tests
-// that motion, so it follows it. Myocardial strain follows stress, then the right ventricle. Then
-// the valves by valve as in the ASE report (Taub 2025), each stenosis before its regurgitation, the
-// pericardium and amyloid. Artificial intelligence comes last: a model that reads a whole study
-// draws on every chapter before it.
+// then the measurements. Then Doppler hemodynamics, whose second half gives the RA pressure from
+// the IVC (Mukherjee 2025) that the RV systolic pressure adds; then function: the LV's systolic
+// and diastolic function, its regional wall motion, and the right ventricle. Then the valves by
+// valve as in the ASE report (Taub 2025), each stenosis before its regurgitation. Structural heart
+// follows the valves: TEE, the views that guide the interventions, then TAVR and the edge-to-edge
+// repairs of the mitral and the tricuspid valve. Then the aorta. Artificial intelligence comes
+// last: a model that reads a whole study draws on every chapter before it. Stress
+// echocardiography, strain, the cardiomyopathies and the pericardium are bonus chapters (BONUS).
 
 // The report chapter is hidden: its module and markup stay (index.html, #ch-report) and come back
 // as the last main chapter, in a part of its own, when this is true. The Normal values table opens from it.
@@ -25,7 +25,8 @@ export const SHOW_PLANES = false;
 export const SHOW_MEASURE = false;
 // Shock is hidden. The page does not load its module (src/ch/shock.js, src/shockcal.js stay in the
 // repo), and no text, list or video names it. To restore it:
-//  1. Set SHOW_SHOCK to true. Shock then comes back after Cardiac amyloidosis, in the part Acute care.
+//  1. Set SHOW_SHOCK to true. Shock then comes back among the bonus chapters, after Complications
+//     of myocardial infarction.
 //  2. Import src/ch/shock.js in src/chapters.js and add it to BY (the note there).
 //  3. Put back the lines in archive/shock.html: the figure and the article in index.html, its
 //     sources in src/refs.js, its heart preset in src/pheno.js and its stage height in src/styles.css.
@@ -36,7 +37,8 @@ export const SHOW_SHOCK = false;
 // of src/constriction.js. The page does not load the old chapter's module (src/ch/constrict.js
 // stays in the repo), and the address #constrict opens Pericardial disease on Constriction
 // (src/main.js). To restore the chapter:
-//  1. Set SHOW_CONSTRICT to true. It then comes back after Pericardial disease, in the part Pericardium.
+//  1. Set SHOW_CONSTRICT to true. It then comes back among the bonus chapters, after Pericardial
+//     disease.
 //  2. Import src/ch/constrict.js in src/chapters.js and add it to BY.
 //  3. Put back the lines in archive/constrict.html: the figure and the article in index.html and its
 //     stage height in src/styles.css.
@@ -60,8 +62,8 @@ export const SHOW_IVC = false;
 
 /** The main chapters, in reading order: the numbers 01, 02 ..., the tour, and the chapter bar and its list before B. */
 export const ORDER = [
-  'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'tee', 'cycle', 'loop', ...(SHOW_IVC ? ['ivc'] : []), 'pressure',
-  'eject', 'fill', 'segments', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', ...(SHOW_CONSTRICT ? ['constrict'] : []), 'hcm', 'amyloid', ...(SHOW_SHOCK ? ['shock'] : []), ...(SHOW_MEASURE ? ['measure'] : []), 'ai', ...(SHOW_REPORT ? ['report'] : []),
+  'pulse', 'image', 'shift', 'windows', ...(SHOW_PLANES ? ['planes'] : []), 'cycle', 'loop', ...(SHOW_IVC ? ['ivc'] : []), 'pressure',
+  'eject', 'fill', 'segments', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'tee', 'tavr', 'mteer', 'tteer', 'aorta', ...(SHOW_MEASURE ? ['measure'] : []), 'ai', ...(SHOW_REPORT ? ['report'] : []),
 ];
 
 /**
@@ -73,9 +75,14 @@ export const BONUS_PAGE = 'bonus';
 /**
  * The bonus chapters, after the bonus page, numbered B1, B2 ... They are not in the chapter bar,
  * its list or the tour: the bar shows B while one is open. The bonus page links to them, back and
- * next step through them, and each opens by its address (#lvad).
+ * next step through them, and each opens by its address (#lvad). Stress echocardiography and
+ * strain come first, as in an echo course; then the cardiomyopathies and the pericardium; then the
+ * prosthetic valves and endocarditis, the shunts, the masses, the complications of infarction and
+ * the LVAD.
  */
-export const BONUS = ['lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi'];
+export const BONUS = [
+  'stress', 'strain', 'hcm', 'amyloid', 'peri', ...(SHOW_CONSTRICT ? ['constrict'] : []), 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', ...(SHOW_SHOCK ? ['shock'] : []), 'lvad',
+];
 
 /** A hidden chapter that a main chapter shows as one of its settings: a link to it takes that chapter's number. */
 export const SHOWN_IN = SHOW_IVC ? {} : { ivc: 'pressure' };

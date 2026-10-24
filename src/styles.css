@@ -262,6 +262,10 @@ a:hover { text-decoration-color: var(--accent); }
   @container (width < 700px) {
     .fig { --tall: 1; }
     #fig-cycle, #fig-pressure, #fig-eject, #fig-stress, #fig-strain, #fig-hcm, #fig-lvad, #fig-endocarditis { --tall: 1.25; }
+    /* M-TEER: the procedure pane over two echo panes and a third, stacked */
+    #fig-mteer { --tall: 1.5; }
+    /* T-TEER: the procedure pane over two echo panes and a third, stacked */
+    #fig-tteer { --tall: 1.5; }
   }
   #fig-windows, #fig-planes, #fig-tee, #fig-ai { bottom: 0; height: auto; }
 }
@@ -393,10 +397,11 @@ a:hover { text-decoration-color: var(--accent); }
   font: 500 0.875rem/1.5 var(--mono);
   overflow-x: auto;
 }
-/* the bonus page (B, src/ch/bonus.js) has no figure: the stage hides, and the text takes its
-   place. Its list of the bonus chapters (main.js buildBonus): each one's number, title and kicker,
-   as a link, in columns on wider screens. A rule over each entry; none under the head */
-html[data-ch="bonus"] .stage { display: none; }
+/* a page with no figure (main.js data-nofig: the bonus page, src/ch/bonus.js, or a chapter in
+   preparation): the stage hides, and the text takes its place. The bonus page's
+   list of the bonus chapters (main.js buildBonus): each one's number, title and kicker, as a
+   link, in columns on wider screens. A rule over each entry; none under the head */
+html[data-nofig] .stage { display: none; }
 #ch-bonus .ch-head { margin-bottom: 6px; border-bottom: 0; }
 .bonus { list-style: none; margin: 0; padding: 0; }
 .bonus li { display: grid; }
@@ -407,7 +412,7 @@ html[data-ch="bonus"] .stage { display: none; }
 .bonus .k { margin-top: 2px; font: 400 0.8125rem/1.4 var(--sans); color: var(--ink-2); }
 .bonus a:hover .t, .bonus a:focus-visible .t { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 0.18em; }
 @media (min-width: 821px) {
-  html[data-ch="bonus"] .panel { grid-column: 1 / -1; }
+  html[data-nofig] .panel { grid-column: 1 / -1; }
   .bonus { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); column-gap: 32px; max-width: 1180px; }
   .bonus li:last-child a { border-bottom: 0; }
   .bonus .t { font-size: 1.25rem; }
@@ -910,6 +915,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="peri"] .stage { height: min(64vh, 560px); }
   /* Prosthetic valves: two echo views beside the CW and PW Doppler strips */
   html[data-ch="prosthetic"] .stage { height: min(64vh, 560px); }
+  /* TAVR: the TEE long and short axes beside the CW and PW Doppler strips */
+  html[data-ch="tavr"] .stage { height: min(64vh, 560px); }
   /* Shunts: two echo views beside the Doppler strips or the bubble counts */
   html[data-ch="shunts"] .stage { height: min(64vh, 560px); }
   /* Infective endocarditis: two echo views beside two Doppler strips */
@@ -918,6 +925,10 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="masses"] .stage { height: min(64vh, 560px); }
   /* Complications of myocardial infarction: the echo view beside two echo views, Doppler strips or a map */
   html[data-ch="mi"] .stage { height: min(64vh, 560px); }
+  /* M-TEER: the procedure pane, two TEE panes and a third pane, stacked */
+  html[data-ch="mteer"] .stage { height: min(72vh, 620px); }
+  /* T-TEER: the procedure pane, two TEE panes and a third pane, stacked */
+  html[data-ch="tteer"] .stage { height: min(72vh, 620px); }
   /* Hypertrophic cardiomyopathy: two echo views beside two CW strips and an M-mode strip */
   html[data-ch="hcm"] .stage { height: min(64vh, 560px); }
   /* Automated measurements: the echo view or the recording, the heat map's close-up beside its
