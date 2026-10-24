@@ -31,14 +31,19 @@ const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
  * the root's wall narrows it where it meets the wall. leaf: the leaflets' attachment, lowest at
  * each leaflet's middle (base) and highest at the commissures (comm), the height at which they
  * meet shut (coapt) and of their free edges open (open), all above the inflow: inside the
- * annulus (be), above it (se).
+ * annulus (be), above it (se). crimpH: the frame's height crimped. The 26-mm SAPIEN 3 is 27 mm
+ * tall crimped and 20 mm expanded (Schymik 2015, Table 1): it shortens as it expands, mostly at
+ * its ventricular end, while its outflow stays put (ACC TAVR Handbook, ch. 10). The model gives
+ * the self-expanding frame no shortening.
  */
 export const DESIGNS = {
-  be: { label: 2.6, frameH: 2.0, base: -0.2, crimpR: 0.3, skirtH: 0.85, profile: [[0, 1.3], [2.0, 1.3]],
+  be: { label: 2.6, frameH: 2.0, crimpH: 2.7, base: -0.2, crimpR: 0.3, skirtH: 0.85, profile: [[0, 1.3], [2.0, 1.3]],
     leaf: { base: 0.35, comm: 1.8, coapt: 1.15, open: 1.7 } },
-  se: { label: 2.9, frameH: 4.6, base: -0.3, crimpR: 0.33, skirtH: 1.2, profile: [[0, 1.45], [0.6, 1.38], [1.4, 1.2], [2.6, 1.14], [3.6, 1.45], [4.6, 1.75]],
+  se: { label: 2.9, frameH: 4.6, crimpH: 4.6, base: -0.3, crimpR: 0.33, skirtH: 1.2, profile: [[0, 1.45], [0.6, 1.38], [1.4, 1.2], [2.6, 1.14], [3.6, 1.45], [4.6, 1.75]],
     leaf: { base: 1.3, comm: 2.8, coapt: 2.0, open: 2.7 } },
 };
+/** The frame's height during deployment (u: 0 crimped, 1 expanded): it shortens as it expands. */
+const heightAt = (D, u) => D.crimpH + (D.frameH - D.crimpH) * smooth(u);
 /** The cm between the frame and the root's wall where the wall narrows it; the native leaflets' thickness. */
 const GAP = 0.03, NATIVE_T = 0.17;
 /** The commissures, native and of the valve (degrees from ep): the valve's posts line up with the native ones. */
@@ -136,18 +141,21 @@ export function tavrParts(F, wall, P) {
     C[1] + r * (Math.cos(phi) * ep[1] + Math.sin(phi) * eh[1]) + h * n[1],
     C[2] + r * (Math.cos(phi) * ep[2] + Math.sin(phi) * eh[2]) + h * n[2],
   ];
-  const h0 = D.base + drop;
+  // the inflow: below its final place by the shortening still to come, the outflow staying put.
+  // A height z on the expanded frame lies at h0 + z * s.
+  const H = heightAt(D, u), s = H / D.frameH;
+  const h0 = D.base + D.frameH - H + drop;
   const parts = [];
   // the frame, and its radius as a table (the leaflets and the native leaflets lie against it)
   const NU = 96, NV = Math.max(12, Math.round(D.frameH / 0.12));
   const R = (z, phi) => frameR(D, z, phi, wall, u, P.kind);
-  parts.push({ kind: 'frame', mesh: gridMesh(NU, NV, (a, b) => { const phi = 2 * Math.PI * a, z = b * D.frameH; return at(R(z, phi), phi, h0 + z); }, true) });
+  parts.push({ kind: 'frame', mesh: gridMesh(NU, NV, (a, b) => { const phi = 2 * Math.PI * a, z = b * D.frameH; return at(R(z, phi), phi, h0 + z * s); }, true) });
   // the outer skirt over the frame's lower part, once the frame holds the annulus
-  if (u > 0.5) parts.push({ kind: 'skirt', mesh: gridMesh(NU, 6, (a, b) => { const phi = 2 * Math.PI * a, z = b * D.skirtH; return at(R(z, phi) + 0.025, phi, h0 + z); }, true) });
+  if (u > 0.5) parts.push({ kind: 'skirt', mesh: gridMesh(NU, 6, (a, b) => { const phi = 2 * Math.PI * a, z = b * D.skirtH; return at(R(z, phi) + 0.025, phi, h0 + z * s); }, true) });
   // the valve's leaflets, inside the frame
-  parts.push(...leaflets(D, R, at, h0, P, u));
-  if (P.native) parts.push(...nativeLeaflets(D, R, wall, at, P));
-  if (P.system) parts.push(...deliverySystem(D, at, h0, P, u));
+  parts.push(...leaflets(D, R, at, h0, P, u, s));
+  if (P.native) parts.push(...nativeLeaflets(D, R, wall, at, h0, s));
+  if (P.system) parts.push(...deliverySystem(D, at, h0, P, u, s));
   return parts;
 }
 
@@ -157,7 +165,7 @@ export function tavrParts(F, wall, P) {
  * along the three lines from the commissures to the centre; open, they ring an orifice of the
  * given area. Crimped, the leaflets fold inside the crimped frame (they open with it).
  */
-function leaflets(D, R, at, h0, P, u) {
+function leaflets(D, R, at, h0, P, u, s) {
   const L = D.leaf, out = [], o = P.open ?? 0, t = 0.05;
   const k = smooth(u);
   for (let j = 0; j < 3; j++) {
@@ -179,7 +187,7 @@ function leaflets(D, R, at, h0, P, u) {
       const sag = 0.08 * Math.sin(Math.PI * b) * Math.sin(Math.PI * a) * (1 - o);
       const x = xa + g * (xe - xa), y = ya + g * (ye - ya), z = zA + b * (ze - zA) - sag;
       const r = Math.hypot(x, y), ph = Math.atan2(y, x);
-      return at(r, ph, h0 + z);
+      return at(r, ph, h0 + z * s);
     }) });
   }
   return out;
@@ -191,7 +199,7 @@ function leaflets(D, R, at, h0, P, u) {
  * lies against the frame's outer face, or against the wall where the frame stands off it. As the
  * frame expands, they open with it from the stenotic cone they formed.
  */
-function nativeLeaflets(D, R, wall, at, P) {
+function nativeLeaflets(D, R, wall, at, h0, s) {
   const out = [], top = 1.65, edge = 1.2, cone = 0.45;
   for (let j = 0; j < 3; j++) {
     const p0 = (COMM0 + 120 * j) * DEG, p1 = p0 + 120 * DEG;
@@ -202,7 +210,7 @@ function nativeLeaflets(D, R, wall, at, P) {
       // the hinge on the wall; the leaflet then runs in to the stenotic cone, or out to the frame
       const rWall = Math.min(wall(h, phi), 1.6) - NATIVE_T / 2;
       const rCone = rWall + (cone - rWall) * b * (1 - mid);
-      const zf = h - D.base, rF = zf >= 0 && zf <= D.frameH ? R(zf, phi) + NATIVE_T / 2 + 0.02 : 0;
+      const zf = (h - h0) / s, rF = zf >= 0 && zf <= D.frameH ? R(zf, phi) + NATIVE_T / 2 + 0.02 : 0;
       const r = Math.min(rWall, Math.max(rCone, rF));
       return at(r, phi, h);
     }) });
@@ -215,10 +223,10 @@ function nativeLeaflets(D, R, wall, at, P) {
  * self-expanding valve the capsule over the part of the frame not yet released; the guidewire from
  * the nose cone to the LV apex.
  */
-function deliverySystem(D, at, h0, P, u) {
+function deliverySystem(D, at, h0, P, u, s) {
   const out = [];
   const tube = (r, lo, hi) => gridMesh(40, 4, (a, b) => at(r, 2 * Math.PI * a, lo + b * (hi - lo)), true);
-  const topZ = h0 + D.frameH;
+  const topZ = h0 + D.frameH * s;
   if (P.kind === 'se') {
     // the capsule covers the frame above the edge that has drawn back
     const front = h0 + u * (D.frameH + 0.6);
@@ -319,10 +327,17 @@ export function tavrItems(F, wall, P, g) {
 }
 
 /**
- * The frame's outer radius as deployed, at height h above the hinge ring and angle phi (cm), and
- * the heights of its inflow and outflow: for the paravalvular jets and the implant depth.
+ * The frame's outer radius at height h above the hinge ring and angle phi (cm), and the heights of
+ * its inflow and outflow, at its place on the annulus with deployment u (1, deployed, by default):
+ * for the paravalvular jets and the implant depth.
  */
-export function frameAt(kind, wall) {
+export function frameAt(kind, wall, u = 1) {
+  const D = DESIGNS[kind], lo = inflowAt(kind, u), s = heightAt(D, u) / D.frameH;
+  return { r: (h, phi) => frameR(D, (h - lo) / s, phi, wall, u, kind), lo, hi: D.base + D.frameH };
+}
+
+/** The height of the frame's inflow at its place, with deployment u (cm; negative: below the annulus). */
+export function inflowAt(kind, u = 1) {
   const D = DESIGNS[kind];
-  return { r: (h, phi) => deployedR(D, h - D.base, phi, wall), lo: D.base, hi: D.base + D.frameH };
+  return D.base + D.frameH - heightAt(D, u);
 }
