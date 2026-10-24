@@ -25,7 +25,7 @@ import subprocess
 import sys
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
@@ -657,13 +657,19 @@ class Composer:
         u = (END0 / FPS) / BEAT
         self.trace_end = card_trace((((u - np.floor(u)) * 857 + 25) % 857) / 857)
 
-    def label(self, text, dark=True):
-        key = (text, dark)
-        if key not in self.labels:
+    def label(self, text):
+        """The shot's name and its halo: the type grown 2 px and blurred 4 px."""
+        if text not in self.labels:
             f = self.ty.font('IBMPlexSans-500', 13)
-            self.labels[key] = Block().add(text_mask([(text.upper(), f, 13 * 0.2, INK3 if dark else PINK3)])[0],
-                                           CARD[0] + 22, round(baseline(CARD[1] + 19, 13, 13)))
-        return self.labels[key]
+            ms = text_mask([(text.upper(), f, 13 * 0.2, INK3)])[0]
+            halo = []
+            for m, c in ms:
+                im = Image.fromarray((m.a * 255).astype(np.uint8))
+                a = np.asarray(im.filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(4)), np.float32) / 255
+                halo.append((Mask(m.x, m.y, a / max(float(a.max()), 1e-6)), c))
+            x, y = CARD[0] + 22, round(baseline(CARD[1] + 19, 13, 13))
+            self.labels[text] = Block().add(ms, x, y), Block().add(halo, x, y)
+        return self.labels[text]
 
     # -- small panels on the paper (card px)
     def tag(self, text, size=13, color=PINK3, track=0.16, face='IBMPlexSans-500'):
@@ -932,16 +938,18 @@ class Composer:
         reg = fr[y:y + h, x:x + w]
         reg += (img - reg) * m
         blit(fr, Mask(x, y, self.card_edge), RULE, 0.55)
-        # the shot's name: the dark frame's ink-3 on a dark picture, the paper's ink-2 where the
-        # picture under it is mid-grey or light (the skin of the groin shots)
+        # the shot's name: ink-3 on a dark picture; where the picture under it is mid-grey (the skin
+        # of the groin shots), the ink goes to ink-2 on a dark halo
         under = img[12:32, 16:320]
         lum = float((under @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean()) / 255
-        k = clamp01((lum - 0.26) / 0.12)
+        k = clamp01((lum - 0.2) / 0.12)
         k = k * k * (3 - 2 * k)
-        ink = tuple(a + (b - a) * k for a, b in zip(INK3, PINK2))
+        ink = tuple(a + (b - a) * k for a, b in zip(INK3, INK2))
         for _, lab, al in parts:
             if lab:
-                self.label(lab).draw(fr, al, color=ink)
+                text, halo = self.label(lab)
+                halo.draw(fr, al * 0.8 * k, color=GROUND)
+                text.draw(fr, al, color=ink)
 
     def draw_caption(self, fr, i):
         caps = self.caps
