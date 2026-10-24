@@ -83,7 +83,7 @@ Hidden chapters keep their code and come back with a flag in `src/order.js`: the
 - The main sources are Lang 2015, Mitchell 2019, Zoghbi 2017, Baumgartner 2017, Otto 2020, Pandian 2023, Nagueh 2025, Mukherjee 2025, Thomas 2025, Klein 2013, Adler 2015, Schulz-Menger 2025, Garcia-Pavia 2021, Moody 2023, Pellikka 2020, Lancellotti 2017 and Taub 2025. The full list, with DOI and PubMed links, opens from **Sources** on the page (`src/refs.js`). Each reference was checked against PubMed and Crossref.
 - All images are simulated; there are no patient images. The models are illustrative and set to agree with the sources.
 - The AI chapter follows the papers and the public code of EchoPrime (Vukadinovic 2026) and EchoNet-Measurements (Sahashi 2025). Neither model ran on the site's images. The figure simulates their outputs from the site's own values.
-- The text reads as a clinical echocardiography text: third person, with the chamber, view, method and unit named. Each concept has one home chapter, and other chapters link to it. A chapter holds 1,100 words or fewer; 08 and 21 join two chapters and hold 1,700 or fewer.
+- The text reads as a clinical echocardiography text: third person, with the chamber, view, method and unit named. Each concept has one home chapter, and other chapters link to it. A chapter holds 1,100 words or fewer; 08 and 21 join two chapters and hold 1,700 or fewer. A structural heart procedure chapter, such as B3 (TAVR), may hold more: its steps, its imaging and its criteria need the room.
 
 ## Run it
 
