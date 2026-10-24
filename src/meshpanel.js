@@ -91,7 +91,9 @@ export class MeshPanel {
    * setRegional), taken when its key changes; o.noSys: the heart's own systolic change is off,
    * as where a chapter sets the wall motion itself (echo.js noSys). o.hide: valve mesh names
    * left out of the cut, and o.extra(ev, g, state): B-mode items of the chapter's own on the
-   * plane, with o.extraKey naming what they show (a prosthesis, ch/prosthetic.js).
+   * plane, with o.extraKey naming what they show (a prosthesis, ch/prosthetic.js). o.valve(ev,
+   * vd): a change to each valve after its morph, before the cut (echo.js valveHook), with
+   * o.extraKey naming it too (the leaflets held in a clip, ch/mteer.js).
    * o.under(ev, g, state, valves): items drawn under the leaflets, which may cut the valve
    * loops (a vegetation and its perforation, ch/endocarditis.js), named by o.extraKey too.
    * o.underWalls(ev, { loops, outer, state }): items drawn under the walls (a mass, ch/masses.js),
@@ -136,6 +138,7 @@ export class MeshPanel {
     ev.hideValves = o.hide || null;
     ev.extraItems = o.extra || null;
     ev.extraUnder = o.under || null;
+    ev.valveHook = o.valve || null;
     ev.underWalls = o.underWalls || null;
     const tms = o.tms ?? 0;
     const c = cycleAt(tms);

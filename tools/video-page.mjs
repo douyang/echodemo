@@ -34,10 +34,11 @@ export async function openCut({ cut, base, theme = '', browser = null }) {
 
 /**
  * Open a chapter video (video/chapter.html?ch=key), 16:9: the same handles. Its frames come in
- * order (video/chapter.js): frame(i) runs the chapter's motion up to frame i first.
+ * order (video/chapter.js): frame(i) runs the chapter's motion up to frame i first. frames: load
+ * the video's own frames for its chapter's pane (a video's `frames`, video/chapters.js).
  */
-export async function openChapter({ ch, base, browser = null }) {
-  return openPage(`${base}/video/chapter.html?ch=${ch}`, SIZE['16:9'], browser);
+export async function openChapter({ ch, base, browser = null, frames = false }) {
+  return openPage(`${base}/video/chapter.html?ch=${ch}${frames ? '&frames=1' : ''}`, SIZE['16:9'], browser);
 }
 
 /**

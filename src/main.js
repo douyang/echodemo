@@ -37,11 +37,11 @@ for (const a of $$('article.chapter')) {
 for (const a of $$('a[data-go]')) {
   const n = numOf(a.dataset.go), t = a.textContent;
   if (!n) continue;
-  const m = t.match(/^([Bb]onus c|[Cc])hapter (?:\d\d|B\d)$/);
+  const m = t.match(/^([Bb]onus c|[Cc])hapter (?:\d\d|B\d+)$/);
   if (m) {
     const s = `${n.startsWith('B') ? 'bonus chapter' : 'chapter'} ${n}`;
     a.textContent = /^[BC]/.test(m[1]) ? s[0].toUpperCase() + s.slice(1) : s;
-  } else if (/^(?:\d\d|B\d) \S/.test(t)) a.textContent = `${n} ${CHAPTERS[CH[a.dataset.go]].title}`;
+  } else if (/^(?:\d\d|B\d+) \S/.test(t)) a.textContent = `${n} ${CHAPTERS[CH[a.dataset.go]].title}`;
 }
 for (const c of CHAPTERS) if (c.defaults) declare(c.defaults);
 declare({ pheno: 'normal' });   // the heart every chapter shows (pheno.js)
@@ -418,6 +418,8 @@ function showChapter() {
   const c = CHAPTERS[i];
   openedAt = performance.now();
   document.documentElement.dataset.ch = c.key;
+  // a page with no figure (the bonus page, a chapter in preparation): the stage hides (styles.css)
+  document.documentElement.toggleAttribute('data-nofig', !c.figure);
   tourT = 0;
   stepFrom = 0;
   dotT = 0;
