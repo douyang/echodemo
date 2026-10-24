@@ -50,10 +50,11 @@ def rail_a():
 
 
 def rail_b():
-    hubL = A.mirror(A.PUNCTURE_R) - A.mirror(A.NEEDLE_DIR) * 16.0
+    dirL = A.NEEDLE_DIR * np.array([-1.0, 1.0, 1.0])      # a direction mirrors without the midline
     pu = A.mirror(A.PUNCTURE_R)
+    hubL = pu - dirL * 16.0
     fem = A.mirror(A.FEMORAL_R[1::-1, :3])
-    ili = A.mirror(A.ILIAC_R[::-1, :3])
+    ili = A.ILIAC_L[::-1, :3]
     ao = A.AORTA_EXT[::-1, :3] + np.array([0.35, -0.25, 0])
     model = A.AORTA_MODEL[::-1][1:-2] + np.array([0.3, -0.2, 0])
     # the noncoronary sinus: just above the annulus, posterior and to the right of the axis
@@ -65,7 +66,7 @@ def rail_b():
     R = 0.42
     c = ncc + side * R
     loop = [c - side * R * np.cos(p) - d * R * np.sin(p) for p in np.linspace(0, 1.8 * np.pi, 18)[1:]]
-    P = np.vstack([[hubL, pu - A.mirror(A.NEEDLE_DIR) * 4.0], fem, ili[1:], ao[1:], model, [top, ncc], loop])
+    P = np.vstack([[hubL, pu - dirL * 4.0], fem, ili[1:], ao[1:], model, [top, ncc], loop])
     return G.Rail(A.catmull(P, 10), step=0.04)
 
 

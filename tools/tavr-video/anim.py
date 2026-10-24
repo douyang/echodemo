@@ -34,12 +34,14 @@ def ease(t, a, b):
 
 
 # ---------------------------------------------------------------- the storyboard (s)
+# The second cut (65 s): the route and the groin, the wires, the delivery and the closure. The
+# valve's position and deployment use the first cut's frames (this script at commit 293afc7, its
+# 45-61 s: compose.py maps them), so this clock leaves 26-42 s without shots.
 SHOTS = {
-    'title': (0.0, 4.0), 'access': (4.0, 16.0), 'pacing': (16.0, 19.0), 'cross': (19.0, 26.0),
-    'sheathpass': (34.0, 37.0), 'align': (37.0, 40.0), 'arch': (40.0, 44.0),
-    'position': (44.0, 52.0), 'deploy': (52.0, 62.0), 'withdraw': (72.0, 74.5), 'close': (74.5, 77.0),
+    'title': (0.0, 1.4), 'access': (1.4, 8.0), 'pacing': (8.0, 10.0), 'cross': (10.0, 13.0),
+    'sheathpass': (22.0, 23.2), 'align': (23.2, 24.4), 'arch': (24.4, 26.0), 'close': (54.0, 57.0),
 }
-SPLIT = {'position', 'deploy'}          # left half of the card: the TEE view takes the right
+SPLIT = set()
 
 
 def shot_at(t):
@@ -51,7 +53,7 @@ def shot_at(t):
 
 # ---------------------------------------------------------------- the heart's rhythm
 RR = 60 / 70
-PACE_ON, PACE_OFF = 52.0, 61.0
+PACE_ON, PACE_OFF = 33.0, 42.0          # the first cut's 52-61 s (not rendered on this clock)
 RR_PACE = 60 / 180
 
 
@@ -332,72 +334,68 @@ class Rig:
         st = {}
         sp, sk, sb, sa = self.s_p, self.s_skin, self.s_bif, self.s_ann
         L = self.ra.L
-        # needle: in 5.0-7.0, out 9.0-9.8
-        st['needle'] = 5.0 <= t < 9.8
-        tip = sk - 1.2 + (sp + 0.25 - (sk - 1.2)) * ease(t, 5.2, 7.0)
-        tip -= 7.0 * ease(t, 9.0, 9.8)
+        # needle: in 2.7-3.4, out 4.1-4.5
+        st['needle'] = 2.6 <= t < 4.5
+        tip = sk - 1.2 + (sp + 0.25 - (sk - 1.2)) * ease(t, 2.7, 3.4)
+        tip -= 7.0 * ease(t, 4.1, 4.5)
         st['needle_tip'] = tip
-        # wire: the access wire to the iliac (7.5-9), the stiff wire later to the apex
-        w1 = sp - 1.0 + 14.0 * ease(t, 7.5, 9.0)
-        if t >= 16.0:
-            w1 = sa - 2.5 + 5.0 * ease(t, 19.6, 21.2)
-            w1 += (L - (sa + 2.5)) * ease(t, 21.6, 24.6)
-        if t >= 72.0:
+        # wire: the access wire to the iliac (3.5-4.2), the stiff wire later to the apex
+        w1 = sp - 1.0 + 14.0 * ease(t, 3.5, 4.2)
+        if t >= 8.0:
+            w1 = sa - 2.5 + 5.0 * ease(t, 10.3, 11.0)
+            w1 += (L - (sa + 2.5)) * ease(t, 11.2, 12.6)
+        if t >= 50.0:
             # the stiff wire leaves the LV with the delivery system; a wire stays in the artery until
-            # the sutures close it (ACC TAVR Handbook ch. 10), then comes out (76.4-77.0)
-            w1 = L - (L - (sa - 8)) * ease(t, 72.6, 74.2)
-            w1 -= (sa - 8 - (sk - 3)) * ease(t, 76.4, 77.0)
-        st['wire'] = 7.5 <= t < 77.0
+            # the sutures close it (ACC TAVR Handbook ch. 10), then comes out (56.2-56.8)
+            w1 = sa - 8 - (sa - 8 - (sk - 3)) * ease(t, 56.2, 56.8)
+        st['wire'] = 3.5 <= t < 56.8
         st['wire_end'] = w1
         # diagnostic catheter (cross shot): 2 cm behind the wire to the valve, then back out
-        st['cath'] = 19.0 <= t < 26.0
-        st['cath_tip'] = min(sa - 1.2, w1 - 2.0) - 8.0 * ease(t, 23.0, 25.5)
-        # ProGlide: in 9.8-10.6, out 11.0-11.6; the sutures from 11.0 to the end of the closure
-        st['proglide'] = 9.8 <= t < 11.6
-        st['proglide_tip'] = sk - 2 + (sp + 0.8 - (sk - 2)) * ease(t, 9.8, 10.6) - 9 * ease(t, 11.0, 11.6)
-        st['sutures'] = 11.0 <= t
-        st['tighten'] = ease(t, 75.6, 76.4)
-        # sheath: in 12.0-15.5; out 74.6-75.6
-        st['sheath'] = 12.0 <= t < 75.6
-        stip = sk - 0.5 + (sb + 2.0 - (sk - 0.5)) * ease(t, 12.2, 15.5)
-        stip -= (sb + 2.0 - (sk - 1.0)) * ease(t, 74.6, 75.6)
+        st['cath'] = 10.0 <= t < 13.0
+        st['cath_tip'] = min(sa - 1.2, w1 - 2.0) - 8.0 * ease(t, 12.2, 12.9)
+        # ProGlide: in 4.6-5.0, out 5.2-5.6; the sutures from 5.2 to the end of the closure
+        st['proglide'] = 4.6 <= t < 5.6
+        st['proglide_tip'] = sk - 2 + (sp + 0.8 - (sk - 2)) * ease(t, 4.6, 5.0) - 9 * ease(t, 5.2, 5.6)
+        st['sutures'] = 5.2 <= t
+        st['tighten'] = ease(t, 55.2, 56.0)
+        # sheath: in 5.8-7.2; out 54.2-55.0
+        st['sheath'] = 5.8 <= t < 55.0
+        stip = sk - 0.5 + (sb + 2.0 - (sk - 0.5)) * ease(t, 5.8, 7.2)
+        stip -= (sb + 2.0 - (sk - 1.0)) * ease(t, 54.2, 55.0)
         st['sheath_tip'] = stip
         st['sheath_len'] = 34.0
         # delivery system: valve centre along rail A (crimped valve 2.7 cm long)
         sv = None
-        if 34.0 <= t < 37.0:
-            sv = (stip - 34.0) - 2.5 + (sp + 9.0 - ((stip - 34.0) - 2.5)) * ease(t, 34.3, 36.8)
-        elif 37.0 <= t < 40.0:
+        if 22.0 <= t < 23.2:
+            sv = (stip - 34.0) - 2.5 + (sp + 9.0 - ((stip - 34.0) - 2.5)) * ease(t, 22.1, 23.1)
+        elif 23.2 <= t < 24.4:
             sv = self.s_desc
-        elif 40.0 <= t < 44.0:
-            sv = self.s_desc + (sa - 0.45 - self.s_desc) * ease(t, 40.0, 43.4)
-        elif 44.0 <= t < 72.0:
-            sv = sa - 0.45 + 0.18 * np.sin((t - 44.0) * 2.4) * (1 - ease(t, 45.5, 47.5))
-        elif 72.0 <= t < 74.5:
-            sv = sa - 0.45 - 16.0 * ease(t, 72.3, 74.0)
+        elif 24.4 <= t < 26.0:
+            sv = self.s_desc + (sa - 0.45 - self.s_desc) * ease(t, 24.4, 25.9)
+        elif 26.0 <= t < 50.0:
+            sv = sa - 0.45
         st['valve'] = sv is not None
         st['valve_c'] = sv if sv is not None else 0.0
-        # the balloon: distal to the valve until the alignment in the descending aorta (37.6-39.4)
-        st['balloon_off'] = 2.85 * (1 - ease(t, 37.6, 39.4)) if t < 40.0 else 0.0
-        # expansion and inflation: pacing from 52.0, balloon 53.5-56.5, hold 3 s, deflate 59.5-61.0
-        e = ease(t, 53.5, 56.5)
-        st['expand'] = e if t < 72.0 else 1.0
-        st['inflate'] = e * (1 - ease(t, 59.5, 61.0)) if t < 72.0 else 0.0
-        st['deployed'] = t >= 56.5
-        # after deployment the valve stays at the annulus; the system withdraws (72.3-74.0)
+        # the balloon: distal to the valve until the alignment in the descending aorta (23.35-24.2)
+        st['balloon_off'] = 2.85 * (1 - ease(t, 23.35, 24.2)) if t < 24.4 else 0.0
+        # expansion and inflation (the first cut's frames show them): balloon 34.5-37.5, empty by 42
+        e = ease(t, 34.5, 37.5)
+        st['expand'] = e if t < 50.0 else 1.0
+        st['inflate'] = e * (1 - ease(t, 40.5, 42.0)) if t < 50.0 else 0.0
+        st['deployed'] = t >= 37.5
         st['system_c'] = sv if sv is not None else 0.0
-        if t >= 72.0:
+        if t >= 50.0:
             st['valve_c'] = sa - 0.45
-        st['system'] = (34.0 <= t < 74.5)
-        st['implant'] = (t >= 56.5)
-        # pigtail in the noncoronary sinus from the wires shot on; pacing lead from 16.0
-        st['pigtail'] = 19.0 <= t < 72.0
-        st['lead'] = 16.0 <= t < 72.0
+        st['system'] = 22.0 <= t < 50.0
+        st['implant'] = t >= 37.5
+        # pigtail in the noncoronary sinus from the cross shot; pacing lead from 8.0
+        st['pigtail'] = 10.0 <= t < 50.0
+        st['lead'] = 8.0 <= t < 50.0
         rl = self.rc.L
-        st['lead_tip'] = self.s_skin_c + 2 + (rl - self.s_skin_c - 2) * ease(t, 16.3, 18.8)
-        # the glow along the path (title); it fades as the camera flies in to the groin
-        st['glow'] = ease(t, 0.5, 3.4) if t < 4.8 else 0.0
-        st['glow_a'] = 1.0 - ease(t, 4.0, 4.8)
+        st['lead_tip'] = self.s_skin_c + 2 + (rl - self.s_skin_c - 2) * ease(t, 8.2, 9.7)
+        # the glow along the arterial path (title); it fades as the camera flies in to the groin
+        st['glow'] = ease(t, 0.15, 1.1) if t < 2.4 else 0.0
+        st['glow_a'] = 1.0 - ease(t, 1.5, 2.1)
         return st
 
     def update(self, t):
@@ -532,36 +530,37 @@ class Rig:
 
     # -------------------------------------------------------- per-shot look
     LOOK = {
-        # shot: body on, skin alpha (face, edge), heart alpha, aorta alpha, arteries alpha, cut on
-        'title': (True, (0.03, 0.42), 0.6, 0.5, 0.5, False),
-        'access': (True, (0.10, 0.62), 1.0, 1.0, 0.42, False),
-        'pacing': (True, (0.04, 0.45), 0.32, 0.6, 0.85, False),
-        'cross': (False, None, 1.0, 1.0, 1.0, True),
-        'sheathpass': (True, (0.10, 0.62), 1.0, 1.0, 0.42, False),
-        'align': (False, None, 1.0, 0.25, 0.25, False),
-        'arch': (False, None, 0.3, 0.2, 0.6, False),
-        'position': (False, None, 1.0, 1.0, 1.0, True),
-        'deploy': (False, None, 1.0, 1.0, 1.0, True),
-        'withdraw': (False, None, 1.0, 1.0, 1.0, True),
-        'close': (True, (0.10, 0.62), 1.0, 1.0, 0.42, False),
+        # shot: body on, skin alpha (face, edge), heart alpha, aorta alpha, arteries alpha, cut on, bones alpha
+        'title': (True, (0.03, 0.42), 0.6, 0.5, 0.5, False, 0.30),
+        'access': (True, (0.10, 0.62), 1.0, 1.0, 0.42, False, 0.50),
+        'pacing': (True, (0.04, 0.45), 0.32, 0.6, 0.85, False, 0.22),
+        'cross': (False, None, 1.0, 1.0, 1.0, True, 0.0),
+        'sheathpass': (True, (0.10, 0.62), 1.0, 1.0, 0.42, False, 0.50),
+        'align': (False, None, 1.0, 0.25, 0.25, False, 0.0),
+        'arch': (False, None, 0.3, 0.2, 0.6, False, 0.0),
+        'close': (True, (0.10, 0.62), 1.0, 1.0, 0.42, False, 0.50),
     }
 
     def shot_look(self, t, shot, st):
-        body_on, skin, heart_a, aorta_a, art_a, cut = self.LOOK.get(shot, self.LOOK['title'])
-        # the fly-in to the groin (4.0-5.4 s): the title's look turns into the groin's
-        fly = 1.0 - ease(t, 4.0, 5.2) if shot == 'access' else 0.0
+        body_on, skin, heart_a, aorta_a, art_a, cut, bone_a = self.LOOK.get(shot, self.LOOK['title'])
+        # the fly-in to the groin (1.4-2.6 s): the title's look turns into the groin's
+        fly = 1.0 - ease(t, 1.4, 2.4) if shot == 'access' else 0.0
         if fly > 0:
-            _, skin0, h0, a0, r0, _ = self.LOOK['title']
+            _, skin0, h0, a0, r0, _, b0 = self.LOOK['title']
             skin = tuple(x1 + (x0 - x1) * fly for x0, x1 in zip(skin0, skin))
-            heart_a, aorta_a, art_a = (x1 + (x0 - x1) * fly for x0, x1 in ((h0, heart_a), (a0, aorta_a), (r0, art_a)))
+            heart_a, aorta_a, art_a, bone_a = (x1 + (x0 - x1) * fly for x0, x1 in
+                                                ((h0, heart_a), (a0, aorta_a), (r0, art_a), (b0, bone_a)))
         S = self.S
-        for o in [S['body'], S['table']] + list(S['marks']):
+        for o in [S['body'], S['table']] + list(S['marks']) + list(S['bones']):
             self.show(o, body_on)
+        for o in S['eyes']:
+            self.show(o, False)
+        mats.set_alpha(self.M['bone'], bone_a)
         groin = shot in ('access', 'sheathpass', 'close')
         for o in S['marks']:
             if o.name.startswith('Ligament'):
                 self.show(o, groin and o.name == 'Ligament1')
-        mats.set_alpha(self.M['ligament'], 1.0 - fly)
+        mats.set_alpha(self.M['ligament'], 0.75 * (1.0 - fly))
         # the groin shots: the skin fades out round the puncture (a patch over the anatomy)
         nt = self.M['skin'].node_tree
         fp = nt.nodes['focus']
@@ -569,18 +568,18 @@ class Rig:
             fp.inputs[k].default_value = float(v)
         r = 1000.0
         if shot == 'access':
-            r = 14.0 + 30.0 * ease(t, 13.0, 15.8)
-            r += (300.0 - r) * (1.0 - ease(t, 4.0, 5.4))     # the patch closes in as the camera nears
+            r = 14.0 + 30.0 * ease(t, 6.0, 7.6)
+            r += (300.0 - r) * (1.0 - ease(t, 1.4, 2.6))     # the patch closes in as the camera nears
         elif shot in ('sheathpass', 'close'):
             r = 16.0
         nt.nodes['focus_r'].outputs[0].default_value = r
         nt.nodes['cull'].outputs[0].default_value = (1.0 - fly) if groin else 0.0
-        for o in S['marks']:
-            if o.name.startswith('Femur'):
-                self.show(o, False)
-            if o.name == 'FemoralHead-1':
-                # the far femoral head leaves the groin shots once the camera is near
-                self.show(o, body_on and (not groin or (shot == 'access' and t < 5.0)))
+        near = (shot == 'access' and 2.2 <= t < 6.2) or shot in ('sheathpass', 'close')
+        if near:
+            # the far femur and the chest's bones leave the groin shots while the camera is near
+            for o in S['bones']:
+                if o.name.endswith('.L') or o.name.startswith(('Bone.ripcage', 'Bone.spine_thoracic')):
+                    self.show(o, False)
         if skin:
             nt = self.M['skin'].node_tree
             nt.nodes['alpha_lo'].outputs[0].default_value = skin[0]
@@ -608,10 +607,8 @@ class Rig:
             self.show(self.lead, False)
             self.show(self.electrode, False)
         if groin:
-            # the pigtail leaves the other groin: from the right it rises out of the far side of the
-            # body as a bare line
+            # the pigtail goes in from the other groin
             self.show(self.pig, False)
-        # the valves and chordae outside the cut view are hidden behind the opaque heart anyway
 
     # -------------------------------------------------------- cameras (standing-frame eye and target)
     def cam_for(self, t, shot):
@@ -621,21 +618,21 @@ class Rig:
         groin = A.PUNCTURE_R
         n = self.cut_n
         if shot == 'title':
-            eye = np.array([A.XM - 105, -95, -12]) + np.array([0, 0, -10]) * u
+            eye = np.array([A.XM - 105, -95, -12]) + np.array([0, 0, -4]) * u
             return eye, np.array([A.XM, 0, -22]), 32, 'body'
         if shot in ('access', 'sheathpass', 'close'):
             # a side view from the patient's right: the skin on top, the needle's 45 degrees, the artery;
             # the fly-in starts where the title's camera ends
-            far = np.array([A.XM - 105, -95, -22])
+            far = np.array([A.XM - 105, -95, -16])
             near = groin + np.array([-24.0, -5.0, 1.5])
             near_t = groin + np.array([0.0, -1.5, 1.0])
             if shot == 'access':
-                k = ease(t, 4.0, 5.6)
+                k = ease(t, 1.4, 2.6)
                 eye = far + (near - far) * k
                 tgt = np.array([A.XM, 0, -22]) + (near_t - np.array([A.XM, 0, -22])) * k
-                # pull back to see the sheath reach the aorta (13.0-15.8)
+                # pull back to see the sheath reach the aorta (6.0-7.6)
                 mid = 0.5 * (groin + A.AORTIC_BIF)
-                m_ = ease(t, 13.0, 15.8)
+                m_ = ease(t, 6.0, 7.6)
                 eye = eye + (mid + np.array([-58.0, -14.0, 0.0]) - eye) * m_
                 tgt = tgt + (mid + np.array([0.0, -2.0, 0.0]) - tgt) * m_
                 return eye, tgt, 32 + 18 * k, 'body'
@@ -648,8 +645,8 @@ class Rig:
             return eye, tgt, 40, 'body'
         if shot in ('cross', 'position', 'deploy', 'withdraw'):
             if shot == 'cross':
-                # the root as the wire crosses (19-21.5), then the LV as the stiff wire curls (21.5-24.6)
-                k = ease(t, 21.4, 23.4)
+                # the root as the wire crosses (10.3-11.0), then the LV as the stiff wire curls (11.2-12.6)
+                k = ease(t, 11.0, 12.0)
                 c0, c1 = A.AV - A.ROOT * 0.3, 0.5 * (A.AV + A.APEX_ENDO) + A.ROOT * 0.6
                 e0, e1 = A.AV + n * 15 + A.ROOT * 0.8, 0.5 * (A.AV + A.APEX_ENDO) + n * 27 + A.ROOT * 2.0
                 return e0 + (e1 - e0) * k, c0 + (c1 - c0) * k, 50, 'root'
@@ -662,7 +659,7 @@ class Rig:
             eye = c + np.array([-20, -14, 1.5]) + np.array([0, 0, 1.5]) * u
             return eye, c + np.array([0, 0, 0.6]), 55, 'root'
         if shot == 'arch':
-            c = np.array([0.2, 2.6, 6.2]) + np.array([-0.4, -2.0, -3.4]) * ease(t, 41.2, 43.8)
+            c = np.array([0.2, 2.6, 6.2]) + np.array([-0.4, -2.0, -3.4]) * ease(t, 24.6, 25.9)
             eye = c + np.array([-36, -27, 4])
             return eye, c, 40, 'root'
         return np.array([A.XM - 105, -95, -12]), np.array([A.XM, 0, -22]), 32, 'body'
@@ -719,11 +716,11 @@ def setup_engine(sc, engine, samples):
     else:
         sc.render.engine = 'CYCLES'
         sc.cycles.samples = samples
-        # the video's settings (8 samples with the denoiser): fixed samples, 12 transparent and 4
-        # light bounces, about 4.5 h for all shots on 4 cores; each can be set in the environment
         env = os.environ
+        # the video's settings (8 samples with the denoiser): fixed samples, 16 transparent and 4
+        # light bounces, about 3 h for this cut's shots on 4 cores; each can be set in the environment
         sc.cycles.use_adaptive_sampling = env.get('TAVR_ADAPTIVE', '0') == '1'
-        sc.cycles.transparent_max_bounces = int(env.get('TAVR_TBOUNCE', '12'))
+        sc.cycles.transparent_max_bounces = int(env.get('TAVR_TBOUNCE', '16'))
         sc.cycles.max_bounces = int(env.get('TAVR_BOUNCES', '4'))
         sc.cycles.denoising_input_passes = 'RGB_ALBEDO_NORMAL'
         sc.cycles.denoising_prefilter = 'ACCURATE'

@@ -1,10 +1,14 @@
-"""Build the static scene of the TAVR video: the heart model, the vessels below it, the body,
-the groin's landmarks and the table. Run inside Blender's Python (bpy 4.5); anim.py builds it.
+"""Build the static scene of the TAVR video: the heart model, the vessels below it, the body and
+its bones (the CC0 Human Base Meshes, hbm.py), the inguinal ligaments and the table. Run inside
+Blender's Python (bpy 4.5); anim.py builds it.
 
 The heart model is the heartmodel repository's assets/heart.raw.glb and valves.raw.glb: the folder
-in TAVR_ASSETS (or --assets), else ../heartmodel/assets next to this repository.
+in TAVR_ASSETS (or --assets), else ../heartmodel/assets next to this repository. The body is the
+Human Base Meshes bundle v1.4.1 of Blender Studio (CC0; the bundle's README):
+https://download.blender.org/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip
+Its .blend: TAVR_HBM (or --hbm), else video/out/tavr-procedure/hbm/human_base_meshes_bundle.blend.
 
-    python scene.py [--assets <folder>] [--save scene.blend]
+    python scene.py [--assets <folder>] [--hbm <bundle.blend>] [--save scene.blend]
 """
 import os
 import sys
@@ -19,9 +23,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import anat as A  # noqa: E402
 import geo as G  # noqa: E402
+import hbm  # noqa: E402
 import mats  # noqa: E402
 
 ASSETS = os.environ.get('TAVR_ASSETS', os.path.join(HERE, '..', '..', '..', 'heartmodel', 'assets'))
+HBM = os.environ.get('TAVR_HBM', os.path.join(HERE, '..', '..', 'video', 'out', 'tavr-procedure', 'hbm',
+                                             'human_base_meshes_bundle.blend'))
 
 
 # ---------------------------------------------------------------- helpers
@@ -173,73 +180,22 @@ def wall_table(myo, axis_o, axis_d, h0=-1.5, h1=3.5, dh=0.1, na=72):
 
 
 # ---------------------------------------------------------------- the body
-def build_body(M, coll, root):
-    """Torso from bodykey.js's cross-sections, arms, head and legs, joined into one skin."""
-    parts = []
-    # the torso to the pelvis (bodykey's rings to 42 cm below the notch, then a rounder pelvis that
-    # the thighs merge into: no torso hem over the legs)
-    rings = [r for r in A.RINGS if r[0] >= -42] + [[-48, 16.4, -2.4, -25.0], [-53, 14.6, -3.8, -24.0]]
-    rows = A.catmull(np.array(rings, float), 4)
-    Msides = 64
-    V = []
-    for r in rows:
-        for k in range(Msides):
-            x, z = A.section(r, 2 * np.pi * k / Msides)
-            V.append(A.body_point(x, r[0], z))
-    parts.append((np.array(V), G.tube_faces(len(rows), Msides, True, True), True))
-    for side in (1, -1):
-        arm = A.catmull(np.array(A.ARM, float), 4)
-        P = np.array([A.body_point(side * a[0], a[1], a[2]) for a in arm])
-        parts.append((G.tube_verts(P, arm[:, 3], 24), G.tube_faces(len(P), 24), False))
-        # the leg: hip to ankle, then the foot
-        hip = A.body_point(side * 8.2, -44.0, -14.0)
-        knee = A.body_point(side * 9.6, -93.0, -13.0)
-        calf = A.body_point(side * 9.7, -105.0, -13.8)
-        ankle = A.body_point(side * 9.8, -135.0, -14.6)
-        leg = np.array([[*hip, 9.4], [*A.body_point(side * 8.7, -56, -14.0), 8.8],
-                        [*A.body_point(side * 9.2, -70, -13.6), 7.4], [*knee, 5.4],
-                        [*calf, 5.9], [*ankle, 3.3]])
-        L = A.resample(A.catmull(leg, 6), 1.0)
-        parts.append((G.tube_verts(L[:, :3], L[:, 3], 24), G.tube_faces(len(L), 24), False))
-        toe = ankle + np.array([0, -11.0, -4.0])
-        foot = np.array([[*ankle, 3.3], [*(ankle + np.array([0, -4, -5.5])), 3.6], [*toe, 2.4]])
-        F2 = A.resample(A.catmull(foot, 6), 0.8)
-        parts.append((G.tube_verts(F2[:, :3], F2[:, 3], 20), G.tube_faces(len(F2), 20), False))
-    # the head: an egg set forward at the jaw (bodykey.js)
-    hc = A.body_point(0, 21.8, -11.2)
-    u, v = np.meshgrid(np.linspace(0, np.pi, 33), np.linspace(0, 2 * np.pi, 48, endpoint=False), indexing='ij')
-    x, y, z = np.sin(u) * np.cos(v), np.cos(u), np.sin(u) * np.sin(v)
-    jaw = np.clip((-y - 0.1) / 0.85, 0, 1)
-    jaw = jaw * jaw * (3 - 2 * jaw)
-    X = x * 7.6 * (1 - 0.3 * jaw)
-    Zd = z * 9.9 * np.where(z < 0, 1 - 0.45 * jaw, 1) + 3.0 * jaw
-    HV = np.stack([hc[0] + X, hc[1] - Zd, hc[2] + y * 11.6], -1).reshape(-1, 3)
-    HF = []
-    nu, nv = 33, 48
-    for i in range(nu - 1):
-        for k in range(nv):
-            a, b = i * nv + k, i * nv + (k + 1) % nv
-            HF.append((a, b, b + nv, a + nv))
-    parts.append((HV, HF, False))
-    # one mesh, then one skin over all parts
-    allV, allF, off = [], [], 0
-    for Vp, Fp, _ in parts:
-        allV.append(np.asarray(Vp))
-        allF += [tuple(i + off for i in f) for f in Fp]
-        off += len(Vp)
-    o = mesh_obj('Body', np.vstack(allV), allF, M['skin'], coll, root)
-    remesh(o, 0.6, smooth_iter=40)
-    o.data.shade_smooth()
-    return o
+def build_body(M, coll, root, heart_front):
+    """The CC0 male body and its fitted bones (hbm.py) round the heart: the skin 2.4 cm in front
+    of the heart, the notch and the hip joints at the frame's heights (anat.py)."""
+    R = hbm.build(HBM, heart_front, A.FH_Z, A.ZN, A.XM)
+    body = mesh_obj('Body', *R['body'], M['skin'], coll, root)
+    eyes = [mesh_obj('Eye' + k[-1], *R[k], M['eye'], coll, root) for k in ('eye.L', 'eye.R')]
+    bones = [mesh_obj('Bone.' + n, V, F, M['bone'], coll, root) for n, (V, F) in R['bones'].items()]
+    return body, eyes, bones, R
 
 
 # ---------------------------------------------------------------- vessels and landmarks
 def build_vessels(M, coll, root):
     """The arteries and veins below the heart, both sides; each tree is one remeshed surface."""
-    art_parts = [A.AORTA_EXT, A.ILIAC_R, A.FEMORAL_R, A.PROFUNDA_R]
-    art_parts += [A.mirror(p) for p in [A.ILIAC_R, A.FEMORAL_R, A.PROFUNDA_R]]
-    ven_parts = [A.IVC_EXT, A.ILIAC_V_R, A.FEMORAL_V_R]
-    ven_parts += [A.mirror(p) for p in [A.ILIAC_V_R, A.FEMORAL_V_R]]
+    art_parts = [A.AORTA_EXT, A.ILIAC_R, A.FEMORAL_R, A.PROFUNDA_R, A.ILIAC_L]
+    art_parts += [A.mirror(p) for p in [A.FEMORAL_R, A.PROFUNDA_R]]
+    ven_parts = [A.IVC_EXT, A.ILIAC_V_R, A.FEMORAL_V_R, A.ILIAC_V_L, A.mirror(A.FEMORAL_V_R)]
     out = {}
     for name, parts, mat in [('Arteries', art_parts, M['artery']), ('Veins', ven_parts, M['vein'])]:
         allV, allF, off = [], [], 0
@@ -257,57 +213,25 @@ def build_vessels(M, coll, root):
 
 
 def build_landmarks(M, coll, root):
-    """The groin's landmarks, both sides: the inguinal ligament and the femur's head, neck and shaft;
-    and the spine behind the aorta."""
+    """The inguinal ligaments, ASIS to pubic tubercle, both sides."""
     objs = []
     for side in (1, -1):
         f = (lambda p: np.asarray(p, float)) if side == 1 else A.mirror
-        lig = np.array([[*f(p), 0.14] for p in A.LIGAMENT_R])
+        lig = np.array([[*f(p), 0.10] for p in A.LIGAMENT_R])
         objs.append(tube_obj(f'Ligament{side}', lig, M['ligament'], coll, root, sides=12, step=0.3))
-        head = f(A.FEMORAL_HEAD_R)
-        bpy.ops.mesh.primitive_uv_sphere_add(segments=40, ring_count=20, radius=A.FEMORAL_HEAD_RADIUS, location=head)
-        s = bpy.context.object
-        s.name = f'FemoralHead{side}'
-        for c in list(s.users_collection):
-            c.objects.unlink(s)
-        coll.objects.link(s)
-        s.parent = root
-        s.data.materials.append(M['bone'])
-        s.data.shade_smooth()
-        objs.append(s)
-        neck = np.array([[*head, 1.6], [*f(A.TROCHANTER_R), 1.9],
-                         [*f(A.TROCHANTER_R + np.array([0.3, 0, -5])), 1.5]])
-        objs.append(tube_obj(f'Femur{side}', neck, M['bone'], coll, root, sides=20, step=0.5))
-    # the spine: vertebral bodies from the upper chest to the sacrum, behind the aorta and the cava
-    spine = np.array([[A.XM, 9.6, 11.0], [A.XM, 9.8, 0.0], [A.XM, 8.6, -12.0], [A.XM, 6.8, -22.0],
-                      [A.XM, 6.4, -27.0], [A.XM, 8.0, -31.0]])
-    sp = A.resample(A.catmull(spine, 8), 0.05)
-    s = np.r_[0, np.cumsum(np.linalg.norm(np.diff(sp, axis=0), axis=1))]
-    T, N, B = G.rmf(sp)
-    allV, allF, off = [], [], 0
-    k = 0.0
-    while k < s[-1] - 2.0:
-        i0, i1 = np.searchsorted(s, k), np.searchsorted(s, k + 2.0)
-        P = sp[i0:i1 + 1]
-        r = 1.7 + 0.5 * (k / s[-1])
-        Vp = G.tube_verts(P, r, 24)
-        allV.append(Vp)
-        allF += [tuple(i + off for i in f) for f in G.tube_faces(len(P), 24)]
-        off += len(Vp)
-        k += 2.55
-    objs.append(mesh_obj('Spine', np.vstack(allV), allF, M['bone'], coll, root))
     return objs
 
 
-def build_table(M, coll, root_supine):
+def build_table(M, coll, back_y):
+    """The table: its top under the body's back (back_y: the most posterior skin, standing frame)."""
     bpy.ops.mesh.primitive_cube_add(size=1)
     t = bpy.context.object
     t.name = 'Table'
     for c in list(t.users_collection):
         c.objects.unlink(t)
     coll.objects.link(t)
-    t.scale = (60, 210, 4)
-    t.location = (A.XM, -40.0, -18.5)     # world, supine: under the back
+    t.scale = (110, 215, 4)
+    t.location = (A.XM, -42.0, -back_y - 2.0)     # world, supine: under the back
     t.data.materials.append(M['table'])
     bev = t.modifiers.new('bevel', 'BEVEL')
     bev.width = 1.5
@@ -393,13 +317,15 @@ def build(save=None):
     stenotic(av, M)
     vessels = build_vessels(M, C['Anatomy'], root)
     marks = build_landmarks(M, C['Anatomy'], root)
-    body = build_body(M, C['Body'], root)
-    table = build_table(M, C['Body'], root)
+    HV = np.array([v.co[:] for v in myo.data.vertices])
+    body, eyes, bones, R = build_body(M, C['Body'], root, HV[np.argmin(HV[:, 1])])
+    table = build_table(M, C['Body'], float(R['body'][0][:, 1].max()))
     L = lights(C['Lights'])
     bpy.context.view_layer.update()
     if save:
         bpy.ops.wm.save_as_mainfile(filepath=save)
-    return dict(sc=sc, M=M, C=C, root=root, myo=myo, av=av, vessels=vessels, marks=marks, body=body, table=table, lights=L)
+    return dict(sc=sc, M=M, C=C, root=root, myo=myo, av=av, vessels=vessels, marks=marks, body=body, eyes=eyes,
+                bones=bones, table=table, lights=L, fit=R['landmarks'])
 
 
 if __name__ == '__main__':
@@ -407,4 +333,6 @@ if __name__ == '__main__':
     save = args[args.index('--save') + 1] if '--save' in args else None
     if '--assets' in args:
         ASSETS = args[args.index('--assets') + 1]
+    if '--hbm' in args:
+        HBM = args[args.index('--hbm') + 1]
     build(save)

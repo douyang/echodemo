@@ -1,16 +1,22 @@
-"""The TAVR procedure video: the Blender shots (anim.py), the site's TEE views (the chapter videos
-of TAVR and TEE) and the frame of the chapter videos (video/video.css, video/chapter.js), composed
-frame by frame and piped to ffmpeg (H.264, BT.709, as tools/render-video.mjs).
+"""The TAVR procedure video: the Blender shots (anim.py), the site's TEE views (a capture of the TAVR
+chapter on this video's clock, and the TEE chapter's video) and the frame of the chapter videos
+(video/video.css, video/chapter.js), composed frame by frame and piped to ffmpeg (H.264, BT.709,
+as tools/render-video.mjs).
 
     python compose.py --out video/out/tavr-procedure.mp4 [--audio video/out/tavr-procedure/score.wav]
     python compose.py --stills 2,10,40.5 --out /tmp/stills      PNG stills at those times (s)
     python compose.py --timeline timeline.json                  the score's timeline (score.py)
 
+The TEE views take the card in most of the video: the valve's position, its depth as the balloon
+fills, the check for paravalvular leaks and the check for a pericardial effusion. The severity
+of the stenosis and the valve's gradients stand in small panels beside them.
+
 Sources (defaults under the work folder video/out/tavr-procedure; each has its option): --frames
-frames/ (Blender, f%05d.jpg at 30 fps of the Blender clock), --draft (stand-ins for Blender frames
-not rendered yet, e.g. a Workbench run), --tavr chapter-tavr-silent.mp4 (render-video.mjs
---ch=tavr), --tee video/out/chapter-tee.mp4, --fonts fonts/ (the site's faces as TTF, converted
-from video/fonts on the first run).
+(Blender, f%05d.jpg at 30 fps of this video's Blender clock: anim.py), --frames1 (the first cut's
+frames: its 45-61 s give the 3-D view of the position and the deployment; anim.py at commit
+293afc7), --tavr chapter-tavr.mp4 (the TAVR chapter captured on this video's clock: capture.py),
+--tee video/out/chapter-tee.mp4, --fonts fonts/ (the site's faces as TTF, converted from
+video/fonts on the first run).
 """
 import argparse
 import json
@@ -40,9 +46,11 @@ def mix(a, b, k):
 GROUND, INK, INK2, INK3 = hexc('#1a1f23'), hexc('#e4e7e3'), hexc('#b1bcc1'), hexc('#88969d')
 RULE, ACCENT, PAPER = hexc('#4a5760'), hexc('#86b4e0'), hexc('#e2e4e3')
 TRACK, EDGE = mix(RULE, GROUND, 0.7), mix(RULE, PAPER, 0.55)
+# ink on the paper (the light theme's ink and ink-3)
+PINK, PINK2, PINK3 = hexc('#1d2328'), hexc('#4a555c'), hexc('#6f7c85')
 # the scope's palette (src/scope.js SC): the monitor in the deployment
 SC_BG, SC_FRAME, SC_TEXT, SC_DIM, SC_ECG = hexc('#101315'), hexc('#3a4247'), hexc('#c7cdd0'), hexc('#8d979c'), hexc('#7fd08a')
-SC_ART = (232, 112, 95)
+SC_ART, SC_CAL = (232, 112, 95), hexc('#f2d48a')
 
 # frame layout (video/chapter.js LAY): the figure pane, the progress line, the caption, the cards
 CARD = (48, 100, 1824, 728)
@@ -55,83 +63,87 @@ ECG_BOX = (128, 1792, 760, 170)       # x0, x1, top, height
 # The title card is four beats at 70 a minute (video/chapter.js): 103 frames. A Blender frame b
 # shows at video frame b + 103, so the Blender clock (anim.py) is the video clock less 3.43 s.
 OFF = 103
-END0 = 2413                            # the end card (80.43 s)
-TOTAL = 2533                           # 84.43 s
+END0 = 1813                            # the end card (60.43 s)
+TOTAL = 1933                           # 64.43 s
 BEAT = 60 / 70
 DISSOLVE = 0.6                         # the cards (video/timeline.js)
 XF = 12                                # a cut between shots: a 0.4-s dissolve on the cut
+V1 = 19.0                              # the first cut's clock in the position and the deployment: this one's + 19 s
 
-WINDOWS = [('Path', 103, 223), ('Access', 223, 583), ('Wires', 583, 883), ('TEE', 883, 1123),
-           ('Delivery', 1123, 1423), ('Position', 1423, 1663), ('Deploy', 1663, 1963),
-           ('Check', 1963, 2263), ('Closure', 2263, 2413)]
+WINDOWS = [('Access', 103, 343), ('Wires', 343, 493), ('TEE', 493, 613), ('Baseline', 613, 763),
+           ('Delivery', 763, 883), ('Position', 883, 1093), ('Inflation', 1093, 1363), ('Check', 1363, 1573),
+           ('Effusion', 1573, 1723), ('Closure', 1723, 1813)]
 
-# shots: video frames [f0, f1); 'blender' (its frame is the video frame less OFF, held at its
-# ends), 'tee' or 'tavr' (a chapter video from time t0), 'split' (Blender left, the TAVR
-# chapter's long and short axes right). cont: no dissolve into this shot (the camera runs on)
+# shots: video frames [f0, f1); 'blender' (its frame is the video frame less OFF, held at its ends),
+# 'tee' (the TEE chapter's video from time t0), and the layouts of the TAVR chapter's capture from
+# time t0 (baseline, position, inflation, check) and of the TEE chapter's video (effusion).
+# cont: no dissolve into this shot (the camera runs on)
 SHOTS = [
-    dict(f0=0, f1=223, kind='blender', label='Transfemoral route'),
-    dict(f0=223, f1=583, kind='blender', label='Right femoral artery', cont=True),
-    dict(f0=583, f1=673, kind='blender', label='Pacing lead'),
-    dict(f0=673, f1=883, kind='blender', label='Aortic root and LV, cut away'),
-    dict(f0=883, f1=1003, kind='tee', t0=19.3),
-    dict(f0=1003, f1=1123, kind='tavr', t0=4.0),
-    dict(f0=1123, f1=1213, kind='blender', label='Right femoral artery'),
-    dict(f0=1213, f1=1303, kind='blender', label='Descending aorta'),
-    dict(f0=1303, f1=1423, kind='blender', label='Aortic arch'),
-    dict(f0=1423, f1=1963, kind='split', t0=14.0, label='Aortic root, cut away'),
-    dict(f0=1963, f1=2263, kind='tavr', t0=30.3),
-    dict(f0=2263, f1=2338, kind='blender', label='Aortic root, cut away'),
-    dict(f0=2338, f1=TOTAL, kind='blender', label='Right femoral artery'),
+    dict(f0=0, f1=145, kind='blender', label='Arterial route'),
+    dict(f0=145, f1=343, kind='blender', label='Right femoral artery', cont=True),
+    dict(f0=343, f1=403, kind='blender', label='Pacing lead'),
+    dict(f0=403, f1=493, kind='blender', label='Aortic root and LV, cut away'),
+    dict(f0=493, f1=613, kind='tee', t0=19.3),
+    dict(f0=613, f1=763, kind='baseline', t0=0.5),
+    dict(f0=763, f1=799, kind='blender', label='Right femoral artery'),
+    dict(f0=799, f1=835, kind='blender', label='Descending aorta'),
+    dict(f0=835, f1=883, kind='blender', label='Aortic arch'),
+    dict(f0=883, f1=1093, kind='position', t0=6.6),
+    dict(f0=1093, f1=1363, kind='inflation', t0=16 * BEAT),
+    dict(f0=1363, f1=1573, kind='check', t0=22.9),
+    dict(f0=1573, f1=1723, kind='effusion', t0=65.4),
+    dict(f0=1723, f1=TOTAL, kind='blender', label='Right femoral artery'),
 ]
-EYE = 'B3 · Transfemoral TAVR'
+EYE = 'B3 · TAVR'
 ACC = 'Hadidi OF, Nguyen TC. ACC TAVR Handbook, ch. 10, 2018'
 IFU = 'SAPIEN 3 instructions for use, FDA P140031/S085'
 CAPTIONS = [
-    (103, 'The route',
-     'From 2019 to 2022, 96.2% of TAVRs in the US registry went in through a femoral artery. '
-     'The valve travels up the iliac artery and the aorta to the aortic valve.',
-     'Arnold SV, et al. JAMA Cardiol 2024 (STS/ACC TVT Registry)'),
-    (223, 'Femoral access',
-     'A needle enters the front wall of the common femoral artery, below the inguinal ligament and over the '
-     'femoral head. Two preclosure sutures go in first, then a 14F expandable sheath with its tip past the '
-     'aortic bifurcation.', ACC),
-    (583, 'Pacing lead and wires',
-     'A temporary pacing lead goes from a femoral vein to the right ventricle. A straight wire crosses the '
-     'stenotic valve; a stiff wire with a curved end then lies in the LV apex.', ACC),
-    (883, 'TEE guidance',
-     'The TEE probe lies in the esophagus, behind the left atrium. At 120–140°, the midesophageal long axis '
-     'shows the LVOT, the aortic valve and the aortic root.',
+    (103, 'Femoral access',
+     'A needle enters the common femoral artery below the inguinal ligament, over the femoral head. '
+     'Two preclosure sutures go in first, then a 14F sheath.', ACC),
+    (343, 'Pacing lead and wire',
+     'A pacing lead goes to the right ventricle. A stiff wire crosses the valve and curls in the LV apex.', ACC),
+    (493, 'TEE guidance',
+     'The probe lies behind the left atrium. At 120–140°, the long axis shows the LVOT, the valve and the root.',
      'Hahn RT, et al. J Am Soc Echocardiogr 2013 (ASE/SCA)'),
-    (1003, 'Measure',
-     'Before the valve goes in: severe stenosis, with a peak velocity of 4.4 m/s and a mean gradient of 47 mmHg. '
-     'In systole, the annulus measures 24 mm from hinge point to hinge point.',
-     'Zamorano JL, et al. J Am Soc Echocardiogr 2011 (EAE/ASE) · Hahn RT, et al. J Am Soc Echocardiogr 2022 (ASE)'),
-    (1123, 'Valve delivery',
-     'The crimped valve on its delivery system goes in through the sheath. In a straight part of the '
-     'descending aorta, the valve is aligned on its balloon; it then tracks over the arch and across the native valve.',
-     IFU),
-    (1423, 'Position',
-     'The crimped valve lies across the annulus. On the long axis, TEE sets its ventricular end just below the '
-     'hinge points: 80/20 to 90/10 of the frame, aortic to ventricular.',
+    (613, 'Baseline',
+     'In systole, the annulus measures 24 mm from hinge point to hinge point. Severe stenosis: 4.4 m/s, mean '
+     'gradient 47 mmHg.', 'Hahn RT, et al. J Am Soc Echocardiogr 2022 · Baumgartner H, et al. J Am Soc Echocardiogr 2017'),
+    (763, 'Valve delivery',
+     'The crimped valve passes the sheath, is aligned on its balloon in the descending aorta and crosses the arch.', IFU),
+    (883, 'Position',
+     'On the long axis, TEE places the crimped valve across the annulus: its ventricular end 9 mm below the '
+     'hinge points, for a final 80/20 to 90/10.',
      'Hahn RT, et al. JACC Cardiovasc Imaging 2015 · Blackman D, et al. Cardiol Ther 2021'),
-    (1663, 'Deploy',
-     'Rapid ventricular pacing, here at 180/min, drops the systolic pressure to 50 mmHg or less. The balloon '
-     'fills, stays full for 3 seconds and empties; the frame shortens from its ventricular end.',
-     IFU + ' · ' + ACC),
-    (1963, 'Check',
-     'TEE shows a circular frame and no paravalvular jet. A mean gradient of 10 mmHg, a peak velocity of '
-     '2.2 m/s and a DVI of 0.46 meet the VARC-3 criteria of intended valve performance.',
+    (1093, 'Inflation',
+     'Rapid pacing drops the systolic pressure below 50 mmHg. As the balloon fills, the frame shortens from its '
+     'ventricular end: the depth goes from 9 to 2 mm.',
+     IFU + ' · Schymik G, et al. J Interv Cardiol 2015'),
+    (1363, 'Check',
+     'A circular frame and no paravalvular jet. A mean gradient of 10 mmHg, a peak velocity of 2.2 m/s and a DVI '
+     'of 0.46: the intended performance.',
      'Généreux P, et al. Eur Heart J 2021 (VARC-3) · Zoghbi WA, et al. J Am Soc Echocardiogr 2024'),
-    (2263, 'Closure',
-     'The delivery system comes out, then the sheath. The preplaced sutures close the arteriotomy over a '
-     'wire, and the wire comes out last.', ACC),
+    (1573, 'No effusion',
+     'A new pericardial effusion would suggest annular rupture; a new wall-motion abnormality, coronary '
+     'obstruction. The transgastric short axis shows neither.',
+     'Hahn RT, et al. JACC Cardiovasc Imaging 2015 · Agricola E, et al. Eur Heart J Cardiovasc Imaging 2023'),
+    (1723, 'Closure',
+     'The sheath comes out; the preplaced sutures close the artery.', ACC),
 ]
-CARD_EYE, CARD_TITLE = 'B3 · Procedure', 'Transfemoral TAVR'
+CARD_EYE, CARD_TITLE = 'B3 · Procedure', 'TAVR'
 CARD_SUB = 'A balloon-expandable valve, from the groin to the annulus, with the TEE views that guide it.'
 
-# the monitor in the deployment (Blender clock, s): anim.py rhythm() and state()
+# the monitor in the deployment (the first cut's Blender clock, s): anim.py there
 PACE_ON, PACE_OFF = 52.0, 61.0
 BAL_FILL, BAL_FULL, BAL_EMPTY, BAL_DONE = 53.5, 56.5, 59.5, 61.0
+
+# the TAVR chapter's capture (VIDEOS.tavr in the capture tree, s): the slider holds 0.4805 from
+# 13.71, moves to 0.6395 over 15.21-18.21 (the balloon fills) and holds to 22.71
+CAP_FILL0, CAP_FILL1, CAP_T0, CAP_T1 = 15.214, 18.214, 0.4805, 0.6395
+# its panes (rows, columns of the 1920 x 1080 frame)
+CAP_LAX = (197, 591, 68, 869)
+CAP_SAX = (197, 442, 896, 1849)
+CAP_CW = (455, 651, 896, 1849)
 
 
 # ---------------------------------------------------------------- easing (video/chapter.js)
@@ -146,6 +158,19 @@ def ease(x):
 
 def ease_out(x):
     return 1 - (1 - clamp01(x)) ** 3
+
+
+def smooth(x):
+    x = clamp01(x)
+    return x * x * (3 - 2 * x)
+
+
+def depth_at(ct):
+    """The implant depth (mm) the TAVR chapter shows at capture time ct: gl/tavrmesh.js inflowAt
+    with the slider's expansion (src/ch/tavr.js expandAt), 9 mm crimped to 2 mm expanded."""
+    T = CAP_T0 + (CAP_T1 - CAP_T0) * clamp01((ct - CAP_FILL0) / (CAP_FILL1 - CAP_FILL0))
+    u = smooth((T - 0.48) / 0.16)
+    return 10 * (0.9 - 0.7 * smooth(u))
 
 
 # ---------------------------------------------------------------- type
@@ -245,12 +270,13 @@ class Block:
 
 
 def blit(fr, m, color, alpha=1.0, dy=0, clip=None):
-    """Colour through mask m onto the frame (float RGB), at opacity alpha, moved down dy px.
-    clip: (x0, x1) columns to keep."""
+    """Colour through mask m onto the image fr (float RGB, any size), at opacity alpha, moved down
+    dy px. clip: (x0, x1) columns to keep."""
+    Hf, Wf = fr.shape[:2]
     x0, y0 = int(round(m.x)), int(round(m.y)) + dy
     a = m.a
     h, w = a.shape
-    X0, Y0, X1, Y1 = max(0, x0), max(0, y0), min(W, x0 + w), min(H, y0 + h)
+    X0, Y0, X1, Y1 = max(0, x0), max(0, y0), min(Wf, x0 + w), min(Hf, y0 + h)
     if clip:
         X0, X1 = max(X0, clip[0]), min(X1, clip[1])
     if X1 <= X0 or Y1 <= Y0:
@@ -280,6 +306,17 @@ def polyline(w, h, pts, width, ss=4):
     if len(p) > 1:
         d.line(p, fill=255, width=max(1, round(width * ss)), joint='curve')
     return np.asarray(img.reduce(ss), np.float32) / 255
+
+
+def disc(r, ss=4):
+    d = int(round(2 * r))
+    return round_rect(d, d, d / 2, ss)
+
+
+def paste(img, src, x, y, w, h):
+    """src (uint8 or float RGB) resized to w x h into img at (x, y)."""
+    im = Image.fromarray(np.asarray(src, np.uint8)) if src.dtype != np.uint8 else Image.fromarray(src)
+    img[y:y + h, x:x + w] = np.asarray(im.resize((w, h), Image.LANCZOS), np.float32)
 
 
 # ---------------------------------------------------------------- the heartbeat (src/scope.js ecg())
@@ -323,8 +360,9 @@ ART = art_template()
 
 
 def signals(t):
-    """ECG (R wave = 1) and arterial pressure (mmHg) at Blender times t (array): sinus rhythm at 70
-    a minute, ventricular pacing at 180 a minute (PACE_ON to PACE_OFF), then sinus rhythm again."""
+    """ECG (R wave = 1) and arterial pressure (mmHg) at Blender times t (array, the first cut's
+    clock): sinus rhythm at 70 a minute, ventricular pacing at 180 a minute (PACE_ON to PACE_OFF),
+    then sinus rhythm again."""
     t = np.asarray(t, float)
     ecg = np.zeros_like(t)
     p = np.zeros_like(t)
@@ -373,24 +411,20 @@ def spikes(t0, t1):
 
 
 class Monitor:
-    """A scope panel at the foot of the model's half: ECG and arterial pressure on a 4-s sweep,
-    their rate and pressure, and the state of the pacing and the balloon."""
-    X, Y, WD, HT = 64, 642, 610, 170
-    TX0, TX1 = 150, 570          # the traces' columns in the panel
+    """A scope panel: ECG and arterial pressure on a 4-s sweep, their rate and pressure, and the
+    state of the pacing and the balloon. Its clock is the first cut's Blender clock."""
     YE, AE = 80, 30              # the ECG's baseline and R wave (px in the panel)
     YP0, YP1 = 160, 100          # the pressure's 0 and 140 mmHg
     TW = 4.0                     # sweep (s)
     T0 = 47.0                    # the sweep's clock origin (Blender s)
 
-    def __init__(self, ty):
-        self.ty = ty
-        self.panel = round_rect(self.WD, self.HT, 10)
+    def __init__(self, ty, x, y, wd, ht=176):
+        self.ty, self.X, self.Y, self.WD, self.HT = ty, x, y, wd, ht
+        self.TX0, self.TX1 = 140, wd - 40      # the traces' columns in the panel
+        self.panel = round_rect(wd, ht, 10)
         self.cycles = {}
         f13 = ty.font('IBMPlexSans-500', 13)
-        self.lab = {}
-        for k in ('ECG', 'ART'):
-            self.lab[k] = text_mask([(k, f13, 13 * 0.16, SC_DIM)])[0]
-        self.vals = {}
+        self.lab = {k: text_mask([(k, f13, 13 * 0.16, SC_DIM)])[0] for k in ('ECG', 'ART')}
 
     def cycle(self, c):
         """Masks of the ECG and pressure traces over sweep c."""
@@ -402,13 +436,11 @@ class Monitor:
             e, p = signals(t)
             ye = self.YE - e * self.AE
             yp = self.YP0 - np.clip(p, 0, 140) / 140 * (self.YP0 - self.YP1)
-            pe = list(zip(xs, ye))
-            # the pacing spikes: thin strokes up from the baseline
             sp = []
             for s in spikes(ta, ta + self.TW):
                 x = (s - ta) / self.TW * w
                 sp.append([(x, self.YE), (x, self.YE - 1.2 * self.AE)])
-            me = polyline(w + 1, self.HT, pe, 1.5)
+            me = polyline(w + 1, self.HT, list(zip(xs, ye)), 1.5)
             for seg in sp:
                 me = np.maximum(me, polyline(w + 1, self.HT, seg, 1.1))
             mp = polyline(w + 1, self.HT, list(zip(xs, yp)), 1.6)
@@ -441,12 +473,10 @@ class Monitor:
         if alpha <= 0.002:
             return
         X, Y = self.X, self.Y
-        blit(fr, Mask(X, Y, self.panel), SC_BG, 0.86 * alpha)
-        # the edge (the scope's frame colour)
+        blit(fr, Mask(X, Y, self.panel), SC_BG, 0.92 * alpha)
         edge = self.panel - np.pad(round_rect(self.WD - 2, self.HT - 2, 9), 1)
         blit(fr, Mask(X, Y, np.clip(edge, 0, 1)), SC_FRAME, alpha)
         ty = self.ty
-        # status line
         text, on, held = self.status(tb)
         f13 = ty.font('IBMPlexSans-500', 13)
         segs = [(text.upper(), f13, 13 * 0.16, SC_TEXT if on else SC_DIM)]
@@ -455,11 +485,9 @@ class Monitor:
         ms, _ = text_mask(segs)
         x = X + 16
         if on:
-            dot = round_rect(9, 9, 4.5)
-            blit(fr, Mask(x, Y + 26 - 10, dot), ACCENT, alpha)
+            blit(fr, Mask(x, Y + 26 - 10, disc(4.5)), ACCENT, alpha)
             x += 9 + 10
         Block().add(ms, x, Y + 26).draw(fr, alpha)
-        # labels and values
         hr, sbp, dbp = self.readout(tb)
         mono = ty.font('IBMPlexMono-500', 24)
         small = ty.font('IBMPlexSans-400', 13)
@@ -469,13 +497,11 @@ class Monitor:
             Block().add(vm, X + 16, Y + yl + 28).draw(fr, alpha)
             um, _ = text_mask([(unit, small, 0, SC_DIM)])
             Block().add(um, X + 16 + vw + 6, Y + yl + 28).draw(fr, alpha)
-        # the 50-mmHg line: dashes, and its value at the right
         y50 = int(round(Y + self.YP0 - 50 / 140 * (self.YP0 - self.YP1)))
         for xd in range(X + self.TX0, X + self.TX1, 8):
             fill(fr, xd, y50, 4, 1, SC_DIM, 0.7 * alpha)
         lm, _ = text_mask([('50', ty.font('IBMPlexMono-500', 11), 0, SC_DIM)])
         Block().add(lm, X + self.TX1 + 8, y50 + 4).draw(fr, alpha)
-        # the sweep: this sweep up to its head, the last one beyond a gap
         w = self.TX1 - self.TX0
         u = (tb - self.T0) / self.TW
         c = int(np.floor(u))
@@ -493,20 +519,23 @@ class Monitor:
 
 # ---------------------------------------------------------------- sources
 class Clip:
-    """A site video's frames from time t0, decoded in order by ffmpeg (BT.709 limited range to RGB)."""
+    """A site video's frames from time t0, decoded in order by ffmpeg (BT.709 limited range to
+    RGB) at its own size (w x h)."""
 
-    def __init__(self, path, t0):
-        self.path, self.t0, self.p, self.k, self.last = path, t0, None, None, None
+    def __init__(self, path, t0, size=(W, H)):
+        self.path, self.t0, self.size = path, t0, size
+        self.p, self.k, self.last = None, None, None
 
     def frame(self, k):
         if self.last is not None and self.k is not None and k == self.k - 1:
             return self.last                           # a held frame: decoded already
         if self.p is None or k != self.k:
             self.open(k)
-        buf = self.p.stdout.read(W * H * 3)
+        w, h = self.size
+        buf = self.p.stdout.read(w * h * 3)
         self.k = k + 1
-        if len(buf) == W * H * 3:
-            self.last = np.frombuffer(buf, np.uint8).reshape(H, W, 3)
+        if len(buf) == w * h * 3:
+            self.last = np.frombuffer(buf, np.uint8).reshape(h, w, 3)
         return self.last
 
     def open(self, k):
@@ -526,8 +555,8 @@ class Clip:
 
 
 class Blender:
-    """The Blender frames, scaled to the card (full) or its left half (split); a frame not rendered
-    yet takes the nearest earlier draft frame (an animatic), if a draft folder is given."""
+    """The Blender frames of a folder, scaled to a size; a frame not rendered yet takes the nearest
+    earlier draft frame (an animatic), if a draft folder is given."""
 
     def __init__(self, d, draft=None):
         self.d, self.draft, self.cache = d, draft, {}
@@ -555,9 +584,14 @@ class Blender:
 
 # ---------------------------------------------------------------- the composer
 class Composer:
+    # the TEE layouts (card px): the long axis large at the left, a column of small panels at the right
+    BIG = (24, 24, 1180, 579)
+    COL = (1228, 572)
+
     def __init__(self, a):
         self.ty = Type(a.fonts)
         self.bl = Blender(a.frames, a.draft)
+        self.bl1 = Blender(a.frames1)
         self.clips = {}
         self.a = a
         self.card_mask = round_rect(CARD[2], CARD[3], 18)
@@ -567,7 +601,8 @@ class Composer:
         self.build_captions()
         self.build_cards()
         self.labels = {}
-        self.mon = Monitor(self.ty)
+        self.static = {}
+        self.mon = Monitor(self.ty, CARD[0] + self.COL[0], CARD[1] + 506, self.COL[1])
 
     # -- static type
     def build_track(self):
@@ -595,7 +630,9 @@ class Composer:
             nm = Block().add(text_mask([(name, fn, -0.012 * 46, INK)])[0], x, round(baseline(y + 30, 46, 50.6)))
             tx = Block()
             top = y + 30 + 50.6 + 16
-            for i, line in enumerate(wrap(text, ft, CAP[2])):
+            lines = wrap(text, ft, CAP[2])
+            assert len(lines) <= 2, (name, lines)
+            for i, line in enumerate(lines):
                 tx.add(text_mask([(line, ft, 0, INK2)])[0], x, round(baseline(top + 33 * i, 25, 33)))
             sr = Block().add(text_mask([('Source: ' + src, fs, 0, INK3)])[0], x, 1046)
             self.caps.append((f0, eye, nm, tx, sr))
@@ -611,7 +648,6 @@ class Composer:
         self.c_title = Block().add(text_mask([(CARD_TITLE, ft, -0.028 * 156, INK)])[0], tx, round(baseline(tyy, 156, 156 * 0.95, 0.735, 0.265)))
         fsub = ty.font('Newsreader-italic', 40)
         self.c_sub = Block().add(text_mask([(CARD_SUB, fsub, 0, INK2)])[0], tx + 4, round(baseline(tyy + 232, 40, 50, 0.735, 0.265)))
-        # the end card: centred, "Ultrasound" in italic accent
         fe1, fe2 = ty.font('Newsreader-normal', 124), ty.font('Newsreader-italic', 124)
         tr = -0.024 * 124
         segs = [('The Heart by ', fe1, tr, INK), ('Ultrasound', fe2, tr, ACCENT)]
@@ -625,55 +661,231 @@ class Composer:
         key = (text, dark)
         if key not in self.labels:
             f = self.ty.font('IBMPlexSans-500', 13)
-            self.labels[key] = Block().add(text_mask([(text.upper(), f, 13 * 0.2, INK3 if dark else hexc('#6f7c85'))])[0],
+            self.labels[key] = Block().add(text_mask([(text.upper(), f, 13 * 0.2, INK3 if dark else PINK3)])[0],
                                            CARD[0] + 22, round(baseline(CARD[1] + 19, 13, 13)))
         return self.labels[key]
+
+    # -- small panels on the paper (card px)
+    def tag(self, text, size=13, color=PINK3, track=0.16, face='IBMPlexSans-500'):
+        f = self.ty.font(face, size)
+        return text_mask([(text.upper() if face.startswith('IBMPlexSans-5') else text, f, size * track, color)])
+
+    def values(self, rows, w):
+        """A small table of values on the paper: label at the left, value and unit at the right."""
+        key = ('values', tuple(rows), w)
+        if key not in self.static:
+            h = 34 * len(rows) + 8
+            img = np.empty((h, w, 3), np.float32)
+            img[:] = PAPER
+            lab = self.ty.font('IBMPlexSans-400', 19)
+            mono = self.ty.font('IBMPlexMono-500', 20)
+            unit = self.ty.font('IBMPlexSans-400', 15)
+            for i, (k, v, u, flag) in enumerate(rows):
+                y = 26 + 34 * i
+                Block().add(text_mask([(k, lab, 0, PINK2)])[0], 0, y).draw(img)
+                um, uw = text_mask([(u, unit, 0, PINK3)])
+                vm, vw = text_mask([(v, mono, 0, hexc('#b03a2e') if flag else PINK)])
+                Block().add(um, w - uw, y).draw(img)
+                Block().add(vm, w - uw - 8 - vw, y).draw(img)
+                if i:
+                    fill(img, 0, y - 24, w, 1, EDGE, 0.8)
+            self.static[key] = img
+        return self.static[key]
+
+    def head(self, img, x, y, text):
+        """A small panel's name, in the site's label style on the paper."""
+        Block().add(self.tag(text)[0], x, y).draw(img)
 
     # -- the card's content
     def clip(self, kind, t0):
         key = (kind, t0)
         if key not in self.clips:
-            path = self.a.tavr if kind != 'tee' else self.a.tee
-            self.clips[key] = Clip(path, t0)
+            if kind == 'tee':
+                self.clips[key] = Clip(self.a.tee, t0)
+            else:
+                self.clips[key] = Clip(self.a.tavr, t0)
         return self.clips[key]
+
+    def cap(self, s, k, box):
+        """A pane of the TAVR capture (rows, columns) at shot frame k."""
+        src = self.clip('tavr', s['t0']).frame(k)
+        r0, r1, c0, c1 = box
+        return src[r0:r1, c0:c1]
+
+    def lax_big(self, img, s, k):
+        x, y, w, h = self.BIG
+        paste(img, self.cap(s, k, CAP_LAX), x, y, w, h)
+
+    def model_inset(self, img, s, i, y=24, h=458):
+        """The first cut's 3-D view of the aortic root (its split frames), small at the right."""
+        x, w = self.COL
+        b = int(round((min(max(i, s['f0']), s['f1'] - 1) - OFF + V1 * FPS)))
+        img[y:y + h, x:x + w] = self.bl1.frame(b, (w, h))
+        Block().add(self.tag('3-D · aortic root, cut away', 12, INK2)[0], x + 14, y + 24).draw(img)
 
     def shot_content(self, s, i):
         """The card's content (CARD w x h, float RGB) of shot s at video frame i, and its label."""
         cw, ch = CARD[2], CARD[3]
         k = min(max(i, s['f0']), s['f1'] - 1) - s['f0']        # held at the shot's ends
-        if s['kind'] == 'blender':
+        kind = s['kind']
+        if kind == 'blender':
             b = max(0, min(i, s['f1'] - 1) - OFF) if s['f0'] == 0 else min(max(i, s['f0']), s['f1'] - 1) - OFF
-            b = min(b, 2309)
             return self.bl.frame(b, (cw, ch)), s.get('label')
-        if s['kind'] in ('tee', 'tavr'):
-            src = self.clip(s['kind'], s['t0']).frame(k).astype(np.float32)
-            img = np.empty((ch, cw, 3), np.float32)
-            img[:] = PAPER
-            if s['kind'] == 'tee':
-                img[:] = src[100:828, 48:1872]
-            else:
-                # the TAVR chapter's panes (rows 196-811, columns 68-1848) centred in the card;
-                # the copy keeps clear of the source card's rounded corners
-                img[0:672, 18:1806] = src[140:812, 66:1854]
-            return img, None
-        # split: the model at the left; the long and short axes of the TAVR chapter at the right
-        b = min(max(i, s['f0']), s['f1'] - 1) - OFF
         img = np.empty((ch, cw, 3), np.float32)
         img[:] = PAPER
-        img[:, :cw // 2] = self.bl.frame(b, (cw // 2, ch))
-        src = self.clip('tavr', s['t0']).frame(k)
-        lax = Image.fromarray(src[196:591, 68:869]).resize((880, 434), Image.LANCZOS)
-        sax = Image.fromarray(src[196:443, 896:1849]).resize((880, 228), Image.LANCZOS)
-        img[25:459, 928:1808] = np.asarray(lax, np.float32)
-        img[475:703, 928:1808] = np.asarray(sax, np.float32)
-        return img, s.get('label')
+        if kind in ('tee', 'effusion'):
+            src = self.clip('tee', s['t0']).frame(k).astype(np.float32)
+            img[:] = src[100:828, 48:1872]
+            if kind == 'effusion':
+                self.effusion_tags(img)
+            return img, None
+        x, cwid = self.COL
+        if kind == 'baseline':
+            self.lax_big(img, s, k)
+            # the short axis: three calcified cusps
+            hs = self.sax_small(img, s, k, 24, 'ME AV SAX · 30° · cusps')
+            self.facts(img, [('24', 'mm', 'Annulus in systole, hinge point to hinge point'),
+                             ('26', 'mm', 'SAPIEN 3 for a TEE annulus of 21–25 mm')])
+            # severity, small: the first beat of the CW strip, then the values
+            self.head(img, x, 24 + hs + 32, 'Severity')
+            hc = self.cw_small(img, s, k, 24 + hs + 46)
+            rows = [('Peak velocity', '4.4', 'm/s', True), ('Mean gradient', '47', 'mmHg', True),
+                    ('AVA', '0.75', 'cm²', True)]
+            v = self.values(rows, cwid)
+            y = 24 + hs + 46 + hc + 4
+            img[y:y + v.shape[0], x:x + cwid] = v
+            return img, None
+        if kind == 'position':
+            self.lax_big(img, s, k)
+            self.model_inset(img, s, i)
+            self.depth_track(img, None)
+            self.head(img, x, 516, 'Depth below the annulus')
+            v = self.values([('Crimped, now', '9', 'mm', False), ('Final target', '2–4', 'mm', False),
+                             ('Aortic/ventricular', '80/20–90/10', '', False)], cwid)
+            img[532:532 + v.shape[0], x:x + cwid] = v
+            return img, None
+        if kind == 'inflation':
+            self.lax_big(img, s, k)
+            self.model_inset(img, s, i, h=458)
+            self.depth_track(img, s['t0'] + k / FPS)
+            return img, None
+        if kind == 'check':
+            self.lax_big(img, s, k)
+            # the short axis: the frame at its skirt, circular, without a jet round it
+            hs = self.sax_small(img, s, k, 24, 'ME AV SAX · 30° · frame at the skirt')
+            self.checks(img, ['Cusps open and close', 'Frame circular', 'No paravalvular jet'])
+            self.head(img, x, 24 + hs + 32, 'Valve performance')
+            hc = self.cw_small(img, s, k, 24 + hs + 46)
+            rows = [('Mean gradient', '10', 'mmHg', False), ('DVI', '0.46', '', False),
+                    ('Paravalvular leak', 'none', '', False)]
+            v = self.values(rows, cwid)
+            y = 24 + hs + 46 + hc + 4
+            img[y:y + v.shape[0], x:x + cwid] = v
+            return img, None
+        raise ValueError(kind)
+
+    def sax_small(self, img, s, k, y, title):
+        """The short axis's middle (the valve and the root), small at the right, under its own
+        title (the crop leaves the pane's out); its height."""
+        x, w = self.COL
+        sax = self.cap(s, k, (CAP_SAX[0], CAP_SAX[1], CAP_SAX[2] + 165, CAP_SAX[2] + 760))
+        h = int(round(w * sax.shape[0] / sax.shape[1]))
+        paste(img, sax, x, y, w, h)
+        fill(img, x, y, w, 24, hexc('#0e1113'), 1.0)
+        Block().add(text_mask([(title.upper(), self.ty.font('IBMPlexMono-500', 13), 0, SC_TEXT)])[0], x + 10, y + 17).draw(img)
+        return h
+
+    def strip_box(self):
+        """The band under the long axis (card px)."""
+        return self.BIG[0], self.BIG[1] + self.BIG[3] + 14, self.BIG[2], 100
+
+    def facts(self, img, items):
+        """Values in the band under the long axis: a number, its unit and what it is."""
+        x, y, w, h = self.strip_box()
+        mono = self.ty.font('IBMPlexMono-500', 40)
+        unit = self.ty.font('IBMPlexSans-400', 18)
+        lab = self.ty.font('IBMPlexSans-400', 17)
+        cx = x
+        for v, u, what in items:
+            vm, vw = text_mask([(v, mono, 0, PINK)])
+            Block().add(vm, cx, y + 54).draw(img)
+            um, uw = text_mask([(u, unit, 0, PINK3)])
+            Block().add(um, cx + vw + 8, y + 54).draw(img)
+            Block().add(text_mask([(what, lab, 0, PINK2)])[0], cx, y + 84).draw(img)
+            cx += max(vw + uw + 8, lab.getlength(what)) + 64
+
+    def checks(self, img, items):
+        """Checks met, in the band under the long axis: a green dot and the check."""
+        x, y, w, h = self.strip_box()
+        f = self.ty.font('IBMPlexSans-500', 22)
+        cx = x
+        for t in items:
+            blit(img, Mask(cx, y + 46 - 8, disc(8)), hexc('#3c8c5a'), 1.0)
+            Block().add(text_mask([(t, f, 0, PINK)])[0], cx + 26, y + 54).draw(img)
+            cx += 26 + f.getlength(t) + 56
+
+    def cw_small(self, img, s, k, y):
+        """The CW strip's first beat with its peak and its mean, small at the right; its height."""
+        x, w = self.COL
+        cw_ = self.cap(s, k, (CAP_CW[0], CAP_CW[1], CAP_CW[2], CAP_CW[2] + 540))
+        h = int(round(w * cw_.shape[0] / cw_.shape[1]))
+        paste(img, cw_, x, y, w, h)
+        return h
+
+    def depth_track(self, img, ct):
+        """The implant depth as the balloon fills: its value and its course, under the long axis.
+        ct: the capture's time; None before the inflation (the crimped valve at its place)."""
+        x, y, w, h = self.strip_box()
+        img[y:y + h, x:x + w] = PAPER
+        self.head(img, x, y + 18, 'Depth below the annulus')
+        t0 = SHOTS[[s['kind'] for s in SHOTS].index('inflation')]['t0']
+        ct = t0 if ct is None else ct
+        d = depth_at(ct)
+        vm, vw = text_mask([(f'{d:.0f}', self.ty.font('IBMPlexMono-500', 40), 0, PINK)])
+        Block().add(vm, x, y + 74).draw(img)
+        Block().add(text_mask([('mm', self.ty.font('IBMPlexSans-400', 18), 0, PINK3)])[0], x + vw + 8, y + 74).draw(img)
+        # the course over the inflation's 9 s: 0 to 10 mm down, the target band 2-4 mm
+        gx0, gx1, gy0, gy1 = x + 340, x + w - 10, y + 6, y + h - 8
+        X = lambda t: gx0 + (t - t0) / 9.0 * (gx1 - gx0)
+        Y = lambda mm: gy0 + mm / 10 * (gy1 - gy0)
+        fill(img, int(gx0), int(Y(2)), int(gx1 - gx0), int(Y(4) - Y(2)), hexc('#cfd9d2'), 1.0)
+        Block().add(text_mask([('target 2–4 mm', self.ty.font('IBMPlexSans-400', 13), 0, PINK3)])[0],
+                    int(gx1) - 96, int(Y(4)) + 16).draw(img)
+        fill(img, int(gx0), int(Y(0)), int(gx1 - gx0), 1, PINK3, 0.6)
+        Block().add(text_mask([('annulus', self.ty.font('IBMPlexSans-400', 13), 0, PINK3)])[0],
+                    int(gx0) - 56, int(Y(0)) + 5).draw(img)
+        ts = np.linspace(t0, ct, max(2, int((ct - t0) * 30)))
+        pts = [(X(t) - gx0, Y(depth_at(t)) - y) for t in ts]
+        m = polyline(int(gx1 - gx0) + 4, h, pts, 2.4)
+        blit(img, Mask(int(gx0), y, m), hexc('#2f6f9f'), 1.0)
+        blit(img, Mask(int(X(ct)) - 6, int(Y(depth_at(ct))) - 6, disc(6)), hexc('#2f6f9f'), 1.0)
+
+    def effusion_tags(self, img):
+        """The checks the transgastric short axis answers, at the top right of its view."""
+        if 'eff' not in self.static:
+            lines = ['No pericardial effusion', 'LV wall motion normal']
+            f = self.ty.font('IBMPlexSans-500', 18)
+            w = int(max(f.getlength(t) for t in lines)) + 54
+            h = 34 * len(lines) + 18
+            panel = np.empty((h, w, 3), np.float32)
+            panel[:] = hexc('#f4f5f3')
+            m = round_rect(w, h, 10)
+            for j, t in enumerate(lines):
+                yy = 34 + 34 * j
+                blit(panel, Mask(16, yy - 13, disc(6)), hexc('#3c8c5a'), 1.0)
+                Block().add(text_mask([(t, f, 0, PINK)])[0], 34, yy).draw(panel)
+            self.static['eff'] = (panel, m)
+        panel, m = self.static['eff']
+        h, w = m.shape
+        x, y = 925, 112
+        reg = img[y:y + h, x:x + w]
+        reg += (panel - reg) * m[:, :, None]
 
     def content(self, i):
         """The card's content at frame i with the dissolves between shots; the label's opacity."""
         j = next(n for n, s in enumerate(SHOTS) if s['f0'] <= i < s['f1'])
         s = SHOTS[j]
         h = XF / 2
-        # a dissolve centred on a cut, unless the camera runs on
         if j + 1 < len(SHOTS) and i >= s['f1'] - h and not SHOTS[j + 1].get('cont'):
             a, b, k = s, SHOTS[j + 1], (i - (s['f1'] - h)) / XF
         elif j > 0 and i < s['f0'] + h and not s.get('cont'):
@@ -698,13 +910,12 @@ class Composer:
         if cover < 1:
             self.draw_card(fr, i)
             self.draw_caption(fr, i)
-            tb = (i - OFF) / FPS
-            # the monitor: from a second before the pacing to the end of the deployment
-            if 1633 <= i < 1963:
-                al = min(ease_out((i - 1633) / 12), 1 - ease((i - 1951) / 12))
-                self.mon.draw(fr, tb, al)
+            # the monitor in the inflation, on the first cut's clock
+            s = next(s for s in SHOTS if s['kind'] == 'inflation')
+            if s['f0'] - 6 <= i < s['f1'] + 6:
+                al = min(ease_out((i - (s['f0'] - 6)) / 12), 1 - ease((i - (s['f1'] - 6)) / 12))
+                self.mon.draw(fr, (i - OFF) / FPS + V1, al)
         if cover > 0:
-            # the cards over everything but the progress line
             fr += (np.asarray(GROUND, np.float32) - fr) * cover
             if title_on > 0:
                 self.draw_title(fr, t, title_on)
@@ -727,7 +938,7 @@ class Composer:
         lum = float((under @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean()) / 255
         k = clamp01((lum - 0.35) / 0.2)
         k = k * k * (3 - 2 * k)
-        ink = tuple(a + (b - a) * k for a, b in zip(INK3, hexc('#4a555c')))
+        ink = tuple(a + (b - a) * k for a, b in zip(INK3, PINK2))
         for _, lab, al in parts:
             if lab:
                 self.label(lab).draw(fr, al, color=ink)
@@ -738,7 +949,6 @@ class Composer:
         alpha = ease_out((i - caps[0][0]) / (0.6 * FPS)) if i < caps[0][0] + 0.6 * FPS else 1.0
         if i < caps[0][0]:
             return
-        # a change: the old text out over the 0.3 s before it, the new in over the 0.45 s after
         cur = caps[n]
         nxt = caps[n + 1] if n + 1 < len(caps) else None
         if nxt and i >= nxt[0] - 0.3 * FPS:
@@ -817,8 +1027,9 @@ def main():
     ap.add_argument('--range', help='a:b in seconds')
     ap.add_argument('--timeline')
     ap.add_argument('--frames', default=os.path.join(WORK, 'frames'))
+    ap.add_argument('--frames1', default=os.path.join(WORK, 'frames1'))
     ap.add_argument('--draft', default=None)
-    ap.add_argument('--tavr', default=os.path.join(WORK, 'chapter-tavr-silent.mp4'))
+    ap.add_argument('--tavr', default=os.path.join(WORK, 'chapter-tavr.mp4'))
     ap.add_argument('--tee', default=os.path.join(REPO, 'video', 'out', 'chapter-tee.mp4'))
     ap.add_argument('--fonts', default=os.path.join(WORK, 'fonts'))
     ap.add_argument('--crf', default='16')

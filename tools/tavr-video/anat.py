@@ -73,39 +73,63 @@ def mirror(p):
 
 
 # ---------------------------------------------------------------- vessels below the heart
-# Each path: rows of [x, y, z, lumen radius] (cm). Right side; the left mirrors it.
+# Drawn on the CC0 body and bones as hbm.py fits them round the heart (tools/fit_body.py writes
+# the landmarks to body_fit.json; tools/check_body.py checks the clearances): the femoral heads at
+# (-10.49, 0.58, -37.6) and (5.00, 0.58, -37.6), radius 2.09; the anterior superior iliac spines
+# at (-13.85, -3.82, -28.37) and (8.37, -3.82, -28.37); the pubic tubercles at (-5.61, -3.75,
+# -36.91) and (0.12, -3.75, -36.91); L4's body from z -24.3 to -20, its front at y 0.71. Each path:
+# rows of [x, y, z, lumen radius] (cm). The abdominal aorta and the inferior vena cava lie on the
+# front of the spine; the aorta divides in front of the lower third of L4. The common iliac
+# arteries cross in front of the iliac veins and the start of the cava; the external iliac
+# arteries run along the pelvic brim and under the inguinal ligament at its middle; the common
+# femoral artery lies 3 cm under the skin over the medial third of the femoral head, the vein
+# 1.4 cm medial to it.
 AORTA_EXT = np.array([
-    [0.62, 5.99, -2.40, 1.10], [0.62, 5.99, -3.13, 1.10], [0.30, 5.70, -8.0, 1.08],
-    [-0.80, 5.10, -12.5, 1.05], [-1.60, 4.40, -17.0, 1.00], [-1.90, 3.70, -21.0, 0.95],
-    [-2.00, 3.20, -24.1, 0.90]])
+    [0.62, 5.99, -2.40, 1.10], [0.62, 5.99, -3.13, 1.10], [0.20, 3.10, -6.50, 1.08],
+    [-0.40, 1.20, -10.0, 1.05], [-0.95, 0.70, -14.0, 1.00], [-1.45, -0.30, -18.0, 0.97],
+    [-1.75, -0.35, -21.5, 0.93], [-1.95, 0.15, -24.3, 0.90]])
 AORTIC_BIF = AORTA_EXT[-1, :3]
 ILIAC_R = np.array([
-    [-2.00, 3.20, -24.1, 0.55], [-4.6, 3.6, -27.5, 0.52], [-7.6, 3.6, -30.4, 0.50],
-    [-9.6, 1.5, -33.0, 0.46], [-10.9, -1.8, -35.2, 0.44], [-11.3, -3.75, -36.6, 0.42]])
+    [-1.95, 0.15, -24.3, 0.55], [-4.00, -0.90, -26.0, 0.53], [-5.60, -0.30, -27.2, 0.51],
+    [-6.80, 0.90, -28.4, 0.49], [-7.90, 0.40, -30.0, 0.47], [-8.60, -1.30, -32.0, 0.45],
+    [-8.80, -2.90, -33.6, 0.43]])
 FEMORAL_R = np.array([
-    [-11.3, -3.75, -36.6, 0.42], [-11.45, -3.80, -38.2, 0.40], [-11.8, -3.30, -41.5, 0.40],
-    [-12.3, -3.0, -48.0, 0.33], [-12.8, -2.6, -56.0, 0.30], [-13.2, -2.2, -66.0, 0.28]])
+    [-8.80, -2.90, -33.6, 0.43], [-9.00, -4.20, -37.6, 0.42], [-9.20, -4.10, -41.0, 0.40],
+    [-9.60, -3.80, -46.0, 0.34], [-10.5, -3.00, -54.0, 0.31], [-11.4, -2.20, -62.0, 0.29],
+    [-12.0, -1.60, -66.0, 0.28]])
 PROFUNDA_R = np.array([
-    [-11.8, -3.30, -41.5, 0.30], [-13.3, -2.3, -44.5, 0.28], [-14.0, -1.0, -50.0, 0.25],
-    [-14.4, 0.0, -58.0, 0.22]])
-# veins: the IVC from the model's end down to the iliac confluence, then the right iliac and femoral
+    [-9.20, -4.10, -41.0, 0.30], [-9.90, -2.60, -43.0, 0.28], [-10.8, -1.20, -48.0, 0.26],
+    [-11.5, -0.20, -56.0, 0.23], [-12.0, 0.50, -60.0, 0.21]])
+# veins: the cava from the model's end down the front of the spine to the confluence of the
+# common iliac veins at L5, right of the midline; the right iliac and femoral veins
 IVC_EXT = np.array([
-    [-2.87, -1.78, -3.60, 1.10], [-2.84, -1.71, -3.97, 1.10], [-3.0, -0.6, -7.0, 1.10],
-    [-4.0, 1.6, -12.0, 1.05], [-4.5, 2.8, -18.0, 1.00], [-4.3, 3.6, -25.5, 0.95],
-    [-3.9, 4.0, -27.8, 0.90]])
+    [-2.87, -1.78, -3.60, 1.10], [-2.84, -1.71, -3.97, 1.10], [-3.30, 0.20, -5.5, 1.10],
+    [-4.10, 1.50, -8.0, 1.08], [-4.40, 1.10, -12.0, 1.05], [-4.60, -0.05, -17.0, 1.00],
+    [-4.70, -0.25, -22.0, 0.97], [-4.60, 0.60, -26.6, 0.92]])
 ILIAC_V_R = np.array([
-    [-3.9, 4.0, -27.8, 0.62], [-6.4, 4.4, -30.0, 0.60], [-8.6, 4.2, -31.5, 0.58],
-    [-10.1, 1.4, -33.8, 0.55], [-10.4, -2.0, -35.6, 0.52], [-10.1, -3.6, -36.9, 0.50]])
+    [-4.60, 0.60, -26.6, 0.62], [-5.30, 2.00, -27.4, 0.60], [-6.00, 2.50, -28.2, 0.58],
+    [-7.30, 1.40, -30.2, 0.56], [-7.60, -0.60, -32.4, 0.54], [-7.40, -2.60, -35.0, 0.52]])
 FEMORAL_V_R = np.array([
-    [-10.1, -3.6, -36.9, 0.50], [-10.2, -4.0, -38.5, 0.50], [-10.6, -3.6, -42.0, 0.48],
-    [-11.3, -3.0, -50.0, 0.42], [-12.0, -2.4, -58.0, 0.38], [-12.5, -1.8, -66.0, 0.34]])
+    [-7.40, -2.60, -35.0, 0.52], [-7.60, -3.70, -37.6, 0.50], [-8.20, -3.50, -41.0, 0.48],
+    [-8.90, -3.20, -46.0, 0.44], [-9.90, -2.40, -54.0, 0.40], [-10.9, -1.60, -62.0, 0.36],
+    [-11.5, -1.00, -66.0, 0.34]])
+# the left: the right side mirrored, but the common iliac artery from the bifurcation (left of the
+# midline) and the left common iliac vein across the front of L5 to the cava
+ILIAC_L = np.array([
+    [-1.95, 0.15, -24.3, 0.55], [-0.90, -0.60, -26.0, 0.53], [0.11, -0.30, -27.2, 0.51],
+    [1.31, 0.90, -28.4, 0.49], [2.41, 0.40, -30.0, 0.47], [3.11, -1.30, -32.0, 0.45],
+    [3.31, -2.90, -33.6, 0.43]])
+ILIAC_V_L = np.array([
+    [-4.60, 0.60, -26.6, 0.60], [-4.00, 0.70, -26.9, 0.60], [-1.60, 1.00, -27.6, 0.59],
+    [0.51, 2.50, -28.2, 0.58], [1.81, 1.40, -30.2, 0.56], [2.11, -0.60, -32.4, 0.54],
+    [1.91, -2.60, -35.0, 0.52]])
 
-# landmarks of the groin: the inguinal ligament (ASIS to pubic tubercle) and the femoral head
-LIGAMENT_R = np.array([[-14.2, -3.6, -32.6], [-10.2, -5.9, -35.4], [-5.55, -6.4, -38.6]])
-FEMORAL_HEAD_R = np.array([-12.2, -0.4, -37.6])
-FEMORAL_HEAD_RADIUS = 2.3
-TROCHANTER_R = np.array([-17.0, -0.6, -40.2])
-KNEE_R = np.array([-12.4, 0.4, -79.0])
+# landmarks of the groin: the inguinal ligament (ASIS to pubic tubercle, sagging at its middle)
+# and the femoral head
+LIGAMENT_R = np.array([[-13.85, -3.82, -28.37], [-9.60, -4.40, -33.2], [-5.61, -3.75, -36.91]])
+FEMORAL_HEAD_R = np.array([-10.49, 0.58, -37.6])
+FEMORAL_HEAD_RADIUS = 2.09
+FH_Z = FEMORAL_HEAD_R[2]                      # the hip joints' height: the body fits to it (hbm.py)
 
 # the arterial puncture: the common femoral artery over the femoral head, below the ligament
 PUNCTURE_R = FEMORAL_R[1, :3].copy()
