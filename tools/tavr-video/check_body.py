@@ -21,12 +21,20 @@ S = scene.build()
 sc, M = S['sc'], S['M']
 verts = lambda o: np.array([v.co[:] for v in o.data.vertices])
 tree = lambda o: BVHTree.FromPolygons([v.co.copy() for v in o.data.vertices], [p.vertices[:] for p in o.data.polygons])
+# Inside a closed mesh: an odd number of crossings on a ray. The nearest face's normal is not a
+# safe test: far from a mesh, or in a fold, it can face away from the point.
+RAY = Vector((0.13, -0.98, 0.15)).normalized()
+def crossings(bvh, v):
+    n, o = 0, v.copy()
+    for _ in range(64):
+        h = bvh.ray_cast(o, RAY, 400)
+        if h[0] is None:
+            break
+        n += 1
+        o = h[0] + RAY * 1e-4
+    return n
 def inside(bvh, P):
-    out = []
-    for p in P:
-        loc, nrm, i, d = bvh.find_nearest(Vector(p))
-        out.append((Vector(p) - loc).dot(nrm) < 0)
-    return np.array(out)
+    return np.array([crossings(bvh, Vector(p)) % 2 == 1 for p in P])
 skin = tree(S['body'])
 HV = verts(S['myo'])
 print('heart outside the skin: %.2f%%' % (100 * (~inside(skin, HV[::25])).mean()))
@@ -39,8 +47,9 @@ for name, rows in paths.items():
     worst = (1e9, None, None)
     for bn, bt in bones.items():
         for p in P:
-            loc, nrm, i, d = bt.find_nearest(Vector(p[:3]))
-            sd = d if (Vector(p[:3]) - loc).dot(nrm) > 0 else -d
+            v = Vector(p[:3])
+            loc, nrm, i, d = bt.find_nearest(v)
+            sd = -d if crossings(bt, v) % 2 else d
             if sd - p[3] < worst[0]:
                 worst = (sd - p[3], bn, np.round(p[:3], 1))
     print(f'{name:12s} outside skin {100*out_skin:5.1f}%  nearest bone wall {worst[0]:+.2f} cm ({worst[1]} at {worst[2]})')
