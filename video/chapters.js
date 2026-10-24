@@ -654,6 +654,27 @@ export const VIDEOS = {
     quant: { teeAngle: 1 },
     steps: TEE_FREE ? TEE_ALL : TEE_BASIC,
   },
+  // Transcatheter aortic valve replacement: the balloon-expandable valve through the four steps
+  // with no leak (the deployment in two moves: up to the balloon's inflation, then the inflation),
+  // then the self-expanding valve and its check through each grade of paravalvular regurgitation,
+  // as the chapter's tour runs.
+  tavr: {
+    pane: '',
+    side: false,
+    quant: { tavrT: 0.005 },
+    steps: [
+      { set: { tavrT: 0.08, tavrValve: 'be', tavrLeak: 'none' }, track: 'Measure', pick: [0, 1], hold: 7 },
+      { set: { tavrT: 0.43 }, track: 'Cross', pick: [0, 1], move: 6, hold: 6 },
+      { set: { tavrT: 0.47 }, track: 'Deploy', pick: [0], move: 2, hold: 2 },
+      { set: { tavrT: 0.66 }, join: true, pick: [0, 1], move: 4, hold: 4 },
+      { set: { tavrT: 0.9 }, track: 'Check', pick: [0, 1, 2], move: 3, hold: 9 },
+      { set: { tavrT: 0.47, tavrValve: 'se' }, track: 'Self-expanding', pick: [0], cut: true, move: 3, hold: 2 },
+      { set: { tavrT: 0.66 }, join: true, pick: [0, 1], move: 5, hold: 3 },
+      { set: { tavrT: 0.9, tavrLeak: 'mild' }, track: 'Mild leak', pick: [0, 1], move: 3, hold: 5 },
+      { set: { tavrLeak: 'moderate' }, track: 'Moderate', pick: [0, 1], hold: 5 },
+      { set: { tavrLeak: 'severe' }, track: 'Severe', pick: [0, 1], hold: 5 },
+    ],
+  },
 };
 
 /** The video's chapter keys. */

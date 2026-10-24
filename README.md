@@ -120,7 +120,8 @@ video/            the views video, the chapter videos and the intro
 video/renders/    the T-TEER chapter video and reel cuts, kept in git
 tools/            checks and video tools; tools/score/ the soundtracks, tools/voice/ the voice-over,
                   tools/blender/ the M-TEER and T-TEER procedure frames (Python),
-                  tools/shorts/ the vertical explainer reels
+                  tools/shorts/ the vertical explainer reels,
+                  tools/tavr-video/ the TAVR procedure video (Blender)
 archive/          markup of hidden chapters, not loaded by the site
 ```
 
@@ -151,6 +152,7 @@ The site's own code draws every video in headless Chromium. The soundtrack is *B
 - **M-TEER with a voice-over** (`?ch=mteer-vo`, 2:36): the figure of chapter 19 with a narrator. ElevenLabs speaks the script (`video/vo/mteer.json`, the premade voice Eric) and gives the time of each spoken letter, so the caption lights each word as it is spoken (`tools/voice/vo.py`). The Bright pulse bed ducks 15 dB under the voice (`tools/voice/mix.py`). Both M-TEER videos show the procedure pane as Blender frames along the steps (`tools/blender/`).
 - **T-TEER reel** (`video/shorts/tteer/`): a vertical explainer, 1080 × 1920 and 77 s, with a voice and without one. `claims.yaml` gives the source of each spoken line and each number on screen, and `script.yaml` the beats. Blender renders the procedure in 64 frames along the steps; the T-TEER chapter video gives the TEE and TTE panes in step with them. ElevenLabs (the stock voice Brian) speaks the lines and times each word for the captions, and `tools/shorts/` composes, mixes and checks the two cuts (`qa.py`: length, loudness, captions, safe zones, copy, claims and the loop).
 - **Intro** (`video/reel.js`): 89 s, a title card, one clip from each of ten chapters, and the end card.
+- **TAVR procedure** (`tools/tavr-video/`): 64 s. The TEE views of the TAVR and TEE chapters take most of it: the annulus, the valve's position, its depth as the balloon fills, the leak and effusion checks. Blender (Cycles) shots on a CC0 body show the femoral access, the wires, the delivery and the closure. The frame is the chapter videos'. The build is in `tools/tavr-video/README.md`.
 
 Serve the repository root on port 8790, then:
 
