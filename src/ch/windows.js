@@ -7,7 +7,8 @@
 //  - right, the echo image that the plane cuts from the same mesh.
 // Free probe: five sliders move the probe from the current view, as the ASE guideline names the
 // moves (rotate, tilt, rock, slide; freeprobe.js), and the three panes follow the moved plane.
-// The panel names the nearest standard view and the moves from the starting view. The left pane
+// The probe slides over the skin (torso.js), so it can reach every window and every view. The
+// panel names the nearest standard view and the moves from the starting view. The left pane
 // shows the planes while the free probe is on, and Probe and body again when it goes off.
 // The left pane is the stage's second pane (gl/stage3d.js, Pane3D): prepare() sets the scene as
 // that pane shows it, and restore() puts it back for the cross-section, in each frame.
@@ -20,7 +21,8 @@ import { Labels } from '../gl/stage3d.js';
 import { Fan, crossing, rgb } from '../gl/fans.js';
 import { SANS, tokens } from '../sketch.js';
 import { reducedMotion } from '../state.js';
-import { freePose, poseGap, GENERIC } from '../freeprobe.js';
+import { freePose, poseGap, entryOf, arrival, arrivalDepth, ALONG, GENERIC } from '../freeprobe.js';
+import { placeTorso, Skin } from '../torso.js';
 
 // What each view shows and what is measured there (ASE 2019, Tables 2.1-2.27 and Section IV).
 const INFO = {
@@ -63,25 +65,37 @@ const INFO = {
 const WIN_KEYS = WINDOWS.map((w) => w.key);
 
 let stage = null, pane = null, echo = null, model = null, ready = null, failed = false, fig = null, tick = 0, labels = null;
-let st = null, setState = null, lastMeas = '', on = false, bodyKey = null;
+let st = null, setState = null, lastMeas = '', on = false, bodyKey = null, skin = null;
 
 // ---------------------------------------------------------------- the free probe
-// Five sliders move the probe from the current view (freeprobe.js): rotate, tilt and rock, in
-// degrees; slide along the marker and slide across the plane, in cm. The panel names the standard
-// view nearest the moved plane, with the measure of the transesophageal free probe (ch/tee.js):
-// the angle between the beams, the angle between the markers, and how far the probe lies from
-// that view's beam line. Within ON the panel names the plane as that view, and a drag that stops
-// there settles the probe on it, as the free plane of Planes (archived) did.
+// Five sliders move the probe from the current view (freeprobe.js): slide along the marker and
+// slide across the plane, over the skin, in cm; rotate, tilt and rock, in degrees. Their ranges
+// (index.html) take every view to every other (tools/free-reach.mjs). The panel names the
+// standard view nearest the moved plane, in any window, with the measure of the transesophageal
+// free probe (ch/tee.js): the angle between the beams, the angle between the markers, and how far
+// the probe lies from that view's beam line. Within ON the panel names the plane as that view,
+// and a drag that stops there settles the probe on it, as the free plane of Planes (archived) did.
 const FREE_KEYS = ['wRot', 'wTilt', 'wRock', 'wSlide', 'wAcross'];
 const REST = { wRot: 0, wTilt: 0, wRock: 0, wSlide: 0, wAcross: 0 };
-// on a view: beam and marker within 5 degrees, the probe within 0.5 cm of its beam line; near
-// one: the planes within 15 degrees, and the middle of the view's image within 2.5 cm of the plane
+// on a view: beam and marker within 5 degrees, the probe within 0.5 cm of its beam line, and
+// within ALONG cm along it of the view's transducer (not on the far side of the body); near one:
+// the planes within 15 degrees, and the middle of the view's image within 2.5 cm of the plane
 const ON = { deg: 5, cm: 0.5 }, NEAR = { plane: 15, cm: 2.5 };
 // the probe's window: the long- and short-axis views share the parasternal one
 const SITE = { plax: 'parasternal', psax: 'parasternal', apical: 'apical', sub: 'subcostal', ssn: 'suprasternal' };
 /** The sliders away from rest; moved: so, with the free probe on. */
 const away = (s) => FREE_KEYS.some((k) => Math.abs(s[k] || 0) > 1e-6);
 const moved = (s) => !!s.wfree && away(s);
+/** The views the panel can name: the starting view, and the views with a plane of their own (Planes' list). */
+const candidates = (s) => [...new Set([s.view, ...PLANE_VIEWS])];
+// where each view's beam enters the skin, and its transducer's distance from there along the beam
+// (freeprobe.js entryOf), for each set of planes (a new heart makes new ones)
+const entries = new WeakMap();
+function entryAt(g) {
+  let e = entries.get(g);
+  if (!e) { e = entryOf(g, skin); entries.set(g, e); }
+  return e;
+}
 // the moves since the last settle on a view (a drag let go near it): the view it left and the moves
 let lastMove = null, settling = false;
 // The free probe shows its plane among the nine standard planes: turned on, it turns Probe and
@@ -94,15 +108,33 @@ function setBody(on) {
   try { setState({ wbody: on }); } finally { ownBody = false; }
 }
 
-/** The plane of state s moved by its sliders, or null before the 3D view is ready. */
+/**
+ * The plane of state s moved by its sliders over the skin, or null before the 3D view is ready.
+ * Near a standard view the transducer takes that view's depth under the skin (freeprobe.js
+ * arrivalDepth), so the image on arrival is the view. The last plane is kept: the panel, the text
+ * and the panes ask for it several times in one change.
+ */
+let lastFree = { key: '', geoms: null, g: null };
 function freeGeom(s) {
-  const b = echo && echo.geoms[s.view];
-  return b ? freePose(b, { rot: s.wRot, tilt: s.wTilt, rock: s.wRock, slide: s.wSlide, across: s.wAcross }) : null;
+  const b = echo && skin && echo.geoms[s.view];
+  if (!b) return null;
+  const key = [s.view, ...FREE_KEYS.map((k) => s[k])].join('|');
+  if (key === lastFree.key && echo.geoms === lastFree.geoms) return lastFree.g;
+  const views = candidates(s).filter((k) => echo.geoms[k]).map((k) => ({ k, g: echo.geoms[k], s: entryAt(echo.geoms[k]).s }));
+  let near = null;
+  const g = freePose(b, { rot: s.wRot, tilt: s.wTilt, rock: s.wRock, slide: s.wSlide, across: s.wAcross }, skin, (E, d, s0) => {
+    near = arrival(E, d, views);
+    return arrivalDepth(E, d, s0, views, near);
+  });
+  // the views it nears, for the body figure's probe (keySite)
+  g.weights = { views, ...near };
+  lastFree = { key, geoms: echo.geoms, g };
+  return g;
 }
 
 /**
  * The standard view nearest plane g, of the starting view and the views with a plane of their own
- * (Planes' list) in the probe's window. The score counts the angle between the planes in full, the
+ * (Planes' list), in every window. The score counts the angle between the planes in full, the
  * larger of the beam and marker angles at half, and 5 degrees a cm of the probe's distance. The
  * transesophageal score (the larger angle and 10 degrees a cm) named the RV outflow for the long
  * axis turned 90 degrees: in this model the short-axis probes lie 3 to 4 cm from the long-axis
@@ -112,7 +144,7 @@ function freeGeom(s) {
 function nearestView(s, g) {
   if (!g) return null;
   let best = null;
-  for (const k of [s.view, ...PLANE_VIEWS.filter((j) => SITE[VIEWS[j].win] === SITE[VIEWS[s.view].win])]) {
+  for (const k of candidates(s)) {
     const h = echo.geoms[k];
     if (!h) continue;
     const q = poseGap(g, h), plane = (Math.acos(Math.min(1, Math.abs(g.n.dot(h.n)))) * 180) / Math.PI;
@@ -121,7 +153,7 @@ function nearestView(s, g) {
     if (!best || score < best.score) best = { k, ...q, plane, off, score };
   }
   if (best) {
-    best.on = Math.max(best.beam, best.marker) <= ON.deg && best.cm <= ON.cm;
+    best.on = Math.max(best.beam, best.marker) <= ON.deg && best.cm <= ON.cm && Math.abs(best.along) <= ALONG;
     best.near = best.plane <= NEAR.plane && best.off <= NEAR.cm;
   }
   return best;
@@ -178,15 +210,17 @@ function nearLine(nb, mv) {
 }
 
 /**
- * The echo settings of the moved plane: the starting view's sector, depth and near field, without
- * its zoom. On a standard view, that view's name and labels; else the structures that lie on the
+ * The echo settings of the moved plane, without zoom: the sector, depth and near field of the
+ * standard view the probe is on; near a view of another window, that view's; else the starting
+ * view's. On a standard view, that view's name and labels; else the structures that lie on the
  * plane (freeprobe.js GENERIC), and the liver in the subcostal window.
  */
 function freeSpec(s, nb) {
   const b = VIEWS[s.view], v = nb && nb.on ? VIEWS[nb.k] : null;
-  return { win: b.win, plane: b.plane, angle: b.angle, depth: b.depth, near: b.near, liver: b.liver, cor: b.cor,
+  const w = v || (nb && nb.near && SITE[VIEWS[nb.k].win] !== SITE[b.win] ? VIEWS[nb.k] : b);
+  return { win: w.win, plane: w.plane, angle: w.angle, depth: w.depth, near: w.near, liver: w.liver, cor: w.cor,
     short: v ? v.short : 'Free', name: v ? v.name : 'Free probe',
-    labels: v ? v.labels : b.win === 'sub' ? [['liver', 'liver'], ...GENERIC] : GENERIC, strict: !v };
+    labels: v ? v.labels : w.win === 'sub' ? [['liver', 'liver'], ...GENERIC] : GENERIC, strict: !v };
 }
 
 // the plane shown: its view and sliders (key), the views' planes it was made from (a new heart
@@ -274,7 +308,7 @@ function freeText(s, cite) {
   if (!mv) live = `<b>${VIEWS[s.view].name}.</b> The sliders move the probe from this view, and the three panes follow it. `;
   else if (at) live = `<b>${VIEWS[at].name}.</b> The probe lies within ${ON.deg}° and ${ON.cm} cm of this view, so the panel names it. A drag that stops here settles the probe on the view. `;
   else if (nb && nb.near && nb.marker >= 150) live += `The plane is that of ${CODE[nb.k]} with the marker turned the other way, so the image shows ${CODE[nb.k]} mirrored. `;
-  else if (nb) live += `The nearest view of the ${SITE[VIEWS[s.view].win]} window is ${VIEWS[nb.k].name} (${CODE[nb.k]}). Its plane lies ${Math.round(nb.plane)}° from the probe's plane, and the middle of its image ${nb.off.toFixed(1)} cm off it. Its beam lies ${Math.round(nb.beam)}° from the probe's beam, and its marker ${Math.round(nb.marker)}° from the probe's marker. The probe lies ${nb.cm.toFixed(1)} cm from its beam line. `;
+  else if (nb) live += `The nearest view is ${VIEWS[nb.k].name} (${CODE[nb.k]}), in the ${SITE[VIEWS[nb.k].win]} window. Its plane lies ${Math.round(nb.plane)}° from the probe's plane, and the middle of its image ${nb.off.toFixed(1)} cm off it. Its beam lies ${Math.round(nb.beam)}° from the probe's beam, and its marker ${Math.round(nb.marker)}° from the probe's marker. The probe lies ${nb.cm.toFixed(1)} cm from its beam line. `;
   live += `<span class="note">Probe movements as the ASE guideline defines them${cite('mitchell2019')}.</span>`;
   return { readouts, live };
 }
@@ -599,14 +633,24 @@ async function leftPane(body) {
   if (planes) planes.key = '';
 }
 /**
- * The body figure's probe at the current view's window, its beam toward the sector's middle; a
- * free probe that moved slides from there as far as its probe lies from the view's.
+ * The body figure's probe at the current view's window, its beam toward the sector's middle. A
+ * free probe that moved lies on the figure's skin where it touches the model's (a plane on its way
+ * to a new pose: where its beam enters the skin), moved by as much as the figure draws the view's
+ * window away from that view's point of contact; near another view, by that view's (the weights
+ * of freeGeom), so that on a view the probe lies at its window, and the settle does not jump.
  */
 function keySite() {
   const g = echo && echo.g, v = VIEWS[st.view];
   if (!pane || !pane.inset || !g || !v) return;
-  const spec = echo.specOf(echo.view), b = moved(st) && echo.geoms[st.view];
-  bodyKey.setView(v.win, g.O.clone().addScaledVector(g.d, spec.depth * 0.45), g.r, spec, b ? g.O.clone().sub(b.O) : null);
+  const spec = echo.specOf(echo.view);
+  let shift = null;
+  if (moved(st) && skin && echo.geoms[st.view]) {
+    const off = (k, w) => bodyKey.site(VIEWS[k].win).sub(entryAt(echo.geoms[k]).E).multiplyScalar(w);
+    const W = g.weights, o = off(st.view, W ? W.rest : 1);
+    if (W) W.views.forEach(({ k }, i) => { if (W.w[i]) o.add(off(k, W.w[i])); });
+    shift = (g.E || entryOf(g, skin).E).clone().add(o).sub(bodyKey.site(v.win));
+  }
+  bodyKey.setView(v.win, g.O.clone().addScaledVector(g.d, spec.depth * 0.45), g.r, spec, shift);
 }
 
 function note(msg) {
@@ -626,6 +670,8 @@ async function ensure() {
   if (!ready) {
     ready = (async () => {
       model = await loadModel();
+      // the skin the free probe slides over, laid round the normal heart whatever heart is shown
+      skin = new Skin(placeTorso(model.heart.meshes.Myocardium, model.anat.normal()));
       const e = await import('../echo.js');
       stage = await sharedStage();
       pane = stage.addPane();

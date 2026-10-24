@@ -1,26 +1,14 @@
 // The body key (Views, Probe and body): the patient in a corner of the 3D view, turned as
 // the camera is, drawn in pencil like the heart (pencil.js, renderInset). The body is an outline:
 // inside it beats the model's own heart in red pencil, placed as it lies in the chest, and the
-// probe sits on the skin at the view's window with its sector toward the heart.
+// probe sits on the skin at the view's window with its sector toward the heart. The torso and its
+// skin are torso.js's; the free probe of Views slides over that skin.
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { pencilProbe, placeProbe, PROBE_TAIL } from './probe3d.js';
 import { pencilMaterials } from './heart.js';
+import { RINGS, FRONT_N, SIDE_N, spline, section, placeTorso, Skin } from '../torso.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
-
-/**
- * The torso's cross-sections, neck to thighs (cm): height from the jugular notch, half-breadth,
- * and the skin's front and back on the midline, from the front of the chest at the heart.
- * Adult male proportions: chest 33 cm across and 26 cm deep, shoulders 48 cm, hips 35 cm.
- */
-const RINGS = [
-  [13, 5.2, -8.0, -17.0], [9, 5.5, -6.5, -17.5], [5, 5.9, -5.6, -18.0], [4.2, 7.3, -5.3, -18.6],
-  [3.0, 10.5, -5.0, -19.6], [1.8, 14.5, -4.8, -20.6], [0.6, 17.8, -4.5, -21.6], [-1, 19.6, -4.1, -22.5],
-  [-4, 20.0, -3.0, -23.5], [-8, 17.8, -1.8, -24.8], [-12, 16.9, -0.6, -25.6], [-15, 16.7, 0, -26.0],
-  [-19, 16.2, -0.2, -25.9], [-24, 15.5, -1.3, -25.3], [-30, 15.0, -1.8, -24.0], [-35, 14.8, -1.7, -23.2],
-  [-42, 15.6, -1.6, -23.6], [-50, 17.3, -2.6, -25.8], [-58, 16.8, -3.6, -25.5], [-62, 15.5, -4.5, -24.5],
-];
-const FRONT_N = 2.2, BACK_N = 2.8;   // the chest is rounder in front than behind
 
 /** The left arm's centre line (dx from the midline, dy, z as in RINGS) and radius, cm. */
 const ARM = [
@@ -35,21 +23,6 @@ const ARM = [
  * axillary lines; subcostal: below the xiphoid; suprasternal: the notch.
  */
 const SITE = { plax: [2.6, -10], psax: [2.6, -10], apical: [11.5, -20.5], sub: [0.8, -23], ssn: [0, 0.8] };
-
-/** Catmull-Rom through the rows of a table, n steps per span. */
-function spline(rows, steps) {
-  const out = [];
-  for (let i = 0; i < rows.length - 1; i++) {
-    const p0 = rows[Math.max(0, i - 1)], p1 = rows[i], p2 = rows[i + 1], p3 = rows[Math.min(rows.length - 1, i + 2)];
-    const n = steps(p1, p2);
-    for (let s = 0; s < n; s++) {
-      const t = s / n, t2 = t * t, t3 = t2 * t;
-      out.push(p1.map((_, k) => 0.5 * (2 * p1[k] + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3)));
-    }
-  }
-  out.push(rows[rows.length - 1].slice());
-  return out;
-}
 
 /** A mesh from a grid of rows x M points that closes round, with a cap at each end. */
 function gridMesh(rows, M) {
@@ -76,13 +49,6 @@ function gridMesh(rows, M) {
   return g;
 }
 
-/** A point of a torso cross-section at angle t (0: the patient's left, pi/2: the front). */
-function section(r, t) {
-  const [, a, zf, zb] = r, c = Math.cos(t), s = Math.sin(t);
-  const zc = (zf + zb) / 2, h = (zf - zb) / 2, n = s >= 0 ? FRONT_N : BACK_N;
-  return [a * Math.sign(c) * Math.abs(c) ** (2 / 2.4), zc + h * Math.sign(s) * Math.abs(s) ** (2 / n)];
-}
-
 const WARM = 0.6;   // the pencil composite's flag for red pencil
 
 export class BodyKey {
@@ -102,12 +68,8 @@ export class BodyKey {
     rim.position.set(0.8, -0.2, -0.5);
     this.camera.add(key, rim);
     this.scene.add(this.camera, new THREE.AmbientLight(0xffffff, 0.95));
-    const pos = myo.geometry.attributes.position;
-    let front = -Infinity;
-    for (let i = 0; i < pos.count; i++) front = Math.max(front, pos.getZ(i));
-    this.xm = anat.point('apex_epi', 0, 0).x - 8.5;
-    this.yN = anat.point('av', 0, 0).y + 12;
-    this.zF = front + 2.4;
+    Object.assign(this, placeTorso(myo, anat));
+    this.skin = new Skin(this);
     const W = (dx, dy, z) => V3(this.xm + dx, this.yN + dy, this.zF + z);
 
     // the torso: splined cross-sections, 1.2 cm apart
@@ -205,18 +167,18 @@ export class BodyKey {
     const t = THREE.MathUtils.clamp((rows[i][0] - dy) / (rows[i][0] - rows[i + 1][0]), 0, 1);
     const r = rows[i].map((v, k) => v + (rows[i + 1][k] - v) * t);
     const zc = (r[2] + r[3]) / 2, h = (r[2] - r[3]) / 2;
-    const u = Math.min(0.999, Math.abs(dx) / r[1]) ** 2.4;
+    const u = Math.min(0.999, Math.abs(dx) / r[1]) ** SIDE_N;
     return V3(this.xm + dx, this.yN + dy, this.zF + zc + h * (1 - u) ** (1 / FRONT_N));
   }
 
   /**
    * Put the probe at window win on the skin, its beam toward target (world cm), its marker
-   * toward r; the sector spec.angle wide and spec.depth deep. shift: a move over the skin from the
-   * window's place (world cm), for the free probe of Views.
+   * toward r; the sector spec.angle wide and spec.depth deep. shift: the free probe's move over
+   * the skin (Views, world cm), from the window's place; the probe stays on the skin.
    */
   setView(win, target, r, spec = {}, shift = null) {
     const at = this.site(win);
-    if (shift) at.add(shift);
+    if (shift) this.skin.onSkin(at.add(shift));
     const dir = target.clone().sub(at).normalize();
     placeProbe(this.probe, at, dir, r);
     // the cable leaves along the handle, then hangs

@@ -71,7 +71,7 @@ export function annulusOf(ev, s) {
  * A grid mesh of nu x nv points from f(u, v) -> [x, y, z], u and v from 0 to 1; wrapU and wrapV
  * close it in u and in v (a tube, a torus), so that its cut is a closed loop.
  */
-function gridMesh(nu, nv, f, wrapU = false, wrapV = false) {
+export function gridMesh(nu, nv, f, wrapU = false, wrapV = false) {
   const pos = new Float32Array(nu * nv * 3);
   for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) {
     const P = f(wrapU ? i / nu : i / (nu - 1), wrapV ? j / nv : j / (nv - 1));
@@ -230,7 +230,7 @@ export function cutMesh(mesh, g) {
  * Copies of the lines L moved along the beam, away from the probe at the plane's origin, by k
  * steps of step cm: the reverberation behind a strong reflector.
  */
-function echoes(L, k, step) {
+export function echoes(L, k, step) {
   return L.map((P) => P.map(([u, v]) => { const l = Math.hypot(u, v) || 1; return [u + (u / l) * k * step, v + (v / l) * k * step]; }));
 }
 
@@ -238,7 +238,7 @@ function echoes(L, k, step) {
  * The runs of the lines L that face the probe: segments more than 45 degrees from the beam
  * through their middle. Only these send the beam back to the probe and reverberate.
  */
-function facing(L) {
+export function facing(L) {
   const out = [];
   for (const P of L) {
     let run = [];

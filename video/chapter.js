@@ -194,7 +194,7 @@ function build(src) {
     sideEls = { list, rows: [], sig: '' };
   }
   // caption: the chapter, the step's name and its line
-  const cap = h('div');
+  const cap = h('div', V.vo ? 'vo' : '');
   cap.id = 'caption';
   px(cap, LAY.caption);
   const line = (cls) => { const e = h('div', `cap-line ${cls}`); e.append(h('span'), h('span')); return e; };
@@ -338,9 +338,10 @@ function scriptAt(u) {
   if (s.kind === 'title') return STATES[0].a;
   if (s.kind === 'end') return STATES[STATES.length - 1].b;
   if (s.kind === 'hold') {
-    // a step's path (video/chapters.js) gives its keys across the hold; otherwise the drift
+    // a step's path (video/chapters.js) gives its keys across the hold (p, and the hold's length
+    // in s); otherwise the drift
     const p = clamp01((u - s.t0) / (s.t1 - s.t0)), path = V.steps[s.i].path;
-    return path ? { ...STATES[s.i].a, ...path(p) } : mix(STATES[s.i].a, STATES[s.i].b, p);
+    return path ? { ...STATES[s.i].a, ...path(p, s.t1 - s.t0) } : mix(STATES[s.i].a, STATES[s.i].b, p);
   }
   const to = STATES[s.to], p = ease((u - s.t0) / (s.t1 - s.t0));
   // a step that switches the kind (video/chapters.js `cut`) changes every key at the middle of its
@@ -485,8 +486,65 @@ function updateCaption(t) {
   $('#caption').style.opacity = alpha.toFixed(3);
   setLine(capEls.eye, A.eye, B.eye, k, 4);
   setLine(capEls.name, A.name, B.name, k);
-  setLine(capEls.text, A.line, B.line, k, 5);
+  if (VO) voCaption(t);
+  else setLine(capEls.text, A.line, B.line, k, 5);
   for (const s0 of capEls.eye.children) if (!s0.querySelector('i')) s0.insertAdjacentHTML('afterbegin', '<i></i>');
+}
+
+// ---------------------------------------------------------------- the voice-over's caption
+/**
+ * A video with a voice-over (its `vo`, video/vo/<key>.js): the caption's line is the line being
+ * spoken, and each word lights as the voice reaches it. A step's first line shows, dim, from the
+ * middle of the move into the step, as the step's name changes; each next line shows 0.25 s
+ * before it is spoken; the last stays to the middle of the move out. A line goes out before the
+ * next comes in, as the other captions change.
+ */
+const VO = V.vo || null;
+const VO_DIM = 0.42;
+/** Every line of the voice-over on the video's time: its start (s), its window on screen, its words. */
+const VO_LINES = (() => {
+  if (!VO) return [];
+  const holds = L.segs.filter((s) => s.kind === 'hold'), moves = L.segs.filter((s) => s.kind === 'move');
+  const out = [];
+  V.steps.forEach((st, i) => {
+    const h = holds[i], into = i ? (moves[i - 1].t0 + moves[i - 1].t1) / 2 : h.t0;
+    const outOf = i < moves.length ? (moves[i].t0 + moves[i].t1) / 2 : L.segs[L.segs.length - 1].t1;
+    st.vo.lines.forEach((ln, j) => {
+      const t0 = h.t0 + ln.at;
+      out.push({ t0, w0: j ? t0 - 0.25 : into, w1: outOf, words: ln.words, id: `${i}.${j}` });
+    });
+  });
+  for (let k = 0; k + 1 < out.length; k++) out[k].w1 = Math.min(out[k].w1, out[k + 1].w0);
+  return out;
+})();
+/** Line k into span el, as one span a word (once), each word lit by the time t. */
+function voWords(el, k, t) {
+  const ln = VO_LINES[k];
+  if (el.dataset.line !== ln.id) {
+    el.dataset.line = ln.id;
+    el.innerHTML = ln.words.map(([w]) => `<span class="vw">${esc(w)}</span>`).join(' ');
+  }
+  const u = t - ln.t0;
+  [...el.children].forEach((w, i) => {
+    const o = VO_DIM + (1 - VO_DIM) * clamp01((u - ln.words[i][1] + 0.04) / 0.12);
+    const v = o.toFixed(3);
+    if (w.style.opacity !== v) w.style.opacity = v;
+  });
+}
+function voCaption(t) {
+  // the first span, in the flow, holds the line, so the caption's height follows it
+  const [s1, s0] = capEls.text.children;
+  s0.style.opacity = '0';
+  const k = VO_LINES.findIndex((ln) => t >= ln.w0 && t < ln.w1);
+  if (k < 0) { s1.style.opacity = '0'; return; }
+  // in over the 0.3 s after its window opens; out over the 0.15 s before it closes, when the next
+  // line takes the place at once
+  const ln = VO_LINES[k], next = VO_LINES[k + 1];
+  const fin = easeOut(clamp01((t - ln.w0) / 0.3));
+  const fout = next && next.w0 <= ln.w1 + 1e-6 ? 1 - ease(clamp01((t - (ln.w1 - 0.15)) / 0.15)) : 1;
+  voWords(s1, k, t);
+  s1.style.opacity = Math.min(fin, fout).toFixed(3);
+  s1.style.transform = `translateY(${((1 - fin) * 5).toFixed(2)}px)`;
 }
 
 /** A chapter's long title keeps to one line on the title card: its type scales down to the card's width. The intro's card stays as it is. */
@@ -613,6 +671,28 @@ function frame(i) {
   return { t };
 }
 
+/**
+ * A video's own frames for a pane of its chapter (its `frames`: a folder, the step positions s
+ * and the file of each, video/chapters.js), loaded once with &frames=1 (tools/render-video.mjs
+ * asks for them): window.__videoFrames(s) then gives the two frames round s and the share of the
+ * second, { a, b, f }. A missing frame then stops the video, so a render never falls back to
+ * other images unseen. Without &frames=1 (a check, a storyboard) the pane shows the chapter's own
+ * images, and the page asks for no file that may not be there.
+ */
+async function loadFrames(F) {
+  if (!F || params.get('frames') !== '1') return;
+  const imgs = await Promise.all(F.at.map(async (s) => {
+    const r = await fetch(`${F.dir}/${F.name(s)}`);
+    if (!r.ok) throw new Error(`video ${KEY}: no frame ${F.dir}/${F.name(s)} (tools/blender/render.py)`);
+    return createImageBitmap(await r.blob());
+  }));
+  window.__videoFrames = (s) => {
+    let i = 0;
+    while (i < F.at.length - 2 && s > F.at[i + 1]) i++;
+    return { a: imgs[i], b: imgs[i + 1], f: clamp01((s - F.at[i]) / (F.at[i + 1] - F.at[i])) };
+  };
+}
+
 /** The chapter's echo views and models load in the background: wait for them, then a little more. */
 async function settle() {
   try { await scanner(); } catch (e) { /* a chapter without the scanner */ }
@@ -652,6 +732,7 @@ async function init() {
   const src = await loadSource();
   SUB = V.sub || (plain($('.dek', src.art)?.innerHTML || '').match(/^.*?[.!?](?=\s|$)/) || [''])[0];
   build(src);   // the figure is in the page before the chapter looks for its parts
+  await loadFrames(V.frames);
   for (const c of Object.values(CH)) c.init?.({ state, set, subscribe, $, $$, cite: () => '' });
   if (V.presets) STATES = stepStates(V, (await import(`../src/ch/${V.presets.ch ?? KEY}.js`))[V.presets.from]);
   subscribe((s, changed) => {

@@ -1,0 +1,319 @@
+{
+ "cap": 4.0,
+ "rate_per_1000": 0.3,
+ "calls": [
+  {
+   "beat": "hook",
+   "chars": 49,
+   "price": 0.0147,
+   "hash": "f95f2de00c383a6a"
+  },
+  {
+   "beat": "problem",
+   "chars": 107,
+   "price": 0.0321,
+   "hash": "d58d02c1947cd89c"
+  },
+  {
+   "beat": "route",
+   "chars": 114,
+   "price": 0.0342,
+   "hash": "510646b8dcdb6691"
+  },
+  {
+   "beat": "steer",
+   "chars": 118,
+   "price": 0.0354,
+   "hash": "83bbe529ffd2db43"
+  },
+  {
+   "beat": "align",
+   "chars": 98,
+   "price": 0.0294,
+   "hash": "e4b59a81a0f656bb"
+  },
+  {
+   "beat": "grasp",
+   "chars": 136,
+   "price": 0.0408,
+   "hash": "6bfc5b51d2ef473c"
+  },
+  {
+   "beat": "assess",
+   "chars": 101,
+   "price": 0.0303,
+   "hash": "a9d222c0d639f856"
+  },
+  {
+   "beat": "release",
+   "chars": 111,
+   "price": 0.0333,
+   "hash": "ec11e692da839a96"
+  },
+  {
+   "beat": "trial",
+   "chars": 151,
+   "price": 0.0453,
+   "hash": "846bc6b67c191438"
+  },
+  {
+   "beat": "outcome",
+   "chars": 92,
+   "price": 0.0276,
+   "hash": "4248279720118ac2"
+  },
+  {
+   "beat": "close",
+   "chars": 34,
+   "price": 0.0102,
+   "hash": "fd20023576a82688"
+  },
+  {
+   "beat": "hook",
+   "chars": 42,
+   "price": 0.0126,
+   "hash": "af3cc23e3a7f6ff2"
+  },
+  {
+   "beat": "problem",
+   "chars": 112,
+   "price": 0.0336,
+   "hash": "749fc530bb0192fc"
+  },
+  {
+   "beat": "steer",
+   "chars": 138,
+   "price": 0.0414,
+   "hash": "40110fc895eafab9"
+  },
+  {
+   "beat": "trial",
+   "chars": 157,
+   "price": 0.0471,
+   "hash": "99fe13127a8c134c"
+  },
+  {
+   "beat": "outcome",
+   "chars": 121,
+   "price": 0.0363,
+   "hash": "9a941e87672cb21d"
+  },
+  {
+   "beat": "close",
+   "chars": 40,
+   "price": 0.012,
+   "hash": "da4a717b5d240bc2"
+  },
+  {
+   "beat": "hook",
+   "chars": 36,
+   "price": 0.0108,
+   "hash": "21744e46a0b43ab1"
+  },
+  {
+   "beat": "test:t1",
+   "chars": 23,
+   "price": 0.0069,
+   "hash": "test"
+  },
+  {
+   "beat": "test:t2",
+   "chars": 21,
+   "price": 0.0063,
+   "hash": "test"
+  },
+  {
+   "beat": "test:t3",
+   "chars": 24,
+   "price": 0.0072,
+   "hash": "test"
+  },
+  {
+   "beat": "test:t4",
+   "chars": 23,
+   "price": 0.0069,
+   "hash": "test"
+  },
+  {
+   "beat": "test:i1",
+   "chars": 50,
+   "price": 0.015,
+   "hash": "test"
+  },
+  {
+   "beat": "test:i2",
+   "chars": 54,
+   "price": 0.0162,
+   "hash": "test"
+  },
+  {
+   "beat": "test:i3",
+   "chars": 48,
+   "price": 0.0144,
+   "hash": "test"
+  },
+  {
+   "beat": "test:t5",
+   "chars": 27,
+   "price": 0.0081,
+   "hash": "test"
+  },
+  {
+   "beat": "test:t6",
+   "chars": 27,
+   "price": 0.0081,
+   "hash": "test"
+  },
+  {
+   "beat": "test:t7",
+   "chars": 23,
+   "price": 0.0069,
+   "hash": "test"
+  },
+  {
+   "beat": "test:t8",
+   "chars": 22,
+   "price": 0.0066,
+   "hash": "test"
+  },
+  {
+   "beat": "test:t9",
+   "chars": 23,
+   "price": 0.0069,
+   "hash": "test"
+  },
+  {
+   "beat": "route",
+   "chars": 116,
+   "price": 0.0348,
+   "hash": "427de0085b9315a5"
+  },
+  {
+   "beat": "test:r1",
+   "chars": 117,
+   "price": 0.0351,
+   "hash": "test"
+  },
+  {
+   "beat": "test:r2",
+   "chars": 116,
+   "price": 0.0348,
+   "hash": "test"
+  },
+  {
+   "beat": "test:r3",
+   "chars": 118,
+   "price": 0.0354,
+   "hash": "test"
+  },
+  {
+   "beat": "route",
+   "chars": 118,
+   "price": 0.0354,
+   "hash": "03f50daaeb08179b"
+  },
+  {
+   "beat": "test:route:c1",
+   "chars": 117,
+   "price": 0.0351,
+   "hash": "69d759ea5a07f1db"
+  },
+  {
+   "beat": "test:route:c2",
+   "chars": 116,
+   "price": 0.0348,
+   "hash": "6b806ae18f4ed9d0"
+  },
+  {
+   "beat": "test:route:c3",
+   "chars": 117,
+   "price": 0.0351,
+   "hash": "2cefe5763b94b565"
+  },
+  {
+   "beat": "test:route:c4",
+   "chars": 116,
+   "price": 0.0348,
+   "hash": "073ba1b8c1f55300"
+  },
+  {
+   "beat": "test:route:c5",
+   "chars": 118,
+   "price": 0.0354,
+   "hash": "6c4b055ecd7ae358"
+  },
+  {
+   "beat": "test:route:c6",
+   "chars": 117,
+   "price": 0.0351,
+   "hash": "27ede7528c077281"
+  },
+  {
+   "beat": "test:route:c7",
+   "chars": 115,
+   "price": 0.0345,
+   "hash": "8c94ffde1a2468f5"
+  },
+  {
+   "beat": "test:route:d1",
+   "chars": 118,
+   "price": 0.0354,
+   "hash": "65084a357eb40ad9"
+  },
+  {
+   "beat": "test:route:d2",
+   "chars": 117,
+   "price": 0.0351,
+   "hash": "5ffd143e74d2b90a"
+  },
+  {
+   "beat": "test:route:d3",
+   "chars": 118,
+   "price": 0.0354,
+   "hash": "936c08aff419fd39"
+  },
+  {
+   "beat": "test:route:d4",
+   "chars": 118,
+   "price": 0.0354,
+   "hash": "b829b37a1dff3348"
+  },
+  {
+   "beat": "test:route:e1",
+   "chars": 116,
+   "price": 0.0348,
+   "hash": "5a6ea5b9cb756af6"
+  },
+  {
+   "beat": "test:route:e2",
+   "chars": 116,
+   "price": 0.0348,
+   "hash": "ca938b35878f6d05"
+  },
+  {
+   "beat": "test:route:e3",
+   "chars": 116,
+   "price": 0.0348,
+   "hash": "b9ce04a197eba8f8"
+  },
+  {
+   "beat": "test:route:e4",
+   "chars": 116,
+   "price": 0.0348,
+   "hash": "aecfec6dacabba54"
+  },
+  {
+   "beat": "test:route:e5",
+   "chars": 116,
+   "price": 0.0348,
+   "hash": "dd6871b66944cb56"
+  },
+  {
+   "beat": "test:route:e6",
+   "chars": 116,
+   "price": 0.0348,
+   "hash": "2a9aa069e22a680d"
+  }
+ ],
+ "spent": 1.407
+}
