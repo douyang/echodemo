@@ -313,7 +313,31 @@
    "chars": 116,
    "price": 0.0348,
    "hash": "2a9aa069e22a680d"
+  },
+  {
+   "beat": "test:route:f33",
+   "chars": 113,
+   "price": 0.0339,
+   "hash": "62d59b6f524243b5"
+  },
+  {
+   "beat": "test:route:f101",
+   "chars": 113,
+   "price": 0.0339,
+   "hash": "7387e9c97bd2b96c"
+  },
+  {
+   "beat": "test:route:f202",
+   "chars": 113,
+   "price": 0.0339,
+   "hash": "56739d216fd17718"
+  },
+  {
+   "beat": "test:route:f303",
+   "chars": 113,
+   "price": 0.0339,
+   "hash": "27a2403e3723305f"
   }
  ],
- "spent": 1.407
+ "spent": 1.5426
 }
