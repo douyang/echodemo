@@ -1,5 +1,5 @@
 {
-  "about": "The voice-over of the M-TEER video (video/chapters.js mteer-vo). tools/voice/vo.py speaks each line (engine elevenlabs: the ElevenLabs API, key in $ELEVENLABS_API_KEY) and times its words into video/vo/mteer.js. In a line, [shown|spoken] gives the caption's words and the words the voice says for them. s: the step position (src/ch/mitraclip.js, 0 to 7) at the start and at the end of the line; the device moves between them while the line plays, and holds between lines. refs: the sources of each line, keys of src/refs.js.",
+  "about": "The voice-over of the M-TEER video (video/chapters.js mteer-vo). tools/voice/vo.py speaks each line (engine elevenlabs: the ElevenLabs API, key in $ELEVENLABS_API_KEY) and times its words into video/vo/mteer.js. In a line, [shown|spoken] gives the caption's words and the words the voice says for them. s: the step position (src/ch/mteer.js, 0 to 7) at the start and at the end of the line; the device moves between them while the line plays, and holds between lines. refs: the sources of each line, keys of src/refs.js.",
   "engine": "elevenlabs",
   "voice": "cjVigY5qzO86Huf0OWal",
   "voiceName": "Eric (ElevenLabs premade voice)",
