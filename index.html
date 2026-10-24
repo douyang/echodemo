@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart by Ultrasound</title>
-<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, transesophageal echocardiography, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function, stress echocardiography, myocardial strain and cardio-oncology, the right ventricle and acute pulmonary embolism, valvular disease, diseases of the aorta, pericardial disease, hypertrophic cardiomyopathy, cardiac amyloidosis and artificial intelligence in echocardiography. Bonus chapters: left ventricular assist devices, prosthetic valves, infective endocarditis, intracardiac shunts, cardiac masses and the complications of myocardial infarction.">
+<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, transesophageal echocardiography, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function, stress echocardiography, myocardial strain and cardio-oncology, the right ventricle and acute pulmonary embolism, valvular disease, diseases of the aorta, pericardial disease, hypertrophic cardiomyopathy, cardiac amyloidosis and artificial intelligence in echocardiography. Bonus chapters: left ventricular assist devices, prosthetic valves, infective endocarditis, intracardiac shunts, cardiac masses, the complications of myocardial infarction and mitral transcatheter edge-to-edge repair.">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -50,6 +50,7 @@
 <link rel="modulepreload" href="src/ch/aorta.js">
 <link rel="modulepreload" href="src/ch/masses.js">
 <link rel="modulepreload" href="src/ch/mi.js">
+<link rel="modulepreload" href="src/ch/mteer.js">
 <link rel="modulepreload" href="src/ch/measure.js">
 <link rel="modulepreload" href="src/ch/ai.js">
 <link rel="modulepreload" href="src/ch/tee.js">
@@ -94,11 +95,14 @@
 <link rel="modulepreload" href="src/gl/massesmesh.js">
 <link rel="modulepreload" href="src/gl/mimesh.js">
 <link rel="modulepreload" href="src/mical.js">
+<link rel="modulepreload" href="src/teeviews.js">
+<link rel="modulepreload" href="src/teerviews.js">
+<link rel="modulepreload" href="src/gl/clipmesh.js">
+<link rel="modulepreload" href="src/enface3d.js">
 <link rel="modulepreload" href="src/abdomen.js">
 <link rel="modulepreload" href="src/echoprime.js">
 <link rel="modulepreload" href="src/aifig.js">
 <link rel="modulepreload" href="src/gl/teeprobe3d.js">
-<link rel="modulepreload" href="src/teeviews.js">
 <link rel="modulepreload" href="src/teemoves.js">
 <link rel="modulepreload" href="vendor/rough.esm.js">
 <link rel="modulepreload" href="src/gl/pencil.js">
@@ -107,7 +111,7 @@
 <script>
 // a chapter whose figure needs the heart model at once: its files and modules load from the start
 (() => {
-  const MODEL = ['windows', 'tee', 'eject', 'fill', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'hcm', 'amyloid', 'lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi'];
+  const MODEL = ['windows', 'tee', 'eject', 'fill', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'hcm', 'amyloid', 'lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', 'mteer'];
   if (!MODEL.includes(location.hash.slice(1))) return;
   const add = (rel, href, as) => {
     const l = document.createElement('link');
@@ -306,6 +310,10 @@
     <figure class="fig" id="fig-mi">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Mechanical complications of myocardial infarction from none to the end stage, one at a time: a rupture of the apical septum in the apical four-chamber view with its left-to-right color jet, the CW jet across it and the PW velocities of the two outflow tracts for Qp/Qs; a papillary muscle rupture with a flail anterior mitral leaflet, the torn head of the muscle and an eccentric MR jet in the apical three-chamber view, with the CW MR jet and the pulmonary vein flow; a pseudoaneurysm of the inferolateral wall in the parasternal long axis, with calipers on its neck and sac, and the pericardial effusion and the signs of tamponade in the apical four-chamber view; a true apical aneurysm in the apical four- and two-chamber views, with calipers on its mouth and width, a mural thrombus at the end stage, and the wall motion of the 17 segments.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-mteer">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Mitral transcatheter edge-to-edge repair of a flail posterior leaflet, step by step, from the transthoracic study before the procedure to the one after it. Left: the heart model cut away, with the guide from the inferior vena cava across the atrial septum and the clip on the mitral valve, at the step shown. Right, at each step, the images that guide it: before, the parasternal long axis and the TEE long-axis view with the flail P2 and its eccentric jet, and the 3D en face view of the valve; the transseptal puncture in the bicaval view, its short-axis view and the four-chamber view with the height of the puncture site above the leaflets; steering, alignment and grasping in the commissural and long-axis X-plane views and the 3D en face view; the assessment before release with the residual jets, the continuous-wave Doppler of the inflow with its mean gradient and the transgastric short axis of the double orifice; the release with the left-to-right flow across the iatrogenic atrial septal defect; and after the procedure, the parasternal short axis of the double orifice, the apical four-chamber view with the residual jets and the inflow's mean gradient.</figcaption>
     </figure>
     <figure class="fig" id="fig-measure">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -1751,6 +1759,52 @@
         <li>TOE is recommended when TTE is negative or nondiagnostic and suspicion remains, with a prosthetic valve or a device, and after a positive TTE, except in isolated right-sided native valve IE with a clear TTE<span class="cite" data-ref="delgado2023"></span>.</li>
         <li>Size, the maximal length, and mobility best predict embolism; 10 mm is the length in the ESC recommendations for urgent surgery<span class="cite" data-ref="delgado2023"></span>.</li>
         <li>In acute MR from a perforation, color Doppler can underestimate the eccentric jet; systolic flow reversal in the pulmonary veins supports severe MR<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-mteer">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">B7</span><div><h2 class="ch-title">Mitral transcatheter <span style="white-space: nowrap">edge-to-edge</span> repair</h2><p class="ch-kicker">M-TEER, step by step: what TEE shows at each step</p></div></div>
+      <p class="dek" data-part="dek">Mitral transcatheter edge-to-edge repair (<span style="white-space: nowrap">M-TEER</span>) joins the anterior and posterior mitral leaflets with a clip, brought from the femoral vein across the atrial septum. TEE guides each step of the procedure, and TTE shows the result.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="tcS">Step <output data-for="tcS"></output></label>
+            <button type="button" class="sev-play" data-anim="Play the procedure" aria-pressed="false" aria-label="Play the procedure"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="tcS" data-key="tcS" min="0" max="1" step="0.005">
+          <div class="grades" id="tc-steps" aria-hidden="true"></div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>The device</h3>
+        <p>The MitraClip (Abbott) system has two parts: a steerable guide catheter, and a clip delivery system that carries the clip on a delivery catheter inside a steerable sleeve<span class="cite" data-ref="abbottifu2019"></span>. The guide enters the femoral vein and runs up the inferior vena cava to the right atrium<span class="cite" data-ref="fdap100009"></span>. In the third-generation system it is 24 Fr along its shaft and 22 Fr where it crosses the septum<span class="cite" data-ref="abbottifu2019"></span>. The clip is made of metal alloys with a polyester fabric cover, and each of its two arms has a gripper above it<span class="cite" data-ref="abbottifu2019"></span>. The fourth generation (G4) has arms 9 mm long (NT, NTW) or 12 mm long (XT, XTW), and 4 mm wide or, in the W sizes, 6 mm wide<span class="cite" data-ref="abbottg4,sharma2022"></span>. Its grippers drop together or one at a time<span class="cite" data-ref="abbottg4"></span>. A fifth generation (G5) came to market in 2025<span class="cite" data-ref="massdevice2025"></span>.</p>
+        <h3>Who is treated</h3>
+        <p>EVEREST II randomly assigned 279 patients with grade 3+ or 4+ MR to the clip or to surgery<span class="cite" data-ref="feldman2011"></span>; most had primary MR<span class="cite" data-ref="fdap100009"></span>. At 12 months, freedom from death, from surgery for mitral dysfunction and from grade 3+ or 4+ MR was 55% with the clip and 73% with surgery; major adverse events at 30 days were 15% and 48%<span class="cite" data-ref="feldman2011"></span>. The FDA approved the clip in 2013 for primary MR at prohibitive surgical risk<span class="cite" data-ref="fdap100009"></span>, and in 2019 for secondary MR<span class="cite" data-ref="fdap100009s028"></span>.</p>
+        <p>In secondary MR, COAPT (614 patients) lowered the rate of heart failure hospitalization within 24 months, 35.8% against 67.9% per patient-year, and death, 29.1% against 46.1%<span class="cite" data-ref="stone2018"></span>. MITRA-FR (304 patients) found no difference in death or heart failure hospitalization at 12 months<span class="cite" data-ref="obadia2018"></span>. RESHAPE-HF2 (505 patients, moderate to severe secondary MR) lowered the rate of heart failure hospitalization or cardiovascular death, 37.0 against 58.9 events per 100 patient-years<span class="cite" data-ref="anker2024"></span>.</p>
+        <p>The 2020 ACC/AHA guideline finds TEER reasonable in severely symptomatic (NYHA III–IV) patients with severe primary MR at high or prohibitive surgical risk, with favorable anatomy and a life expectancy of at least 1 year; and in chronic severe secondary MR with persistent symptoms on optimal therapy, an anatomy suitable on TEE, an LVEF of 20–50%, an LVESD of 70 mm or less and a PA systolic pressure of 70 mmHg or less<span class="cite" data-ref="otto2020"></span>. In the 2025 ESC/EACTS guidelines, TEER should be considered in symptomatic severe primary MR with a suitable anatomy at high surgical risk, and it is recommended in severe ventricular secondary MR that meets their clinical and echocardiographic criteria<span class="cite" data-ref="praz2025"></span>.</p>
+        <h3>The anatomy for a clip</h3>
+        <p>In EVEREST, the jet came from A2–P2; a valve area under 4.0 cm² excluded the patient; in primary MR the flail gap was under 10 mm and the flail width under 15 mm, and in secondary MR the coaptation length was at least 2 mm and its depth 11 mm or less<span class="cite" data-ref="zamorano2011"></span>. A baseline valve area of 3.0 cm² or less with a mean gradient of 4 mmHg or more carried a high risk of a procedure stopped for stenosis<span class="cite" data-ref="zoghbi2019"></span>.</p>
+        <h3>The steps on TEE</h3>
+        <ol class="steps">
+        <li><b>Transseptal puncture.</b> The sheath tents the fossa ovalis. The bicaval view places the tent between the venae cavae, the short-axis view at the aortic valve to the front or back, and the four-chamber view gives its height above the point where the clip will grasp: about 4.5–5.0 cm<span class="cite" data-ref="little2026"></span>. With a flail or prolapse, that point lies at or a little above the annulus<span class="cite" data-ref="little2026"></span>. The needle goes through the posterior-mid fossa, in a posterior and superior direction<span class="cite" data-ref="zamorano2011"></span>.</li>
+        <li><b>Steering and alignment.</b> The clip goes down over the jet's origin<span class="cite" data-ref="abbottg4guide"></span>; with its tip at least 1 cm above the leaflets, the arms of an NT clip, as in the figure, open to about 180°, and those of the longer XT clip less<span class="cite" data-ref="abbottifu2019"></span>. The commissural view (55–75°) shows its medial-lateral position, and the long-axis view (100–160°) its anterior-posterior position<span class="cite" data-ref="zamorano2011"></span>. Square to the line of coaptation, the arms show edge-on, as one line, in the commissural view and at full length in the long-axis view<span class="cite" data-ref="abbottg4guide"></span>. 3D en face and transgastric views show the turn<span class="cite" data-ref="zamorano2011"></span>.</li>
+        <li><b>Grasping.</b> The arms close to about 60° to cross the valve; about 2 cm below it they open to about 120°, and the clip comes back to catch both leaflets. The grippers drop, and the arms close until the leaflets meet<span class="cite" data-ref="abbottifu2019"></span>. Both leaflet tips should reach the base of the V between grippers and arms<span class="cite" data-ref="abbottg4guide"></span>. The leaflets drape over the arms, the grasped tissue stops moving, and 3D shows a tissue bridge<span class="cite" data-ref="little2026"></span>.</li>
+        <li><b>Assessment.</b> With the settings used before the clip, the commissural view shows the jets on both sides of it<span class="cite" data-ref="zoghbi2019"></span>. Two or three thin jets are usually no more than mild MR, and PISA is not recommended after TEER<span class="cite" data-ref="zoghbi2019,little2026"></span>. A mean gradient under 5 mmHg with a valve area of 2.0 cm² or more is preferred, reported with the heart rate<span class="cite" data-ref="little2026"></span>. In 268 patients, most with secondary MR, an invasive gradient above 5 mmHg just after implantation predicted a worse long-term outcome<span class="cite" data-ref="neuss2017"></span>.</li>
+        <li><b>Release.</b> The clip is released from the delivery catheter, and the system comes back through the septum into the right atrium and out<span class="cite" data-ref="abbottifu2019"></span>.</li>
+        </ol>
+        <p>The 3D en face view from the LA shows the valve as the surgeon sees it, with the aortic valve at 12 o'clock and the LA appendage on the left<span class="cite" data-ref="lang2012"></span>.</p>
+        <h3>After the procedure</h3>
+        <p>After the procedure TTE is the main study<span class="cite" data-ref="zoghbi2019"></span>; at 6 months it shows the LV's remodeling<span class="cite" data-ref="zamorano2011"></span>. A vena contracta of 0.7 cm or more in any jet is specific for severe residual MR; with several jets, 3D TEE adds the jets' vena contracta areas<span class="cite" data-ref="zoghbi2019"></span> (<a href="#mr" data-go="mr">chapter 18</a>). In one series of 66 patients the iatrogenic ASD persisted in 50% at 6 months, and its persistence went with a higher mortality<span class="cite" data-ref="schueler2015"></span>; routine closure is not recommended<span class="cite" data-ref="little2026"></span>. The peak velocity across it gives the LA–RA pressure difference, 4v² (<a href="#shunts" data-go="shunts">bonus chapter B4</a>). In EXPAND, a clip attached to one leaflet only in 1.8% of patients, most often after the posterior leaflet came free<span class="cite" data-ref="asch2021"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>TEE guides each step: the bicaval, short-axis and four-chamber views for the puncture, and the commissural and long-axis views with 3D for alignment and grasping<span class="cite" data-ref="little2026"></span>.</li>
+        <li>The puncture lies high and posterior, about 4.5–5.0 cm above the point where the clip will grasp<span class="cite" data-ref="little2026"></span>.</li>
+        <li>The arms lie square to the line of coaptation, and both leaflets reach the base of the clip<span class="cite" data-ref="abbottg4guide"></span>.</li>
+        <li>Residual MR is graded without PISA, and a mean gradient under 5 mmHg is preferred<span class="cite" data-ref="zoghbi2019,little2026"></span>.</li>
         </ol>
       </div>
       <div class="quiz"></div>

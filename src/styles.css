@@ -262,6 +262,8 @@ a:hover { text-decoration-color: var(--accent); }
   @container (width < 700px) {
     .fig { --tall: 1; }
     #fig-cycle, #fig-pressure, #fig-eject, #fig-stress, #fig-strain, #fig-hcm, #fig-lvad, #fig-endocarditis { --tall: 1.25; }
+    /* M-TEER: the procedure pane over two echo panes and a third, stacked */
+    #fig-mteer { --tall: 1.5; }
   }
   #fig-windows, #fig-planes, #fig-tee, #fig-ai { bottom: 0; height: auto; }
 }
@@ -918,6 +920,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="masses"] .stage { height: min(64vh, 560px); }
   /* Complications of myocardial infarction: the echo view beside two echo views, Doppler strips or a map */
   html[data-ch="mi"] .stage { height: min(64vh, 560px); }
+  /* M-TEER: the procedure pane, two TEE panes and a third pane, stacked */
+  html[data-ch="mteer"] .stage { height: min(72vh, 620px); }
   /* Hypertrophic cardiomyopathy: two echo views beside two CW strips and an M-mode strip */
   html[data-ch="hcm"] .stage { height: min(64vh, 560px); }
   /* Automated measurements: the echo view or the recording, the heat map's close-up beside its
