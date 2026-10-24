@@ -264,6 +264,8 @@ a:hover { text-decoration-color: var(--accent); }
     #fig-cycle, #fig-pressure, #fig-eject, #fig-stress, #fig-strain, #fig-hcm, #fig-lvad, #fig-endocarditis { --tall: 1.25; }
     /* M-TEER: the procedure pane over two echo panes and a third, stacked */
     #fig-mteer { --tall: 1.5; }
+    /* T-TEER: the procedure pane over two echo panes and a third, stacked */
+    #fig-tteer { --tall: 1.5; }
   }
   #fig-windows, #fig-planes, #fig-tee, #fig-ai { bottom: 0; height: auto; }
 }
@@ -922,6 +924,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="mi"] .stage { height: min(64vh, 560px); }
   /* M-TEER: the procedure pane, two TEE panes and a third pane, stacked */
   html[data-ch="mteer"] .stage { height: min(72vh, 620px); }
+  /* T-TEER: the procedure pane, two TEE panes and a third pane, stacked */
+  html[data-ch="tteer"] .stage { height: min(72vh, 620px); }
   /* Hypertrophic cardiomyopathy: two echo views beside two CW strips and an M-mode strip */
   html[data-ch="hcm"] .stage { height: min(64vh, 560px); }
   /* Automated measurements: the echo view or the recording, the heat map's close-up beside its

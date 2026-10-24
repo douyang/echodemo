@@ -75,7 +75,7 @@ export const BONUS_PAGE = 'bonus';
  * its list or the tour: the bar shows B while one is open. The bonus page links to them, back and
  * next step through them, and each opens by its address (#lvad).
  */
-export const BONUS = ['lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', 'mteer'];
+export const BONUS = ['lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', 'mteer', 'tteer'];
 
 /** A hidden chapter that a main chapter shows as one of its settings: a link to it takes that chapter's number. */
 export const SHOWN_IN = SHOW_IVC ? {} : { ivc: 'pressure' };

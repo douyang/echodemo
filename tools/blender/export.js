@@ -1,14 +1,20 @@
-// The heart and the device of chapter M-TEER, as Blender reads them (tools/blender/export.mjs
-// runs this page). For each frame { name, s, t }: the chapter's state at step position s and time
-// t (ms in the beat), the morphed meshes in world cm (glTF frame: x to the patient's left, y to
-// the head, z to the front), the device's parts, and an overlap check of the device against the
-// walls and the leaflets. The topology (indices, the myocardium's regions) goes once.
+// The heart and the device of chapter M-TEER or T-TEER (?ch=tteer), as Blender reads them
+// (tools/blender/export.mjs runs this page). For each frame { name, s, t }: the chapter's state at
+// step position s and time t (ms in the beat), the morphed meshes in world cm (glTF frame: x to the
+// patient's left, y to the head, z to the front), the device's parts, and an overlap check of the
+// device against the walls and the leaflets. The topology (indices, the myocardium's regions) goes
+// once.
 import * as THREE from '../../vendor/three.bundle.min.js';
 import { diseaseTargets, lvMask } from '../../src/model3d.js';
 import { scanner } from '../../src/scanner.js';
 import { cycleAt } from '../../src/cyclemodel.js';
-import * as TC from '../../src/ch/mteer.js';
 import * as CM from '../../src/gl/clipmesh.js';
+
+/** The chapter: mteer (the default) or tteer. */
+const CH = new URLSearchParams(location.search).get('ch') === 'tteer' ? 'tteer' : 'mteer';
+const TC = await import(`../../src/ch/${CH}.js`);
+/** The valve that the clip holds. */
+const VALVE = CH === 'tteer' ? 'TricuspidValve' : 'MitralValve';
 
 const b64 = (arr) => {
   const u8 = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
@@ -47,11 +53,12 @@ function nearest(G, x, y, z, rMax = 0.6) {
  */
 const WALL = 0.12, WALL_CLIP = 0.08, LEAF = 0.06, CROSS = 1.8;
 function overlap(ev, g, D, pose) {
-  const myo = grid(ev.myo.pos), mv = ev.valves.find((v) => v.mesh.name === 'MitralValve');
+  const myo = grid(ev.myo.pos), mv = ev.valves.find((v) => v.mesh.name === VALVE);
   const leaf = grid(mv.pos, 0.2);
-  const { sm } = TC.motionFor(ev, g);
-  // the crossing: round the septum's site in this frame (a tent moves it toward the LA) and at rest
-  const S = sm.map(g.punct.P), S0 = g.S.toArray();
+  // the crossing (M-TEER): round the septum's site in this frame (a tent moves it toward the LA)
+  // and at rest. T-TEER crosses no wall.
+  const S = CH === 'mteer' ? TC.motionFor(ev, g).sm.map(g.punct.P) : [1e9, 1e9, 1e9];
+  const S0 = CH === 'mteer' ? g.S.toArray() : [1e9, 1e9, 1e9];
   const crossing = (x, y, z) => Math.hypot(x - S[0], y - S[1], z - S[2]) <= CROSS || Math.hypot(x - S0[0], y - S0[1], z - S0[2]) <= CROSS;
   const out = { wallMin: Infinity, wallHits: 0, leafMin: Infinity, leafHits: 0, parts: {}, where: [] };
   const clipParts = new Set(['body', 'armA', 'armP', 'gripA', 'gripP']);
@@ -113,26 +120,33 @@ window.__run = async (frames) => {
     ev.setMotion(st.motion);
     ev.setLvSys(st.lvK, mask);
     // the held leaflets on the clip's arms, as the chapter's panes put them
-    ev.valveHook = TC.holdFor(g, st.pose);
+    ev.valveHook = TC.holdFor ? TC.holdFor(g, st.pose) : null;
     const c = cycleAt(f.t);
     ev.frame({ s: c.s, v: c.v, drive: c.drive, phase: c.phase, t: c.t });
     for (const [name, md] of list()) await save(`${f.name}/${name}.pos`, md.pos);
     const D = TC.deviceFor(ev, g, st.pose);
     const parts = {};
+    // the frame's own camera and timing, from the frames file (yaw, pitch, width, look), go to the manifest as they are
     for (const [k, m] of Object.entries(D.parts)) {
       if (!m.pos.length) continue;
       await save(`${f.name}/dev_${k}.pos`, Float32Array.from(m.pos));
       await save(`${f.name}/dev_${k}.idx`, Uint32Array.from(m.idx));
       parts[k] = m.pos.length / 3;
     }
-    const { vm, sm } = TC.motionFor(ev, g);
-    report.push({ ...f, pose: st.pose, parts, overlap: overlap(ev, g, D, st.pose), Q: vm.map(g.site.Q), C: vm.map(g.site.C), N: vm.dir(g.site.N), S: sm.map(g.punct.P), clipTop: D.clip ? D.clip.top : null });
+    if (CH === 'mteer') {
+      const { vm, sm } = TC.motionFor(ev, g);
+      report.push({ ...f, pose: st.pose, parts, overlap: overlap(ev, g, D, st.pose), Q: vm.map(g.site.Q), C: vm.map(g.site.C), N: vm.dir(g.site.N), S: sm.map(g.punct.P), clipTop: D.clip ? D.clip.top : null });
+    } else {
+      const vm = TC.motionFor(ev, g);
+      report.push({ ...f, pose: st.pose, parts, overlap: overlap(ev, g, D, st.pose), Q: vm.map(g.site.Q), Q0: vm.map(g.site.Q0), C: vm.map(g.site.C), N: vm.dir(g.site.N), tip: D.tip || null, clipTop: D.clip ? D.clip.top : null });
+    }
     document.getElementById('log').textContent = `frame ${f.name}`;
   }
   const A = model.anat.normal(), P = (k) => A.point(k, 0, 0).toArray();
   const geo = {
-    C: g.C.toArray(), N: g.N.toArray(), Q: g.Q.toArray(), Ac: g.Ac.toArray(), Bc: g.Bc.toArray(), S: g.S.toArray(), Nias: g.Nias.toArray(),
-    apex: P('apex_endo'), av: P('av'), la: P('la_c'), ra: P('ra_c'), tv: P('tv'), ivc: CM.CAVA.ivc, svc: CM.CAVA.svc,
+    ch: CH, C: g.C.toArray(), N: g.N.toArray(), Q: g.Q.toArray(), Ac: g.Ac.toArray(), Bc: g.Bc.toArray(),
+    apex: P('apex_endo'), av: P('av'), la: P('la_c'), ra: P('ra_c'), tv: P('tv'), mv: P('mv'), ivc: CM.CAVA.ivc, svc: CM.CAVA.svc,
+    ...(CH === 'mteer' ? { S: g.S.toArray(), Nias: g.Nias.toArray() } : { Q0: g.Q0.toArray(), S0: g.S0.toArray() }),
   };
   return { topo, report, geo };
 };

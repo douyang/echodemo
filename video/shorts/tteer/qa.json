@@ -1,0 +1,114 @@
+{
+ "voice": {
+  "file": "tteer-voice.mp4",
+  "checks": [
+   {
+    "check": "duration",
+    "pass": true,
+    "detail": "77.10 s, planned 77.10 s (window 60-90 s)"
+   },
+   {
+    "check": "frames",
+    "pass": true,
+    "detail": "2313 frames at 30.00 fps, planned 2313"
+   },
+   {
+    "check": "size",
+    "pass": true,
+    "detail": "1080 x 1920"
+   },
+   {
+    "check": "loudness",
+    "pass": true,
+    "detail": "-14.2 LUFS integrated (target -14 \u00b11)"
+   },
+   {
+    "check": "true peak",
+    "pass": true,
+    "detail": "-1.7 dBTP (ceiling -1.0)"
+   },
+   {
+    "check": "caption coverage",
+    "pass": true,
+    "detail": "every voiced word is captioned"
+   },
+   {
+    "check": "safe zones",
+    "pass": true,
+    "detail": "no key text in the top 250 px or the bottom 420 px"
+   },
+   {
+    "check": "copy rules",
+    "pass": true,
+    "detail": "no em dashes, no banned words"
+   },
+   {
+    "check": "claims",
+    "pass": true,
+    "detail": "20 claims cited, all verified"
+   },
+   {
+    "check": "loop",
+    "pass": true,
+    "detail": "SSIM first vs last 0.993 (0.97 or more)"
+   }
+  ],
+  "pass": true
+ },
+ "novoice": {
+  "file": "tteer-novoice.mp4",
+  "checks": [
+   {
+    "check": "duration",
+    "pass": true,
+    "detail": "77.10 s, planned 77.10 s (window 60-90 s)"
+   },
+   {
+    "check": "frames",
+    "pass": true,
+    "detail": "2313 frames at 30.00 fps, planned 2313"
+   },
+   {
+    "check": "size",
+    "pass": true,
+    "detail": "1080 x 1920"
+   },
+   {
+    "check": "loudness",
+    "pass": true,
+    "detail": "-13.9 LUFS integrated (target -14 \u00b11)"
+   },
+   {
+    "check": "true peak",
+    "pass": true,
+    "detail": "-3.0 dBTP (ceiling -1.0)"
+   },
+   {
+    "check": "caption time",
+    "pass": true,
+    "detail": "each caption stays 0.3 s a word and at least 1.2 s"
+   },
+   {
+    "check": "safe zones",
+    "pass": true,
+    "detail": "no key text in the top 250 px or the bottom 420 px"
+   },
+   {
+    "check": "copy rules",
+    "pass": true,
+    "detail": "no em dashes, no banned words"
+   },
+   {
+    "check": "claims",
+    "pass": true,
+    "detail": "20 claims cited, all verified"
+   },
+   {
+    "check": "loop",
+    "pass": true,
+    "detail": "SSIM first vs last 1.000 (0.97 or more)"
+   }
+  ],
+  "pass": true
+ }
+}
