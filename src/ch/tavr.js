@@ -550,10 +550,17 @@ function meterItems(v) {
   ];
 }
 
+/**
+ * Under rapid pacing the heart barely moves: a small contraction at the start of ejection, five in
+ * the strips' loop of two beats (175 a minute), so that the loop joins without a step.
+ */
+const PACED_MS = (2 * RR) / 5;
+const pacedAt = (ms) => EV.avo + 20 * Math.sin(Math.PI * ((ms % PACED_MS) / PACED_MS)) ** 2;
+
 function draw(sh, t) {
   const W = sh.w, H = sh.h, ctx = sh.ctx;
   const v = shownOf(st);
-  const tt = beat.at(true, 200);
+  const t0 = beat.at(true, 200), tt = v.paced && cine.live ? pacedAt(beat.ms) : t0;
   if (W < 700) {
     const [a, b] = cols({ x: 6, y: 6, w: W - 12, h: H - 12 }, [1.2, 1], 8);
     const [a1, a2] = rows(a, [1.2, 1], 8);
