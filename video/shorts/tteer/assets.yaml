@@ -6,12 +6,12 @@ assets:
     source: assets/heart.json, the echodemo heart mesh (built in Blender 5.0.1; a base64 GLB, meshopt and quantized by gltfpack)
     units: cm (x to the patient's left, y to the head, z to the front)
     state: >-
-      chapter B8 (src/ch/tteer.js): the TR heart of chapter 19 at its slider's 0.66 (massive TR),
+      the T-TEER chapter (src/ch/tteer.js): the TR heart of the TR chapter (src/ch/tr.js) at its slider's 0.66 (massive TR),
       with that grade's RV and RA growth, the central coaptation gap (ttGap) and, as the clip
       holds, the leaflets on its arms (ttGrasp, ttHalf, ttClip; src/gl/tteermesh.js)
     checked: before, vena contracta 1.6 cm and EROA 0.65 cm2, in the massive grade (C36, C37)
   - name: clip
-    source: src/gl/clipmesh.js CLIP (shared with chapter B7), placed by src/gl/tteermesh.js deviceOf
+    source: src/gl/clipmesh.js CLIP (shared with the M-TEER chapter), placed by src/gl/tteermesh.js deviceOf
     units: cm
     dimensions: {arm_length: 0.9, arm_width: 0.4, gripper_length: 0.72, body_radius: 0.12, body_length: 1.0}
     checked: the NT size, arms 9 mm long and 4 mm wide (C32). The body and the grippers are not checked against a published dimension.

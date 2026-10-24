@@ -60,6 +60,16 @@ def ease(x):
     return 4 * x * x * x if x < 0.5 else 1 - (-2 * x + 2) ** 3 / 2
 
 
+def chapter_name(key):
+    """The chapter of key as the site's links name it, from its number in src/order.js: "chapter 20" or "bonus chapter B3"."""
+    js = 'const m = await import(process.argv[1]); console.log(m.numOf(process.argv[2]))'
+    url = 'file://' + os.path.join(ROOT, 'src', 'order.js')
+    n = subprocess.run(['node', '--input-type=module', '-e', js, url, key], capture_output=True, text=True, check=True).stdout.strip()
+    if not n:
+        sys.exit(f'{key} is not a chapter in src/order.js')
+    return f'bonus chapter {n}' if n.startswith('B') else f'chapter {n}'
+
+
 # ---------------------------------------------------------------- fonts (the site's, video/fonts)
 _FONTS = {}
 
@@ -445,7 +455,7 @@ class Cut:
             for j, ln in enumerate(lines):
                 draw_text(im, (W // 2, y + j * 104), ln, f, INK, anchor='ma')
             f2 = font('IBMPlexSans-500', 30)
-            draw_text(im, (W // 2, y + len(lines) * 104 + 34), 'The Heart by Ultrasound · bonus chapter B8', f2, DIM, anchor='ma')
+            draw_text(im, (W // 2, y + len(lines) * 104 + 34), f"The Heart by Ultrasound · {chapter_name(self.R.S['slug'])}", f2, DIM, anchor='ma')
             self.text_boxes.append({'what': f"hook: {' '.join(lines)}", 'y0': y, 'y1': y + len(lines) * 104 + 70})
         elif kind == 'kccq':
             x0, y0, x1, y1 = 60, PANE_Y, W - 60, PANE_Y + PANE_S

@@ -846,7 +846,7 @@ let BANDS = [];
 
 export default {
   key: 'tteer',
-  part: 'valves',
+  part: 'structural',
   model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   title: 'Tricuspid transcatheter edge-to-edge repair',
   nav: 'T-TEER',

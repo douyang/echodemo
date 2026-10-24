@@ -52,6 +52,7 @@
 <link rel="modulepreload" href="src/ch/mi.js">
 <link rel="modulepreload" href="src/ch/mteer.js">
 <link rel="modulepreload" href="src/ch/tteer.js">
+<link rel="modulepreload" href="src/ch/tavr-soon.js">
 <link rel="modulepreload" href="src/ch/measure.js">
 <link rel="modulepreload" href="src/ch/ai.js">
 <link rel="modulepreload" href="src/ch/tee.js">
@@ -114,7 +115,7 @@
 <script>
 // a chapter whose figure needs the heart model at once: its files and modules load from the start
 (() => {
-  const MODEL = ['windows', 'tee', 'eject', 'fill', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'hcm', 'amyloid', 'lvad', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', 'mteer', 'tteer'];
+  const MODEL = ['windows', 'eject', 'fill', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'tee', 'mteer', 'tteer', 'aorta', 'stress', 'strain', 'hcm', 'amyloid', 'peri', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', 'lvad'];
   if (!MODEL.includes(location.hash.slice(1))) return;
   const add = (rel, href, as) => {
     const l = document.createElement('link');
@@ -1771,6 +1772,16 @@
       <div class="quiz"></div>
     </article>
 
+    <!-- ======================================================== Structural heart: TAVR (in preparation, src/ch/tavr-soon.js) -->
+    <article class="chapter" id="ch-tavr">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Transcatheter aortic valve replacement</h2><p class="ch-kicker">In preparation</p></div></div>
+      <p class="dek" data-part="dek">This chapter is in preparation.</p>
+      <div class="prose" data-part="prose">
+        <p>Aortic stenosis is in <a href="#as" data-go="as">chapter 12</a>, and prosthetic valves are in <a href="#prosthetic" data-go="prosthetic">bonus chapter B6</a>. The TEE views are in <a href="#tee" data-go="tee">chapter 17</a>.</p>
+      </div>
+    </article>
+
+    <!-- ======================================================== Structural heart: M-TEER and T-TEER -->
     <article class="chapter" id="ch-mteer">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">B7</span><div><h2 class="ch-title">Mitral transcatheter <span style="white-space: nowrap">edge-to-edge</span> repair</h2><p class="ch-kicker">M-TEER, step by step: what TEE shows at each step</p></div></div>
       <p class="dek" data-part="dek">Mitral transcatheter edge-to-edge repair (<span style="white-space: nowrap">M-TEER</span>) joins the anterior and posterior mitral leaflets with a clip, brought from the femoral vein across the atrial septum. TEE guides each step of the procedure, and TTE shows the result.</p>
@@ -2444,7 +2455,7 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== Views: TEE, after Views (src/order.js) -->
+    <!-- ======================================================== Structural heart: TEE, the first chapter of the part (src/order.js) -->
     <article class="chapter" id="ch-tee">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">33</span><div><h2 class="ch-title">Transesophageal echocardiography</h2><p class="ch-kicker">The probe, its movements and the standard views</p></div></div>
       <p class="dek" data-part="dek">Transesophageal echocardiography (TEE) images the heart from the esophagus and the stomach, directly behind the left atrium. Each standard view is set by the level of the probe, its turn and the multiplane angle.</p>

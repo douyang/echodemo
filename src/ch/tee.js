@@ -513,7 +513,7 @@ export default {
   key: 'tee',
   model: true,   // the figure needs the heart model at once (tools/preload.mjs)
   // in the part Views, after the transthoracic views (order.js)
-  part: 'views',
+  part: 'structural',
   title: 'Transesophageal echocardiography',
   nav: 'TEE',
   dwell: 48 + FREE_S,
