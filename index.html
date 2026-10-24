@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Heart by Ultrasound</title>
-<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, transesophageal echocardiography, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function, stress echocardiography, myocardial strain and cardio-oncology, the right ventricle and acute pulmonary embolism, valvular disease, diseases of the aorta, pericardial disease, hypertrophic cardiomyopathy, cardiac amyloidosis and artificial intelligence in echocardiography. Bonus chapters: left ventricular assist devices, prosthetic valves, infective endocarditis, intracardiac shunts, cardiac masses and the complications of myocardial infarction.">
+<meta name="description" content="An illustrated, interactive guide to echocardiography: ultrasound physics and Doppler, the standard views, transesophageal echocardiography, cardiac physiology, the inferior vena cava and Doppler hemodynamics, LV function, stress echocardiography, myocardial strain and cardio-oncology, the right ventricle and acute pulmonary embolism, valvular disease, diseases of the aorta, pericardial disease, hypertrophic cardiomyopathy, cardiac amyloidosis and artificial intelligence in echocardiography. Bonus chapters: left ventricular assist devices, prosthetic valves, infective endocarditis, intracardiac shunts, cardiac masses, the complications of myocardial infarction and mitral transcatheter edge-to-edge repair.">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -51,6 +51,9 @@
 <link rel="modulepreload" href="src/ch/aorta.js">
 <link rel="modulepreload" href="src/ch/masses.js">
 <link rel="modulepreload" href="src/ch/mi.js">
+<link rel="modulepreload" href="src/ch/mteer.js">
+<link rel="modulepreload" href="src/ch/tteer.js">
+<link rel="modulepreload" href="src/ch/tavr-soon.js">
 <link rel="modulepreload" href="src/ch/measure.js">
 <link rel="modulepreload" href="src/ch/ai.js">
 <link rel="modulepreload" href="src/ch/tee.js">
@@ -97,6 +100,12 @@
 <link rel="modulepreload" href="src/gl/massesmesh.js">
 <link rel="modulepreload" href="src/gl/mimesh.js">
 <link rel="modulepreload" href="src/mical.js">
+<link rel="modulepreload" href="src/teeviews.js">
+<link rel="modulepreload" href="src/teerviews.js">
+<link rel="modulepreload" href="src/gl/clipmesh.js">
+<link rel="modulepreload" href="src/enface3d.js">
+<link rel="modulepreload" href="src/ttviews.js">
+<link rel="modulepreload" href="src/gl/tteermesh.js">
 <link rel="modulepreload" href="src/abdomen.js">
 <link rel="modulepreload" href="src/echoprime.js">
 <link rel="modulepreload" href="src/aifig.js">
@@ -109,7 +118,7 @@
 <script>
 // a chapter whose figure needs the heart model at once: its files and modules load from the start
 (() => {
-  const MODEL = ['windows', 'tee', 'eject', 'fill', 'stress', 'strain', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'aorta', 'peri', 'hcm', 'amyloid', 'lvad', 'prosthetic', 'tavr', 'endocarditis', 'shunts', 'masses', 'mi'];
+  const MODEL = ['windows', 'eject', 'fill', 'rv', 'as', 'ar', 'ms', 'mr', 'tr', 'tee', 'tavr', 'mteer', 'tteer', 'aorta', 'stress', 'strain', 'hcm', 'amyloid', 'peri', 'prosthetic', 'endocarditis', 'shunts', 'masses', 'mi', 'lvad'];
   if (!MODEL.includes(location.hash.slice(1))) return;
   const add = (rel, href, as) => {
     const l = document.createElement('link');
@@ -312,6 +321,14 @@
     <figure class="fig" id="fig-mi">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">Mechanical complications of myocardial infarction from none to the end stage, one at a time: a rupture of the apical septum in the apical four-chamber view with its left-to-right color jet, the CW jet across it and the PW velocities of the two outflow tracts for Qp/Qs; a papillary muscle rupture with a flail anterior mitral leaflet, the torn head of the muscle and an eccentric MR jet in the apical three-chamber view, with the CW MR jet and the pulmonary vein flow; a pseudoaneurysm of the inferolateral wall in the parasternal long axis, with calipers on its neck and sac, and the pericardial effusion and the signs of tamponade in the apical four-chamber view; a true apical aneurysm in the apical four- and two-chamber views, with calipers on its mouth and width, a mural thrombus at the end stage, and the wall motion of the 17 segments.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-mteer">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Mitral transcatheter edge-to-edge repair of a flail posterior leaflet, step by step, from the transthoracic study before the procedure to the one after it. Left: the heart model cut away, with the guide from the inferior vena cava across the atrial septum and the clip on the mitral valve, at the step shown. Right, at each step, the images that guide it: before, the parasternal long axis and the TEE long-axis view with the flail P2 and its eccentric jet, and the 3D en face view of the valve; the transseptal puncture in the bicaval view, its short-axis view and the four-chamber view with the height of the puncture site above the leaflets; steering, alignment and grasping in the commissural and long-axis X-plane views and the 3D en face view; the assessment before release with the residual jets, the continuous-wave Doppler of the inflow with its mean gradient and the transgastric short axis of the double orifice; the release with the left-to-right flow across the iatrogenic atrial septal defect; and after the procedure, the parasternal short axis of the double orifice, the apical four-chamber view with the residual jets and the inflow's mean gradient.</figcaption>
+    </figure>
+    <figure class="fig" id="fig-tteer">
+      <canvas class="fig-canvas" aria-hidden="true"></canvas>
+      <figcaption class="sr-only">Tricuspid transcatheter edge-to-edge repair (T-TEER) of massive secondary tricuspid regurgitation, step by step, from the transthoracic study before the procedure to the one after it. Left: the heart model cut away, with the guide from the inferior vena cava into the right atrium and the clip on the anteroseptal line of coaptation, at the step shown. Right, at each step, the images that guide it: before, the RV-focused apical four-chamber view and the parasternal short axis of the tricuspid valve with the central coaptation gap and the wide jet, and continuous-wave Doppler of the regurgitation; the guide in the right atrium in the four-chamber and RV inflow-outflow views with the 3D en face view of the valve from the right atrium; steering, alignment and grasping in the mid-esophageal X-plane views along and across the line of coaptation, the transgastric short axis of the valve and the 3D en face view; the assessment before release with the residual jet in the four-chamber view, the continuous-wave Doppler of the inflow with its mean gradient and the transgastric short axis of the orifices; the release; and after the procedure, the RV-focused four-chamber view with the residual jet, the hepatic vein flow and the inflow's mean gradient.</figcaption>
     </figure>
     <figure class="fig" id="fig-measure">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
@@ -1697,66 +1714,6 @@
       <div class="quiz"></div>
     </article>
 
-    <article class="chapter" id="ch-tavr">
-      <div class="ch-head"><span class="ch-num" aria-hidden="true">B3</span><div><h2 class="ch-title">Transcatheter aortic valve replacement</h2><p class="ch-kicker">TAVR: TEE guidance and the result</p></div></div>
-      <p class="dek" data-part="dek">TAVR replaces a stenotic aortic valve with a valve on a catheter. Echo measures the annulus, follows the valve to its place, and checks its function and the paravalvular seal.</p>
-      <div class="controls">
-        <div class="control sev">
-          <div class="sev-head">
-            <label for="tavrT">Procedure <output data-for="tavrT"></output></label>
-            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the procedure"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
-          </div>
-          <input type="range" id="tavrT" data-key="tavrT" min="0" max="1" step="0.005">
-          <div class="grades" id="tavr-steps" aria-hidden="true"></div>
-        </div>
-        <div class="control">
-          <span class="label">Valve</span>
-          <div class="seg" role="group" aria-label="Type of transcatheter valve" data-key="tavrValve">
-            <button type="button" data-val="be">Balloon-expandable</button><button type="button" data-val="se">Self-expanding</button>
-          </div>
-        </div>
-        <div class="control">
-          <span class="label">Leak</span>
-          <div class="seg" role="group" aria-label="Paravalvular regurgitation at the check" data-key="tavrLeak">
-            <button type="button" data-val="none">None</button><button type="button" data-val="mild">Mild</button><button type="button" data-val="moderate">Moderate</button><button type="button" data-val="severe">Severe</button>
-          </div>
-        </div>
-      </div>
-      <dl class="readouts"></dl>
-      <p class="live"></p>
-      <div class="table-wrap"><table class="vt grade" id="tavr-table"></table></div>
-      <div class="table-wrap"><table class="vt grade" id="tavr-views"></table></div>
-      <div class="prose" data-part="prose">
-        <h3>The procedure</h3>
-        <p>A bioprosthesis on a metal frame is crimped onto a catheter and expanded inside the stenotic native valve. From 2019 to 2022, 96.2% of TAVRs in the US registry used transfemoral access<span class="cite" data-ref="arnold2024"></span>. TAVR lowered the 1-year mortality of patients who could not have surgery from 50.7% with standard therapy to 30.7%<span class="cite" data-ref="leon2010"></span>, and the 1-year death, stroke or rehospitalization of patients at low surgical risk from 15.1% after surgery to 8.5%<span class="cite" data-ref="mack2019"></span>. The 2025 ESC/EACTS guideline recommends TAVR from 70 years of age with a tricuspid valve and suitable anatomy, and surgery below 70 at low surgical risk<span class="cite" data-ref="praz2025"></span>.</p>
-        <p>A balloon-expandable valve, the SAPIEN 3 (a cobalt-chromium frame with bovine pericardial leaflets), opens with one balloon inflation under rapid ventricular pacing<span class="cite" data-ref="fdas3"></span>. A self-expanding valve, the Evolut (a nitinol frame with porcine pericardial leaflets<span class="cite" data-ref="fdaevolut"></span> that sit above the annulus<span class="cite" data-ref="popma2019"></span>), is released slowly from its capsule without rapid pacing<span class="cite" data-ref="zoghbi2019"></span>, and can be recaptured before its release<span class="cite" data-ref="fdaevolut"></span>.</p>
-        <h3>TEE or TTE</h3>
-        <p>Fluoroscopy guides most of the procedure; TEE or TTE helps to place the pacing wire, the guidewire and the valve, and checks the result at once<span class="cite" data-ref="little2023"></span>. TEE gives continuous images and finds complications at once, but needs sedation or anesthesia, and its probe can obstruct fluoroscopy<span class="cite" data-ref="zoghbi2019"></span>; it can be withdrawn during the implant<span class="cite" data-ref="zamorano2011"></span>. In the US registry, conscious sedation for transfemoral TAVR rose from 33.4% to 64.1% of cases between 2016 and 2019<span class="cite" data-ref="butala2020"></span>, and TTE guidance became more common<span class="cite" data-ref="little2023"></span>. The EACVI prefers this minimalist approach, converting to TEE for complications; TEE suits new programs and patients at higher risk<span class="cite" data-ref="agricola2023"></span>.</p>
-        <h3>The TEE views, step by step</h3>
-        <p>The second table lists the views of each step (<a href="#tee" data-go="tee">chapter 05</a>). The midesophageal long axis of the aortic valve, at 120–140°, and its short axis, at 30–60°, are often acquired together as a biplane image<span class="cite" data-ref="agricola2023"></span>. The deep transgastric views align the Doppler beam with the LVOT and the valve<span class="cite" data-ref="hahn2013"></span>.</p>
-        <p><b>Measure.</b> The annulus that sizes the valve is the diameter at the hinge points of the cusps, measured in systole<span class="cite" data-ref="zamorano2011"></span>: from the right cusp's hinge anteriorly to the base of the interleaflet trigone posteriorly, inner edge to inner edge, on a zoomed long axis<span class="cite" data-ref="hahn2022"></span>. A TEE annulus of 21–25 mm takes a 26-mm SAPIEN 3<span class="cite" data-ref="fdas3"></span>, and an annulus of 23–26 mm a 29-mm Evolut R<span class="cite" data-ref="fdaevolut"></span>. CT is the reference for sizing; 3D TEE measures 3.5–7.4% smaller, usually without a change of valve size<span class="cite" data-ref="agricola2023"></span>. A left main height below 10–11 mm warns of coronary obstruction<span class="cite" data-ref="hahn2022"></span>.</p>
-        <p><b>Cross.</b> TEE confirms the pacing wire in the RV<span class="cite" data-ref="agricola2023"></span> and watches the stiff wire in the LV for entanglement in the mitral apparatus, its commonest complication, seen as a new change in the mitral leaflets or in MR<span class="cite" data-ref="hahn2015"></span>. Echo places the crimped valve by the hinge points of the cusps, which can lie slightly aortic to the fluoroscopic landmark<span class="cite" data-ref="hahn2015"></span>.</p>
-        <p><b>Deploy.</b> A SAPIEN 3 is placed for a final depth of 80/20 to 90/10 of its frame height, aortic to ventricular<span class="cite" data-ref="blackman2021"></span>. Its frame shortens as it expands, mostly at its ventricular end: from 27 to 20 mm for the 26-mm valve<span class="cite" data-ref="schymik2015"></span>. With the cusp-overlap technique, an Evolut targets 3 mm below the noncoronary cusp, and is recaptured at less than 1 mm or more than 5 mm<span class="cite" data-ref="grubb2025"></span>.</p>
-        <p><b>Check.</b> Immediately after the implant, TEE confirms that all the prosthetic cusps move, that the frame is circular and that there is no significant valvular or paravalvular regurgitation. Central regurgitation is common while the wire crosses the valve and for minutes after, as the crimped leaflets recover. Transgastric views with color, PW and CW Doppler complete the check before the probe is removed<span class="cite" data-ref="zamorano2011"></span>.</p>
-        <h3>The paravalvular leak</h3>
-        <p>The whole valve is scanned from its aortic to its ventricular end. A paravalvular jet arises at the frame's ventricular edge and counts only when it enters the LV; color in the sinuses above the skirt is not a leak<span class="cite" data-ref="zoghbi2019"></span>. Its circumferential extent is the sum of the jets' vena contracta arcs divided by the circumference of the valve's outer edge: less than 10% is mild, 10–29% moderate and 30% or more severe, best read with the vena contracta<span class="cite" data-ref="zoghbi2024"></span>. The frame shadows posterior jets on TTE and anterior jets on TEE; the deep transgastric view finds anterior jets that the esophageal views miss<span class="cite" data-ref="zoghbi2019"></span>.</p>
-        <p>The regurgitant volume and fraction cannot be measured during the procedure<span class="cite" data-ref="zoghbi2019"></span>. With the SAPIEN 3, at least moderate paravalvular regurgitation at 30 days carried a hazard ratio of 2.40 for death at 1 year, and mild regurgitation did not raise mortality; at least moderate regurgitation is corrected at the procedure, by balloon post-dilatation for example<span class="cite" data-ref="pibarot2017"></span>.</p>
-        <h3>A successful result</h3>
-        <p>VARC-3 defines the intended performance of the valve as a mean gradient below 20 mmHg, a peak velocity below 3 m/s, a DVI of 0.25 or more and less than moderate regurgitation<span class="cite" data-ref="genereux2021"></span>. For the EOA, the LVOT diameter is measured outer edge to outer edge at the ventricular end of the frame, with the PW sample just proximal to the flow acceleration at the frame's inlet; a sample inside the frame records that acceleration and overestimates the EOA<span class="cite" data-ref="zoghbi2024"></span>. The normal values depend on the valve and its size: a mean gradient of 10.6 mmHg and an EOA of 1.74 cm² for a 26-mm SAPIEN 3, and 7.9 mmHg and 1.97 cm² for a 29-mm Evolut R<span class="cite" data-ref="zoghbi2024"></span>. Mismatch is graded from the indexed EOA, as after surgery (<a href="#prosthetic" data-go="prosthetic">bonus chapter B2</a>).</p>
-        <p>A TTE soon after the implant sets the baseline<span class="cite" data-ref="zoghbi2019"></span>. Later, a mean gradient that rises by 10 mmHg or more from the study at 1–3 months, to 20 mmHg or more, with a fall of the EOA or the DVI, is moderate hemodynamic valve deterioration<span class="cite" data-ref="genereux2021"></span>.</p>
-        <h3>Complications</h3>
-        <p>A periaortic hematoma, a fast-growing pericardial effusion and atypical flow from the annulus indicate annular rupture<span class="cite" data-ref="hahn2015"></span>. A new regional wall-motion abnormality suggests coronary obstruction<span class="cite" data-ref="agricola2023"></span>. New MR can come from RV pacing, from a low valve that presses on the anterior mitral leaflet, or from damage to the subvalvular apparatus<span class="cite" data-ref="zamorano2011"></span>. A perforation of the RV by the pacing wire can appear only after the wire's removal<span class="cite" data-ref="hahn2015"></span>.</p>
-        <h3>Key points</h3>
-        <ol class="steps">
-        <li>The annulus is measured in systole at the cusps' hinge points, inner edge to inner edge.</li>
-        <li>A paravalvular jet counts where it enters the LVOT; an extent below 10% of the circumference is mild, 10–29% moderate and 30% or more severe.</li>
-        <li>The frame shadows anterior jets on TEE and posterior jets on TTE; the deep transgastric view completes the TEE check.</li>
-        <li>Intended performance: a mean gradient below 20 mmHg, a peak velocity below 3 m/s, a DVI of 0.25 or more and less than moderate regurgitation.</li>
-        </ol>
-      </div>
-      <div class="quiz"></div>
-    </article>
-
     <article class="chapter" id="ch-endocarditis">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">19</span><div><h2 class="ch-title">Infective endocarditis</h2><p class="ch-kicker">Vegetations, leaflet perforation and the echocardiographic criteria</p></div></div>
       <p class="dek" data-part="dek">Echocardiography shows the lesions of infective endocarditis: the vegetation, and the destruction that it causes, such as leaflet perforation and abscess. The size and mobility of a vegetation predict embolism, and a length of 10 mm is the threshold in the ESC recommendations for surgery.</p>
@@ -1817,6 +1774,159 @@
         <li>TOE is recommended when TTE is negative or nondiagnostic and suspicion remains, with a prosthetic valve or a device, and after a positive TTE, except in isolated right-sided native valve IE with a clear TTE<span class="cite" data-ref="delgado2023"></span>.</li>
         <li>Size, the maximal length, and mobility best predict embolism; 10 mm is the length in the ESC recommendations for urgent surgery<span class="cite" data-ref="delgado2023"></span>.</li>
         <li>In acute MR from a perforation, color Doppler can underestimate the eccentric jet; systolic flow reversal in the pulmonary veins supports severe MR<span class="cite" data-ref="zoghbi2017"></span>.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Structural heart: TAVR -->
+    <article class="chapter" id="ch-tavr">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">18</span><div><h2 class="ch-title">Transcatheter aortic valve replacement</h2><p class="ch-kicker">TAVR: TEE guidance and the result</p></div></div>
+      <p class="dek" data-part="dek">TAVR replaces a stenotic aortic valve with a valve on a catheter. Echo measures the annulus, follows the valve to its place, and checks its function and the paravalvular seal.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="tavrT">Procedure <output data-for="tavrT"></output></label>
+            <button type="button" class="sev-play" data-anim aria-pressed="false" aria-label="Play the procedure"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="tavrT" data-key="tavrT" min="0" max="1" step="0.005">
+          <div class="grades" id="tavr-steps" aria-hidden="true"></div>
+        </div>
+        <div class="control">
+          <span class="label">Valve</span>
+          <div class="seg" role="group" aria-label="Type of transcatheter valve" data-key="tavrValve">
+            <button type="button" data-val="be">Balloon-expandable</button><button type="button" data-val="se">Self-expanding</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Leak</span>
+          <div class="seg" role="group" aria-label="Paravalvular regurgitation at the check" data-key="tavrLeak">
+            <button type="button" data-val="none">None</button><button type="button" data-val="mild">Mild</button><button type="button" data-val="moderate">Moderate</button><button type="button" data-val="severe">Severe</button>
+          </div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="table-wrap"><table class="vt grade" id="tavr-table"></table></div>
+      <div class="table-wrap"><table class="vt grade" id="tavr-views"></table></div>
+      <div class="prose" data-part="prose">
+        <h3>The procedure</h3>
+        <p>A bioprosthesis on a metal frame is crimped onto a catheter and expanded inside the stenotic native valve. From 2019 to 2022, 96.2% of TAVRs in the US registry used transfemoral access<span class="cite" data-ref="arnold2024"></span>. TAVR lowered the 1-year mortality of patients who could not have surgery from 50.7% with standard therapy to 30.7%<span class="cite" data-ref="leon2010"></span>, and the 1-year death, stroke or rehospitalization of patients at low surgical risk from 15.1% after surgery to 8.5%<span class="cite" data-ref="mack2019"></span>. The 2025 ESC/EACTS guideline recommends TAVR from 70 years of age with a tricuspid valve and suitable anatomy, and surgery below 70 at low surgical risk<span class="cite" data-ref="praz2025"></span>.</p>
+        <p>A balloon-expandable valve, the SAPIEN 3 (a cobalt-chromium frame with bovine pericardial leaflets), opens with one balloon inflation under rapid ventricular pacing<span class="cite" data-ref="fdas3"></span>. A self-expanding valve, the Evolut (a nitinol frame with porcine pericardial leaflets<span class="cite" data-ref="fdaevolut"></span> that sit above the annulus<span class="cite" data-ref="popma2019"></span>), is released slowly from its capsule without rapid pacing<span class="cite" data-ref="zoghbi2019"></span>, and can be recaptured before its release<span class="cite" data-ref="fdaevolut"></span>.</p>
+        <h3>TEE or TTE</h3>
+        <p>Fluoroscopy guides most of the procedure; TEE or TTE helps to place the pacing wire, the guidewire and the valve, and checks the result at once<span class="cite" data-ref="little2023"></span>. TEE gives continuous images and finds complications at once, but needs sedation or anesthesia, and its probe can obstruct fluoroscopy<span class="cite" data-ref="zoghbi2019"></span>; it can be withdrawn during the implant<span class="cite" data-ref="zamorano2011"></span>. In the US registry, conscious sedation for transfemoral TAVR rose from 33.4% to 64.1% of cases between 2016 and 2019<span class="cite" data-ref="butala2020"></span>, and TTE guidance became more common<span class="cite" data-ref="little2023"></span>. The EACVI prefers this minimalist approach, converting to TEE for complications; TEE suits new programs and patients at higher risk<span class="cite" data-ref="agricola2023"></span>.</p>
+        <h3>The TEE views, step by step</h3>
+        <p>The second table lists the views of each step (<a href="#tee" data-go="tee">chapter 17</a>). The midesophageal long axis of the aortic valve, at 120–140°, and its short axis, at 30–60°, are often acquired together as a biplane image<span class="cite" data-ref="agricola2023"></span>. The deep transgastric views align the Doppler beam with the LVOT and the valve<span class="cite" data-ref="hahn2013"></span>.</p>
+        <p><b>Measure.</b> The annulus that sizes the valve is the diameter at the hinge points of the cusps, measured in systole<span class="cite" data-ref="zamorano2011"></span>: from the right cusp's hinge anteriorly to the base of the interleaflet trigone posteriorly, inner edge to inner edge, on a zoomed long axis<span class="cite" data-ref="hahn2022"></span>. A TEE annulus of 21–25 mm takes a 26-mm SAPIEN 3<span class="cite" data-ref="fdas3"></span>, and an annulus of 23–26 mm a 29-mm Evolut R<span class="cite" data-ref="fdaevolut"></span>. CT is the reference for sizing; 3D TEE measures 3.5–7.4% smaller, usually without a change of valve size<span class="cite" data-ref="agricola2023"></span>. A left main height below 10–11 mm warns of coronary obstruction<span class="cite" data-ref="hahn2022"></span>.</p>
+        <p><b>Cross.</b> TEE confirms the pacing wire in the RV<span class="cite" data-ref="agricola2023"></span> and watches the stiff wire in the LV for entanglement in the mitral apparatus, its commonest complication, seen as a new change in the mitral leaflets or in MR<span class="cite" data-ref="hahn2015"></span>. Echo places the crimped valve by the hinge points of the cusps, which can lie slightly aortic to the fluoroscopic landmark<span class="cite" data-ref="hahn2015"></span>.</p>
+        <p><b>Deploy.</b> A SAPIEN 3 is placed for a final depth of 80/20 to 90/10 of its frame height, aortic to ventricular<span class="cite" data-ref="blackman2021"></span>. Its frame shortens as it expands, mostly at its ventricular end: from 27 to 20 mm for the 26-mm valve<span class="cite" data-ref="schymik2015"></span>. With the cusp-overlap technique, an Evolut targets 3 mm below the noncoronary cusp, and is recaptured at less than 1 mm or more than 5 mm<span class="cite" data-ref="grubb2025"></span>.</p>
+        <p><b>Check.</b> Immediately after the implant, TEE confirms that all the prosthetic cusps move, that the frame is circular and that there is no significant valvular or paravalvular regurgitation. Central regurgitation is common while the wire crosses the valve and for minutes after, as the crimped leaflets recover. Transgastric views with color, PW and CW Doppler complete the check before the probe is removed<span class="cite" data-ref="zamorano2011"></span>.</p>
+        <h3>The paravalvular leak</h3>
+        <p>The whole valve is scanned from its aortic to its ventricular end. A paravalvular jet arises at the frame's ventricular edge and counts only when it enters the LV; color in the sinuses above the skirt is not a leak<span class="cite" data-ref="zoghbi2019"></span>. Its circumferential extent is the sum of the jets' vena contracta arcs divided by the circumference of the valve's outer edge: less than 10% is mild, 10–29% moderate and 30% or more severe, best read with the vena contracta<span class="cite" data-ref="zoghbi2024"></span>. The frame shadows posterior jets on TTE and anterior jets on TEE; the deep transgastric view finds anterior jets that the esophageal views miss<span class="cite" data-ref="zoghbi2019"></span>.</p>
+        <p>The regurgitant volume and fraction cannot be measured during the procedure<span class="cite" data-ref="zoghbi2019"></span>. With the SAPIEN 3, at least moderate paravalvular regurgitation at 30 days carried a hazard ratio of 2.40 for death at 1 year, and mild regurgitation did not raise mortality; at least moderate regurgitation is corrected at the procedure, by balloon post-dilatation for example<span class="cite" data-ref="pibarot2017"></span>.</p>
+        <h3>A successful result</h3>
+        <p>VARC-3 defines the intended performance of the valve as a mean gradient below 20 mmHg, a peak velocity below 3 m/s, a DVI of 0.25 or more and less than moderate regurgitation<span class="cite" data-ref="genereux2021"></span>. For the EOA, the LVOT diameter is measured outer edge to outer edge at the ventricular end of the frame, with the PW sample just proximal to the flow acceleration at the frame's inlet; a sample inside the frame records that acceleration and overestimates the EOA<span class="cite" data-ref="zoghbi2024"></span>. The normal values depend on the valve and its size: a mean gradient of 10.6 mmHg and an EOA of 1.74 cm² for a 26-mm SAPIEN 3, and 7.9 mmHg and 1.97 cm² for a 29-mm Evolut R<span class="cite" data-ref="zoghbi2024"></span>. Mismatch is graded from the indexed EOA, as after surgery (<a href="#prosthetic" data-go="prosthetic">bonus chapter B6</a>).</p>
+        <p>A TTE soon after the implant sets the baseline<span class="cite" data-ref="zoghbi2019"></span>. Later, a mean gradient that rises by 10 mmHg or more from the study at 1–3 months, to 20 mmHg or more, with a fall of the EOA or the DVI, is moderate hemodynamic valve deterioration<span class="cite" data-ref="genereux2021"></span>.</p>
+        <h3>Complications</h3>
+        <p>A periaortic hematoma, a fast-growing pericardial effusion and atypical flow from the annulus indicate annular rupture<span class="cite" data-ref="hahn2015"></span>. A new regional wall-motion abnormality suggests coronary obstruction<span class="cite" data-ref="agricola2023"></span>. New MR can come from RV pacing, from a low valve that presses on the anterior mitral leaflet, or from damage to the subvalvular apparatus<span class="cite" data-ref="zamorano2011"></span>. A perforation of the RV by the pacing wire can appear only after the wire's removal<span class="cite" data-ref="hahn2015"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>The annulus is measured in systole at the cusps' hinge points, inner edge to inner edge.</li>
+        <li>A paravalvular jet counts where it enters the LVOT; an extent below 10% of the circumference is mild, 10–29% moderate and 30% or more severe.</li>
+        <li>The frame shadows anterior jets on TEE and posterior jets on TTE; the deep transgastric view completes the TEE check.</li>
+        <li>Intended performance: a mean gradient below 20 mmHg, a peak velocity below 3 m/s, a DVI of 0.25 or more and less than moderate regurgitation.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <!-- ======================================================== Structural heart: M-TEER and T-TEER -->
+    <article class="chapter" id="ch-mteer">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">B7</span><div><h2 class="ch-title">Mitral transcatheter <span style="white-space: nowrap">edge-to-edge</span> repair</h2><p class="ch-kicker">M-TEER, step by step: what TEE shows at each step</p></div></div>
+      <p class="dek" data-part="dek">Mitral transcatheter edge-to-edge repair (<span style="white-space: nowrap">M-TEER</span>) joins the anterior and posterior mitral leaflets with a clip, brought from the femoral vein across the atrial septum. TEE guides each step of the procedure, and TTE shows the result.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="tcS">Step <output data-for="tcS"></output></label>
+            <button type="button" class="sev-play" data-anim="Play the procedure" aria-pressed="false" aria-label="Play the procedure"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="tcS" data-key="tcS" min="0" max="1" step="0.005">
+          <div class="grades" id="tc-steps" aria-hidden="true"></div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>The device</h3>
+        <p>Two devices are approved, each with its own implantation system<span class="cite" data-ref="little2026"></span>. A steerable guide catheter enters the femoral vein and runs up the inferior vena cava to the right atrium<span class="cite" data-ref="fdap100009"></span>; over a wire it crosses the septum, and about 2 cm of it lies in the LA<span class="cite" data-ref="little2026"></span>. The delivery system goes through the guide into the LA and carries the implant<span class="cite" data-ref="little2026"></span>. The implant has two arms (paddles in one device), with a gripper (a clasp) over each, and the grippers drop together or one at a time<span class="cite" data-ref="little2026"></span>. Each device comes in more than one size: a longer one for a larger gap, a shorter and narrower one for a grasp away from the middle of the valve<span class="cite" data-ref="little2026"></span>.</p>
+        <h3>Who is treated</h3>
+        <p>EVEREST II randomly assigned 279 patients with grade 3+ or 4+ MR to TEER or to surgery<span class="cite" data-ref="feldman2011"></span>; most had primary MR<span class="cite" data-ref="fdap100009"></span>. At 12 months, freedom from death, from surgery for mitral dysfunction and from grade 3+ or 4+ MR was 55% after TEER and 73% after surgery; major adverse events at 30 days were 15% and 48%<span class="cite" data-ref="feldman2011"></span>. The FDA approved the first mitral TEER device in 2013 for primary MR at prohibitive surgical risk<span class="cite" data-ref="fdap100009"></span>, and for secondary MR in 2019<span class="cite" data-ref="fdap100009s028"></span>.</p>
+        <p>In secondary MR, COAPT (614 patients) lowered the rate of heart failure hospitalization within 24 months, 35.8% against 67.9% per patient-year, and death, 29.1% against 46.1%<span class="cite" data-ref="stone2018"></span>. MITRA-FR (304 patients) found no difference in death or heart failure hospitalization at 12 months<span class="cite" data-ref="obadia2018"></span>. RESHAPE-HF2 (505 patients, moderate to severe secondary MR) lowered the rate of heart failure hospitalization or cardiovascular death, 37.0 against 58.9 events per 100 patient-years<span class="cite" data-ref="anker2024"></span>.</p>
+        <p>The 2020 ACC/AHA guideline finds TEER reasonable in severely symptomatic (NYHA III–IV) patients with severe primary MR at high or prohibitive surgical risk, with favorable anatomy and a life expectancy of at least 1 year; and in chronic severe secondary MR with persistent symptoms on optimal therapy, an anatomy suitable on TEE, an LVEF of 20–50%, an LVESD of 70 mm or less and a PA systolic pressure of 70 mmHg or less<span class="cite" data-ref="otto2020"></span>. In the 2025 ESC/EACTS guidelines, TEER should be considered in symptomatic severe primary MR with a suitable anatomy at high surgical risk, and it is recommended in severe ventricular secondary MR that meets their clinical and echocardiographic criteria<span class="cite" data-ref="praz2025"></span>.</p>
+        <h3>The anatomy for TEER</h3>
+        <p>In EVEREST, the jet came from A2–P2; a valve area under 4.0 cm² excluded the patient; in primary MR the flail gap was under 10 mm and the flail width under 15 mm, and in secondary MR the coaptation length was at least 2 mm and its depth 11 mm or less<span class="cite" data-ref="zamorano2011"></span>. A baseline valve area of 3.0 cm² or less with a mean gradient of 4 mmHg or more carried a high risk of a procedure stopped for stenosis<span class="cite" data-ref="zoghbi2019"></span>.</p>
+        <h3>The steps on TEE</h3>
+        <ol class="steps">
+        <li><b>Transseptal puncture.</b> The sheath tents the fossa ovalis. The bicaval view places the tent between the venae cavae, the short-axis view at the aortic valve to the front or back, and the four-chamber view gives its height above the point where the clip will grasp: about 4.5–5.0 cm<span class="cite" data-ref="little2026"></span>. With a flail or prolapse, that point lies at or a little above the annulus<span class="cite" data-ref="little2026"></span>. The needle goes through the posterior-mid fossa, in a posterior and superior direction<span class="cite" data-ref="zamorano2011"></span>.</li>
+        <li><b>Steering and alignment.</b> The clip goes down over the jet's origin and stops about 1 cm above the valve<span class="cite" data-ref="zamorano2011,little2026"></span>. The commissural view (55–75°) shows its medial-lateral position, and the long-axis view (100–160°) its anterior-posterior position<span class="cite" data-ref="zamorano2011"></span>. With the arms open, the clip turns until they are square to the line of coaptation<span class="cite" data-ref="little2026"></span>. The arms then lie in the long-axis plane: that view shows both, and the commissural view shows them edge-on, as one line. 3D en face and transgastric views show the turn<span class="cite" data-ref="zamorano2011"></span>.</li>
+        <li><b>Grasping.</b> The clip crosses below the leaflet tips with its arms open or closed; there the arms open, and the clip comes back until the leaflets lie on them<span class="cite" data-ref="little2026"></span>. The grippers drop onto the arms, together or one at a time, and the clip closes<span class="cite" data-ref="little2026"></span>. The leaflets drape over the arms, the grasped tissue stops moving, and 3D shows a tissue bridge<span class="cite" data-ref="little2026"></span>. Leaflet length from the annulus, before and after the grasp, estimates how much leaflet the clip holds<span class="cite" data-ref="little2026"></span>.</li>
+        <li><b>Assessment.</b> With the settings used before the clip, the commissural view shows the jets on both sides of it<span class="cite" data-ref="zoghbi2019"></span>. Two or three thin jets are usually no more than mild MR, and PISA is not recommended after TEER<span class="cite" data-ref="zoghbi2019,little2026"></span>. A mean gradient under 5 mmHg with a valve area of 2.0 cm² or more is preferred, reported with the heart rate<span class="cite" data-ref="little2026"></span>. In 268 patients, most with secondary MR, an invasive gradient above 5 mmHg just after implantation predicted a worse long-term outcome<span class="cite" data-ref="neuss2017"></span>.</li>
+        <li><b>Release.</b> Before release, the MR reduction is weighed against the rise in gradient<span class="cite" data-ref="little2026"></span>. The clip is then detached from the delivery system<span class="cite" data-ref="zamorano2011"></span>. After release it often moves 1–2 mm toward the LV, and it can turn a little<span class="cite" data-ref="little2026"></span>.</li>
+        </ol>
+        <p>The 3D en face view from the LA shows the valve as the surgeon sees it, with the aortic valve at 12 o'clock and the LA appendage on the left<span class="cite" data-ref="lang2012"></span>.</p>
+        <h3>After the procedure</h3>
+        <p>After the procedure TTE is the main study<span class="cite" data-ref="zoghbi2019"></span>; at 6 months it shows the LV's remodeling<span class="cite" data-ref="zamorano2011"></span>. A vena contracta of 0.7 cm or more in any jet is specific for severe residual MR; with several jets, 3D TEE adds the jets' vena contracta areas<span class="cite" data-ref="zoghbi2019"></span> (<a href="#mr" data-go="mr">chapter 18</a>). In one series of 66 patients the iatrogenic ASD persisted in 50% at 6 months, and its persistence went with a higher mortality<span class="cite" data-ref="schueler2015"></span>; routine closure is not recommended<span class="cite" data-ref="little2026"></span>. The peak velocity across it gives the LA–RA pressure difference, 4v² (<a href="#shunts" data-go="shunts">bonus chapter B4</a>). In EXPAND, a clip attached to one leaflet only in 1.8% of patients, most often after the posterior leaflet came free<span class="cite" data-ref="asch2021"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>TEE guides each step: the bicaval, short-axis and four-chamber views for the puncture, and the commissural and long-axis views with 3D for alignment and grasping<span class="cite" data-ref="little2026"></span>.</li>
+        <li>The puncture lies high and posterior, about 4.5–5.0 cm above the point where the clip will grasp<span class="cite" data-ref="little2026"></span>.</li>
+        <li>The arms lie square to the line of coaptation, and both leaflets drape over them and stop moving<span class="cite" data-ref="little2026"></span>.</li>
+        <li>Residual MR is graded without PISA, and a mean gradient under 5 mmHg is preferred<span class="cite" data-ref="zoghbi2019,little2026"></span>.</li>
+        </ol>
+      </div>
+      <div class="quiz"></div>
+    </article>
+
+    <article class="chapter" id="ch-tteer">
+      <div class="ch-head"><span class="ch-num" aria-hidden="true">B8</span><div><h2 class="ch-title">Tricuspid transcatheter <span style="white-space: nowrap">edge-to-edge</span> repair</h2><p class="ch-kicker">T-TEER, step by step: what TEE shows at each step</p></div></div>
+      <p class="dek" data-part="dek">Tricuspid transcatheter edge-to-edge repair (<span style="white-space: nowrap">T-TEER</span>) joins the septal leaflet to the anterior or the posterior leaflet with a clip, brought from the femoral vein up the inferior vena cava into the right atrium. TEE guides each step of the procedure, with fluoroscopy, and TTE shows the result.</p>
+      <div class="controls">
+        <div class="control sev">
+          <div class="sev-head">
+            <label for="ttS">Step <output data-for="ttS"></output></label>
+            <button type="button" class="sev-play" data-anim="Play the procedure" aria-pressed="false" aria-label="Play the procedure"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+          </div>
+          <input type="range" id="ttS" data-key="ttS" min="0" max="1" step="0.005">
+          <div class="grades" id="tt-steps" aria-hidden="true"></div>
+        </div>
+      </div>
+      <dl class="readouts"></dl>
+      <p class="live"></p>
+      <div class="prose" data-part="prose">
+        <h3>The device</h3>
+        <p>The TriClip G4 System (Abbott) brings a clip to the tricuspid valve from the femoral vein<span class="cite" data-ref="fdap230007c"></span>. Its steerable guide catheter has a 25 Fr shaft<span class="cite" data-ref="fdap230007c"></span>. The clip comes in four sizes: arms 9 mm long (NT, NTW) or 12 mm long (XT, XTW), and 4 mm wide or, in the W sizes, 6 mm wide<span class="cite" data-ref="hahn2025,fdap230007c"></span>. The FDA approved it on April 1, 2024, to improve quality of life and functional status in symptomatic severe TR despite optimal medical therapy, at intermediate or greater surgical risk, when a heart team judges the repair appropriate and expects TR of moderate or less<span class="cite" data-ref="fdap230007"></span>. Abbott now sells a fifth generation (G5) in four sizes with the same names<span class="cite" data-ref="abbotttriclip"></span>.</p>
+        <h3>Who is treated</h3>
+        <p>TRILUMINATE Pivotal randomly assigned patients with symptomatic severe TR to TEER with medical therapy or to medical therapy alone<span class="cite" data-ref="sorajja2023"></span>. In the first 350 patients, the hierarchical primary end point (death or tricuspid surgery, then heart failure hospitalization, then a gain of at least 15 points in the KCCQ score at 1 year) favored TEER, with a win ratio of 1.48<span class="cite" data-ref="sorajja2023"></span>. At 30 days, TR was moderate or less in 87.0% and 4.8%; at 1 year, the KCCQ score rose by 12.3 and 0.6 points<span class="cite" data-ref="sorajja2023"></span>. Death or surgery and heart failure hospitalization did not appear to differ at 1 year; quality of life carried the result<span class="cite" data-ref="sorajja2023,fdap230007b"></span>. In all 572 randomized patients, heart failure hospitalizations through 2 years were fewer with TEER (0.19 against 0.26 per patient-year), mortality was 17.9% and 17.1%, and 61.5% of the controls crossed over to a tricuspid intervention<span class="cite" data-ref="kar2025"></span>. In Tri.Fr (300 patients), a composite clinical score improved at 1 year in 74.1% with TEER and 40.6% with medical therapy alone<span class="cite" data-ref="donal2025"></span>.</p>
+        <p>The 2025 ESC/EACTS guidelines give transcatheter treatment a class IIa recommendation (level A) to improve quality of life and RV remodeling in high-risk patients with symptomatic severe TR despite optimal medical therapy, without severe RV dysfunction or pre-capillary pulmonary hypertension<span class="cite" data-ref="praz2025"></span>.</p>
+        <h3>The anatomy for a clip</h3>
+        <p>TRILUMINATE excluded a coaptation defect over 2 cm, calcium in the grasping area, and leads that would prevent placement of the clip<span class="cite" data-ref="fdap230007b"></span>, and a valve area of 1.0 cm² or less or a mean gradient of 5 mmHg or more<span class="cite" data-ref="fdapanel2024"></span>. A small gap and a central or anteroseptal jet predicted success in an early series<span class="cite" data-ref="besler2018"></span>; in bRIGHT, the 30-day reduction of TR was similar for gaps under 7 mm, 7–10 mm and over 10 mm<span class="cite" data-ref="donal2024"></span>. In selected patients with a transvalvular pacemaker or defibrillator lead, TR was moderate or less at 30 days as often as without one (88% and 87%)<span class="cite" data-ref="naik2025"></span>.</p>
+        <h3>The steps on TEE</h3>
+        <ol class="steps">
+        <li><b>Guide in the RA.</b> The guide comes up the IVC. The bicaval view at about 90°, with biplane or live 3D, tracks it clear of the septum, the Eustachian valve, a Chiari network and leads<span class="cite" data-ref="hahn2025"></span>.</li>
+        <li><b>Steering.</b> The delivery system flexes down toward the annulus; the imager follows it from the bicaval to the four-chamber view, then to the RV inflow view and its biplane pair<span class="cite" data-ref="hahn2025,onishi2026"></span>.</li>
+        <li><b>Alignment.</b> In the RA the arms open to about 180°<span class="cite" data-ref="fdap230007c"></span>, and the clip turns until they lie square to the target line of coaptation: most accurately on the 3D en face view, or on the transgastric short axis<span class="cite" data-ref="hahn2025"></span>. Without a focal defect, the anteroseptal line, usually the longest, comes first<span class="cite" data-ref="hahn2025"></span>. The septal leaflet is grasped with the anterior or the posterior leaflet: a grasp of the anterior and posterior leaflets alone has not been shown to reduce TR<span class="cite" data-ref="onishi2026"></span>. In the RA, each gripper is lowered and raised in turn to check its leaflet<span class="cite" data-ref="hahn2025,onishi2026"></span>.</li>
+        <li><b>Grasping.</b> The arms close to 60° or less, and the clip goes below the valve; the arms open to the grasping angle, the delivery catheter comes back, and the grippers drop onto the leaflets<span class="cite" data-ref="fdap230007c"></span>, slowly and in diastole<span class="cite" data-ref="onishi2026"></span>. 2D views at 0–20° or about 140–160°, the biplane pair from the RV inflow-outflow view with its cursor through the device, or 3D multiplanar reconstruction guide the grasp<span class="cite" data-ref="hahn2025"></span>. The systolic bounce of the grippers may not show on the low-pressure right side<span class="cite" data-ref="hahn2025"></span>; when it shows, it confirms the capture<span class="cite" data-ref="onishi2026"></span>. A tissue bridge on the transgastric short axis or in 3D confirms the insertion; the residual leaflet length, used on the mitral valve, is less reliable here, as the leaflets stretch<span class="cite" data-ref="onishi2026"></span>.</li>
+        <li><b>Assessment.</b> Before release, TEE checks the insertion again, the reduction of TR and the gradient<span class="cite" data-ref="onishi2026"></span>. The 3D vena contracta area grades the residual TR best, as PISA tends to overestimate it with a clip in place<span class="cite" data-ref="hahn2025"></span>. TVARC asks for a mean gradient under 5 mmHg<span class="cite" data-ref="hahn2023"></span>. In the TriValve registry (top quartile 4.7 mmHg), a higher discharge gradient was not associated with death or heart failure hospitalization at 1 year<span class="cite" data-ref="coisne2023"></span>.</li>
+        <li><b>Release.</b> The clip is released, the delivery catheter comes out of it, and the system is withdrawn<span class="cite" data-ref="onishi2026"></span>. In TRILUMINATE, a mean of 2.2 clips was implanted, two or three in about 85% of the patients<span class="cite" data-ref="fdap230007b"></span>; the figure shows the first.</li>
+        </ol>
+        <p>The guidelines show the tricuspid valve en face with the septal leaflet at 6 o'clock, from either side<span class="cite" data-ref="lang2012"></span>, as the figure does. Many interventional imagers skip that turn: the septum is then on the right and the aorta near 5 o'clock<span class="cite" data-ref="hahn2022"></span>.</p>
+        <h3>After the procedure</h3>
+        <p>In TRILUMINATE, 98.3% of the patients treated were free of major adverse events at 30 days: cardiovascular death, new renal failure, endocarditis needing surgery, or surgery for a device problem<span class="cite" data-ref="sorajja2023,fdapanel2024"></span>. Single-leaflet attachment was the main reason for a missed device success in the randomized device arm (11 of 18 patients)<span class="cite" data-ref="fdap230007b"></span>, and occurred in 5 of 72 (7%) in the first single-arm study<span class="cite" data-ref="nickenig2019"></span>. The mean gradient rose by 1.15 mmHg at 12 months with the clip and by 0.07 mmHg without it<span class="cite" data-ref="fdap230007b"></span>. At 2 years, 84% of the device group of all 572 patients had TR of moderate or less<span class="cite" data-ref="kar2025"></span>. In the bRIGHT registry (511 patients), TR was moderate or less in 77% at 30 days and 81% at 1 year<span class="cite" data-ref="lurz2023,lurz2024"></span>.</p>
+        <h3>Key points</h3>
+        <ol class="steps">
+        <li>The clip joins the septal leaflet to the anterior or the posterior leaflet, and the anteroseptal line usually comes first<span class="cite" data-ref="onishi2026,hahn2025"></span>.</li>
+        <li>Residual TR is graded by 3D vena contracta area rather than PISA, and a mean gradient under 5 mmHg is the target<span class="cite" data-ref="hahn2025,hahn2023"></span>.</li>
+        <li>In TRILUMINATE, the repair reduced TR and quality of life improved; death or tricuspid surgery and heart failure hospitalization did not appear to differ at 1 year<span class="cite" data-ref="sorajja2023"></span>.</li>
         </ol>
       </div>
       <div class="quiz"></div>
@@ -2404,7 +2514,7 @@
       <div class="quiz"></div>
     </article>
 
-    <!-- ======================================================== Views: TEE, after Views (src/order.js) -->
+    <!-- ======================================================== Structural heart: TEE, the first chapter of the part (src/order.js) -->
     <article class="chapter" id="ch-tee">
       <div class="ch-head"><span class="ch-num" aria-hidden="true">33</span><div><h2 class="ch-title">Transesophageal echocardiography</h2><p class="ch-kicker">The probe, its movements and the standard views</p></div></div>
       <p class="dek" data-part="dek">Transesophageal echocardiography (TEE) images the heart from the esophagus and the stomach, directly behind the left atrium. Each standard view is set by the level of the probe, its turn and the multiplane angle.</p>

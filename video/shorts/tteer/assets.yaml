@@ -1,0 +1,36 @@
+# T-TEER reel: the 3D assets, their source, their units and the dimensions checked (claim IDs in
+# claims.yaml). tools/blender/export.mjs exports them from the site's own code for each frame, and
+# tools/blender/render.py renders them; both use the same meshes as the chapter's echo panes.
+assets:
+  - name: heart
+    source: assets/heart.json, the echodemo heart mesh (built in Blender 5.0.1; a base64 GLB, meshopt and quantized by gltfpack)
+    units: cm (x to the patient's left, y to the head, z to the front)
+    state: >-
+      the T-TEER chapter (src/ch/tteer.js): the TR heart of the TR chapter (src/ch/tr.js) at its slider's 0.66 (massive TR),
+      with that grade's RV and RA growth, the central coaptation gap (ttGap) and, as the clip
+      holds, the leaflets on its arms (ttGrasp, ttHalf, ttClip; src/gl/tteermesh.js)
+    checked: before, vena contracta 1.6 cm and EROA 0.65 cm2, in the massive grade (C36, C37)
+  - name: clip
+    source: src/gl/clipmesh.js CLIP (shared with the M-TEER chapter), placed by src/gl/tteermesh.js deviceOf
+    units: cm
+    dimensions: {arm_length: 0.9, arm_width: 0.4, gripper_length: 0.72, body_radius: 0.12, body_length: 1.0}
+    checked: the NT size, arms 9 mm long and 4 mm wide (C32). The body and the grippers are not checked against a published dimension.
+  - name: steerable guide catheter
+    source: src/gl/tteermesh.js CATH.guide
+    units: cm
+    dimensions: {outer_diameter: 0.84}
+    checked: 25 Fr shaft, 8.4 mm outer diameter (C34)
+  - name: steerable sleeve
+    source: src/gl/tteermesh.js CATH.sleeve
+    units: cm
+    dimensions: {outer_diameter: 0.53}
+    checked: distal shaft 5.3 mm (C34, note)
+  - name: delivery catheter
+    source: src/gl/clipmesh.js CATH.dc
+    units: cm
+    dimensions: {outer_diameter: 0.24}
+    checked: not checked; no published dimension was found
+  - name: route
+    source: src/gl/tteermesh.js deviceOf (from the IVC, gl/clipmesh.js CAVA, up into the RA, then down to the clip's site)
+    units: cm
+    checked: the femoral vein and the IVC to the RA (C35, C46); the path in the RA is schematic

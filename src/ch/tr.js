@@ -207,6 +207,8 @@ function shown(s) {
   return lastShown;
 }
 export const gradeOf = (s) => measure(modelAt(s)).grade;
+/** The values as reported at slider position s (chapter tteer reads the case's TR before and after the clip). */
+export const valuesAt = (s) => measure(modelAt(s));
 
 // the results: the bold lead of the live sentence, and the line under it in the diagram
 const LEV = { ...LEVEL, indeterminate: 2 };
@@ -893,3 +895,5 @@ const trPage = {
   },
 };
 export default trPage;
+// the CW and hepatic vein strips, for chapter tteer
+export { trCW, hvPW };
