@@ -23,6 +23,7 @@ import rvPage from './ch/rv.js';
 import lvadPage from './ch/lvad.js';
 import hcmPage from './ch/hcm.js';
 import prostheticPage from './ch/prosthetic.js';
+import tavrPage from './ch/tavr.js';
 import shuntsPage from './ch/shunts.js';
 import endocarditisPage from './ch/endocarditis.js';
 import aortaPage from './ch/aorta.js';
@@ -44,7 +45,7 @@ import { ORDER, BONUS_PAGE, BONUS, numOf } from './order.js';
 export { numOf } from './order.js';
 
 const BY = Object.fromEntries([pulse, image, shift, windows, planes, cycle, loop, pressure, eject, segments, fill,
-  asPage, arPage, msPage, mrPage, trPage, prostheticPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, hcmPage, shuntsPage, massesPage, miPage, measurePage, aiPage, teePage, report, bonusPage].map((c) => [c.key, c]));
+  asPage, arPage, msPage, mrPage, trPage, prostheticPage, tavrPage, endocarditisPage, aortaPage, periPage, amyloidPage, strainPage, stressPage, rvPage, lvadPage, hcmPage, shuntsPage, massesPage, miPage, measurePage, aiPage, teePage, report, bonusPage].map((c) => [c.key, c]));
 /**
  * Every chapter shown, in the order back and next step through them: the main chapters in
  * reading order (ORDER), the bonus page (B), then the bonus chapters (BONUS). state.chapter is an

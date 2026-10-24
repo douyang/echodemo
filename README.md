@@ -1,6 +1,6 @@
 # The Heart by Ultrasound
 
-An illustrated, interactive guide to echocardiography. 24 chapters in ten parts follow the order of the ASE guidelines, from ultrasound physics to two AI models that measure and read a study. Six bonus chapters follow in part B. Every echo image is simulated, all but chapter 08's cut from one 3D heart, and every guideline value carries its source.
+An illustrated, interactive guide to echocardiography. 24 chapters in ten parts follow the order of the ASE guidelines, from ultrasound physics to two AI models that measure and read a study. Seven bonus chapters follow in part B. Every echo image is simulated, all but chapter 08's cut from one 3D heart, and every guideline value carries its source.
 
 **Site:** <https://intro2echo.com>
 
@@ -36,12 +36,13 @@ An illustrated, interactive guide to echocardiography. 24 chapters in ten parts 
 | X Artificial intelligence | 24 AI interpretation and measurement | EchoPrime and EchoNet-Measurements on one simulated study, in seven steps, then the report's 15 sections |
 | B Bonus | B1 Left ventricular assist devices | A HeartMate 3 from 4,600 to 6,200 rpm; RV failure, de novo AR, outflow graft obstruction |
 | | B2 Prosthetic valves | A 23-mm aortic prosthesis from normal to significant stenosis; prosthesis–patient mismatch |
-| | B3 Infective endocarditis | A mitral vegetation up to 22 mm, then leaflet perforation with MR |
-| | B4 Shunts: ASD, VSD and PFO | Small to large shunts; the saline study; the LA pressure across a restrictive atrial communication |
-| | B5 Cardiac masses and thrombus | Left atrial myxoma, LV thrombus, papillary fibroelastoma |
-| | B6 Complications of myocardial infarction | Septal rupture, papillary muscle rupture, free-wall rupture with pseudoaneurysm, apical aneurysm |
+| | B3 Transcatheter aortic valve replacement | TEE guidance of a balloon-expandable or a self-expanding valve in four steps: measure, cross, deploy, check. Paravalvular regurgitation from none to severe; the VARC-3 intended performance |
+| | B4 Infective endocarditis | A mitral vegetation up to 22 mm, then leaflet perforation with MR |
+| | B5 Shunts: ASD, VSD and PFO | Small to large shunts; the saline study; the LA pressure across a restrictive atrial communication |
+| | B6 Cardiac masses and thrombus | Left atrial myxoma, LV thrombus, papillary fibroelastoma |
+| | B7 Complications of myocardial infarction | Septal rupture, papillary muscle rupture, free-wall rupture with pseudoaneurysm, apical aneurysm |
 
-Chapters 10, 13 to 23 and B2 to B6 each follow one disease or one load from normal to its end stage. B1 follows an LVAD through its pump speeds.
+Chapters 10, 13 to 23, B2 and B4 to B7 each follow one disease or one load from normal to its end stage. B1 follows an LVAD through its pump speeds, and B3 a TAVR through its steps.
 
 Hidden chapters keep their code and come back with a flag in `src/order.js`: the report (`SHOW_REPORT`), Planes (`SHOW_PLANES`), Automated measurements (`SHOW_MEASURE`) and Shock (`SHOW_SHOCK`). Constriction and the IVC were chapters of their own (`SHOW_CONSTRICT`, `SHOW_IVC`); 21 and 08 now show them. In 14, the PH calculator and the ESC/ERS probability of PH are hidden (`SHOW_CALC` and `SHOW_PROB` in `src/ch/rv.js`).
 
@@ -55,8 +56,8 @@ Hidden chapters keep their code and come back with a flag in `src/order.js`: the
 | ![17 Mitral stenosis](docs/screenshots/ms.webp) | ![18 Mitral regurgitation](docs/screenshots/mr.webp) | ![19 Tricuspid regurgitation](docs/screenshots/tr.webp) |
 | ![20 Diseases of the aorta](docs/screenshots/aorta.webp) | ![21 Pericardial disease](docs/screenshots/peri.webp) | ![22 Hypertrophic cardiomyopathy](docs/screenshots/hcm.webp) |
 | ![23 Cardiac amyloidosis](docs/screenshots/amyloid.webp) | ![24 AI interpretation and measurement](docs/screenshots/ai.webp) | ![B1 Left ventricular assist devices](docs/screenshots/lvad.webp) |
-| ![B2 Prosthetic valves](docs/screenshots/prosthetic.webp) | ![B3 Infective endocarditis](docs/screenshots/endocarditis.webp) | ![B4 Shunts: ASD, VSD and PFO](docs/screenshots/shunts.webp) |
-| ![B5 Cardiac masses and thrombus](docs/screenshots/masses.webp) | ![B6 Complications of myocardial infarction](docs/screenshots/mi.webp) | |
+| ![B2 Prosthetic valves](docs/screenshots/prosthetic.webp) | ![B3 Transcatheter aortic valve replacement](docs/screenshots/tavr.webp) | ![B4 Infective endocarditis](docs/screenshots/endocarditis.webp) |
+| ![B5 Shunts: ASD, VSD and PFO](docs/screenshots/shunts.webp) | ![B6 Cardiac masses and thrombus](docs/screenshots/masses.webp) | ![B7 Complications of myocardial infarction](docs/screenshots/mi.webp) |
 
 ## Use
 
