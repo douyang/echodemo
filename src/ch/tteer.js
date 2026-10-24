@@ -1,4 +1,4 @@
-// Tricuspid transcatheter edge-to-edge repair (T-TEER) with a clip (the TriClip), by the
+// Tricuspid transcatheter edge-to-edge repair (T-TEER) with a clip, by the
 // transfemoral venous route. One slider steps through the procedure, and the figure is the screen
 // that the interventional echocardiographer reads at each step. The case is massive secondary TR
 // with a central coaptation gap (gl/tteermesh.js ttGap), in the dilated RV and RA of chapter
@@ -817,13 +817,13 @@ function liveOf(k, cite) {
     case 'before':
       return `<b>Massive secondary TR.</b> The RV and the annulus are dilated, and the leaflets no longer meet: a central gap lets a wide jet into the RA. Vena contracta ${fmt(BEFORE.vc, 1)} cm, PISA EROA ${fmt(BEFORE.eroa, 2)} cm², in the massive grade of the five-grade scale${cite('hahn2023')}; the hepatic veins show systolic flow reversal${cite('zoghbi2017')}.`;
     case 'guide':
-      return `<b>Guide in the RA.</b> From the femoral vein, the steerable guide comes up the IVC into the RA${cite('fdap230007c')}. Here the four-chamber and RV inflow-outflow views show its tip above the valve; the bicaval view keeps it clear of the septum, the Eustachian valve and leads${cite('hahn2025')}.`;
+      return `<b>Guide in the RA.</b> From the femoral vein, the steerable guide comes up the IVC into the RA${cite('onishi2026,hahn2025')}. Here the four-chamber and RV inflow-outflow views show its tip above the valve; the bicaval view keeps it clear of the septum, the Eustachian valve and leads${cite('hahn2025')}.`;
     case 'steer':
       return `<b>Steering.</b> The delivery system flexes down toward the valve, over the anteroseptal line of coaptation${cite('hahn2025')}. The X-plane from the mid-esophagus shows the clip along the line and across it.`;
     case 'align':
-      return `<b>Alignment.</b> In the RA the arms open to about 180°${cite('fdap230007c')}, and the clip turns until the arms are square to the anteroseptal line. The 3D en face view shows the turn most accurately, and the transgastric short axis checks it${cite('hahn2025')}.`;
+      return `<b>Alignment.</b> In the RA the arms open, and the clip turns until they are square to the anteroseptal line${cite('onishi2026')}. The 3D en face view shows the turn most accurately, and the transgastric short axis checks it${cite('hahn2025')}.`;
     case 'grasp':
-      return `<b>Grasping.</b> The arms close to 60° or less, and the clip goes below the valve into the RV. The arms open to the grasping angle, the clip comes back under the anterior and septal leaflets, and the grippers drop${cite('fdap230007c')}. The X-plane shows both leaflets on the arms before the clip closes${cite('hahn2025')}.`;
+      return `<b>Grasping.</b> The clip is closed and goes below the valve into the RV. The arms open to 120–150°, the clip comes back under the anterior and septal leaflets, and the grippers drop${cite('onishi2026')}. The X-plane shows both leaflets on the arms before the clip closes${cite('hahn2025')}.`;
     case 'assess':
       return `<b>Assessment before release.</b> One jet remains, through the gap beside the clip: ${gradeWord(AFTER)} TR, vena contracta ${fmt(AFTER.vc, 1)} cm. The 3D vena contracta area grades it better than PISA, which tends to overestimate it with a clip in place${cite('hahn2025')}. The mean gradient is ${fmt(MG.after, 1)} mmHg at ${HR} bpm; TVARC asks for less than 5 mmHg${cite('hahn2023')}.`;
     case 'release':

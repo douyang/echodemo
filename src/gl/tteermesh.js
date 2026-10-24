@@ -47,9 +47,9 @@ const turn = (v, k, th) => {
 /** The clip (gl/clipmesh.js CLIP, the NT size) and the catheters' radii. */
 export const CLIP = CM.CLIP;
 /**
- * The catheters' radii (cm): the TriClip G4 steerable guide catheter has a 25 Fr shaft, 8.4 mm
- * across, and the steerable sleeve's distal shaft is 5.3 mm (the instructions for use); the
- * delivery catheter and the rest as in gl/clipmesh.js.
+ * The catheters' radii (cm): the steerable guide catheter has a 25 Fr shaft, 8.4 mm across, and
+ * the steerable sleeve's distal shaft is 5.3 mm (a manufacturer's labeling, src/refs.js
+ * fdap230007c); the delivery catheter and the rest as in gl/clipmesh.js.
  */
 export const CATH = { ...CM.CATH, guide: 0.42, sleeve: 0.265 };
 /** The leaflets: 0 anterior, 1 septal, 2 posterior. */
