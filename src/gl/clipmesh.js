@@ -824,12 +824,15 @@ export function deviceOf(site, punct, pose0, motion = null, sept = null, cava = 
   let route = spline([[-2.0, -15.5, -2.0], [-2.5, -8.5, -0.6], [-2.9, -5.6, 1.4], Ein, lerp(M, near, 0.35), near, S], 8);
   // clear: the walls' clearance (a function of a point and the room it needs, that gives the
   // point moved off the walls); the route keeps to the lumen of the IVC and the RA, but for its
-  // last 1.4 cm, where it meets the septum. A pass of smoothing takes out the kinks.
+  // last 1.4 cm, where it meets the septum. Eight rounds of clearance and smoothing take out the
+  // kinks; the smoothing reaches to 0.7 cm from the septum. With fewer rounds, and the smoothing
+  // on the cleared points only, the clearance bunched the points near the 1.4 cm mark, and the
+  // tube showed a joint there.
   if (clear) {
-    const room = CATH.guide + 0.15, free = (p) => len(sub(p, S)) > 1.4;
-    for (let it = 0; it < 3; it++) {
+    const room = CATH.guide + 0.15, free = (p) => len(sub(p, S)) > 1.4, soft = (p) => len(sub(p, S)) > 0.7;
+    for (let it = 0; it < 8; it++) {
       route = route.map((p) => (free(p) ? clear(p, room) : p));
-      if (it < 2) route = route.map((p, i) => (i === 0 || i === route.length - 1 || !free(p) ? p : mul(add(add(route[i - 1], route[i + 1]), mul(p, 2)), 0.25)));
+      if (it < 7) route = route.map((p, i) => (i === 0 || i === route.length - 1 || !soft(p) ? p : mul(add(add(route[i - 1], route[i + 1]), mul(p, 2)), 0.25)));
     }
   }
   // the guide's reach past the septum into the LA: 1.6 cm when across, less as it is drawn back
@@ -850,7 +853,8 @@ export function deviceOf(site, punct, pose0, motion = null, sept = null, cava = 
   // the guide from the IVC, through the septum, to its tip in the LA; drawn back past the
   // septum it ends in the RA, then in the IVC
   const guidePath = reach > 0.05 ? [...route, G] : trim(route, 0, 1 - 0.45 * back);
-  parts.guide = tube(guidePath, (u) => (u > 0.9 ? CATH.guide : CATH.guide * 1.09));
+  // the guide's last tenth is a little thinner: a taper, not a step
+  parts.guide = tube(guidePath, (u) => CATH.guide * (1 + 0.09 * (1 - smooth((u - 0.86) / 0.08))));
   // a clip that holds the leaflets stays on them when the guide comes back; none is out before
   const held = clamp(pose.cap, 0, 1) >= 0.999;
   if (reach <= 0.05 && !held) return { parts, clip: null, path: guidePath };
