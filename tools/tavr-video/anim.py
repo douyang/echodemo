@@ -186,6 +186,9 @@ class Rig:
         self.proglide = self.obj('ProGlide', self.t_proglide.verts(0, 1, 0.21), self.t_proglide.F, 'hub')
         self.t_glow = D.RailTube(ra, 900, 16)
         self.glow = self.obj('Glow', self.t_glow.verts(0, 1, 0.42), self.t_glow.F, 'glow')
+        # the pacing shot: the lead's course lit, as the arterial route in the title
+        self.t_lglow = D.RailTube(rc, 700, 12)
+        self.lglow = self.obj('LeadGlow', self.t_lglow.verts(0, 1, 0.3), self.t_lglow.F, 'glow')
         # rigid parts, built straight on local z and laid on the rail each frame
         Vb, Fb = G.revolve(D.balloon_profile(0), 48)
         self.balloon = self.obj('Balloon', Vb, Fb, 'balloon')
@@ -586,6 +589,13 @@ class Rig:
         mats.set_alpha(self.M['aorta'], aorta_a)
         mats.set_alpha(self.M['artery'], art_a)
         mats.set_alpha(self.M['vein'], max(art_a, 0.5) if body_on else min(1.0, heart_a + 0.2))
+        # the pacing lead lit along its course while it goes in; the veins clear round it
+        lit = shot == 'pacing' and st['lead']
+        self.show(self.lglow, lit)
+        if lit:
+            mats.set_alpha(self.M['vein'], 0.3)
+            scene.set_verts(self.lglow, self.t_lglow.verts(self.s_skin_c - 4.0, st['lead_tip'], 0.3))
+            self.M['glow'].node_tree.nodes['glow'].outputs[0].default_value = 0.5
         for m in self.cut_mods:
             m.show_render = m.show_viewport = cut
         # in the cutaway, the tubes below the heart and the pacing lead in the (cut) RV would float
