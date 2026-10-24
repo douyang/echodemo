@@ -19,7 +19,7 @@ assets:
     source: src/gl/tteermesh.js CATH.guide
     units: cm
     dimensions: {outer_diameter: 0.84}
-    checked: 25 Fr shaft, 8.4 mm outer diameter (C34)
+    checked: 25 Fr shaft (C34); the 8.4 mm outer diameter is from the labeling (C34 note)
   - name: steerable sleeve
     source: src/gl/tteermesh.js CATH.sleeve
     units: cm
