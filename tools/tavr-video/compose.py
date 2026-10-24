@@ -94,7 +94,18 @@ SHOTS = [
     dict(f0=1573, f1=1723, kind='effusion', t0=65.4),
     dict(f0=1723, f1=TOTAL, kind='blender', label='Right femoral artery'),
 ]
-EYE = 'B3 · TAVR'
+
+
+def chapter_number(key):
+    """The chapter's number as the site prints it (src/order.js numOf): 18, or B3 for a bonus
+    chapter. The chapter videos print it on their cards and captions (video/chapter.js)."""
+    js = f"import('./src/order.js').then((m) => console.log(m.numOf('{key}')))"
+    out = subprocess.run(['node', '--input-type=module', '-e', js], cwd=REPO, capture_output=True, text=True, check=True)
+    return out.stdout.strip()
+
+
+NUM = chapter_number('tavr')
+EYE = f'{NUM} · TAVR'
 ACC = 'Hadidi OF, Nguyen TC. ACC TAVR Handbook, ch. 10, 2018'
 IFU = 'SAPIEN 3 instructions for use, FDA P140031/S085'
 CAPTIONS = [
@@ -130,7 +141,7 @@ CAPTIONS = [
     (1723, 'Closure',
      'The sheath comes out; the preplaced sutures close the artery.', ACC),
 ]
-CARD_EYE, CARD_TITLE = 'B3 · Procedure', 'TAVR'
+CARD_EYE, CARD_TITLE = f'{NUM} · Structural heart', 'TAVR'     # the chapter's part (src/ch/tavr.js)
 CARD_SUB = 'A balloon-expandable valve, from the groin to the annulus, with the TEE views that guide it.'
 
 # the monitor in the deployment (the first cut's Blender clock, s): anim.py there

@@ -647,9 +647,17 @@ export const VIDEOS = {
   // (src/teemoves.js): each move out and back across its hold, then all five together. The six
   // steps share one place on the progress line, and the move out of them holds the probe again
   // from its start (via)
-  // B3 TAVR: the balloon-expandable valve through the four steps with no leak (the deployment in
-  // two moves: up to the balloon's inflation, then the inflation), then the self-expanding valve
-  // and its check through each grade of paravalvular regurgitation, as the chapter's tour runs.
+  tee: {
+    // no pane name: the figure's own labels name its halves (the probe and plane, and the view)
+    pane: '',
+    side: false,
+    quant: { teeAngle: 1 },
+    steps: TEE_FREE ? TEE_ALL : TEE_BASIC,
+  },
+  // Transcatheter aortic valve replacement: the balloon-expandable valve through the four steps
+  // with no leak (the deployment in two moves: up to the balloon's inflation, then the inflation),
+  // then the self-expanding valve and its check through each grade of paravalvular regurgitation,
+  // as the chapter's tour runs.
   tavr: {
     pane: '',
     side: false,
@@ -666,13 +674,6 @@ export const VIDEOS = {
       { set: { tavrLeak: 'moderate' }, track: 'Moderate', pick: [0, 1], hold: 5 },
       { set: { tavrLeak: 'severe' }, track: 'Severe', pick: [0, 1], hold: 5 },
     ],
-  },
-  tee: {
-    // no pane name: the figure's own labels name its halves (the probe and plane, and the view)
-    pane: '',
-    side: false,
-    quant: { teeAngle: 1 },
-    steps: TEE_FREE ? TEE_ALL : TEE_BASIC,
   },
 };
 
