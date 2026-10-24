@@ -1,23 +1,22 @@
-"""Soundtrack of a cut of the "Echo views" video, scored to the InVision sound brand (the
-invision-sound skill) with its reference engine (synth.py). It reads the cut's timeline
-(events.mjs, from video/timeline.js), so each cue sits on the frame of its event:
+"""Soundtrack of a cut of the "Echo views" video, scored with the engine in synth.py. It reads
+the cut's timeline (events.mjs, from video/timeline.js), so each cue sits on the frame of its event:
   - title card: one heartbeat on the first beat the trace draws, a whoosh as the title rises and
     one for the line under it, a C pad that swells, a riser into the tour;
   - tour: the heart's tempo (70 a minute; the beat grid falls on mitral closure, so the kick is
-    the heartbeat), C major I-V-vi-IV, one chord to a view and back to C with each window; the
-    brand's pad, sub, kick, off-beat hats and plucked arpeggio with a dotted-eighth echo; the pad
+    the heartbeat), C major I-V-vi-IV, one chord to a view and back to C with each window; a
+    pad, sub, kick, off-beat hats and plucked arpeggio with a dotted-eighth echo; the pad
     brightens window by window, and the last two windows add sixteenth hats;
-  - a new window: a riser over the move, then the brand's rising fourth G5-C6 ("value lands")
-    and a light accent as its first view arrives;
-  - any other view: one soft bell (the brand's single mark) on a note of its chord;
+  - a new window: a riser over the move, then a rising fourth, G5-C6, and a light accent as its
+    first view arrives;
+  - any other view: one soft bell on a note of its chord;
   - the beat before the end card drops the kick and the sub;
-  - end card: the sound logo (Cmaj9; the shimmer G5-B5-E6 as the title rises; the heartbeat on
-    the last beat), then the 0.6 s fade.
-A fixed seed per cut, so a mix rebuilds exactly. Loudness -15 LUFS with the brand's linear
-two-pass normalization (loudnorm2.py), true peak -2.5 dBTP, so AAC (which raises the peak by up to
-1 dB) stays under the brand's -1 dBTP. At this tempo the bed is sparser than the films' 120 BPM,
-so the hits stand higher over it: a look-ahead true-peak limiter takes the few hits above the
-ceiling down first, else the normalization would leave linear mode and lift the quiet title card.
+  - end card: Cmaj9, a shimmer (G5-B5-E6) as the title rises and the heartbeat on the last
+    beat, then the 0.6 s fade.
+A fixed seed per cut, so a mix rebuilds exactly. Loudness -15 LUFS with linear two-pass
+normalization (loudnorm2.py), true peak -2.5 dBTP, so AAC (which raises the peak by up to 1 dB)
+stays under -1 dBTP. At this tempo the bed is sparser than at 120 BPM, so the hits stand higher
+over it: a look-ahead true-peak limiter takes the few hits above the ceiling down first, else the
+normalization would leave linear mode and lift the quiet title card.
   python3 tools/score/score.py A video/out/echo-views-A.wav
 """
 import json
@@ -37,7 +36,7 @@ from synth import chime, heartbeat, hat, impact, kick, mtof, pad_note, place, pl
 SEEDS = {'A': 7101, 'B': 7102, 'C': 7103, 'D': 7104}
 LUFS, TP = -15.0, -2.5
 
-# the brand's chords (score_helpers.py CH): pad notes, sub root, arpeggio notes (MIDI)
+# the chords: pad notes, sub root, arpeggio notes (MIDI)
 CH = {
     'C': ([48, 52, 55, 60, 64], 36, [72, 76, 79, 83, 84]),
     'G': ([43, 50, 55, 59, 62], 31, [67, 71, 74, 79, 83]),
@@ -45,8 +44,8 @@ CH = {
     'F': ([41, 48, 53, 57, 60], 29, [65, 69, 72, 76, 77]),
 }
 PROG = ['C', 'G', 'Am', 'F']
-# the single mark of each chord: the brand's single-mark notes (A4, C5, E5, G5) in the chord; on G,
-# E5 first (G6): the G chord's arpeggio plays G5 itself
+# the bell notes of each chord: those of A4, C5, E5 and G5 in the chord; on G, E5 first (G6): the
+# G chord's arpeggio plays G5 itself
 BELL = {'C': [79, 76], 'G': [76, 79], 'Am': [76, 69], 'F': [72, 69]}
 ARP = [0, 2, 1, 3, 2, 4, 3, 1]
 CMAJ9 = [48, 52, 55, 59, 62, 67]
@@ -168,7 +167,7 @@ def score(cut, out):
             place(hat(0.016, 1.0), tb + B / 4, -0.3, 0.05)
             place(hat(0.016, 1.0), tb + 3 * B / 4, -0.3, 0.045)
 
-    # ---------------------------------------------------------------- end card: the sound logo
+    # ---------------------------------------------------------------- end card
     hold = T['duration'] - t_end
     place(impact(1.0, 0.9), t_end, 0.0, 0.8, rev=0.45)
     place(kick(1.0), t_end, 0.0, 0.68)
