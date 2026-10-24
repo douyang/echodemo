@@ -479,8 +479,12 @@ function cwPanel(ctx, P, v) {
   const k = (bx.h * Math.max(base, 1 - base)) / vs, y0 = bx.y + bx.h * base, X = (ms) => bx.x + (ms / (2 * RR)) * bx.w;
   const tPk = EV.avo + v.atet * T, xPk = X(tPk), yPk = y0 + v.vmax * k;
   caliper(ctx, xPk - 10, yPk, xPk + 10, yPk, { solid: true });
-  tagBox(ctx, xPk + 14, yPk, [bx.w < 300 ? `${v.vmax.toFixed(1)}` : `${v.vmax.toFixed(1)} m/s`], { size: 10.5, bounds: bx });
-  note(ctx, bx, [`VTI ${v.vtiA.toFixed(1)} cm · mean ${v.mg} mmHg${leak ? ` · PHT ${v.L.pht} ms` : ''}`, `mean ${v.mg} mmHg`], 'bottom');
+  const tag = tagBox(ctx, xPk + 14, yPk, [bx.w < 300 ? `${v.vmax.toFixed(1)}` : `${v.vmax.toFixed(1)} m/s`], { size: 10.5, bounds: bx });
+  // the note stays at the foot of the strip, clear of the peak's tag (a native jet near the scale's
+  // end puts the tag there): left, else right
+  const head = { x0: bx.x, x1: bx.x + bx.w, y0: bx.y, y1: y0 + 6 };
+  note(ctx, bx, [`VTI ${v.vtiA.toFixed(1)} cm · mean ${v.mg} mmHg${leak ? ` · PHT ${v.L.pht} ms` : ''}`, `mean ${v.mg} mmHg`], 'auto',
+    [head, { x0: tag.x, x1: tag.x + tag.w, y0: tag.y, y1: tag.y + tag.h }]);
   return bx;
 }
 
