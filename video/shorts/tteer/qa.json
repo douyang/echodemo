@@ -5,12 +5,12 @@
    {
     "check": "duration",
     "pass": true,
-    "detail": "77.10 s, planned 77.10 s (window 60-90 s)"
+    "detail": "76.80 s, planned 76.80 s (window 60-90 s)"
    },
    {
     "check": "frames",
     "pass": true,
-    "detail": "2313 frames at 30.00 fps, planned 2313"
+    "detail": "2304 frames at 30.00 fps, planned 2304"
    },
    {
     "check": "size",
@@ -25,7 +25,7 @@
    {
     "check": "true peak",
     "pass": true,
-    "detail": "-1.7 dBTP (ceiling -1.0)"
+    "detail": "-1.6 dBTP (ceiling -1.0)"
    },
    {
     "check": "caption coverage",
@@ -61,12 +61,12 @@
    {
     "check": "duration",
     "pass": true,
-    "detail": "77.10 s, planned 77.10 s (window 60-90 s)"
+    "detail": "76.80 s, planned 76.80 s (window 60-90 s)"
    },
    {
     "check": "frames",
     "pass": true,
-    "detail": "2313 frames at 30.00 fps, planned 2313"
+    "detail": "2304 frames at 30.00 fps, planned 2304"
    },
    {
     "check": "size",
@@ -81,7 +81,7 @@
    {
     "check": "true peak",
     "pass": true,
-    "detail": "-3.0 dBTP (ceiling -1.0)"
+    "detail": "-3.1 dBTP (ceiling -1.0)"
    },
    {
     "check": "caption time",

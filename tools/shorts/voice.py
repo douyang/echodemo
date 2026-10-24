@@ -3,10 +3,12 @@ its characters, for the captions that follow the voice (tools/shorts/compose.py)
 
   python3 tools/shorts/voice.py video/shorts/tteer/script.yaml video/out/shorts/tteer/audio
 
-Writes <out>/<beat>.wav (48 kHz mono, one clip a beat), <out>/words.json (each beat's caption
-words with their start and end in s from the clip's start) and <out>/ledger.json (the characters
-sent and their estimated price). A line may give [shown|spoken]: the caption shows the first, the
-voice says the second ("[TEE|T E E]").
+Writes <out>/<beat>.raw.wav (48 kHz mono, the clip as delivered), <out>/<beat>.wav (the clip with
+the beat's tempo edits: `faster: {TEE: 1.5}` says that word faster), <out>/words.json (each beat's
+caption words with their start and end in s from the clip's start) and <out>/ledger.json (the
+characters sent and their estimated price). A line may give [shown|spoken]: the caption shows the first, the
+voice says the second ("[TEE|T E E]"). A beat's `seed: 33` asks the API for the same clip on each run
+(ElevenLabs gives this on a best-effort basis); the seed is part of the clip's hash.
 
 The API key comes from $ELEVENLABS_API_KEY or ~/.config/elevenlabs/key, never from the repository.
 A clip whose text, voice and model have not changed is not sent again (its hash is in the ledger).
@@ -19,6 +21,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import urllib.request
@@ -93,6 +96,41 @@ def spoken_words(alignment):
     return words
 
 
+def faster(raw, wav, cap, edits):
+    """The clip with some words spoken faster: edits maps a caption word to a tempo (1.5 says it
+    in two thirds of its time, at the same pitch). The span of each such word is cut out and
+    played faster (ffmpeg atempo), and the caption times after it move earlier. Without edits,
+    the clip as delivered."""
+    spans = []
+    for w, f in edits.items():
+        hit = next((c for c in cap if c[0].strip(',.;:') == w), None)
+        if hit is None:
+            raise SystemExit(f'faster: no word {w!r} in the line')
+        spans.append((hit[1], hit[2], float(f)))
+    if not spans:
+        shutil.copyfile(raw, wav)
+        return cap
+    spans.sort()
+    parts, t, n = [], 0.0, 0
+    for a, b, f in spans:
+        parts.append(f'[0]atrim={t:.4f}:{a:.4f},asetpts=N/SR/TB[p{n}]')
+        parts.append(f'[0]atrim={a:.4f}:{b:.4f},asetpts=N/SR/TB,atempo={f:.4f}[p{n + 1}]')
+        t, n = b, n + 2
+    parts.append(f'[0]atrim=start={t:.4f},asetpts=N/SR/TB[p{n}]')
+    chain = ';'.join(parts) + ';' + ''.join(f'[p{k}]' for k in range(n + 1)) + f'concat=n={n + 1}:v=0:a=1[out]'
+    subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', raw, '-filter_complex', chain, '-map', '[out]', '-ar', '48000', '-ac', '1', wav], check=True)
+
+    def move(x):
+        d = 0.0
+        for a, b, f in spans:
+            if x >= b:
+                d += (b - a) * (1 - 1 / f)
+            elif x > a:
+                d += (x - a) * (1 - 1 / f)
+        return round(x - d, 3)
+    return [[w, move(t0), move(t1)] for w, t0, t1 in cap]
+
+
 def main(script_path, out):
     S = load(script_path)
     os.makedirs(out, exist_ok=True)
@@ -106,10 +144,14 @@ def main(script_path, out):
         if not text:
             continue
         shown, spoken, groups = parse(text)
-        h = hashlib.sha256(json.dumps([spoken, voice, model, settings]).encode()).hexdigest()[:16]
+        seed = beat.get('seed')
+        h = hashlib.sha256(json.dumps([spoken, voice, model, settings] + ([seed] if seed is not None else [])).encode()).hexdigest()[:16]
         wav = os.path.join(out, f"{beat['id']}.wav")
+        raw = os.path.join(out, f"{beat['id']}.raw.wav")
         meta = os.path.join(out, f"{beat['id']}.json")
-        cached = os.path.exists(wav) and os.path.exists(meta) and json.load(open(meta)).get('hash') == h
+        if os.path.exists(wav) and not os.path.exists(raw):
+            os.replace(wav, raw)           # a clip from before the tempo edits is the clip as delivered
+        cached = os.path.exists(raw) and os.path.exists(meta) and json.load(open(meta)).get('hash') == h
         if not cached:
             price = len(spoken) * RATE / 1000
             if ledger['spent'] + price > CAP + 1e-9:
@@ -117,16 +159,19 @@ def main(script_path, out):
             ledger['spent'] = round(ledger['spent'] + price, 4)
             ledger['calls'].append({'beat': beat['id'], 'chars': len(spoken), 'price': round(price, 4), 'hash': h})
             json.dump(ledger, open(led_path, 'w'), indent=1)
-            body = json.dumps({'text': spoken, 'model_id': model, 'voice_settings': settings}).encode()
+            payload = {'text': spoken, 'model_id': model, 'voice_settings': settings}
+            if seed is not None:
+                payload['seed'] = seed
+            body = json.dumps(payload).encode()
             req = urllib.request.Request(API.format(voice=voice), data=body, method='POST',
                                          headers={'xi-api-key': key(), 'Content-Type': 'application/json', 'Accept': 'application/json'})
             with urllib.request.urlopen(req, timeout=120) as r:
                 res = json.loads(r.read())
             mp3 = os.path.join(out, f"{beat['id']}.mp3")
             open(mp3, 'wb').write(base64.b64decode(res['audio_base64']))
-            subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', mp3, '-ar', '48000', '-ac', '1', wav], check=True)
+            subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', mp3, '-ar', '48000', '-ac', '1', raw], check=True)
             os.remove(mp3)
-            json.dump({'hash': h, 'alignment': res.get('alignment'), 'spoken': spoken}, open(meta, 'w'))
+            json.dump({'hash': h, 'alignment': res.get('alignment'), 'spoken': spoken, 'seed': seed}, open(meta, 'w'))
             print(f"{beat['id']}: {len(spoken)} characters, ${price:.3f}; total ${ledger['spent']:.2f} of ${CAP:.2f}")
         else:
             print(f"{beat['id']}: cached")
@@ -139,6 +184,7 @@ def main(script_path, out):
             if not seg:
                 continue
             cap.append([w, round(seg[0][1], 3), round(seg[-1][2], 3)])
+        cap = faster(raw, wav, cap, beat.get('faster', {}))
         dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', wav], capture_output=True, text=True, check=True).stdout)
         words_out[beat['id']] = {'words': cap, 'dur': round(dur, 3)}
     json.dump(words_out, open(os.path.join(out, 'words.json'), 'w'), indent=1)

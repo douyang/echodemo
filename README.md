@@ -117,6 +117,7 @@ src/refs.js       references
 src/idbcache.js   the model's fields in IndexedDB, from one visit to the next
 assets/           heart mesh, landmarks, valve hinges, poster, favicon
 video/            the views video, the chapter videos and the intro
+video/renders/    the T-TEER chapter video and reel cuts, kept in git
 tools/            checks and video tools; tools/score/ the soundtracks, tools/voice/ the voice-over,
                   tools/blender/ the M-TEER and T-TEER procedure frames (Python),
                   tools/shorts/ the vertical explainer reels
@@ -143,7 +144,7 @@ Every chapter loads about 115 files: 7.9 MB, or 4.1 MB with gzip, of which the h
 
 ## Videos
 
-The site's own code draws every video in headless Chromium. The soundtrack is *Bright pulse* (`tools/score/pulse.py`), synthesized with the InVision sound engine at −15 LUFS. The videos go to `video/out/`, which git ignores.
+The site's own code draws every video in headless Chromium. The soundtrack is *Bright pulse* (`tools/score/pulse.py`), synthesized with the InVision sound engine at −15 LUFS. The videos go to `video/out/`, which git ignores. `video/renders/` keeps the T-TEER chapter video and the two T-TEER reel cuts in git, with the reel's storyboard and Blender frame sheet. A `git pull` gets them. Cloudflare Pages deploys the whole repository and rejects any file over 25 MiB, so each file in `video/renders/` must stay under that size.
 
 - **Views video** (`video/index.html`): the standard views of 04 in three panes. Cut A, the full tour (2:24); B, the core views with the nine planes (1:09), the video of chapter 04; C, a quick cut (0:38); D, vertical (1:06).
 - **Chapter videos** (`video/chapter.html?ch=<key>`): one for each chapter, 0:39 to 2:16. The steps and captions are in `video/chapters.js`.
@@ -188,6 +189,19 @@ python3 tools/shorts/music.py video/shorts/tteer/script.yaml
 python3 tools/shorts/compose.py render video/shorts/tteer/script.yaml
 python3 tools/shorts/compose.py render video/shorts/tteer/script.yaml --novoice
 python3 tools/shorts/qa.py video/shorts/tteer/script.yaml video/out/shorts/tteer/out/tteer-voice.mp4
+python3 tools/shorts/qa.py video/shorts/tteer/script.yaml video/out/shorts/tteer/out/tteer-novoice.mp4 --novoice
+python3 tools/shorts/compose.py storyboard video/shorts/tteer/script.yaml
+```
+
+To update `video/renders/`, copy the reel files and encode the chapter video again. A two-pass encode at 1.9 Mb/s from the CRF 16 master keeps the chapter video under the 25 MiB limit:
+
+```
+cp video/out/shorts/tteer/out/tteer-voice.mp4 video/out/shorts/tteer/out/tteer-novoice.mp4 video/renders/
+cp video/out/shorts/tteer/out/storyboard.png video/renders/tteer-storyboard.png
+cp video/out/shorts/tteer/out/frames3d.png video/renders/tteer-frames3d.png
+X="-c:v libx264 -preset slow -b:v 1900k -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 -color_range tv"
+ffmpeg -y -i video/out/chapter-tteer.mp4 $X -pass 1 -an -f mp4 /dev/null
+ffmpeg -y -i video/out/chapter-tteer.mp4 $X -pass 2 -c:a copy -movflags +faststart video/renders/chapter-tteer.mp4
 ```
 
 Rendering needs Node 22, Playwright with Chromium, ffmpeg, and Python 3 with numpy and scipy. The M-TEER frames need Blender's Python module (`pip install bpy`); the voice-over needs soundfile and an ElevenLabs API key, or, with the engine `kokoro`, kokoro-onnx and faster-whisper with their models (`tools/voice/vo.py`).

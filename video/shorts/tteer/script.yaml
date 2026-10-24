@@ -2,6 +2,9 @@
 # voice differ), its words on screen (7 or fewer), its claims (claims.yaml), its 3D shot and its
 # panes. The voice sets the times: a beat starts `lead` s before its line and ends `gap` s after
 # it, or at its `min` length (tools/shorts/compose.py writes the times to <cut>.cues.json).
+# faster: {word: tempo} says a word faster than the voice gave it (tools/shorts/voice.py).
+# seed: the ElevenLabs seed of a beat's clip. Route: "kayvuh" with seed 33 gave VEE-nuh KAY-vuh;
+#       a phoneme model (wav2vec2, espeak IPA) and the formants of each vowel checked it.
 #
 # shot: {frame: <name>, zoom: [from, to]} holds one Blender frame (video/out/shorts/tteer/frames3d)
 #       with a slow push; {chapter: k} follows the chapter video from the move into step k, so the
@@ -39,7 +42,8 @@ beats:
     labels: [{mark: Q0, text: Tricuspid valve, dx: 70, dy: -120}, {mark: ra, text: Right atrium, dx: -50, dy: -130}]
     source: "Simulated TTE · grading: TVARC 2023"
   - id: route
-    voice: "The TriClip enters the femoral vein. A 25 French guide carries it up the inferior vena cava into the right atrium."
+    voice: "The TriClip enters the femoral vein. A 25 French guide carries it up the [inferior vena cava|inferior vena kayvuh] into the right atrium."
+    seed: 33
     onscreen: "Femoral vein to the right atrium"
     claims: [C35, C34, C46]
     shot: {chapter: 1}
@@ -48,6 +52,7 @@ beats:
     source: "Simulated TEE · TriClip G4 IFU; Hahn 2025"
   - id: steer
     voice: "[TEE|T E E], with fluoroscopy, guides each step. The clip is steered down toward the valve, and biplane imaging shows it in two planes at once."
+    faster: {TEE: 1.9}
     onscreen: "Steer down to the valve"
     claims: [C46, C47, C97]
     shot: {chapter: 2}
@@ -71,6 +76,7 @@ beats:
     source: "Simulated TEE · TriClip G4 IFU; Onishi 2026; Hahn 2025"
   - id: assess
     voice: "The arms close, and [TEE|T E E] checks the grasp, the leak that is left, and the gradient across the valve."
+    faster: {TEE: 1.9}
     onscreen: "Check the leak and the gradient"
     claims: [C96, C52]
     shot: {chapter: 5}
