@@ -1,0 +1,109 @@
+# T-TEER reel (the TriClip): the script. Each beat has its voice line ([shown|spoken] where the caption and the
+# voice differ), its words on screen (7 or fewer), its claims (claims.yaml), its 3D shot and its
+# panes. The voice sets the times: a beat starts `lead` s before its line and ends `gap` s after
+# it, or at its `min` length (tools/shorts/compose.py writes the times to <cut>.cues.json).
+#
+# shot: {frame: <name>, zoom: [from, to]} holds one Blender frame (video/out/shorts/tteer/frames3d)
+#       with a slow push; {chapter: k} follows the chapter video from the move into step k, so the
+#       Blender frames (one each 0.1 of the step position) and the echo panes move together.
+# panes: {step: k, show: [b, c]} the chapter video's panes (src/ch/tteer.js), from the move into
+#       step k (the hold of step 0); {card: kccq} the trial's numbers; {text: hook, lines} the title.
+# labels: words on the Blender frame at a landmark that tools/blender/render.py places in each
+#       frame (Q0 the valve, ra the RA, tip the guide's tip, clipTop the clip), dx and dy px off it.
+slug: tteer
+fps: 30
+size: [1080, 1920]
+min: 60
+max: 90
+lead: 0.25
+gap: 0.4
+voice:
+  name: Brian
+  id: nPczCjzI2devNBz1zQrb
+  model: eleven_multilingual_v2
+  settings: {stability: 0.55, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true}
+beats:
+  - id: hook
+    voice: "Percutaneous tricuspid valve repair."
+    onscreen: "Percutaneous tricuspid repair"
+    claims: [C01, C35]
+    shot: {frame: hook, zoom: [1.0, 1.04]}
+    panes: {text: hook, lines: [Percutaneous, tricuspid repair]}
+    source: "TriClip · transcatheter edge-to-edge repair (TEER)"
+  - id: problem
+    voice: "In severe tricuspid regurgitation, the valve no longer closes fully, and blood leaks back into the right atrium."
+    onscreen: "Severe TR: blood leaks back"
+    claims: [C90]
+    shot: {frame: s000, zoom: [1.0, 1.05]}
+    panes: {step: 0, show: [b, c]}
+    labels: [{mark: Q0, text: Tricuspid valve, dx: 70, dy: -120}, {mark: ra, text: Right atrium, dx: -50, dy: -130}]
+    source: "Simulated TTE · grading: TVARC 2023"
+  - id: route
+    voice: "The TriClip enters the femoral vein. A 25 French guide carries it up the inferior vena cava into the right atrium."
+    onscreen: "Femoral vein to the right atrium"
+    claims: [C35, C34, C46]
+    shot: {chapter: 1}
+    panes: {step: 1, show: [b, c]}
+    labels: [{mark: tip, text: Guide, dx: 70, dy: -50}]
+    source: "Simulated TEE · TriClip G4 IFU; Hahn 2025"
+  - id: steer
+    voice: "[TEE|T E E], with fluoroscopy, guides each step. The clip is steered down toward the valve, and biplane imaging shows it in two planes at once."
+    onscreen: "Steer down to the valve"
+    claims: [C46, C47, C97]
+    shot: {chapter: 2}
+    panes: {step: 2, show: [b, c]}
+    labels: [{mark: clipTop, text: Clip, dx: 80, dy: -70}]
+    source: "Simulated TEE · Hahn 2025; Onishi 2026"
+  - id: align
+    voice: "Above the valve, the arms open and turn until they lie square to the line where the leaflets meet."
+    onscreen: "Arms square to the coaptation line"
+    claims: [C93, C48]
+    shot: {chapter: 3}
+    panes: {step: 3, show: [b, c]}
+    labels: [{mark: clipTop, text: Clip, dx: 80, dy: -70}]
+    source: "Simulated TEE · TriClip G4 IFU; Hahn 2025"
+  - id: grasp
+    voice: "The clip goes into the right ventricle, opens, and comes back up under the septal and anterior leaflets. The grippers drop to hold them."
+    onscreen: "Grasp the septal and anterior leaflets"
+    claims: [C93, C94, C55, C54]
+    shot: {chapter: 4}
+    panes: {step: 4, show: [b, c]}
+    source: "Simulated TEE · TriClip G4 IFU; Onishi 2026; Hahn 2025"
+  - id: assess
+    voice: "The arms close, and [TEE|T E E] checks the grasp, the leak that is left, and the gradient across the valve."
+    onscreen: "Check the leak and the gradient"
+    claims: [C96, C52]
+    shot: {chapter: 5}
+    panes: {step: 5, show: [b, c]}
+    source: "Simulated TEE · Onishi 2026; Hahn 2025"
+  - id: release
+    voice: "Then the clip is released, and the system comes out. In TRILUMINATE, most patients received two or three clips."
+    onscreen: "TRILUMINATE: most received 2 or 3 clips"
+    claims: [C95, C13]
+    shot: {chapter: 6}
+    panes: {step: 6, show: [b, c]}
+    source: "Simulated TEE · Onishi 2026; TRILUMINATE, FDA SSED 2024"
+  - id: trial
+    voice: "In the TRILUMINATE trial, tricuspid regurgitation was moderate or less at 30 days in 87 percent with the clip, versus 4.8 percent with medical therapy alone."
+    onscreen: "TR moderate or less: 87% vs 4.8%"
+    claims: [C08, C01]
+    shot: {chapter: 7}
+    panes: {step: 7, show: [b, c]}
+    labels: [{mark: clipTop, text: Clip, dx: 80, dy: -80}]
+    source: "Simulated TTE · TRILUMINATE Pivotal, Sorajja et al., NEJM 2023"
+  - id: outcome
+    voice: "Quality of life improved, but death, tricuspid surgery and heart failure admissions did not appear to differ at one year."
+    onscreen: "Better quality of life at 1 year"
+    claims: [C09, C06]
+    shot: {frame: s660, zoom: [1.0, 1.06]}
+    panes: {card: kccq}
+    labels: [{mark: clipTop, text: Clip, dx: 80, dy: -80}]
+    source: "TRILUMINATE Pivotal, Sorajja et al., NEJM 2023"
+  - id: close
+    voice: "Each clip joins two leaflets. Less leak."
+    onscreen: "Percutaneous tricuspid repair"
+    claims: [C91]
+    min: 3.6
+    shot: {frame: hook, zoom: [1.0, 1.0]}
+    panes: {text: hook, lines: [Percutaneous, tricuspid repair]}
+    source: "TriClip · transcatheter edge-to-edge repair (TEER)"

@@ -1,5 +1,6 @@
 // The 3D TEE "surgeon's view" of the mitral valve (chapter mteer): the valve seen en face
-// from the LA, the aortic valve at 12 o'clock, cut from the same morphed meshes as the chapter's
+// from the LA, the aortic valve at 12 o'clock; and the tricuspid valve seen from the RA (chapter
+// tteer, draw's valves, chords and regions), cut from the same morphed meshes as the chapter's
 // 2D echo views (an EchoView after its frame()), with the clip and the delivery system. A 3D
 // echo system renders its volume by depth in a bronze scale, near tissue light and far tissue
 // dark; this renderer draws the surfaces that way: the LA floor, the LV's rim and the aortic root
@@ -89,7 +90,7 @@ export class EnFace {
    * below the annular plane (N) up to top cm above it. The LV's rim at the annulus joins the LA
    * floor to the valve: without it, a dilated LA's floor leaves a black ring round the annulus.
    */
-  crop(ev, C, N, reach = 2.9, top = 3.0, bottom = -0.6) {
+  crop(ev, C, N, reach = 2.9, top = 3.0, bottom = -0.6, regions = [3, 5, 1]) {
     const md = ev.myo, P = md.rest, idx = md.index, col = md.mesh.geometry.attributes.color;
     const keep = [];
     const reg = (i) => Math.round(col.getX(i) * 10);
@@ -97,7 +98,7 @@ export class EnFace {
       let ok = true;
       for (let k = 0; k < 3; k++) {
         const i = idx[t + k], r = reg(i);
-        if (r !== 3 && r !== 5 && r !== 1) { ok = false; break; }
+        if (!regions.includes(r)) { ok = false; break; }
         const x = P[3 * i] - C[0], y = P[3 * i + 1] - C[1], z = P[3 * i + 2] - C[2];
         const h = x * N[0] + y * N[1] + z * N[2], rr = Math.hypot(x - h * N[0], y - h * N[1], z - h * N[2]);
         if (h > top || h < bottom || rr > reach) { ok = false; break; }
@@ -128,17 +129,21 @@ export class EnFace {
 
   /**
    * Draw view ev (after its frame()) en face: C, N, A0 (arrays) the annulus's middle, its normal
-   * into the LA and the direction of the aortic valve; dev, the device's parts ({ name: { pos,
-   * idx } }) or null. dist: the camera's distance above C (cm); zoom: the field's width at the
-   * annulus (cm).
+   * into the atrium and the direction that the image shows at 12 o'clock; dev, the device's parts
+   * ({ name: { pos, idx } }) or null. dist: the camera's distance above C (cm); zoom: the field's
+   * width at the annulus (cm). valves, chords and regions: the valves, the chordae and the
+   * myocardium's regions drawn (by default the mitral valve's: the mitral and aortic valves, the
+   * mitral chordae, the LA and the aortic root); reach, cropTop and cropBottom: the crop of the
+   * walls round C (cm), found on the first draw.
    */
   draw(ev, C, N, A0, dev = null, o = {}) {
-    if (!this.sel) this.crop(ev, C, N);
+    const valves = o.valves ?? ['MitralValve', 'AorticValve'], chords = o.chords ?? ['MitralChordae'], regions = o.regions ?? [3, 5, 1];
+    if (!this.sel) this.crop(ev, C, N, o.reach ?? 2.9, o.cropTop ?? 3.0, o.cropBottom ?? -0.6, regions);
     for (const m of this.meshes.values()) m.visible = false;
     this.surface('myo', ev.myo.pos, this.sel.myo);
-    for (const vd of ev.valves) if (vd.mesh.name === 'MitralValve' || vd.mesh.name === 'AorticValve') this.surface(vd.mesh.name, vd.pos, vd.index);
-    for (const S of ev.skirts || []) if (S.sk.valve === 'MitralValve' || S.sk.valve === 'AorticValve') this.surface(`skirt:${S.sk.name}`, S.pos, S.index);
-    for (const cd of ev.chords || []) if (cd.mesh.name === 'MitralChordae') this.surface('chords', cd.pos, cd.index);
+    for (const vd of ev.valves) if (valves.includes(vd.mesh.name)) this.surface(vd.mesh.name, vd.pos, vd.index);
+    for (const S of ev.skirts || []) if (valves.includes(S.sk.valve)) this.surface(`skirt:${S.sk.name}`, S.pos, S.index);
+    for (const cd of ev.chords || []) if (chords.includes(cd.mesh.name)) this.surface(`chords:${cd.mesh.name}`, cd.pos, cd.index);
     if (dev) for (const [name, part] of Object.entries(dev)) if (part.pos.length) this.surface(`dev:${name}`, part.pos, part.idx, this.metal).geometry.computeBoundingSphere();
     // a far camera with a narrow field: a 3D echo volume rendering has little perspective
     const dist = o.dist ?? 12, zoom = o.zoom ?? 5.6, top = o.top ?? 1.1, bottom = o.bottom ?? -2.4;

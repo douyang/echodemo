@@ -1,0 +1,2224 @@
+# T-TEER (the TriClip): the claims of the reel (video/shorts/tteer) and of bonus chapter B8.
+# Each claim gives its primary source and the words of that source that support it. status:
+# verified (checked at the source on 2026-10-24) or VERIFY (not confirmed; it stays out of the reel
+# and the chapter). FDA documents were read as text extracted from the FDA site, and the notes say
+# where a table lost its layout. Sources that disagree are named in the note of each claim.
+updated: '2026-10-24'
+claims:
+- id: C01
+  topic: 'TRILUMINATE Pivotal: design'
+  text: >-
+    TRILUMINATE Pivotal randomly assigned patients with symptomatic severe tricuspid regurgitation 1:1
+    to transcatheter edge-to-edge repair (TEER) or to medical therapy alone (control) at 65 centers in
+    the United States, Canada and Europe.
+  value: 1:1 randomization; 65 centers; TEER (TriClip) plus medical therapy vs medical therapy alone
+  source:
+    cite: >-
+      Sorajja P, Whisenant B, Hamid N, et al. Transcatheter Repair for Patients with Tricuspid Regurgitation.
+      N Engl J Med 2023;388:1833-1842.
+    pmid: '36876753'
+    doi: 10.1056/NEJMoa2300525
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=36876753&rettype=abstract&retmode=text
+  support: >-
+    Patients with symptomatic severe tricuspid regurgitation were enrolled at 65 centers in the United
+    States, Canada, and Europe and were randomly assigned in a 1:1 ratio to receive either TEER or medical
+    therapy (control).
+  status: verified
+  note: >-
+    Kar et al. 2025 word the arms as 'tricuspid TEER+medical therapy (device group) or medical therapy
+    alone (control)'. Registration NCT03904147; funded by Abbott.
+- id: C02
+  topic: 'TRILUMINATE Pivotal: number randomized (NEJM primary analysis)'
+  text: >-
+    The NEJM report analyzed 350 randomized patients, 175 in each group; mean age was 78 years and 54.9%
+    were women.
+  value: 350 randomized (175 TEER, 175 control); mean age 78 years; 54.9% women
+  source:
+    cite: >-
+      Sorajja P, Whisenant B, Hamid N, et al. Transcatheter Repair for Patients with Tricuspid Regurgitation.
+      N Engl J Med 2023;388:1833-1842.
+    pmid: '36876753'
+    doi: 10.1056/NEJMoa2300525
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=36876753&rettype=abstract&retmode=text
+  support: >-
+    A total of 350 patients were enrolled; 175 were assigned to each group. The mean age of the patients
+    was 78 years, and 54.9% were women.
+  status: verified
+  note: >-
+    These 350 were the prespecified primary analysis population (FDA SSED, via WebFetch: 'As planned,
+    the primary endpoint analysis was performed on the first 350 patients'). Adaptive enrollment continued
+    to 572 randomized patients (see the TRILUMINATE full-cohort claims).
+- id: C03
+  topic: 'TRILUMINATE Pivotal: primary endpoint definition'
+  text: >-
+    The primary endpoint was a hierarchical composite of death from any cause or tricuspid-valve surgery,
+    then hospitalization for heart failure, then an improvement of at least 15 points in the KCCQ score
+    at 1 year.
+  value: >-
+    Hierarchy: (1) all-cause death or tricuspid-valve surgery; (2) heart-failure hospitalization; (3)
+    KCCQ improvement ≥15 points at 1 year
+  source:
+    cite: >-
+      Sorajja P, Whisenant B, Hamid N, et al. Transcatheter Repair for Patients with Tricuspid Regurgitation.
+      N Engl J Med 2023;388:1833-1842.
+    pmid: '36876753'
+    doi: 10.1056/NEJMoa2300525
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=36876753&rettype=abstract&retmode=text
+  support: >-
+    a hierarchical composite that included death from any cause or tricuspid-valve surgery; hospitalization
+    for heart failure; and an improvement in quality of life ... an increase of at least 15 points in
+    the KCCQ score
+  status: verified
+  note: >-
+    NEJM reports the result as a win ratio. The FDA SSED describes a Finkelstein-Schoenfeld test as the
+    primary analysis and the win ratio as a supplementary analysis.
+- id: C04
+  topic: 'TRILUMINATE Pivotal: primary endpoint result (NEJM)'
+  text: >-
+    In the NEJM report the primary endpoint favored TEER, with a win ratio of 1.48 (95% CI 1.06 to 2.13;
+    P = 0.02).
+  value: Win ratio 1.48 (95% CI 1.06-2.13); P = 0.02
+  source:
+    cite: >-
+      Sorajja P, Whisenant B, Hamid N, et al. Transcatheter Repair for Patients with Tricuspid Regurgitation.
+      N Engl J Med 2023;388:1833-1842.
+    pmid: '36876753'
+    doi: 10.1056/NEJMoa2300525
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=36876753&rettype=abstract&retmode=text
+  support: >-
+    The results for the primary end point favored the TEER group (win ratio, 1.48; 95% confidence interval,
+    1.06 to 2.13; P = 0.02).
+  status: verified
+  note: >-
+    SOURCES DISAGREE: the FDA SSED gives a win ratio of 1.44 (95% CI 1.03-2.08) for the same 350-patient
+    primary analysis population, with data through April 24, 2023 (next claim). Print the number together
+    with its source.
+- id: C05
+  topic: 'TRILUMINATE Pivotal: primary endpoint result (FDA SSED)'
+  text: >-
+    In the FDA's Summary of Safety and Effectiveness Data, the primary endpoint was met by Finkelstein-Schoenfeld
+    testing (two-sided P = 0.0311), and the supplementary win ratio was 1.44 (95% CI 1.03 to 2.08).
+  value: Finkelstein-Schoenfeld statistic 2.16, two-sided P = 0.0311; win ratio 1.44 (95% CI 1.03-2.08)
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Summary of Safety and Effectiveness Data (SSED): TriClip G4 System,
+      PMA P230007. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007B.pdf
+  support: >-
+    The win ratio of the device group vs. the control group was 1.44 (95% confidence interval of 1.03
+    - 2.08).
+  status: verified
+  note: >-
+    Also in the SSED: 'The Finkelstein-Schoenfeld test statistic result was 2.16 with a 2-sided p-value
+    of 0.0311' and 'The database for this PMA included data collected through April 24, 2023.' The SSED
+    contains no occurrence of 1.48. Read through WebFetch text extraction because the FDA site blocked
+    direct PDF download.
+- id: C06
+  topic: 'TRILUMINATE Pivotal: death, surgery and heart-failure hospitalization at 1 year'
+  text: >-
+    At 1 year, death or tricuspid-valve surgery and heart-failure hospitalization did not appear to differ
+    between the TEER and control groups.
+  value: No apparent between-group difference (abstract gives no numbers)
+  source:
+    cite: >-
+      Sorajja P, Whisenant B, Hamid N, et al. Transcatheter Repair for Patients with Tricuspid Regurgitation.
+      N Engl J Med 2023;388:1833-1842.
+    pmid: '36876753'
+    doi: 10.1056/NEJMoa2300525
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=36876753&rettype=abstract&retmode=text
+  support: >-
+    The incidence of death or tricuspid-valve surgery and the rate of hospitalization for heart failure
+    did not appear to differ between the groups.
+  status: verified
+  note: >-
+    The 2025 ESC/EACTS guideline describes the composite benefit as 'exclusively driven by improved quality
+    of life [11.7 points (95% CI, 6.8-16.6); P <0.001]'.
+- id: C07
+  topic: 'TRILUMINATE Pivotal: win-ratio components (FDA SSED)'
+  text: >-
+    In the FDA analysis, wins for death or tricuspid-valve surgery were similar, heart-failure hospitalization
+    wins slightly favored control (6% vs 10%), and the result was driven by KCCQ improvement of at least
+    15 points (21% vs 7% wins).
+  value: HF-hospitalization wins 6% device vs 10% control; KCCQ ≥15-point wins 21% device vs 7% control
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Summary of Safety and Effectiveness Data (SSED): TriClip G4 System,
+      PMA P230007. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007B.pdf
+  support: >-
+    there were slightly more wins in the control group for heart failure hospitalization (6% in the device
+    group vs 10% in the control group).
+  status: verified
+  note: >-
+    Next SSED sentence: 'The primary endpoint success was driven by KCCQ score improvement of at least
+    15 points, which had 21% wins in the device group and 7% wins in the control group.' Read through
+    WebFetch text extraction.
+- id: C08
+  topic: 'TRILUMINATE Pivotal: TR moderate or less at 30 days'
+  text: >-
+    At 30 days, tricuspid regurgitation was moderate or less in 87.0% of TEER patients and 4.8% of control
+    patients (P<0.001).
+  value: 87.0% vs 4.8%
+  source:
+    cite: >-
+      Sorajja P, Whisenant B, Hamid N, et al. Transcatheter Repair for Patients with Tricuspid Regurgitation.
+      N Engl J Med 2023;388:1833-1842.
+    pmid: '36876753'
+    doi: 10.1056/NEJMoa2300525
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=36876753&rettype=abstract&retmode=text
+  support: >-
+    At 30 days, 87.0% of the patients in the TEER group and 4.8% of those in the control group had tricuspid
+    regurgitation of no greater than moderate severity (P<0.001).
+  status: verified
+  note: >-
+    SOURCES DISAGREE on the control value: FDA SSED Table 11 gives 87.0% (141/162) device vs 5.4% (8/147)
+    control (read through WebFetch). Full randomized cohort (n=572): 88.9% vs 5.3%.
+- id: C09
+  topic: 'TRILUMINATE Pivotal: KCCQ change at 1 year'
+  text: The KCCQ score rose by 12.3 points with TEER and by 0.6 points with control at 1 year (P<0.001).
+  value: +12.3 vs +0.6 points (difference 11.7 points, 95% CI 6.8-16.6, per ESC/EACTS 2025)
+  source:
+    cite: >-
+      Sorajja P, Whisenant B, Hamid N, et al. Transcatheter Repair for Patients with Tricuspid Regurgitation.
+      N Engl J Med 2023;388:1833-1842.
+    pmid: '36876753'
+    doi: 10.1056/NEJMoa2300525
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=36876753&rettype=abstract&retmode=text
+  support: >-
+    The KCCQ quality-of-life score changed by a mean (±SD) of 12.3±1.8 points in the TEER group, as compared
+    with 0.6±1.8 points in the control group (P<0.001).
+  status: verified
+  note: >-
+    Do not print '±1.8 SD'. The FDA SSED shows these are least-squares means with standard errors (next
+    claim).
+- id: C10
+  topic: 'TRILUMINATE Pivotal: KCCQ dispersion is a standard error'
+  text: >-
+    The ±1.8 attached to the 1-year KCCQ changes is a standard error from an ANCOVA model, not a standard
+    deviation; the patient-level standard deviations were about 18 to 22 points.
+  value: >-
+    Least-squares mean (SE): 12.34 (1.75) device vs 0.61 (1.75) control; complete-case mean ± SD: 15.2
+    ± 22.3 vs 4.8 ± 18.3 points
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Summary of Safety and Effectiveness Data (SSED): TriClip G4 System,
+      PMA P230007. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007B.pdf
+  support: Least square means (standard error) from analysis of covariance (ANCOVA) model
+  status: verified
+  note: >-
+    This is the SSED Table 11 footnote for the KCCQ row ('12.34 (1.75)' and '0.61 (1.75)'); SSED Table
+    19 gives the complete-case SDs (n not stated). The NEJM abstract labels the same dispersion '(±SD)'.
+    Read through WebFetch text extraction.
+- id: C11
+  topic: 'TRILUMINATE Pivotal: 30-day major adverse events'
+  text: Of patients who underwent the TEER procedure, 98.3% were free from major adverse events at 30
+    days.
+  value: 98.3% freedom from MAE at 30 days (FDA SSED Kaplan-Meier 98.3%, 95% CI 96.3%-100%)
+  source:
+    cite: >-
+      Sorajja P, Whisenant B, Hamid N, et al. Transcatheter Repair for Patients with Tricuspid Regurgitation.
+      N Engl J Med 2023;388:1833-1842.
+    pmid: '36876753'
+    doi: 10.1056/NEJMoa2300525
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=36876753&rettype=abstract&retmode=text
+  support: >-
+    TEER was found to be safe; 98.3% of the patients who underwent the procedure were free from major
+    adverse events at 30 days.
+  status: verified
+  note: >-
+    FDA SSED (via WebFetch): freedom from MAEs at 30 days 98.3% [96.3%, 100%] in the attempted-procedure
+    population (n=172); cardiovascular mortality 0.6% (1/172), new-onset renal failure 1.2% (2/172). The
+    full randomized cohort reported 98.9% (Tang 2025).
+- id: C12
+  topic: 'TRILUMINATE Pivotal: major-adverse-event definition and performance goal'
+  text: >-
+    Major adverse events were a 30-day composite of cardiovascular death, new-onset renal failure, endocarditis
+    requiring surgery and non-elective cardiovascular surgery for TriClip-related adverse events, tested
+    against a 90% performance goal.
+  value: 4-component composite at 30 days; performance goal 90% freedom from MAE
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Executive Summary, Circulatory System Devices Panel, February
+      13, 2024: TriClip G4 System, TRILUMINATE Pivotal Trial.
+    url: https://fda.gov/media/176091/download
+  support: >-
+    major adverse events, including cardiovascular mortality, new onset renal failure, endocarditis requiring
+    surgery, and non-elective cardiovascular surgery for TriClip device-related adverse events post-index
+    procedure
+  status: verified
+  note: >-
+    WebFetch reported that the FDA PDF text was OCR-garbled and that it corrected spacing and spelling,
+    so wording may differ slightly from the original. The 90% goal is also stated by Tang et al. 2025:
+    'Freedom from major adverse events was 98.9% for T-TEER (vs performance goal: 90%; P < 0.0001).'
+- id: C13
+  topic: 'TRILUMINATE Pivotal: clips per patient'
+  text: >-
+    In the randomized device arm a mean of 2.2 clips was implanted, and about 85% of patients received
+    two or three clips.
+  value: 2.2 ± 0.7 clips (n=172); 0 clips 1.2%, 1 clip 10.5%, 2 clips 61.0%, 3 clips 24.4%, 4 clips 2.9%
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Summary of Safety and Effectiveness Data (SSED): TriClip G4 System,
+      PMA P230007. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007B.pdf
+  support: Number of clips implanted 2.2 ± 0.7 (172)
+  status: verified
+  note: >-
+    SSED also states 'approximately 85% of subjects receiving two or three TriClip devices.' Read through
+    WebFetch text extraction.
+- id: C14
+  topic: 'TRILUMINATE Pivotal: full randomized cohort size'
+  text: >-
+    Under its adaptive design, TRILUMINATE Pivotal randomized 572 patients between August 21, 2019 and
+    June 29, 2022: the 350-patient primary cohort plus 222 later enrollees.
+  value: 572 randomized (350 + 222)
+  source:
+    cite: >-
+      Tang GHL, Hahn RT, Whisenant BK, et al. Tricuspid Transcatheter Edge-to-Edge Repair for Severe Tricuspid
+      Regurgitation: 1-Year Outcomes From the TRILUMINATE Randomized Cohort. J Am Coll Cardiol 2025;85:235-246.
+    pmid: '39471883'
+    doi: 10.1016/j.jacc.2024.10.086
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=39471883&rettype=abstract&retmode=text
+  support: >-
+    Between August 21, 2019, and June 29, 2022, 572 subjects were randomized, including the primary cohort
+    (n = 350) and subsequent enrollment (n = 222).
+  status: verified
+- id: C15
+  topic: 'TRILUMINATE Pivotal: full-cohort primary endpoint'
+  text: In the full randomized cohort the primary endpoint was met, with a win ratio of 1.84 (P < 0.0001).
+  value: Win ratio 1.84; P < 0.0001
+  source:
+    cite: >-
+      Tang GHL, Hahn RT, Whisenant BK, et al. Tricuspid Transcatheter Edge-to-Edge Repair for Severe Tricuspid
+      Regurgitation: 1-Year Outcomes From the TRILUMINATE Randomized Cohort. J Am Coll Cardiol 2025;85:235-246.
+    pmid: '39471883'
+    doi: 10.1016/j.jacc.2024.10.086
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=39471883&rettype=abstract&retmode=text
+  support: The primary endpoint was met for the full cohort (win ratio = 1.84; P < 0.0001).
+  status: verified
+  note: >-
+    SOURCES DISAGREE: the FDA SSED (data through April 24, 2023) reports 'The win ratio analysis result
+    for all available randomized subjects was 1.53'. Neither source explains the difference in what was
+    opened.
+- id: C16
+  topic: 'TRILUMINATE Pivotal: full-cohort death, surgery and HF hospitalization at 1 year'
+  text: >-
+    In the full cohort at 1 year, freedom from death and tricuspid-valve surgery was 90.6% with T-TEER
+    and 89.9% with control (P = 0.82), and annualized heart-failure hospitalization was 0.17 vs 0.20 events
+    per patient-year (P = 0.40).
+  value: 90.6% vs 89.9% (P = 0.82); 0.17 vs 0.20 HF hospitalizations per patient-year (P = 0.40)
+  source:
+    cite: >-
+      Tang GHL, Hahn RT, Whisenant BK, et al. Tricuspid Transcatheter Edge-to-Edge Repair for Severe Tricuspid
+      Regurgitation: 1-Year Outcomes From the TRILUMINATE Randomized Cohort. J Am Coll Cardiol 2025;85:235-246.
+    pmid: '39471883'
+    doi: 10.1016/j.jacc.2024.10.086
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=39471883&rettype=abstract&retmode=text
+  support: >-
+    Freedom from all-cause mortality and tricuspid valve surgery through 12 months was 90.6% and 89.9%
+    for the device and control groups, respectively (P = 0.82).
+  status: verified
+  note: >-
+    Same abstract: 'Annualized HFH rate was comparable between device and control subjects (0.17 vs 0.20
+    events/patient-year; P = 0.40).' Conclusion: 'Rates of all-cause mortality or tricuspid valve surgery
+    and HFH through 1 year were not reduced by T-TEER.'
+- id: C17
+  topic: 'TRILUMINATE Pivotal: full-cohort TR, KCCQ and walk distance'
+  text: >-
+    In the full cohort, TR was moderate or less at 30 days in 88.9% vs 5.3%, the 1-year KCCQ change was
+    13.0 vs -0.5 points, and the 6-minute walk distance changed by 1.7 vs -27.4 m.
+  value: >-
+    88.9% vs 5.3%; KCCQ 13.0 ± 1.4 vs -0.5 ± 1.4 points; 6MWD 1.7 ± 7.5 vs -27.4 ± 7.4 m (all P < 0.0001)
+  source:
+    cite: >-
+      Tang GHL, Hahn RT, Whisenant BK, et al. Tricuspid Transcatheter Edge-to-Edge Repair for Severe Tricuspid
+      Regurgitation: 1-Year Outcomes From the TRILUMINATE Randomized Cohort. J Am Coll Cardiol 2025;85:235-246.
+    pmid: '39471883'
+    doi: 10.1016/j.jacc.2024.10.086
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=39471883&rettype=abstract&retmode=text
+  support: >-
+    All secondary endpoints favored T-TEER: moderate or less TR at 30 days (88.9% vs 5.3%; P < 0.0001),
+    KCCQ change at 1 year (13.0 ± 1.4 points vs -0.5 ± 1.4 points; P < 0.0001)
+  status: verified
+  note: >-
+    The abstract does not say whether ± is SD or SE; check the full text before labeling it (the NEJM
+    values of the same kind were SEs).
+- id: C18
+  topic: 'TRILUMINATE Pivotal: full-cohort KCCQ responders and safety'
+  text: >-
+    In the full cohort, 52.3% of T-TEER patients vs 23.5% of controls gained at least 15 KCCQ points,
+    and freedom from major adverse events was 98.9% against a 90% performance goal.
+  value: 52.3% vs 23.5% (P < 0.0001); MAE-free 98.9% (goal 90%; P < 0.0001)
+  source:
+    cite: >-
+      Tang GHL, Hahn RT, Whisenant BK, et al. Tricuspid Transcatheter Edge-to-Edge Repair for Severe Tricuspid
+      Regurgitation: 1-Year Outcomes From the TRILUMINATE Randomized Cohort. J Am Coll Cardiol 2025;85:235-246.
+    pmid: '39471883'
+    doi: 10.1016/j.jacc.2024.10.086
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=39471883&rettype=abstract&retmode=text
+  support: >-
+    A significant treatment effect was observed for change in quality of life with 52.3% of device subjects
+    achieving a ≥15-point KCCQ score improvement (compared with 23.5% of control subjects; P < 0.0001).
+  status: verified
+- id: C19
+  topic: 'TRILUMINATE Pivotal 2-year: heart-failure hospitalization'
+  text: >-
+    Through 2 years, the annualized rate of recurrent heart-failure hospitalization was lower with T-TEER
+    than with control (0.19 vs 0.26 events per patient-year; hazard ratio 0.72; P=0.02).
+  value: >-
+    0.19 vs 0.26 events per patient-year; joint frailty HR 0.72 (one-sided upper confidence limit 0.93);
+    P = 0.02
+  source:
+    cite: >-
+      Kar S, Makkar RR, Whisenant BK, et al. Two-Year Outcomes of Transcatheter Edge-to-Edge Repair for
+      Severe Tricuspid Regurgitation: The TRILUMINATE Pivotal Randomized Controlled Trial. Circulation
+      2025;151:1630-1638.
+    pmid: '40159089'
+    doi: 10.1161/CIRCULATIONAHA.125.074536
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=40159089&rettype=abstract&retmode=text
+  support: >-
+    The annualized rate of recurrent heart failure hospitalizations through 2 years was significantly
+    lower with tricuspid TEER compared with control (0.19 event per patient-year versus 0.26 event per
+    patient-year; P=0.02; joint frailty model hazard ratio, 0.72
+  status: verified
+  note: >-
+    All 572 randomized patients, intention-to-treat. A JAMA Cardiology Viewpoint (Kaul 2026) and a Circulation
+    letter/response (2026) discuss these 2-year results; their content was not checked.
+- id: C20
+  topic: 'TRILUMINATE Pivotal 2-year: mortality and surgery'
+  text: >-
+    At 2 years, all-cause mortality (17.9% vs 17.1%) and tricuspid-valve surgery (2.3% vs 4.3%) were similar
+    with T-TEER and control.
+  value: Mortality 17.9% vs 17.1%; TV surgery 2.3% vs 4.3%
+  source:
+    cite: >-
+      Kar S, Makkar RR, Whisenant BK, et al. Two-Year Outcomes of Transcatheter Edge-to-Edge Repair for
+      Severe Tricuspid Regurgitation: The TRILUMINATE Pivotal Randomized Controlled Trial. Circulation
+      2025;151:1630-1638.
+    pmid: '40159089'
+    doi: 10.1161/CIRCULATIONAHA.125.074536
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=40159089&rettype=abstract&retmode=text
+  support: >-
+    Rates of all-cause mortality (17.9% versus 17.1%) and tricuspid valve surgery (2.3% versus 4.3%) were
+    similar between groups.
+  status: verified
+- id: C21
+  topic: 'TRILUMINATE Pivotal 2-year: crossover-driven composite'
+  text: >-
+    Freedom from death, tricuspid-valve surgery and tricuspid-valve intervention at 2 years was 77.6%
+    with T-TEER vs 29.3% with control, a difference driven by control patients who crossed over to the
+    device (intervention 3.8% vs 61.5%).
+  value: 77.6% vs 29.3% (P<0.0001); TV intervention 3.8% vs 61.5%
+  source:
+    cite: >-
+      Kar S, Makkar RR, Whisenant BK, et al. Two-Year Outcomes of Transcatheter Edge-to-Edge Repair for
+      Severe Tricuspid Regurgitation: The TRILUMINATE Pivotal Randomized Controlled Trial. Circulation
+      2025;151:1630-1638.
+    pmid: '40159089'
+    doi: 10.1161/CIRCULATIONAHA.125.074536
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=40159089&rettype=abstract&retmode=text
+  support: >-
+    Freedom from all-cause mortality, tricuspid valve surgery, and tricuspid valve intervention through
+    2 years was ... (77.6% versus 29.3%; P<0.0001), driven by more tricuspid valve intervention in control
+    patients who crossed over to device treatment (3.8% versus 61.5%).
+  status: verified
+  note: >-
+    SOURCES DIFFER: the 2025 ESC/EACTS guideline states the 2-year benefit came 'despite a high rate of
+    crossovers (59%)'. 59% (crossovers) and 61.5% (tricuspid-valve intervention rate) may be different
+    measures; neither text reconciles them.
+- id: C22
+  topic: 'TRILUMINATE Pivotal 2-year: durability of TR reduction'
+  text: At 2 years, 84% of the device group had moderate or less tricuspid regurgitation.
+  value: 84% with TR ≤ moderate at 2 years (device group)
+  source:
+    cite: >-
+      Kar S, Makkar RR, Whisenant BK, et al. Two-Year Outcomes of Transcatheter Edge-to-Edge Repair for
+      Severe Tricuspid Regurgitation: The TRILUMINATE Pivotal Randomized Controlled Trial. Circulation
+      2025;151:1630-1638.
+    pmid: '40159089'
+    doi: 10.1161/CIRCULATIONAHA.125.074536
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=40159089&rettype=abstract&retmode=text
+  support: Moderate or less tricuspid regurgitation was present in 84% at 2 years in the device group.
+  status: verified
+- id: C23
+  topic: TRILUMINATE single-arm (early feasibility) 3-year results
+  text: >-
+    In the 98-patient single-arm TRILUMINATE study, TR was moderate or less in 79% at 3 years, and heart-failure
+    hospitalizations fell from 0.56 to 0.14 events per patient-year.
+  value: >-
+    N = 98; TR ≤ moderate 79% at 3 years; ≥1-grade reduction 92%; HFH 0.56 -> 0.14 events per patient-year
+    (-75%, P < 0.0001)
+  source:
+    cite: >-
+      Nickenig G, Lurz P, Sorajja P, et al. Percutaneous Edge-to-Edge Repair for Tricuspid Regurgitation:
+      3-Year Outcomes From the TRILUMINATE Study. JACC Cardiovasc Interv 2024;17:2113-2122.
+    pmid: '39243264'
+    doi: 10.1016/j.jcin.2024.05.036
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=39243264&rettype=abstract&retmode=text
+  support: >-
+    At 3 years, TR was reduced to moderate or less in 79% of subjects, and a reduction of at least 1 grade
+    was achieved in 92% of subjects.
+  status: verified
+  note: Single-arm, site-reported HF hospitalization before vs after implant; not randomized.
+- id: C24
+  topic: 'TRILUMINATE: standalone crossover-cohort report'
+  text: >-
+    No standalone publication of outcomes in the TRILUMINATE Pivotal control patients who crossed over
+    to TEER was found as of 2026-10-24.
+  value: Not found
+  source:
+    cite: >-
+      Kar S, Makkar RR, Whisenant BK, et al. Two-Year Outcomes of Transcatheter Edge-to-Edge Repair for
+      Severe Tricuspid Regurgitation: The TRILUMINATE Pivotal Randomized Controlled Trial. Circulation
+      2025;151:1630-1638.
+    pmid: '40159089'
+    doi: 10.1161/CIRCULATIONAHA.125.074536
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=40159089&rettype=abstract&retmode=text
+  support: >-
+    driven by more tricuspid valve intervention in control patients who crossed over to device treatment
+    (3.8% versus 61.5%).
+  status: VERIFY
+  note: >-
+    PubMed searches ('TRILUMINATE' with crossover terms; TRILUMINATE Pivotal list to Oct 2026) returned
+    no dedicated crossover-cohort paper; the 2-year Circulation paper reports crossover only as a rate.
+    A negative search cannot prove absence; check meeting reports (e.g., TCT/ACC 2025-2026).
+- id: C25
+  topic: 'FDA approval: date, device generation, PMA number'
+  text: >-
+    FDA approved the TriClip G4 System (PMA P230007, Abbott Medical) for tricuspid regurgitation on April
+    1, 2024.
+  value: April 1, 2024; TriClip G4 System; PMA P230007
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Summary of Safety and Effectiveness Data (SSED): TriClip G4 System,
+      PMA P230007. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007B.pdf
+  support: 'Date of FDA Notice of Approval: April 1, 2024'
+  status: verified
+  note: >-
+    Approval letter (P230007A, read through WebFetch) is dated 'April 1, 2024' and names the 'TriClip
+    G4 System'. The FDA Recently-Approved Devices page lists 'Approval date: April 01, 2024' (URL: https://www.fda.gov/medical-devices/recently-approved-devices/triclip-g4-system-p230007).
+    The FDA PMA database lists supplements S001-S023 without details.
+- id: C26
+  topic: 'FDA approval: indication wording'
+  text: >-
+    The FDA-approved indication covers patients with symptomatic severe TR despite optimal medical therapy
+    who are at intermediate or greater surgical risk and in whom a multidisciplinary heart team judges
+    TEER appropriate and expects it to reduce TR to moderate or less; the stated aim is better quality
+    of life and functional status.
+  value: >-
+    Verbatim indication: 'This device is indicated for improving quality of life and functional status
+    in patients with symptomatic severe tricuspid regurgitation despite optimal medical therapy, who are
+    at intermediate or greater risk for surgery and in whom transcatheter edge-to-edge valve repair is
+    clinically appropriate and is expected to reduce tricuspid regurgitation severity to moderate or less,
+    as determined by a multidisciplinary heart team.'
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. PMA P230007 approval order: TriClip G4 System (Abbott Medical).
+      April 1, 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007A.pdf
+  support: >-
+    This device is indicated for improving quality of life and functional status in patients with symptomatic
+    severe tricuspid regurgitation despite optimal medical therapy, who are at intermediate or greater
+    risk for surgery
+  status: verified
+  note: >-
+    Assembled from consecutive WebFetch quote segments of the approval letter. The SSED wording is identical
+    except that it begins 'The TriClip G4 System is indicated...'. The indication is for quality of life
+    and functional status, not survival.
+- id: C27
+  topic: 'FDA approval: manufacturer announcement date'
+  text: Abbott announced the FDA approval on April 2, 2024, one day after the April 1 approval date.
+  value: Press release dated April 2, 2024
+  source:
+    cite: >-
+      Abbott. Abbott Receives FDA Approval for TriClip, First-of-Its-Kind Device to Repair Leaky Tricuspid
+      Heart Valve [press release]. April 2, 2024.
+    url: >-
+      https://abbott.mediaroom.com/2024-04-02-Abbott-Receives-FDA-Approval-for-TriClip-TM-,-First-of-Its-Kind-Device-to-Repair-Leaky-Tricuspid-Heart-Valve
+  support: 'ABBOTT PARK, Ill., April 2, 2024 /PRNewswire/ -- Abbott (NYSE: ABT) today announced'
+  status: verified
+  note: >-
+    The release says only 'TriClip' (no 'G4'). It also states '90% of patients who received the TriClip
+    system experienced a marked improvement in their TR grade' - a different measure from the NEJM 87.0%
+    with TR ≤ moderate; do not mix the two in the video.
+- id: C28
+  topic: 'TriClip G5: current U.S. product line'
+  text: >-
+    Abbott's U.S. professional product page now lists a TriClip G5 system in the same four sizes (NT,
+    NTW, XT, XTW) with its own steerable guide catheter, alongside the G4 system.
+  value: >-
+    G5 delivery systems TCDS0801-NT/-NTW/-XT/-XTW; G5 steerable guide catheter TSGC0801; G4 guide TSGC0201
+  source:
+    cite: >-
+      Abbott Cardiovascular. TriClip transcatheter valve solutions, U.S. healthcare professional product
+      page (accessed 2026-10-24).
+    url: >-
+      https://cardiovascular.abbott/us/en/hcp/products/structural-heart/transcatheter-valve-solutions/triclip.html
+  support: TCDS0801-XTW | TriClip G5 XTW Delivery System
+  status: verified
+  note: >-
+    An Abbott 2025 document (MAT-2508246) gives the G5 indication with wording identical to the G4 indication.
+    Onishi et al. 2026 describe G5 handle differences (lock knob instead of the G4 lock handle). A chapter
+    or video that calls G4 'current' may be out of date. Page read through WebFetch.
+- id: C29
+  topic: 'TriClip G5: FDA approval date'
+  text: The FDA approval date of the TriClip G5 system could not be confirmed from an FDA document.
+  value: Unknown
+  source:
+    cite: >-
+      Abbott Cardiovascular. TriClip transcatheter valve solutions, U.S. healthcare professional product
+      page (accessed 2026-10-24).
+    url: >-
+      https://cardiovascular.abbott/us/en/hcp/products/structural-heart/transcatheter-valve-solutions/triclip.html
+  support: TCDS0801-NT | TriClip G5 NT Delivery System
+  status: VERIFY
+  note: >-
+    MassDevice (news, 2025-08-06; not a primary source) says the G5 systems 'have FDA approval and CE
+    mark'. The FDA PMA database page for P230007 lists supplements S001-S023 without descriptions; the
+    relevant supplement was not opened.
+- id: C30
+  topic: 'Medicare coverage: coverage with evidence development'
+  text: >-
+    On July 8, 2025, CMS confirmed that Abbott's TRICARE real-world study (NCT06920745) meets the requirements
+    of the T-TEER National Coverage Determination for coverage with evidence development.
+  value: CMS letter dated July 8, 2025; study NCT06920745
+  source:
+    cite: >-
+      Abbott. Coverage with Evidence Development Approval Letter, TriClip TEER System (MAT-2508246 v1.0,
+      2025), including TriClip G5 Important Safety Information and the CMS letter of July 8, 2025.
+    url: >-
+      https://www.cardiovascular.abbott/content/dam/cv/cardiovascular/cv-live-site/hcp/reimbursement/structural-heart/TriClip-Approval-Letter-Combined.pdf
+  support: >-
+    the Centers for Medicare & Medicaid Services (CMS) has determined that it fulfills the requirements
+    of the T-TEER National Coverage Determination (NCD).
+  status: verified
+  note: CMS letter reproduced in an Abbott reimbursement PDF. The NCD decision memo itself was not opened.
+- id: C31
+  topic: 'TriClip G4: four clip sizes'
+  text: The TriClip G4 clip comes in four sizes, NT, NTW, XT and XTW, which differ in arm length and width.
+  value: '4 sizes: NT, NTW, XT, XTW'
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Executive Summary, Circulatory System Devices Panel, February
+      13, 2024: TriClip G4 System, TRILUMINATE Pivotal Trial.
+    url: https://fda.gov/media/176091/download
+  support: 'The Clip is available in four sizes: NT, NTW, XT, and XTW, with varying Clip length and width.'
+  status: verified
+  note: >-
+    Read through WebFetch. The FDA panel sponsor slides name 'Standard Length Arm (G4 NT/ G4 NTW)' and
+    'Long Length Arm (G4 XT/ G4 XTW)' (https://www.fda.gov/media/176377/download).
+- id: C32
+  topic: 'TriClip G4: arm length and width of each size'
+  text: >-
+    NT has 9-mm arms and 4-mm width, XT 12-mm arms and 4-mm width, NTW 9-mm arms and 6-mm width, and XTW
+    12-mm arms and 6-mm width.
+  value: NT 9 mm x 4 mm; XT 12 mm x 4 mm; NTW 9 mm x 6 mm; XTW 12 mm x 6 mm (arm length x arm width)
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    NT and XT clip sizes (4 mm width; 9 [NT] and 12 [XT] mm arm length) ... (6 mm width; 9 [NTW], and
+    12 [XTW] mm arm length)
+  status: verified
+  note: >-
+    Agrees with the FDA-approved IFU (P230007C, Table 2, read through WebFetch): 'Arm Width, maximum mm
+    4 mm 6 mm 4 mm 6 mm' under the header 'NT NTW XT XTW', and 'Maximum Arm (Coaptation) Length, maximum
+    mm 9 mm 12 mm'. Hahn also states the grippers carry '4 for the NT and NTW, and 6 for the XT and XTW'
+    rows of frictional elements.
+- id: C33
+  topic: 'TriClip G4: grasping width and implant width'
+  text: >-
+    The IFU lists a minimum grasping width at 120 degrees of 17 mm and 22 mm and a nominal implant width
+    at 180 degrees of 20 mm and 25 mm, which appear to belong to the 9-mm (NT/NTW) and 12-mm (XT/XTW)
+    arm lengths respectively.
+  value: Grasping width (120 deg) 17 mm vs 22 mm; implant width (180 deg) 20 mm vs 25 mm
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. PMA P230007 approved labeling (Instructions for Use): TriClip
+      G4 System. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007C.pdf
+  support: Grasping Width at 120 degrees, minimum mm 17 mm 22 mm
+  status: VERIFY
+  note: >-
+    The extracted IFU text lost the table layout, so which sizes share each value is inferred, not read.
+    Confirm against the IFU PDF table before printing.
+- id: C34
+  topic: 'TriClip G4: steerable guide catheter size'
+  text: >-
+    The TriClip steerable guide catheter has a 25 Fr shaft (8.4 mm outer diameter) and an 80-cm working
+    length.
+  value: 25 Fr (8.4 mm OD); working length 80.0 cm
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. PMA P230007 approved labeling (Instructions for Use): TriClip
+      G4 System. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007C.pdf
+  support: Catheter Shaft Outer Diameter 8.4 mm (25 Fr)
+  status: verified
+  note: >-
+    Read through WebFetch (IFU Table 2). FDA panel executive summary: 'TriClip Steerable Guide Catheter
+    (TSGC), consisting of the Dilator, 25 Fr shaft, and Handle.' The IFU lists the steerable sleeve distal
+    shaft as 5.3 mm (16 Fr).
+- id: C35
+  topic: 'TriClip G4: access route'
+  text: TriClip is delivered through the femoral vein.
+  value: Transfemoral venous access
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. PMA P230007 approved labeling (Instructions for Use): TriClip
+      G4 System. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007C.pdf
+  support: Insert the Guide-Dilator assembly over the stationary guidewire into the femoral vein.
+  status: verified
+  note: >-
+    SSED trial eligibility: 'femoral vein access was feasible and could accommodate a 25 Fr catheter.'
+    FDA consumer page: catheter inserted 'through the largest vein in the groin'. Read through WebFetch.
+    Onishi et al. 2026 note that the right femoral vein is standard but the left femoral vein can give
+    more height above the leaflets.
+- id: C36
+  topic: 'TR grading: five-grade scheme, vena contracta width'
+  text: >-
+    In the five-grade scheme, biplane vena contracta width is under 3 mm for mild, 3-6.9 mm for moderate,
+    7-13.9 mm for severe, 14-20.9 mm for massive and 21 mm or more for torrential TR.
+  value: >-
+    VCW (biplane): mild <3; moderate 3-6.9; severe 7-13.9; massive 14-20.9; torrential ≥21 mm (color scale
+    40-60 cm/s)
+  source:
+    cite: >-
+      Hahn RT, Lawlor MK, Davidson CJ, et al. Tricuspid Valve Academic Research Consortium Definitions
+      for Tricuspid Regurgitation and Trial Endpoints. Eur Heart J 2023;44:4508-4532.
+    pmid: '37793121'
+    doi: 10.1093/eurheartj/ehad653
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC10645050&retmode=xml
+  support: 'VCW (biplane), mm: <3 | 3–6.9 | 7–13.9 | 14–20.9 | ≥21'
+  status: verified
+  note: >-
+    Table 4 of TVARC 2023 ('Echocardiographic Parameters and Relative Cutoffs for TR 5-Tier Grading'),
+    adapted from Zoghbi 2017, Lancellotti 2022 and Hahn & Zamorano 2017. Cell separators added; the extracted
+    row reads 'VCW (biplane), mma<33–6.97–13.914–20.9≥21'. Footnote: 'Note that some studies suggest an
+    average VCW of >9 mm should define severe TR.'
+- id: C37
+  topic: 'TR grading: five-grade scheme, PISA EROA and regurgitant volume'
+  text: >-
+    From mild to torrential, the five-grade scheme uses PISA EROA cut-offs of under 20, 20-39, 40-59,
+    60-79 and 80 mm2 or more, and PISA regurgitant volume cut-offs of under 30, 30-44, 45-59, 60-74 and
+    75 mL or more.
+  value: 'PISA EROA: <20 | 20-39 | 40-59 | 60-79 | ≥80 mm2; RVol: <30 | 30-44 | 45-59 | 60-74 | ≥75 mL'
+  source:
+    cite: >-
+      Hahn RT, Lawlor MK, Davidson CJ, et al. Tricuspid Valve Academic Research Consortium Definitions
+      for Tricuspid Regurgitation and Trial Endpoints. Eur Heart J 2023;44:4508-4532.
+    pmid: '37793121'
+    doi: 10.1093/eurheartj/ehad653
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC10645050&retmode=xml
+  support: >-
+    PISA EROA, mm2: <20 | 20–39 | 40–59 | 60–79 | ≥80. Regurgitant volume (2D PISA), mL: <30 | 30–44 |
+    45–59 | 60–74 | ≥75
+  status: verified
+  note: >-
+    TVARC 2023 Table 4; cell separators added (extracted row: 'PISA EROA, mm2<2020–3940–5960–79≥80Regurgitant
+    volume (2D PISA), mL<3030–4445–5960–74≥75'). Grades mild (1+), moderate (2+), severe (3+), massive
+    (4+), torrential (5+). PISA radius cut-offs are given only for 3 grades (≤5.4, 5.5–8.9, ≥9 mm).
+- id: C38
+  topic: 'TR grading: five-grade scheme, 3D vena contracta area'
+  text: >-
+    For 3D vena contracta area or quantitative Doppler EROA, the five-grade scheme uses 75-94.9 mm2 for
+    severe, 95-114.9 mm2 for massive and 115 mm2 or more for torrential TR.
+  value: >-
+    3D VCA or 2D Doppler EROA: severe 75-94.9; massive 95-114.9; torrential ≥115 mm2 (no cut-offs for
+    mild/moderate)
+  source:
+    cite: >-
+      Hahn RT, Lawlor MK, Davidson CJ, et al. Tricuspid Valve Academic Research Consortium Definitions
+      for Tricuspid Regurgitation and Trial Endpoints. Eur Heart J 2023;44:4508-4532.
+    pmid: '37793121'
+    doi: 10.1093/eurheartj/ehad653
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC10645050&retmode=xml
+  support: >-
+    3D VCA, mm2: — | — | 75–94.9 | 95–114.9 | ≥115. 2D Doppler EROA, mm2: — | — | 75–94.9 | 95–114.9 |
+    ≥115
+  status: verified
+  note: >-
+    TVARC 2023 Table 4; cell separators added. TVARC explains these higher cut-offs reflect 'the underestimation
+    of EROA by the PISA method compared with direct measurement of 3-dimensional vena contracta area (3D-VCA)'.
+- id: C39
+  topic: 'TR grading: the original 2017 Hahn-Zamorano table'
+  text: >-
+    The cut-offs above are TVARC's adaptation; the exact values printed in the 2017 Hahn and Zamorano
+    editorial were not checked.
+  value: Not opened
+  source:
+    cite: >-
+      Hahn RT, Zamorano JL. The need for a new tricuspid regurgitation grading scheme. Eur Heart J Cardiovasc
+      Imaging 2017;18:1342-1343.
+    pmid: '28977455'
+    doi: 10.1093/ehjci/jex139
+  support: ''
+  status: VERIFY
+  note: >-
+    Not opened: the editorial (Eur Heart J Cardiovasc Imaging 2017;18:1342-1343) is paywalled and the
+    DOI link (https://doi.org/10.1093/ehjci/jex139) could not be fetched. The TVARC 2023 Table 4 footnote
+    reads 'Adapted from: 1) Zoghbi et al16; 2) Lancellotti et al8; and 3) Hahn et al.19' (ref 19 = Hahn
+    & Zamorano 2017). Before attributing decimals such as '7-13.9 mm' to Hahn & Zamorano, check the original
+    table.
+- id: C40
+  topic: 'TR grading: ASE 2017 criteria for severe TR'
+  text: >-
+    ASE 2017 grades TR as severe at a vena contracta width of at least 0.7 cm, an EROA of at least 0.40
+    cm2, a regurgitant volume of at least 45 mL, or a PISA radius above 0.9 cm.
+  value: >-
+    Severe: VCW ≥0.7 cm; EROA ≥0.40 cm2; RVol ≥45 mL; PISA radius >0.9 cm (Nyquist baseline shift 28 cm/s);
+    jet area >10 cm2
+  source:
+    cite: >-
+      Zoghbi WA, Adams D, Bonow RO, et al. Recommendations for Noninvasive Evaluation of Native Valvular
+      Regurgitation: A Report from the American Society of Echocardiography Developed in Collaboration
+      with the Society for Cardiovascular Magnetic Resonance. J Am Soc Echocardiogr 2017;30:303-371.
+    pmid: '28314623'
+    doi: 10.1016/j.echo.2017.01.007
+    url: https://asecho.org/wp-content/uploads/2017/04/2017VavularRegurgitationGuideline.pdf
+  support: >-
+    Table 14 Grading the severity of chronic TR by echocardiography ... VCW (cm) <0.3 0.3-0.69 ≥0.7 ...
+    EROA (cm2) <0.20 0.20-0.39 ≥0.40
+  status: verified
+  note: >-
+    Read from the rendered table image (J Am Soc Echocardiogr 2017;30:350, Table 14). Small inconsistency
+    inside the guideline: the text says 'a TR VCW >0.7 cm identifies severe TR', the table says ≥0.7.
+    The text also gives 'a VCA > 0.4 cm2 is a reasonable cutoff value for severe TR.' ASE uses 3 grades;
+    0.7 cm = 7 mm and 0.40 cm2 = 40 mm2, matching the lower bound of 'severe' in the five-grade scheme.
+- id: C41
+  topic: 'TR grading: five-grade scheme in TRILUMINATE'
+  text: >-
+    The first TRILUMINATE study graded TR with the five-class scheme (mild, moderate, severe, massive,
+    torrential) that extends the ASE scheme.
+  value: 5 classes
+  source:
+    cite: >-
+      Nickenig G, Weber M, Lurz P, et al. Transcatheter edge-to-edge repair for reduction of tricuspid
+      regurgitation: 6-month outcomes of the TRILUMINATE single-arm study. Lancet 2019;394:2002-2011.
+    pmid: '31708188'
+    doi: 10.1016/S0140-6736(19)32600-5
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=31708188&rettype=abstract&retmode=text
+  support: >-
+    Tricuspid regurgitation was graded using a five-class grading scheme (mild, moderate, severe, massive,
+    and torrential) that expanded on the standard American Society of Echocardiography grading scheme.
+  status: verified
+- id: C42
+  topic: 'TR grading: ESC/EACTS 2025 position'
+  text: >-
+    The 2025 ESC/EACTS guideline notes the five-grade scale but advises intervention as soon as TR is
+    severe, aiming for moderate or less.
+  value: 'Target: TR moderate or less'
+  source:
+    cite: >-
+      Praz F, Borger MA, Lanz J, et al. 2025 ESC/EACTS Guidelines for the management of valvular heart
+      disease. Eur J Cardiothorac Surg 2025;67:ezaf276.
+    pmid: '40878291'
+    doi: 10.1093/ejcts/ezaf276
+    url: >-
+      https://iris.unisr.it/retrieve/e93fadc5-eebc-4ec5-adc3-3f8ded8dc108/ezaf276_compressed-1_compressed.pdf
+  support: >-
+    an intervention should be considered without delay, as soon as TR is severe, with the aim of reducing
+    TR to moderate or less.
+  status: verified
+- id: C43
+  topic: 'Imaging guidance: ASE guideline status (mitral)'
+  text: >-
+    In June 2026 ASE published a guideline on intraprocedural imaging for mitral TEER (M-TEER) that sets
+    standard views and procedural steps.
+  value: J Am Soc Echocardiogr 2026;39:529-550
+  source:
+    cite: >-
+      Little SH, Quader N, Brady M, et al. Guidelines for the Intraprocedural Imaging for Mitral Valve
+      Transcatheter Edge-to-Edge Repair (M-TEER): Recommendations from the American Society of Echocardiography.
+      J Am Soc Echocardiogr 2026;39:529-550.
+    pmid: '42242827'
+    doi: 10.1016/j.echo.2026.03.003
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=42242827&rettype=abstract&retmode=text
+  support: >-
+    This guideline sets forth imaging views and the standard procedural steps and defines the imaging
+    content that must be communicated using 2D, biplane, 3D volume, and/or multiplanar reconstruction
+    3D formats.
+  status: verified
+  note: >-
+    ASE news release dated June 8, 2026 (https://www.asecho.org/news/ase-publishes-new-guideline-to-standardize-imaging-for-m-teer-procedures/)
+    mentions no tricuspid companion document.
+- id: C44
+  topic: 'Imaging guidance: no ASE tricuspid TEER imaging guideline found'
+  text: >-
+    No ASE or EACVI guideline dedicated to intraprocedural imaging for tricuspid TEER was found for 2019
+    to October 2026.
+  value: Not found
+  source:
+    cite: >-
+      Little SH, Quader N, Brady M, et al. Guidelines for the Intraprocedural Imaging for Mitral Valve
+      Transcatheter Edge-to-Edge Repair (M-TEER): Recommendations from the American Society of Echocardiography.
+      J Am Soc Echocardiogr 2026;39:529-550.
+    pmid: '42242827'
+    doi: 10.1016/j.echo.2026.03.003
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=42242827&rettype=abstract&retmode=text
+  support: >-
+    Guidelines for the Intraprocedural Imaging for Mitral Valve Transcatheter Edge-to-Edge Repair (M-TEER):
+    Recommendations from the American Society of Echocardiography.
+  status: VERIFY
+  note: >-
+    Searched PubMed (J Am Soc Echocardiogr guidelines/standards 2019-2026; EACVI consensus/position statements
+    on tricuspid) and the ASE news page. Closest ASE documents: the 2022 ASE TEE screening standards (Hahn
+    et al., which include a tricuspid imaging protocol) and the 2026 ACC/AHA/ASE/HRS/STS systems-of-care
+    document on tricuspid interventions (O'Gara et al., JACC 2026;87:3360-3378; full text not opened).
+    The most detailed step-by-step sources found are Hahn 2025 (Structural Heart) and Onishi et al. 2026.
+    A negative search cannot prove absence.
+- id: C45
+  topic: 'Imaging: TEE views that show each tricuspid leaflet'
+  text: >-
+    In the mid-esophageal RV inflow-outflow (commissural) view at about 60 degrees, a biplane cut beside
+    the aorta shows the anterior and septal leaflets, and a cut beside the posterolateral wall shows the
+    posterior and septal leaflets.
+  value: >-
+    RV inflow-outflow view ~60 deg; biplane near aorta = anterior + septal; near posterolateral wall =
+    posterior + septal
+  source:
+    cite: >-
+      Hahn RT, Saric M, Faletra FF, et al. Recommended Standards for the Performance of Transesophageal
+      Echocardiographic Screening for Structural Heart Intervention: From the American Society of Echocardiography.
+      J Am Soc Echocardiogr 2022;35:1-76.
+    pmid: '34280494'
+    doi: 10.1016/j.echo.2021.07.006
+    url: https://www.asecho.org/wp-content/uploads/2025/04/PIIS0894731721005940.pdf
+  support: >-
+    Biplane image adjacent to the aorta and thus imaging the anterior and septal leaflet in the orthogonal
+    plane.
+  status: verified
+  note: >-
+    Same table (ASE 2022 Table 6): 'Biplane image adjacent to the posterolateral wall and thus imaging
+    the posterior and septal leaflet in the orthogonal plane.' Transgastric level: 'At 20–60° mechanical
+    rotation ... a single-plane SAX view is obtained' (Hahn 2025 gives 30-60 degrees for the same view).
+    These are screening standards, not an intraprocedural guideline.
+- id: C46
+  topic: 'Imaging: delivery system in the right atrium'
+  text: >-
+    As the delivery system enters the right atrium from the inferior vena cava, a bicaval view at about
+    90 degrees, ideally with live 3D or biplane imaging, tracks its trajectory and keeps it clear of the
+    septum, Eustachian valve, Chiari network and pacing leads.
+  value: Bicaval view ~90 deg; live 3D or biplane
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    From a bicaval view at ∼90° imaging assesses device trajectory and ensures the device avoids interacting
+    with native tissue (i.e., intra-atrial septum, Eustachian valve, Chiari network, pacing hardware,
+    or other RA structures).
+  status: verified
+  note: >-
+    Next sentence: 'continuous tracking the device as it is manipulated within the RA is easiest using
+    live 3D or biplane imaging'. Hahn also states independent grasping (gripper) controls should be confirmed
+    before the device enters the RV.
+- id: C47
+  topic: 'Imaging: steering toward the valve'
+  text: >-
+    Flexing the delivery catheter lowers the clip toward the tricuspid annulus, and the imager follows
+    it by rotating the TEE probe anticlockwise from the bicaval view until the valve comes into view.
+  value: >-
+    Bicaval view, then anticlockwise probe rotation; Onishi: bicaval biplane to four-chamber, then RV
+    inflow biplane to grasping view
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    flexion of the delivery catheter will lower the device toward the tricuspid annulus ... continuous
+    imaging of the device will require anticlockwise rotation of the TEE probe, bringing the TV into view
+  status: verified
+  note: >-
+    Onishi et al. 2026 Table 3, tricuspid column for 'Steering down toward valve': 'Bicaval view bi-plane
+    to four chamber view, transitioning to RV inflow view bi-plane to grasping view for tracking clip
+    movement toward TV'.
+- id: C48
+  topic: 'Imaging: clip-arm orientation'
+  text: >-
+    The clip arms should be oriented perpendicular to the target line of coaptation, aligned most accurately
+    on the 3D en face view, with the transgastric short-axis view as an alternative check.
+  value: Perpendicular to the coaptation line; 3D en face view with MPR; transgastric SAX as alternative
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    To preserve leaflet geometry, the device should typically be oriented perpendicular to the line of
+    coaptation. ... Short-axis transgastric imaging can also be used to evaluate device orientation.
+  status: verified
+  note: >-
+    Hahn: 'Identifying device location and orientation is most accurate using 3D en face view of the TV,
+    with MPR used to position the 2 orthogonal 2D images at the intended site of leaflet grasping'. Below
+    the valve, transgastric SAX of the leaflet tips is useful 'with the caveat that off-axis imaging of
+    the valve may lead to inaccurate position assessment'. Onishi 2026 Table 2 lists 3D en-face, transgastric
+    short-axis and 3D MPR for this step (two-column table flattened in extraction). Correction (2026-10-24):
+    in Onishi 2026 Table 2 the 3D en-face view is in the mitral column; the tricuspid column lists the
+    transgastric short-axis view and 3D MPR. Hahn 2025 supports the 3D en face view for the tricuspid
+    valve.
+- id: C49
+  topic: 'Imaging: leaflet grasping'
+  text: >-
+    Leaflet capture is guided by 3D multiplanar reconstruction or by 2D single-plane (0-20 or about 140-160
+    degrees) or biplane imaging from the commissural (RV inflow-outflow) view with the biplane cursor
+    through the device.
+  value: 3D MPR, or 2D at 0-20 deg / ~140-160 deg, or biplane from the RV inflow-outflow (commissural)
+    view
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    2D single plane (typically at 0° to 20° or ∼140° to 160° mechanical rotation) or biplane imaging using
+    the commissural view as the primary image and the biplane marker directly through the device
+  status: verified
+  note: >-
+    Onishi et al. 2026 (Tables 2-3), tricuspid column for leaflet grasping: 'RV inflow view biplane to
+    Reverse 4-chamber grasping view', plus 3D en face/transgastric SAX/MPR. Hahn: the imager should see
+    leaflet tissue lying on the device arms before capture. Correction (2026-10-24): Onishi's tricuspid
+    column for leaflet grasping lists the RV inflow biplane view, the transgastric short axis and MPR,
+    not the 3D en face view.
+- id: C50
+  topic: 'Imaging: gripper ''bounce'' on the right side'
+  text: >-
+    Unlike mitral TEER, the systolic 'bounce' of the grippers that confirms leaflet capture may not be
+    seen on the low-pressure right side.
+  value: Qualitative
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    Unlike TEER for the mitral valve, the “bouncing” of the grippers/clasps due to systolic closure of
+    the captured native leaflets may not be seen on the low pressure right side.
+  status: verified
+  note: >-
+    SOURCES DIFFER IN EMPHASIS: Onishi et al. 2026 Table 2 lists 'A gripper “bounce” is a useful echocardiographic
+    sign confirming leaflet capture' in a step shared by mitral and tricuspid TEER, citing both mitral
+    and tricuspid figure panels.
+- id: C51
+  topic: 'Imaging: confirming leaflet insertion'
+  text: >-
+    After grasping, a tissue bridge on transgastric short-axis or 3D MPR views confirms leaflet insertion;
+    on the tricuspid valve the residual leaflet length is less reliable than on the mitral valve, because
+    the leaflets stretch.
+  value: 'Tricuspid: tissue bridge on TG SAX or 3D MPR; residual leaflet length less reliable'
+  source:
+    cite: >-
+      Onishi T, Tang GHL, Lerakis S, et al. How to mirror tricuspid transcatheter edge-to-edge repair
+      (TEER) to mitral TEER in terms of procedural imaging and device workflow: a step-by-step primer.
+      Ann Cardiothorac Surg 2026;15:20.
+    pmid: '41988455'
+    doi: 10.21037/acs-2025-aw-27-tvd
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC13077618&retmode=xml
+  support: >-
+    Transgastric short-axis or 3D MPR view showing tissue bridge / Measurement of residual leaflet length
+    may be less reliable due to increased leaflet stretchability, which can affect visual estimation
+  status: verified
+  note: >-
+    Onishi 2026 Table 2, tricuspid column (read in the PMC XML, which keeps the columns apart). The mitral
+    column holds 'Residual leaflet length is measured and compared to the baseline leaflet length to confirm
+    successful capture'. Corrected on 2026-10-24 after an independent check: the first version read the
+    flattened table.
+- id: C52
+  topic: 'Imaging: after clip deployment'
+  text: >-
+    After deployment the imager assesses residual TR, transtricuspid gradients and valve area, RV function
+    and hemodynamic benefit; residual TR is best quantified by 3D vena contracta area because PISA tends
+    to overestimate it with a clip in place.
+  value: Residual TR (3D VCA preferred); mean gradient and valve area; RV function; hepatic vein flow
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    TR quantitation following T-TEER is most accurately assessed by 3D planimetry of the vena contracta
+    area, as the regurgitant orifice area by proximal isovelocity surface area may be distorted by the
+    TEER device typically overestimating severity
+  status: verified
+  note: >-
+    Preceding sentence: 'Postdeployment assessment includes evaluation of the severity of residual TR
+    (Figure 8g), tricuspid gradients and valve area, RV function, and hemodynamic benefits.' Onishi 2026
+    lists 'Trans-tricuspid gradient' and RA pressure/v wave under hemodynamic assessment before release.
+- id: C53
+  topic: 'Imaging: gradient after a single clip'
+  text: Tricuspid gradients and valve area are rarely significantly elevated after a single device.
+  value: Qualitative
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    Tricuspid gradients and valve area are rarely significantly elevated following deployment of a single
+    device.
+  status: verified
+- id: C54
+  topic: 'Technique: first target leaflets'
+  text: >-
+    When there is no focal defect or the TR is diffuse, the anteroseptal coaptation line is usually targeted
+    first because it is typically the longest.
+  value: Anteroseptal first
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    In the absence of a specific anatomic defect, or in cases where the TR is diffuse, the anterior-septal
+    leaflets are typically first targeted since this coaptation length is typically the longest
+  status: verified
+  note: >-
+    Besler et al. 2018 (MitraClip-based tricuspid TEER, 117 patients): '185 and 34 clips were implanted
+    at the anteroseptal and posteroseptal commissures, respectively.'
+- id: C55
+  topic: 'Technique: the septal leaflet is always one of the grasped leaflets'
+  text: >-
+    In tricuspid TEER the septal leaflet is grasped together with either the anterior or the posterior
+    leaflet; grasping the anterior and posterior leaflets alone has not been shown to reduce TR.
+  value: Septal + anterior, or septal + posterior
+  source:
+    cite: >-
+      Onishi T, Tang GHL, Lerakis S, et al. How to mirror tricuspid transcatheter edge-to-edge repair
+      (TEER) to mitral TEER in terms of procedural imaging and device workflow: a step-by-step primer.
+      Ann Cardiothorac Surg 2026;15:20.
+    pmid: '41988455'
+    doi: 10.21037/acs-2025-aw-27-tvd
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC13077618&retmode=xml
+  support: >-
+    Similarly, in tricuspid TEER, the septal leaflet is grasped with either the anterior or posterior
+    leaflet.
+  status: verified
+  note: >-
+    Same source: 'attempts to grasp the anterior and posterior tricuspid leaflets directly (without involving
+    the septal leaflet) have not been shown to be effective in reducing TR'.
+- id: C56
+  topic: 'Technique: zip-and-clip strategy'
+  text: >-
+    A 'zip and clip' approach, grasping first where the gap is smaller to make grasping easier in the
+    target region, can be used, and several devices may be placed along different coaptation lines.
+  value: Qualitative
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    a “zip and clip” strategy of grasping a location with a smaller gap to improve the ability to grasp
+    the leaflets in the region of interest can also be performed
+  status: verified
+  note: >-
+    Hahn: 'a multidevice strategy may require sequential devices be positioned along different lines of
+    coaptation (i.e., anterior-septal and posterior-septal devices)'.
+- id: C57
+  topic: 'Technique: commissures treated in registry practice'
+  text: >-
+    In registry data cited by Hahn, the anteroseptal commissure was treated in 66% of cases, the posteroseptal
+    in 33% and the anteroposterior in 1%; two clips were needed in 54% and one clip in 37%.
+  value: AS 66%, PS 33%, AP 1%; 2 clips 54%, 1 clip 37%
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    T-TEER registry data demonstrates the anterior-septal commissure is treated in 66% of cases, the posterior-septal
+    commissure in 33% of cases, and the anterior–posterior commissure in 1% of cases.
+  status: VERIFY
+  note: >-
+    Second-hand number: Hahn cites ref 27 = Wild MG et al., JACC Cardiovasc Interv 2022;15:1352-1363,
+    a PASCAL/PASCAL Ace registry (not TriClip). Its abstract does not contain these figures and the full
+    text was not opened. For TriClip in TRILUMINATE, use the SSED clip counts instead.
+- id: C58
+  topic: 3D en face display of the tricuspid valve (guideline)
+  text: >-
+    The EAE/ASE 3D echocardiography recommendations say the en face tricuspid valve should be displayed
+    with the septal leaflet at the 6 o'clock position, whether viewed from the atrium or the ventricle.
+  value: Septal leaflet at 6 o'clock, irrespective of perspective
+  source:
+    cite: >-
+      Lang RM, Badano LP, Tsang W, et al. EAE/ASE recommendations for image acquisition and display using
+      three-dimensional echocardiography. J Am Soc Echocardiogr 2012;25:3-46.
+    pmid: '22183020'
+    doi: 10.1016/j.echo.2011.11.010
+    url: https://www.asecho.org/wp-content/uploads/2025/04/2012_Three-Dimensional-Echo.pdf
+  support: >-
+    When displaying the TV en face, the septal leaflet should be located in the 6 o’clock position irrespective
+    of perspective (Tables 4 and 6).
+  status: verified
+  note: >-
+    J Am Soc Echocardiogr 2012;25:31. Also p. 19: 'The TV should be displayed with the septal leaflet
+    at the 6 o’clock position, irrespective of perspective', and p. 14: from the right-atrial view 'the
+    valve should be rotated in plane 45° so that the septal leaflet is located at the 6 o’clock position.'
+    (The 45 degree sign is lost in the PDF text layer.)
+- id: C59
+  topic: 3D en face display in practice
+  text: >-
+    Many interventional echocardiographers skip the final rotation, so the en face view mimics the transgastric
+    short axis, with the septum on the right of the screen and the aorta at about 5 o'clock.
+  value: 'Unrotated view: interventricular septum on the right, aorta ~5 o''clock'
+  source:
+    cite: >-
+      Hahn RT, Saric M, Faletra FF, et al. Recommended Standards for the Performance of Transesophageal
+      Echocardiographic Screening for Structural Heart Intervention: From the American Society of Echocardiography.
+      J Am Soc Echocardiogr 2022;35:1-76.
+    pmid: '34280494'
+    doi: 10.1016/j.echo.2021.07.006
+    url: https://www.asecho.org/wp-content/uploads/2025/04/PIIS0894731721005940.pdf
+  support: >-
+    Many interventional echocardiographers do not perform the final rotation ... with the interventricular
+    septum on the right side of the screen and the aorta located at the 5 o’clock position.
+  status: verified
+  note: >-
+    ASE 2022 restates Lang's display as 'the IAS placed inferiorly (at the 6 o’clock position)' and warns
+    the extra z-plane rotation 'could lead to significant confusion in the setting of marked leaflet variability'.
+    Hahn 2025 describes the unrotated view as 'septal leaflet is at ∼3 o’clock and aortic leaflet at ∼6
+    o’clock' (aorta ~6 vs ~5 o'clock: minor disagreement) and says 'most interventional imagers prefer
+    not to rotate the image'. Label the leaflets on screen in the video.
+- id: C60
+  topic: 'Gradient: TVARC device-performance threshold'
+  text: >-
+    TVARC defines adequate performance of a TR-reducing device as including absence of tricuspid stenosis,
+    with a mean gradient below 5 mmHg.
+  value: Mean gradient < 5 mmHg (with TVA ≥1.5 cm2 or TVAi ≥0.9 cm2/m2, DVI <2.2)
+  source:
+    cite: >-
+      Hahn RT, Lawlor MK, Davidson CJ, et al. Tricuspid Valve Academic Research Consortium Definitions
+      for Tricuspid Regurgitation and Trial Endpoints. Eur Heart J 2023;44:4508-4532.
+    pmid: '37793121'
+    doi: 10.1093/eurheartj/ehad653
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC10645050&retmode=xml
+  support: >-
+    Performance of devices whose purpose is a reduction in TR, should include the absence of tricuspid
+    stenosis (TVA ≥ 1.5 cm2 ... DVI < 2.2, mean gradient < 5 mm Hg)
+  status: verified
+  note: Same document lists TR reduction to 'optimal (≤ mild [1+]) or acceptable (≤ moderate [2+])'.
+- id: C61
+  topic: 'Gradient: TVARC complication definition'
+  text: TVARC lists tricuspid stenosis with a mean gradient above 5 mmHg as a device-related complication.
+  value: Mean gradient > 5 mmHg
+  source:
+    cite: >-
+      Hahn RT, Lawlor MK, Davidson CJ, et al. Tricuspid Valve Academic Research Consortium Definitions
+      for Tricuspid Regurgitation and Trial Endpoints. Eur Heart J 2023;44:4508-4532.
+    pmid: '37793121'
+    doi: 10.1093/eurheartj/ehad653
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC10645050&retmode=xml
+  support: Tricuspid stenosis (mean gradient > 5 mm Hg)
+  status: verified
+  note: >-
+    Boundary inconsistency inside TVARC: performance requires '< 5' and stenosis is '> 5', so exactly
+    5 mmHg is not assigned. For native valves TVARC says a mean gradient '≥5 mm Hg' is suggestive of TS.
+- id: C62
+  topic: 'Gradient: acceptable range after T-TEER'
+  text: >-
+    Hahn notes that TVARC treats a mean gradient below 5 mmHg as optimal, but that gradients below 6 to
+    9 mmHg could be acceptable by bioprosthetic norms.
+  value: <5 mmHg optimal; <6-9 mmHg possibly acceptable
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12281283&retmode=xml
+  support: >-
+    Tricuspid Valve Academic Research Consortium suggests that optimal performance of transcatheter devices
+    would result in a mean gradient <5 mmHg ... however, based on normative data for bioprosthetic TV
+    valves acceptable gradients could be <6-9 mmHg
+  status: verified
+  note: >-
+    Hahn also writes that the transtricuspid gradient 'which may determine outcomes has not been studied';
+    but see Coisne 2023 (TriValve), which did study it.
+- id: C63
+  topic: 'Gradient: TRILUMINATE baseline exclusion'
+  text: >-
+    TRILUMINATE Pivotal excluded tricuspid stenosis, defined as an orifice of 1.0 cm2 or less and/or a
+    mean gradient of 5 mmHg or more by the echo core lab.
+  value: TV orifice ≤1.0 cm2 and/or mean gradient ≥5 mmHg
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Executive Summary, Circulatory System Devices Panel, February
+      13, 2024: TriClip G4 System, TRILUMINATE Pivotal Trial.
+    url: https://fda.gov/media/176091/download
+  support: >-
+    Tricuspid valve stenosis, defined as a tricuspid valve orifice ≤1.0 cm2 and/or mean gradient ≥5 mmHg
+    assessed by the ECL.
+  status: verified
+  note: Read through WebFetch (FDA panel executive summary).
+- id: C64
+  topic: 'Gradient: ESC/EACTS 2025 native severe TS'
+  text: >-
+    The 2025 ESC/EACTS guideline defines severe native tricuspid stenosis as a mean diastolic gradient
+    above 5 mmHg at a normal heart rate.
+  value: '> 5 mmHg at normal heart rate'
+  source:
+    cite: >-
+      Praz F, Borger MA, Lanz J, et al. 2025 ESC/EACTS Guidelines for the management of valvular heart
+      disease. Eur J Cardiothorac Surg 2025;67:ezaf276.
+    pmid: '40878291'
+    doi: 10.1093/ejcts/ezaf276
+    url: >-
+      https://iris.unisr.it/retrieve/e93fadc5-eebc-4ec5-adc3-3f8ded8dc108/ezaf276_compressed-1_compressed.pdf
+  support: A mean diastolic transvalvular gradient of >5 mmHg at a normal heart rate indicates severe
+    TS.
+  status: verified
+- id: C65
+  topic: 'Gradient: change after TriClip in TRILUMINATE'
+  text: >-
+    In TRILUMINATE Pivotal the mean diastolic tricuspid gradient rose by 1.15 mmHg at 12 months in the
+    device arm vs 0.07 mmHg in controls.
+  value: +1.15 ± 1.28 mmHg (n=136) vs +0.07 ± 0.58 mmHg (n=126); difference 1.08 (95% CI 0.84-1.32)
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Summary of Safety and Effectiveness Data (SSED): TriClip G4 System,
+      PMA P230007. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007B.pdf
+  support: Tricuspid valve diastolic mean gradient (CW, mmHg)
+  status: verified
+  note: >-
+    SSED Table 17 row values as extracted: 'Mean ± SD (n) 1.15 ± 1.28 (136) 0.07 ± 0.58 (126)'. Read through
+    WebFetch; some Delta symbols were garbled. The SSED gives no absolute post-procedure gradient.
+- id: C66
+  topic: 'Gradient: prognostic value after T-TEER (TriValve)'
+  text: >-
+    In 308 TriValve patients, a higher discharge mean tricuspid gradient (top quartile 4.7 ± 2.0 mmHg)
+    was not associated with death or heart-failure hospitalization at 1 year.
+  value: >-
+    Quartiles 0.9, 1.8, 2.8, 4.7 mmHg; 1-year composite 35%, 30%, 40%, 34% (P = 0.60); adjusted HR Q4
+    vs Q1-3 1.05 (0.52-2.12)
+  source:
+    cite: >-
+      Coisne A, Scotti A, Taramasso M, et al. Prognostic Value of Tricuspid Valve Gradient After Transcatheter
+      Edge-to-Edge Repair: Insights From the TriValve Registry. JACC Cardiovasc Interv 2023;16:706-717.
+    pmid: '36948892'
+    doi: 10.1016/j.jcin.2023.01.375
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=36948892&rettype=abstract&retmode=text
+  support: >-
+    In this retrospective analysis of the TriValve registry, an increased discharge TVG was not significantly
+    associated with adverse outcomes after tricuspid TEER.
+  status: verified
+  note: >-
+    The authors limit this to 'the explored TVG range and up to the 1-year follow-up'. Mixed devices in
+    TriValve.
+- id: C67
+  topic: 'Gradient: TriClip IFU instruction'
+  text: >-
+    The TriClip IFU instructs operators to assess the mean pressure gradient before deploying a clip,
+    without a numeric threshold in the extracted text.
+  value: No threshold stated
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. PMA P230007 approved labeling (Instructions for Use): TriClip
+      G4 System. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007C.pdf
+  support: Perform mean pressure gradient assessment prior to proceeding to deployment.
+  status: verified
+  note: >-
+    Read through WebFetch (IFU section 22.4). A 2023 letter by Kuwajima et al. (J Cardiothorac Vasc Anesth
+    2023;37:2161-2163) is titled 'Underestimation of Intraprocedural Tricuspid Valve Pressure Gradient
+    by Echocardiography in Patients Undergoing Tricuspid Transcatheter Edge-to-Edge Repair'; only the
+    title was read.
+- id: C68
+  topic: 'Gradient: a 3-mmHg rule'
+  text: No source opened gives 3 mmHg (or less) as a target or limit for the mean gradient after T-TEER.
+  value: Not found
+  source:
+    cite: >-
+      Hahn RT, Lawlor MK, Davidson CJ, et al. Tricuspid Valve Academic Research Consortium Definitions
+      for Tricuspid Regurgitation and Trial Endpoints. Eur Heart J 2023;44:4508-4532.
+    pmid: '37793121'
+    doi: 10.1093/eurheartj/ehad653
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC10645050&retmode=xml
+  support: mean gradient < 5 mm Hg
+  status: VERIFY
+  note: >-
+    Sources opened use 5 mmHg (TVARC, TRILUMINATE exclusion, ESC native TS) or <6-9 mmHg (Hahn 2025).
+    If the chapter uses '≤3 mmHg', find a primary source first.
+- id: C69
+  topic: 'Predictors: TriValve registry (edge-to-edge, 1 year)'
+  text: >-
+    In 249 TriValve patients treated with edge-to-edge repair, EROA, coaptation gap, tenting area and
+    the absence of a central or anteroseptal jet predicted procedural failure.
+  value: >-
+    Predictors: EROA, coaptation gap, tenting area, absence of central/anteroseptal jet (no cut-offs in
+    abstract); procedural success 77%
+  source:
+    cite: >-
+      Mehr M, Taramasso M, Besler C, et al. 1-Year Outcomes After Edge-to-Edge Valve Repair for Symptomatic
+      Tricuspid Regurgitation: Results From the TriValve Registry. JACC Cardiovasc Interv 2019;12:1451-1461.
+    pmid: '31395215'
+    doi: 10.1016/j.jcin.2019.04.019
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=31395215&rettype=abstract&retmode=text
+  support: >-
+    Predictors of procedural failure included effective regurgitant orifice area, tricuspid coaptation
+    gap, tricuspid tenting area, and absence of central or anteroseptal TR jet location.
+  status: verified
+  note: Mostly MitraClip-era compassionate/off-label use.
+- id: C70
+  topic: 'Predictors: TriValve registry (all devices)'
+  text: >-
+    In the 312-patient TriValve registry of mixed transcatheter devices, greater coaptation depth independently
+    predicted reduced device success.
+  value: Coaptation depth OR 24.1 (p = 0.002)
+  source:
+    cite: >-
+      Taramasso M, Alessandrini H, Latib A, et al. Outcomes After Current Transcatheter Tricuspid Valve
+      Intervention: Mid-Term Results From the International TriValve Registry. JACC Cardiovasc Interv
+      2019;12:155-165.
+    pmid: '30594510'
+    doi: 10.1016/j.jcin.2018.10.022
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=30594510&rettype=abstract&retmode=text
+  support: >-
+    Greater coaptation depth (odds ratio: 24.1; p = 0.002) was an independent predictor of reduced device
+    success.
+  status: verified
+- id: C71
+  topic: 'Predictors: coaptation gap and jet location (Besler 2018)'
+  text: >-
+    In 117 patients, a small coaptation gap and a central or anteroseptal jet independently predicted
+    procedural success.
+  value: Qualitative (no cut-off in abstract)
+  source:
+    cite: >-
+      Besler C, Orban M, Rommel KP, et al. Predictors of Procedural and Clinical Outcomes in Patients
+      With Symptomatic Tricuspid Regurgitation Undergoing Transcatheter Edge-to-Edge Repair. JACC Cardiovasc
+      Interv 2018;11:1119-1128.
+    pmid: '29929631'
+    doi: 10.1016/j.jcin.2018.05.002
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=29929631&rettype=abstract&retmode=text
+  support: >-
+    Small TR coaptation gap size and a central/anteroseptal TR jet location independently predicted procedural
+    success on multivariate analysis.
+  status: verified
+  note: >-
+    Any numeric coaptation-gap cut-off from this paper (e.g., a value in mm) must be checked in the full
+    text, which was not opened.
+- id: C72
+  topic: 'Predictors: bRIGHT'
+  text: >-
+    In bRIGHT, after removing baseline TR grade, smaller right-atrial volume and smaller tethering distance
+    independently predicted TR reduction to moderate or less at discharge.
+  value: RA volume OR 0.679 (0.537-0.858); tethering distance OR 0.722 (0.564-0.924)
+  source:
+    cite: >-
+      Lurz P, Besler C, Schmitz T, et al. Short-Term Outcomes of Tricuspid Edge-to-Edge Repair in Clinical
+      Practice. J Am Coll Cardiol 2023;82:281-291.
+    pmid: '37207923'
+    doi: 10.1016/j.jacc.2023.05.008
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=37207923&rettype=abstract&retmode=text
+  support: >-
+    With baseline TR grade removed as a variable, smaller right atrial volume and smaller tethering distance
+    at baseline were independent predictors of TR reduction to ≤moderate at discharge
+  status: verified
+- id: C73
+  topic: 'Predictors: coaptation-gap size did not separate outcomes in bRIGHT'
+  text: >-
+    In 135 bRIGHT patients with core-lab transgastric views, 30-day TR reduction by number of grades was
+    similar for coaptation gaps under 7 mm, 7 to 10 mm and over 10 mm.
+  value: 'Gap categories <7, 7-10, >10 mm: similar 30-day TR reduction'
+  source:
+    cite: >-
+      Donal E, Sitges M, Panis V, et al. Characterization of Tricuspid Valve Anatomy and Coaptation Gap
+      in Subjects Receiving Tricuspid Transcatheter Edge-To-Edge Repair: Observations From the bRIGHT
+      TriClip Study. J Am Soc Echocardiogr 2024;37:397-404.
+    pmid: '38072288'
+    doi: 10.1016/j.echo.2023.12.002
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=38072288&rettype=abstract&retmode=text
+  support: >-
+    Thirty-day TR reduction (by number of grades) was similar among subjects with coaptation gaps of <7
+    mm, 7 to 10 mm, and >10 mm.
+  status: verified
+  note: >-
+    SOURCES DISAGREE with registries that found coaptation gap predictive (Besler 2018; TriValve). Gap
+    size also depends on the view: transgastric SAX gave 8.1 ± 3.1 mm (central anteroseptal) vs 4.7-5.2
+    mm in RV inflow-outflow views; Hahn 2025 says the transgastric view 'frequently overestimates these
+    gaps'.
+- id: C74
+  topic: 'Predictors: GLIDE score'
+  text: >-
+    The GLIDE score uses five factors (septolateral coaptation gap, jet location, image quality, chordal
+    density and en face jet morphology); patients scoring 4 or more reached a 2-grade TR reduction or
+    moderate-or-less TR in only 5.6% and 16.7%.
+  value: >-
+    Score 0-5; scores 0-1: >90% for both endpoints; scores ≥4: 5.6% and 16.7% (in the order: TR reduction
+    ≥2 grades, TR ≤ moderate); validation AUC 0.77 (0.69-0.86)
+  source:
+    cite: >-
+      Gerçek M, Narang A, Körber MI, et al. GLIDE Score: Scoring System for Prediction of Procedural Success
+      in Tricuspid Valve Transcatheter Edge-to-Edge Repair. JACC Cardiovasc Imaging 2024;17:729-742.
+    pmid: '38842961'
+    doi: 10.1016/j.jcmg.2024.04.008
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=38842961&rettype=abstract&retmode=text
+  support: >-
+    Five variables (septolateral coaptation gap, chordal structure density, en face TR jet morphology,
+    TR jet location, and image quality) were identified as best predicting procedural outcome
+  status: verified
+  note: >-
+    Intracardiac leads were assessed but are not one of the five components; the 'L' stands for jet Location.
+    168 derivation + 126 validation patients, 2 device types.
+- id: C75
+  topic: 'Predictors: pacemaker and defibrillator leads in TRILUMINATE Pivotal'
+  text: >-
+    In TRILUMINATE Pivotal, 98 of 469 patients with attempted TriClip had transvalvular CIED leads, and
+    TR reduction to moderate or less at 30 days was similar with and without leads (88% vs 87%).
+  value: 98/469 with leads; 30-day TR ≤ moderate 88% vs 87%; 1 year 81% vs 84%
+  source:
+    cite: >-
+      Naik H, Price MJ, Kapadia S, et al. Tricuspid Transcatheter Edge-to-Edge Repair in Patients With
+      Transvalvular CIED Leads: The TRILUMINATE Pivotal Trial. JACC Clin Electrophysiol 2025;11:1012-1020.
+    pmid: '39903153'
+    doi: 10.1016/j.jacep.2025.01.001
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=39903153&rettype=abstract&retmode=text
+  support: >-
+    At 30 days, TR reduction to moderate or less was similar in CIED+ and CIED- subjects (88% vs 87%)
+    and was sustained out to 1 year in the majority of subjects (81% vs 84%).
+  status: verified
+  note: >-
+    Lead patients were screened by an eligibility committee; leads 'that would prevent appropriate placement
+    of the TriClip device' were an exclusion (FDA SSED). 'No lead revisions, removals, or replacements
+    were reported through follow-up.'
+- id: C76
+  topic: 'Predictors: endocardial leads in bRIGHT'
+  text: >-
+    In bRIGHT, 110 of 511 patients had an endocardial lead across the valve, and 71% of them had TR of
+    moderate or less at 30 days.
+  value: 110/511 with leads; 71% TR ≤ moderate at 30 days (overall cohort 77%)
+  source:
+    cite: >-
+      Goebel B, Lurz P, Schmitz T, et al. Outcomes of tricuspid transcatheter edge-to-edge repair in subjects
+      with endocardial leads. EuroIntervention 2025;21:e253-e261.
+    pmid: '40028727'
+    doi: 10.4244/EIJ-D-23-01033
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=40028727&rettype=abstract&retmode=text
+  support: >-
+    Of the 511 enrolled subjects, a total of 110 had an endocardial lead ... At 30 days, 71% of subjects
+    with endocardial leads had TR of moderate or less.
+  status: verified
+  note: >-
+    In 80.7% of patients with a lead, TR was at least partly lead-related. 'No reports of lead malfunction
+    were reported.'
+- id: C77
+  topic: 'Predictors: TRILUMINATE anatomic exclusions'
+  text: >-
+    TRILUMINATE Pivotal excluded patients with a severe coaptation defect over 2 cm, leaflet calcification
+    in the grasping area, or leads that would prevent clip placement.
+  value: Coaptation defect > 2 cm excluded
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Summary of Safety and Effectiveness Data (SSED): TriClip G4 System,
+      PMA P230007. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007B.pdf
+  support: Presence of a severe coaptation defect (> 2cm) of the tricuspid leaflets.
+  status: verified
+  note: >-
+    Read through WebFetch. Patients with complex anatomy (anticipated TR reduction but not to moderate
+    or less) went to a single-arm cohort (next claims).
+- id: C78
+  topic: 'Predictors: coaptation gap by TRILUMINATE cohort'
+  text: >-
+    Mean baseline coaptation gap was 5.5 mm in the randomized device arm and 7.4 mm in the single-arm
+    (complex anatomy) cohort.
+  value: Device arm 5.5 ± 1.8 mm (n=137); control 5.2 ± 1.7 mm (n=142); single-arm 7.4 ± 2.7 mm (n=75)
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Executive Summary, Circulatory System Devices Panel, February
+      13, 2024: TriClip G4 System, TRILUMINATE Pivotal Trial.
+    url: https://fda.gov/media/176091/download
+  support: Patients in the Single-Arm Cohort had larger coaptation gaps than those in the Randomized Cohort.
+  status: verified
+  note: Read through WebFetch (FDA panel executive summary).
+- id: C79
+  topic: 'Complex anatomy: TRILUMINATE single-arm cohort'
+  text: >-
+    In 100 single-arm TRILUMINATE Pivotal patients with complex anatomy (mean gap 7.4 mm, 63% with 4 or
+    more leaflet segments, 35% with leads), 81% had TR of moderate or less at 1 year with no 30-day major
+    adverse events.
+  value: >-
+    N=100; gap 7.4 ± 2.7 mm; TR ≤ moderate 81% at 1 year; primary endpoint 46.2% vs 30% goal (P = 0.0008);
+    1-year mortality 15%
+  source:
+    cite: >-
+      Adams DH, Tang GHL, Whisenant BK, et al. Transcatheter Edge-to-Edge Repair in Patients With Complex
+      Tricuspid Valve Anatomy. JACC Cardiovasc Interv 2024;17:2749-2760.
+    pmid: '39663056'
+    doi: 10.1016/j.jcin.2024.08.035
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=39663056&rettype=abstract&retmode=text
+  support: A total of 81% of subjects had moderate or less TR at 1 year.
+  status: verified
+  note: >-
+    Same abstract: '63% had ≥4-segmental tricuspid leaflet morphology, and the coaptation gap averaged
+    7.4 ± 2.7 mm'; 'No major adverse events or deaths occurred within 30 days postprocedure.'
+- id: C80
+  topic: 'Predictors: ESC/EACTS 2025 anatomic checklist'
+  text: >-
+    The 2025 ESC/EACTS guideline asks the heart team to judge transcatheter eligibility on jet location,
+    coaptation gap, leaflet tethering and possible interference with a pacing lead.
+  value: 4 factors
+  source:
+    cite: >-
+      Praz F, Borger MA, Lanz J, et al. 2025 ESC/EACTS Guidelines for the management of valvular heart
+      disease. Eur J Cardiothorac Surg 2025;67:ezaf276.
+    pmid: '40878291'
+    doi: 10.1093/ejcts/ezaf276
+    url: >-
+      https://iris.unisr.it/retrieve/e93fadc5-eebc-4ec5-adc3-3f8ded8dc108/ezaf276_compressed-1_compressed.pdf
+  support: >-
+    The Heart Team with expertise in the treatment of TV disease evaluates anatomical eligibility for
+    transcatheter therapy including jet location, coaptation gap, leaflet tethering, and potential interference
+    with pacing lead.
+  status: verified
+  note: Footnote to Figure 17 (management of TR).
+- id: C81
+  topic: 'SLDA: TRILUMINATE single-arm study'
+  text: >-
+    In the first TRILUMINATE single-arm study, single-leaflet device attachment occurred in 5 of 72 patients
+    (7%).
+  value: 5/72 (7%)
+  source:
+    cite: >-
+      Nickenig G, Weber M, Lurz P, et al. Transcatheter edge-to-edge repair for reduction of tricuspid
+      regurgitation: 6-month outcomes of the TRILUMINATE single-arm study. Lancet 2019;394:2002-2011.
+    pmid: '31708188'
+    doi: 10.1016/S0140-6736(19)32600-5
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=31708188&rettype=abstract&retmode=text
+  support: Single leaflet attachment occurred in five (7%) of 72 patients.
+  status: verified
+- id: C82
+  topic: 'SLDA: TRILUMINATE Pivotal randomized device arm'
+  text: >-
+    In the TRILUMINATE Pivotal randomized device arm, single-leaflet device attachment in 11 patients
+    was the main reason device success was not reached (device success 88.9%, 144 of 162).
+  value: >-
+    SLDA n=11 of 172 with attempted procedure (6.4%, computed - not stated); device success 88.9% (144/162)
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. Summary of Safety and Effectiveness Data (SSED): TriClip G4 System,
+      PMA P230007. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007B.pdf
+  support: device success was not achieved in 18 subjects due to single leaflet device attachment (n=11)
+  status: verified
+  note: >-
+    The SSED gives counts, not an SLDA percentage; 11/172 = 6.4% is a computed value. Device success could
+    not be evaluated in 10 subjects (missing TR grade). Read through WebFetch.
+- id: C83
+  topic: 'bRIGHT: design and size'
+  text: >-
+    bRIGHT is a prospective, single-arm, post-approval TriClip registry at 26 European sites that enrolled
+    511 patients (mean age 79 years).
+  value: N = 511; 26 sites in Europe
+  source:
+    cite: >-
+      Lurz P, Rommel KP, Schmitz T, et al. Real-World 1-Year Results of Tricuspid Edge-to-Edge Repair
+      From the bRIGHT Study. J Am Coll Cardiol 2024;84:607-616.
+    pmid: '38759905'
+    doi: 10.1016/j.jacc.2024.05.006
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=38759905&rettype=abstract&retmode=text
+  support: Enrolled subjects (n = 511) were elderly (79 ± 7 years) with significant comorbidities.
+  status: verified
+  note: >-
+    ClinicalTrials.gov NCT04483089 lists actual enrollment 511 (https://clinicaltrials.gov/api/v2/studies/NCT04483089).
+- id: C84
+  topic: 'bRIGHT: 30-day results'
+  text: >-
+    In bRIGHT, 88% had massive or torrential TR at baseline, and TR was reduced to moderate or less at
+    30 days in 77%.
+  value: >-
+    Baseline massive/torrential 88%; TR ≤ moderate at 30 days 77%; implant success 99%; KCCQ +19 ± 23
+    points
+  source:
+    cite: >-
+      Lurz P, Besler C, Schmitz T, et al. Short-Term Outcomes of Tricuspid Edge-to-Edge Repair in Clinical
+      Practice. J Am Coll Cardiol 2023;82:281-291.
+    pmid: '37207923'
+    doi: 10.1016/j.jacc.2023.05.008
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=37207923&rettype=abstract&retmode=text
+  support: >-
+    Eighty-eight percent had baseline massive or torrential TR, and 80% of subjects were in NYHA functional
+    class III or IV. Successful device implantation occurred in 99% of subjects, and TR was reduced to
+    ≤moderate at 30 days in 77%.
+  status: verified
+  note: The 30-day abstract does not state the denominator for 77%.
+- id: C85
+  topic: 'bRIGHT: 1-year results'
+  text: At 1 year in bRIGHT, TR was moderate or less in 81% of patients and KCCQ had improved by 19 points.
+  value: TR ≤ moderate 81% at 1 year; KCCQ +19 ± 26 points; NYHA I/II 21% -> 75%
+  source:
+    cite: >-
+      Lurz P, Rommel KP, Schmitz T, et al. Real-World 1-Year Results of Tricuspid Edge-to-Edge Repair
+      From the bRIGHT Study. J Am Coll Cardiol 2024;84:607-616.
+    pmid: '38759905'
+    doi: 10.1016/j.jacc.2024.05.006
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=38759905&rettype=abstract&retmode=text
+  support: TR was reduced to moderate or less in 81% at 1 year.
+  status: verified
+  note: >-
+    1-year mortality was lower in patients who reached moderate or less TR at 30 days, with no difference
+    among moderate, mild or trace.
+- id: C86
+  topic: 'bRIGHT: 30-day major adverse events'
+  text: In bRIGHT, 14 patients (2.5%) had a major adverse event within 30 days.
+  value: 14 patients (2.5%)
+  source:
+    cite: >-
+      Lurz P, Besler C, Schmitz T, et al. Short-Term Outcomes of Tricuspid Edge-to-Edge Repair in Clinical
+      Practice. J Am Coll Cardiol 2023;82:281-291.
+    pmid: '37207923'
+    doi: 10.1016/j.jacc.2023.05.008
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=37207923&rettype=abstract&retmode=text
+  support: Fourteen subjects (2.5%) experienced a major adverse event at 30 days.
+  status: verified
+  note: >-
+    The abstract gives no denominator; 14 of 511 would be 2.7%, so the 2.5% may use a different denominator
+    or method. Check the full text before printing both numbers together.
+- id: C87
+  topic: 'Second randomized trial: Tri.Fr'
+  text: >-
+    In the French-Belgian Tri.Fr trial (300 patients), 74.1% of patients given T-TEER plus medical therapy
+    had an improved 1-year composite clinical score vs 40.6% with medical therapy alone.
+  value: >-
+    N = 300 (152 vs 148); improved composite 74.1% vs 40.6%; massive/torrential TR at 1 year 6.8% vs 53.5%;
+    KCCQ 69.9 vs 55.4
+  source:
+    cite: >-
+      Donal E, Dreyfus J, Leurent G, et al. Transcatheter Edge-to-Edge Repair for Severe Isolated Tricuspid
+      Regurgitation: The Tri.Fr Randomized Clinical Trial. JAMA 2025;333:124-132.
+    pmid: '39602173'
+    doi: 10.1001/jama.2024.21189
+    url: >-
+      https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=39602173&rettype=abstract&retmode=text
+  support: >-
+    At 1 year, 109 patients (74.1%) in the T-TEER + OMT group had an improved composite score compared
+    with 58 patients (40.6%) in the OMT-alone group.
+  status: verified
+  note: >-
+    Investigator-initiated; primary endpoint was the Packer composite (NYHA class, patient global assessment,
+    major cardiovascular events). Device: the design paper states 'Abbott is providing the implanted device'
+    and describes 'a clip dedicated to the tricuspid valve' (Donal 2022, PMID 34871375).
+- id: C88
+  topic: 'Guideline: ESC/EACTS 2025 recommendation for transcatheter TR treatment'
+  text: >-
+    The 2025 ESC/EACTS guideline gives a Class IIa, Level A recommendation for transcatheter tricuspid
+    treatment to improve quality of life and RV remodeling in high-risk patients with symptomatic severe
+    TR despite optimal medical therapy, without severe RV dysfunction or pre-capillary pulmonary hypertension.
+  value: Class IIa, Level of evidence A
+  source:
+    cite: >-
+      Praz F, Borger MA, Lanz J, et al. 2025 ESC/EACTS Guidelines for the management of valvular heart
+      disease. Eur J Cardiothorac Surg 2025;67:ezaf276.
+    pmid: '40878291'
+    doi: 10.1093/ejcts/ezaf276
+    url: >-
+      https://iris.unisr.it/retrieve/e93fadc5-eebc-4ec5-adc3-3f8ded8dc108/ezaf276_compressed-1_compressed.pdf
+  support: >-
+    Transcatheter TV treatment should be considered to improve quality of life and RV remodelling in high-risk
+    patients with symptomatic severe TR despite optimal medical therapy in the absence of severe RV dysfunction
+    or pre-capillary PH.
+  status: verified
+  note: >-
+    Recommendation Table 9, page 54 of the EJCTS version; the table is an image, so the class (IIa) and
+    level (A) were read visually and the quote was transcribed from the image. The running text gives
+    the same recommendation: 'transcatheter treatment should be considered to improve quality of life
+    and RV remodelling in high-risk patients with symptomatic severe TR, despite optimal medical therapy,
+    but without severe RV dysfunction or pre-capillary PH.'
+- id: C89
+  topic: 'Guideline: ESC/EACTS 2025 reading of TRILUMINATE'
+  text: >-
+    The 2025 ESC/EACTS guideline states that the TRILUMINATE Pivotal composite benefit was driven entirely
+    by quality of life, an 11.7-point KCCQ difference.
+  value: KCCQ difference 11.7 points (95% CI 6.8-16.6); P <0.001
+  source:
+    cite: >-
+      Praz F, Borger MA, Lanz J, et al. 2025 ESC/EACTS Guidelines for the management of valvular heart
+      disease. Eur J Cardiothorac Surg 2025;67:ezaf276.
+    pmid: '40878291'
+    doi: 10.1093/ejcts/ezaf276
+    url: >-
+      https://iris.unisr.it/retrieve/e93fadc5-eebc-4ec5-adc3-3f8ded8dc108/ezaf276_compressed-1_compressed.pdf
+  support: exclusively driven by improved quality of life [11.7 points (95% CI, 6.8-16.6); P <0.001].
+  status: verified
+- id: C90
+  topic: 'TR grading: valve morphology in severe TR'
+  text: >-
+    In the TVARC grading table, severe TR goes with a severely abnormal tricuspid valve: a flail leaflet,
+    a large coaptation gap or marked tethering.
+  value: 'Severe (3+): severely abnormal morphology (flail leaflet, large coaptation gap, marked tethering)'
+  source: &id001
+    cite: >-
+      Hahn RT, Lawlor MK, Davidson CJ, et al. Tricuspid Valve Academic Research Consortium Definitions
+      for Tricuspid Regurgitation and Trial Endpoints. Eur Heart J 2023;44:4508-4532.
+    pmid: '37793121'
+    doi: 10.1093/eurheartj/ehad653
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC10645050/
+  support: Severely abnormal (flail leaflet, large coaptation gap, marked tethering)
+  status: verified
+  note: >-
+    TVARC 2023 Table 4, full text from PMC10645050. The extracted row lost its cell separators; the cell
+    is the first of the severe column.
+- id: C91
+  topic: Mechanism of edge-to-edge repair
+  text: >-
+    Edge-to-edge devices grasp opposing leaflets and bring them together, which reduces the coaptation
+    gaps and the severity of TR.
+  value: Qualitative
+  source:
+    cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+    pmid: '40704358'
+    doi: 10.1016/j.shj.2025.100669
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12281283/
+  support: >-
+    These devices grasp and bring together opposing leaflets, thereby reducing coaptation gaps and severity
+    of TR.
+  status: verified
+  note: Full text from PMC12281283.
+- id: C92
+  topic: TR progression
+  text: TR of any cause dilates the RV, which can dilate the annulus further and tether the leaflets.
+  value: Qualitative
+  source: *id001
+  support: >-
+    Tricuspid regurgitation (TR) of any etiology results in maladaptive dilatation of the right ventricle,
+    which can subsequently result in further annular dilatation and tethering of the leaflets.
+  status: verified
+  note: TVARC 2023 Figure 3 legend, full text from PMC10645050.
+- id: C93
+  topic: 'TriClip G4 IFU: the arm angles from final positioning to grasping'
+  text: >-
+    In the TriClip G4 instructions for use, the implant arms open to about 180 degrees in the RA and then
+    close to about 60 degrees; the delivery catheter is advanced to put the implant below the valve, the
+    arms open to the grasping arm angle, the delivery catheter is retracted, the grippers are lowered,
+    and the implant closes to about 60 degrees.
+  value: >-
+    19.2 open to ~180 deg; 19.7 close to ~60 deg; 20.1 advance below the valve; 20.2 open to the grasping
+    arm angle; 20.3 retract; 20.4 lower the grippers; 20.5 close to ~60 deg
+  source:
+    cite: >-
+      U.S. Food and Drug Administration. PMA P230007 approved labeling (Instructions for Use): TriClip
+      G4 System. 2024.
+    url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007C.pdf
+  support: >-
+    19.2 "Unlock the Implant and Open the Implant Arms to approximately 180 degrees." 19.7 "Close the
+    Implant to an Implant Arm Angle of approximately 60 degrees." 20.1 "Advance the DC distally to position
+    the Implant below the valve." 20.2 "Open the Implant Arms to the Grasping Arm Angle." 20.3 "Without
+    using excessive force, retract the DC [garbled: to grasp both leaflets]." 20.4 "If the grasp appears
+    satisfactory, Lower the Gripper(s) [garbled: onto the leaflets]" 20.5 "Close the Implant until the
+    Implant Arm Angle is approximately 60 degrees."
+  status: verified
+  note: >-
+    Read through WebFetch text extraction on 2026-10-24, because the FDA site blocks direct download (as
+    for the other IFU claims). Parts of 20.3 and 20.4 are garbled by font encoding in the extracted text;
+    the words in brackets are the extraction tool's reading. The grasping arm angle: the IFU gives the
+    minimum grasping width at 120 degrees (C33).
+- id: C94
+  topic: Leaflet grasping steps (primer)
+  text: >-
+    Below the target leaflets the arms open to 120 to 150 degrees; the delivery catheter is pulled back
+    to engage the leaflets, and the grippers are lowered slowly in diastole to grasp them.
+  value: Arms 120-150 deg below the leaflets; retract; grippers lowered in diastole
+  source: &id002
+    cite: >-
+      Onishi T, Tang GHL, Lerakis S, et al. How to mirror tricuspid transcatheter edge-to-edge repair
+      (TEER) to mitral TEER in terms of procedural imaging and device workflow: a step-by-step primer.
+      Ann Cardiothorac Surg 2026;15:20.
+    pmid: '41988455'
+    doi: 10.21037/acs-2025-aw-27-tvd
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC13077618/
+  support: >-
+    Once the clip is positioned below the target leaflets, the clip arms are opened to 120–150 degrees
+    / Retract DC fastener to engage the leaflets for grasping / Grippers are slowly lowered during diastole
+    to engage the leaflets
+  status: verified
+  note: Onishi 2026 Table 2 (steps shared by mitral and tricuspid TEER), full text from PMC13077618.
+- id: C95
+  topic: Clip release and removal of the system (primer)
+  text: >-
+    To release the clip, the operator turns the actuator knob and pulls it back, then slowly withdraws
+    the delivery catheter from the deployed clip; the delivery system and the steerable guide catheter
+    then come out.
+  value: Release; delivery system withdrawn; guide removed
+  source: *id002
+  support: >-
+    Rotate the actuator knob counterclockwise for ≥8 full turns, then pull it back to initiate clip release
+    / Finally, withdraw the DC fastener SLOWLY to disengage the needle from the deployed clip / SGC removal
+  status: verified
+  note: Onishi 2026 Table 2, full text from PMC13077618.
+- id: C96
+  topic: Assessment before deployment (primer)
+  text: >-
+    Before the clip is deployed, TEE assesses again the leaflet insertion, the reduction of regurgitation
+    and the transvalvular gradient.
+  value: Leaflet insertion, TR reduction, gradient
+  source: *id002
+  support: >-
+    Reassessment of leaflet insertion, reduction of regurgitation, transvalvular gradient / Repeat assessment
+    is performed using the above echo views, to confirm adequate and secure leaflet insertion before clip
+    deployment
+  status: verified
+  note: Onishi 2026 Table 2, full text from PMC13077618.
+- id: C97
+  topic: Fluoroscopy with TEE (primer)
+  text: >-
+    Fluoroscopy guides the steps of TEER together with TEE: for example, the view moves from AP to RAO
+    while the clip is steered down to the valve.
+  value: Fluoroscopy at each step (AP to RAO while steering; RAO for grasping and release)
+  source:
+    cite: >-
+      Onishi T, Tang GHL, Lerakis S, et al. How to mirror tricuspid transcatheter edge-to-edge repair
+      (TEER) to mitral TEER in terms of procedural imaging and device workflow: a step-by-step primer.
+      Ann Cardiothorac Surg 2026;15:20.
+    pmid: '41988455'
+    doi: 10.21037/acs-2025-aw-27-tvd
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC13077618/
+  support: AP transitioning to RAO while steering down
+  status: verified
+  note: Onishi 2026 Table 3; the fluoroscopy rows span the mitral and tricuspid columns (PMC XML).
+references:
+- key: sorajja2023
+  cite: >-
+    Sorajja P, Whisenant B, Hamid N, et al. Transcatheter Repair for Patients with Tricuspid Regurgitation.
+    N Engl J Med 2023;388:1833-1842.
+  pmid: '36876753'
+  doi: 10.1056/NEJMoa2300525
+  checked: pubmed+crossref
+- key: fda2024b
+  cite: >-
+    U.S. Food and Drug Administration. Summary of Safety and Effectiveness Data (SSED): TriClip G4 System,
+    PMA P230007. 2024.
+  checked: >-
+    not indexed in PubMed/Crossref; FDA PDF read through WebFetch text extraction (direct download blocked
+    by the FDA site)
+- key: fda2024e
+  cite: >-
+    U.S. Food and Drug Administration. Executive Summary, Circulatory System Devices Panel, February 13,
+    2024: TriClip G4 System, TRILUMINATE Pivotal Trial.
+  checked: >-
+    FDA PDF read through WebFetch text extraction (OCR text; tool reported minor spelling/spacing corrections)
+- key: tang2025
+  cite: >-
+    Tang GHL, Hahn RT, Whisenant BK, et al. Tricuspid Transcatheter Edge-to-Edge Repair for Severe Tricuspid
+    Regurgitation: 1-Year Outcomes From the TRILUMINATE Randomized Cohort. J Am Coll Cardiol 2025;85:235-246.
+  pmid: '39471883'
+  doi: 10.1016/j.jacc.2024.10.086
+  checked: pubmed+crossref
+- key: kar2025
+  cite: >-
+    Kar S, Makkar RR, Whisenant BK, et al. Two-Year Outcomes of Transcatheter Edge-to-Edge Repair for
+    Severe Tricuspid Regurgitation: The TRILUMINATE Pivotal Randomized Controlled Trial. Circulation 2025;151:1630-1638.
+  pmid: '40159089'
+  doi: 10.1161/CIRCULATIONAHA.125.074536
+  checked: >-
+    pubmed+crossref (PubMed lists 26 authors, Crossref 27 incl. group; title, journal, year, volume, pages,
+    DOI match)
+- key: nickenig2024
+  cite: >-
+    Nickenig G, Lurz P, Sorajja P, et al. Percutaneous Edge-to-Edge Repair for Tricuspid Regurgitation:
+    3-Year Outcomes From the TRILUMINATE Study. JACC Cardiovasc Interv 2024;17:2113-2122.
+  pmid: '39243264'
+  doi: 10.1016/j.jcin.2024.05.036
+  checked: pubmed+crossref
+- key: fda2024a
+  cite: >-
+    U.S. Food and Drug Administration. PMA P230007 approval order: TriClip G4 System (Abbott Medical).
+    April 1, 2024.
+  checked: >-
+    not indexed in PubMed/Crossref; FDA PDF read through WebFetch text extraction (direct download blocked
+    by the FDA site)
+- key: abbott2024a
+  cite: >-
+    Abbott. Abbott Receives FDA Approval for TriClip, First-of-Its-Kind Device to Repair Leaky Tricuspid
+    Heart Valve [press release]. April 2, 2024.
+  checked: manufacturer web page read through WebFetch
+- key: abbott2026
+  cite: >-
+    Abbott Cardiovascular. TriClip transcatheter valve solutions, U.S. healthcare professional product
+    page (accessed 2026-10-24).
+  checked: manufacturer web page read through WebFetch
+- key: abbott2025
+  cite: >-
+    Abbott. Coverage with Evidence Development Approval Letter, TriClip TEER System (MAT-2508246 v1.0,
+    2025), including TriClip G5 Important Safety Information and the CMS letter of July 8, 2025.
+  checked: manufacturer-hosted PDF downloaded and read in full
+- key: hahn2025
+  cite: Hahn RT. Echocardiographic Imaging to Guide Tricuspid Interventions. Struct Heart 2025;9:100669.
+  pmid: '40704358'
+  doi: 10.1016/j.shj.2025.100669
+  checked: pubmed+crossref (full text opened via PMC12281283)
+- key: fda2024c
+  cite: >-
+    U.S. Food and Drug Administration. PMA P230007 approved labeling (Instructions for Use): TriClip G4
+    System. 2024.
+  checked: >-
+    not indexed in PubMed/Crossref; FDA PDF read through WebFetch text extraction; table layout lost in
+    extraction
+- key: hahn2023
+  cite: >-
+    Hahn RT, Lawlor MK, Davidson CJ, et al. Tricuspid Valve Academic Research Consortium Definitions for
+    Tricuspid Regurgitation and Trial Endpoints. Eur Heart J 2023;44:4508-4532.
+  pmid: '37793121'
+  doi: 10.1093/eurheartj/ehad653
+  checked: >-
+    pubmed+crossref (full text opened via PMC10645050; simultaneously published in J Am Coll Cardiol 2023;82:1711-1735,
+    PMID 37804294, doi 10.1016/j.jacc.2023.08.008, also checked)
+- key: hahn2017
+  cite: >-
+    Hahn RT, Zamorano JL. The need for a new tricuspid regurgitation grading scheme. Eur Heart J Cardiovasc
+    Imaging 2017;18:1342-1343.
+  pmid: '28977455'
+  doi: 10.1093/ehjci/jex139
+  checked: >-
+    pubmed+crossref (metadata only; full text paywalled and NOT opened; Crossref online date 2017-07-13,
+    issue date 2017-12-01)
+- key: zoghbi2017
+  cite: >-
+    Zoghbi WA, Adams D, Bonow RO, et al. Recommendations for Noninvasive Evaluation of Native Valvular
+    Regurgitation: A Report from the American Society of Echocardiography Developed in Collaboration with
+    the Society for Cardiovascular Magnetic Resonance. J Am Soc Echocardiogr 2017;30:303-371.
+  pmid: '28314623'
+  doi: 10.1016/j.echo.2017.01.007
+  checked: pubmed+crossref
+- key: nickenig2019
+  cite: >-
+    Nickenig G, Weber M, Lurz P, et al. Transcatheter edge-to-edge repair for reduction of tricuspid regurgitation:
+    6-month outcomes of the TRILUMINATE single-arm study. Lancet 2019;394:2002-2011.
+  pmid: '31708188'
+  doi: 10.1016/S0140-6736(19)32600-5
+  checked: pubmed+crossref
+- key: praz2025
+  cite: >-
+    Praz F, Borger MA, Lanz J, et al. 2025 ESC/EACTS Guidelines for the management of valvular heart disease.
+    Eur J Cardiothorac Surg 2025;67:ezaf276.
+  pmid: '40878291'
+  doi: 10.1093/ejcts/ezaf276
+  checked: >-
+    pubmed+crossref (EJCTS version opened as publisher PDF from the UniSR repository; joint publication
+    Eur Heart J 2025;46:4635-4736, PMID 40878295, doi 10.1093/eurheartj/ehaf194, also checked)
+- key: little2026
+  cite: >-
+    Little SH, Quader N, Brady M, et al. Guidelines for the Intraprocedural Imaging for Mitral Valve Transcatheter
+    Edge-to-Edge Repair (M-TEER): Recommendations from the American Society of Echocardiography. J Am
+    Soc Echocardiogr 2026;39:529-550.
+  pmid: '42242827'
+  doi: 10.1016/j.echo.2026.03.003
+  checked: >-
+    pubmed+crossref (PubMed lists an erratum, J Am Soc Echocardiogr 2026 Sep 24, doi 10.1016/j.echo.2026.07.012;
+    erratum content not checked)
+- key: hahn2022
+  cite: >-
+    Hahn RT, Saric M, Faletra FF, et al. Recommended Standards for the Performance of Transesophageal
+    Echocardiographic Screening for Structural Heart Intervention: From the American Society of Echocardiography.
+    J Am Soc Echocardiogr 2022;35:1-76.
+  pmid: '34280494'
+  doi: 10.1016/j.echo.2021.07.006
+  checked: pubmed+crossref
+- key: onishi2026
+  cite: >-
+    Onishi T, Tang GHL, Lerakis S, et al. How to mirror tricuspid transcatheter edge-to-edge repair (TEER)
+    to mitral TEER in terms of procedural imaging and device workflow: a step-by-step primer. Ann Cardiothorac
+    Surg 2026;15:20.
+  pmid: '41988455'
+  doi: 10.21037/acs-2025-aw-27-tvd
+  checked: pubmed+crossref (full text opened via PMC13077618)
+- key: lang2012
+  cite: >-
+    Lang RM, Badano LP, Tsang W, et al. EAE/ASE recommendations for image acquisition and display using
+    three-dimensional echocardiography. J Am Soc Echocardiogr 2012;25:3-46.
+  pmid: '22183020'
+  doi: 10.1016/j.echo.2011.11.010
+  checked: pubmed+crossref (also published as Eur Heart J Cardiovasc Imaging 2012;13:1-46, PMID 22275509)
+- key: coisne2023
+  cite: >-
+    Coisne A, Scotti A, Taramasso M, et al. Prognostic Value of Tricuspid Valve Gradient After Transcatheter
+    Edge-to-Edge Repair: Insights From the TriValve Registry. JACC Cardiovasc Interv 2023;16:706-717.
+  pmid: '36948892'
+  doi: 10.1016/j.jcin.2023.01.375
+  checked: >-
+    pubmed+crossref (PubMed record is the ahead-of-print version without volume/pages; volume 16, issue
+    6, pages 706-717 taken from Crossref)
+- key: mehr2019
+  cite: >-
+    Mehr M, Taramasso M, Besler C, et al. 1-Year Outcomes After Edge-to-Edge Valve Repair for Symptomatic
+    Tricuspid Regurgitation: Results From the TriValve Registry. JACC Cardiovasc Interv 2019;12:1451-1461.
+  pmid: '31395215'
+  doi: 10.1016/j.jcin.2019.04.019
+  checked: pubmed+crossref
+- key: taramasso2019
+  cite: >-
+    Taramasso M, Alessandrini H, Latib A, et al. Outcomes After Current Transcatheter Tricuspid Valve
+    Intervention: Mid-Term Results From the International TriValve Registry. JACC Cardiovasc Interv 2019;12:155-165.
+  pmid: '30594510'
+  doi: 10.1016/j.jcin.2018.10.022
+  checked: pubmed+crossref
+- key: besler2018
+  cite: >-
+    Besler C, Orban M, Rommel KP, et al. Predictors of Procedural and Clinical Outcomes in Patients With
+    Symptomatic Tricuspid Regurgitation Undergoing Transcatheter Edge-to-Edge Repair. JACC Cardiovasc
+    Interv 2018;11:1119-1128.
+  pmid: '29929631'
+  doi: 10.1016/j.jcin.2018.05.002
+  checked: pubmed+crossref
+- key: lurz2023
+  cite: >-
+    Lurz P, Besler C, Schmitz T, et al. Short-Term Outcomes of Tricuspid Edge-to-Edge Repair in Clinical
+    Practice. J Am Coll Cardiol 2023;82:281-291.
+  pmid: '37207923'
+  doi: 10.1016/j.jacc.2023.05.008
+  checked: >-
+    pubmed+crossref (Crossref lists 30 authors incl. bRIGHT PAS investigators, PubMed 15; other fields
+    match)
+- key: donal2024
+  cite: >-
+    Donal E, Sitges M, Panis V, et al. Characterization of Tricuspid Valve Anatomy and Coaptation Gap
+    in Subjects Receiving Tricuspid Transcatheter Edge-To-Edge Repair: Observations From the bRIGHT TriClip
+    Study. J Am Soc Echocardiogr 2024;37:397-404.
+  pmid: '38072288'
+  doi: 10.1016/j.echo.2023.12.002
+  checked: pubmed+crossref
+- key: gercek2024
+  cite: >-
+    Gerçek M, Narang A, Körber MI, et al. GLIDE Score: Scoring System for Prediction of Procedural Success
+    in Tricuspid Valve Transcatheter Edge-to-Edge Repair. JACC Cardiovasc Imaging 2024;17:729-742.
+  pmid: '38842961'
+  doi: 10.1016/j.jcmg.2024.04.008
+  checked: pubmed+crossref
+- key: naik2025
+  cite: >-
+    Naik H, Price MJ, Kapadia S, et al. Tricuspid Transcatheter Edge-to-Edge Repair in Patients With Transvalvular
+    CIED Leads: The TRILUMINATE Pivotal Trial. JACC Clin Electrophysiol 2025;11:1012-1020.
+  pmid: '39903153'
+  doi: 10.1016/j.jacep.2025.01.001
+  checked: pubmed+crossref
+- key: goebel2025
+  cite: >-
+    Goebel B, Lurz P, Schmitz T, et al. Outcomes of tricuspid transcatheter edge-to-edge repair in subjects
+    with endocardial leads. EuroIntervention 2025;21:e253-e261.
+  pmid: '40028727'
+  doi: 10.4244/EIJ-D-23-01033
+  checked: pubmed+crossref
+- key: adams2024
+  cite: >-
+    Adams DH, Tang GHL, Whisenant BK, et al. Transcatheter Edge-to-Edge Repair in Patients With Complex
+    Tricuspid Valve Anatomy. JACC Cardiovasc Interv 2024;17:2749-2760.
+  pmid: '39663056'
+  doi: 10.1016/j.jcin.2024.08.035
+  checked: pubmed+crossref
+- key: lurz2024
+  cite: >-
+    Lurz P, Rommel KP, Schmitz T, et al. Real-World 1-Year Results of Tricuspid Edge-to-Edge Repair From
+    the bRIGHT Study. J Am Coll Cardiol 2024;84:607-616.
+  pmid: '38759905'
+  doi: 10.1016/j.jacc.2024.05.006
+  checked: pubmed+crossref
+- key: donal2025
+  cite: >-
+    Donal E, Dreyfus J, Leurent G, et al. Transcatheter Edge-to-Edge Repair for Severe Isolated Tricuspid
+    Regurgitation: The Tri.Fr Randomized Clinical Trial. JAMA 2025;333:124-132.
+  pmid: '39602173'
+  doi: 10.1001/jama.2024.21189
+  checked: pubmed+crossref (Crossref gives first page 124 only; PubMed 124-132)
+- key: abbott2024b
+  cite: >-
+    Abbott. TriClip G4 System for Treatment of Patients with Symptomatic, Severe Tricuspid Regurgitation.
+    Sponsor presentation, FDA Circulatory System Devices Panel, February 13, 2024.
+  checked: FDA-hosted PDF (https://www.fda.gov/media/176377/download) read through WebFetch
+- key: kuwajima2023
+  cite: >-
+    Kuwajima K, Kagawa S, Yamane T, et al. Underestimation of Intraprocedural Tricuspid Valve Pressure
+    Gradient by Echocardiography in Patients Undergoing Tricuspid Transcatheter Edge-to-Edge Repair. J
+    Cardiothorac Vasc Anesth 2023;37:2161-2163.
+  pmid: '37481396'
+  doi: 10.1053/j.jvca.2023.06.040
+  checked: pubmed+crossref (title only; no abstract; full text not opened)
+- key: kaul2026
+  cite: >-
+    Kaul S. T-TEER for Severe Tricuspid Regurgitation in the TRILUMINATE Pivotal Trial. JAMA Cardiol 2026;11:7-8.
+  pmid: '41296342'
+  doi: 10.1001/jamacardio.2025.4345
+  checked: pubmed+crossref (Crossref gives first page 7 only; PubMed 7-8)
+- key: wild2022
+  cite: >-
+    Wild MG, Löw K, Rosch S, et al. Multicenter Experience With the Transcatheter Leaflet Repair System
+    for Symptomatic Tricuspid Regurgitation. JACC Cardiovasc Interv 2022;15:1352-1363.
+  pmid: '35798479'
+  doi: 10.1016/j.jcin.2022.05.041
+  checked: pubmed+crossref (abstract only; full text not opened)
+- key: donal2022
+  cite: >-
+    Donal E, Leurent G, Ganivet A, et al. Multicentric randomized evaluation of a tricuspid valve percutaneous
+    repair system (clip for the tricuspid valve) in the treatment of severe secondary tricuspid regurgitation
+    Tri.Fr Design paper. Eur Heart J Cardiovasc Imaging 2022;23:1617-1627.
+  pmid: '34871375'
+  doi: 10.1093/ehjci/jeab255
+  checked: pubmed+crossref (Crossref online date 2021-12-06; issue 2022, 23(12):1617-1627)
+- key: ogara2026
+  cite: >-
+    O'Gara PT, Little SH, Badhwar V, et al. Operator and Institutional Recommendations and Requirements
+    for Tricuspid Interventions: 2026 ACC/AHA/ASE/HRS/STS Expert Consensus Systems of Care Document. J
+    Am Coll Cardiol 2026;87:3360-3378.
+  pmid: '41879573'
+  doi: 10.1016/j.jacc.2026.02.5069
+  checked: pubmed+crossref (metadata only; full text not opened)
+- key: fda2024d
+  cite: 'U.S. Food and Drug Administration. Recently-Approved Devices: TriClip G4 System - P230007.'
+  checked: FDA web page read through WebFetch
+- key: clinicaltrials2026
+  cite: >-
+    ClinicalTrials.gov. NCT04483089: An Observational Real-world Study Evaluating Severe Tricuspid Regurgitation
+    Patients Treated With the Abbott TriClip Device (bRIGHT).
+  checked: ClinicalTrials.gov API v2 record read
+- key: ase2026
+  cite: >-
+    American Society of Echocardiography. ASE publishes new guideline to standardize imaging for M-TEER
+    procedures [news release]. June 8, 2026.
+  checked: web page read through WebFetch
+- key: fda2024c-ifu-steps
+  cite: >-
+    U.S. Food and Drug Administration. PMA P230007 approved labeling (Instructions for Use): TriClip G4
+    System. 2024.
+  url: https://www.accessdata.fda.gov/cdrh_docs/pdf23/P230007C.pdf
+  checked: FDA PDF read through WebFetch text extraction, sections 19-20 (2026-10-24)
