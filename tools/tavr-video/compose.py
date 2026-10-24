@@ -107,7 +107,7 @@ CAPTIONS = [
      'In systole, the annulus measures 24 mm from hinge point to hinge point.',
      'Zamorano JL, et al. J Am Soc Echocardiogr 2011 (EAE/ASE) · Hahn RT, et al. J Am Soc Echocardiogr 2022 (ASE)'),
     (1123, 'Valve delivery',
-     'The crimped valve passes through the sheath, which widens round it. In a straight part of the '
+     'The crimped valve on its delivery system goes in through the sheath. In a straight part of the '
      'descending aorta, the valve is aligned on its balloon; it then tracks over the arch and across the native valve.',
      IFU),
     (1423, 'Position',
@@ -236,11 +236,12 @@ class Block:
             self.parts.append((Mask(m.x + x, m.y + y, m.a), c))
         return self
 
-    def draw(self, fr, alpha=1.0, dy=0.0, clip=None):
+    def draw(self, fr, alpha=1.0, dy=0.0, clip=None, color=None):
+        """color: one colour for every part, in place of their own."""
         if alpha <= 0.002:
             return
         for m, c in self.parts:
-            blit(fr, m, c, alpha, round(dy), clip)
+            blit(fr, m, color or c, alpha, round(dy), clip)
 
 
 def blit(fr, m, color, alpha=1.0, dy=0, clip=None):
@@ -720,9 +721,16 @@ class Composer:
         reg = fr[y:y + h, x:x + w]
         reg += (img - reg) * m
         blit(fr, Mask(x, y, self.card_edge), RULE, 0.55)
+        # the shot's name: the dark frame's ink-3 on a dark picture, the paper's ink-2 where the
+        # picture under it is light (the skin of the groin shots)
+        under = img[12:32, 16:320]
+        lum = float((under @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean()) / 255
+        k = clamp01((lum - 0.35) / 0.2)
+        k = k * k * (3 - 2 * k)
+        ink = tuple(a + (b - a) * k for a, b in zip(INK3, hexc('#4a555c')))
         for _, lab, al in parts:
             if lab:
-                self.label(lab).draw(fr, al)
+                self.label(lab).draw(fr, al, color=ink)
 
     def draw_caption(self, fr, i):
         caps = self.caps
