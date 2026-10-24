@@ -14,9 +14,9 @@ of the stenosis and the valve's gradients stand in small panels beside them.
 Sources (defaults under the work folder video/out/tavr-procedure; each has its option): --frames
 (Blender, f%05d.jpg at 30 fps of this video's Blender clock: anim.py), --frames1 (the first cut's
 frames: its 45-61 s give the 3-D view of the position and the deployment; anim.py at commit
-293afc7), --tavr chapter-tavr.mp4 (the TAVR chapter captured on this video's clock: capture.py),
---tee video/out/chapter-tee.mp4, --fonts fonts/ (the site's faces as TTF, converted from
-video/fonts on the first run).
+293afc7 with cut1-caps.patch), --tavr chapter-tavr.mp4 (the TAVR chapter captured on this
+video's clock: capture.py), --tee video/out/chapter-tee.mp4, --fonts fonts/ (the site's faces as
+TTF, converted from video/fonts on the first run).
 """
 import argparse
 import json

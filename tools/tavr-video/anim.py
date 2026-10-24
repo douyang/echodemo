@@ -35,8 +35,8 @@ def ease(t, a, b):
 
 # ---------------------------------------------------------------- the storyboard (s)
 # The second cut (65 s): the route and the groin, the wires, the delivery and the closure. The
-# valve's position and deployment use the first cut's frames (this script at commit 293afc7, its
-# 45-61 s: compose.py maps them), so this clock leaves 26-42 s without shots.
+# valve's position and deployment use the first cut's frames (this script at commit 293afc7 with
+# cut1-caps.patch, its 45-61 s: compose.py maps them), so this clock leaves 26-42 s without shots.
 SHOTS = {
     'title': (0.0, 1.4), 'access': (1.4, 8.0), 'pacing': (8.0, 10.0), 'cross': (10.0, 13.0),
     'sheathpass': (22.0, 23.2), 'align': (23.2, 24.4), 'arch': (24.4, 26.0), 'close': (54.0, 57.0),
@@ -267,8 +267,7 @@ class Rig:
         self.cutter = c
         self.cut_mods = []
         # the myocardium is closed but for a few 3-vertex holes: fill them, then cut it with a
-        # boolean (its cut face takes the cutter's material); the open meshes (valves, chordae,
-        # coronaries) lose their faces beyond the plane (a geometry-nodes clip)
+        # boolean (its cut face takes the cutter's material)
         import bmesh
         me = self.myo.data
         bm = bmesh.new()
@@ -284,12 +283,39 @@ class Rig:
         m.use_hole_tolerant = True
         m.object = c
         self.cut_mods.append(m)
-        clip = clip_group(Vector(tuple(A.AV + n * 0.25)), Vector(tuple(n)))
+        # The other heart meshes (valves, chordae, papillary muscles, coronaries) are closed too. One
+        # that the plane crosses, in any state of its shape keys, gets a boolean as well, which caps
+        # its cut: a clip that only deleted faces left the chordae and leaflets hollow. One wholly
+        # beyond the plane goes with a clip; one wholly before it needs nothing.
+        clip = None
         for o in self.heart:
             if o is self.myo:
                 continue
-            g = o.modifiers.new('cut', 'NODES')
-            g.node_group = clip
+            lo, hi = plane_span(o, c)
+            if hi < 0:
+                continue
+            if lo > 0:
+                clip = clip or clip_group(Vector(tuple(A.AV + n * 0.25)), Vector(tuple(n)))
+                g = o.modifiers.new('cut', 'NODES')
+                g.node_group = clip
+                self.cut_mods.append(g)
+                continue
+            g = o.modifiers.new('cut', 'BOOLEAN')
+            g.operation = 'DIFFERENCE'
+            g.solver = 'EXACT'
+            g.use_hole_tolerant = True
+            g.object = c
+            # the leaflets' and chordae's shells cross each other or themselves: without
+            # self-intersection the solver drops the mitral and aortic leaflets whole
+            g.use_self = True
+            if 'thick' in o.modifiers:
+                # the native valve: cut before its solidify (on the thick leaflets, 4 times as long)
+                o.modifiers.move(len(o.modifiers) - 1, o.modifiers.find('thick'))
+            if o.name == 'Papillary':
+                # cut muscle, as the myocardium's cut face
+                o.data.materials.append(self.M['cut'])
+                g.material_mode = 'TRANSFER'
+            # the others' cut faces take their own material (the cutter's index 0: their slot 0)
             self.cut_mods.append(g)
 
     # -------------------------------------------------------- per-frame placement
@@ -682,6 +708,24 @@ class Rig:
         sc.render.resolution_y = self.full[1]
 
 
+def plane_span(o, cutter):
+    """The signed distances (cm) of the mesh o from the cutter's near face, positive beyond it:
+    their range over its shape keys (the basis, each key, and all keys at once)."""
+    bpy.context.view_layer.update()
+    M = np.array(o.matrix_world)
+    C = np.array(cutter.matrix_world)
+    p0 = C[:3, :3] @ np.array([0.0, 0.0, -0.5]) + C[:3, 3]
+    nrm = C[:3, 2] / np.linalg.norm(C[:3, 2])
+    co = lambda d: np.array([v.co[:] for v in d])
+    keys = o.data.shape_keys.key_blocks if o.data.shape_keys else []
+    base = co(o.data.vertices)
+    sets = [base] + [co(k.data) for k in keys[1:]]
+    if len(keys) > 2:
+        sets.append(base + sum(co(k.data) - base for k in keys[1:]))
+    d = np.concatenate([((P @ M[:3, :3].T + M[:3, 3]) - p0) @ nrm for P in sets])
+    return float(d.min()), float(d.max())
+
+
 def clip_group(p0, n):
     """A geometry-nodes group that deletes the faces whose points lie beyond the plane (p0, n)."""
     g = bpy.data.node_groups.new('clip', 'GeometryNodeTree')
@@ -718,7 +762,7 @@ def setup_engine(sc, engine, samples):
         sc.cycles.samples = samples
         env = os.environ
         # the video's settings (8 samples with the denoiser): fixed samples, 16 transparent and 4
-        # light bounces, about 3 h for this cut's shots on 4 cores; each can be set in the environment
+        # light bounces, about 2.5 h for this cut's shots on 4 cores; each can be set in the environment
         sc.cycles.use_adaptive_sampling = env.get('TAVR_ADAPTIVE', '0') == '1'
         sc.cycles.transparent_max_bounces = int(env.get('TAVR_TBOUNCE', '16'))
         sc.cycles.max_bounces = int(env.get('TAVR_BOUNCES', '4'))

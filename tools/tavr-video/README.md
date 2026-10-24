@@ -23,7 +23,8 @@ follow the chapter videos (`video/video.css`, `video/chapter.js`).
 
 The title card takes the first 3.43 s (four beats at 70 a minute) and the end card the last 4 s.
 A Blender frame `b` shows at video frame `b + 103`. The position and the inflation show the 3-D
-frames of the first cut (its 45–61 s, commit 293afc7): its clock there is this one's plus 19 s.
+frames of the first cut (its 45–61 s, commit 293afc7 with `cut1-caps.patch`): its clock there is
+this one's plus 19 s.
 
 ## Files
 
@@ -56,11 +57,14 @@ scipy for the score.
    <https://download.blender.org/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip>.
    Set `TAVR_HBM` to its `human_base_meshes_bundle.blend`. The default is
    `video/out/tavr-procedure/hbm/human_base_meshes_bundle.blend`.
-3. Render the first cut's position and deployment (cutaway, no body) in a checkout of 293afc7:
+3. Render the first cut's position and deployment (cutaway, no body), 45–61 s, in a checkout of
+   293afc7 with `cut1-caps.patch` (the capped cuts of this cut's `anim.py`). On 4 CPU cores,
+   480 frames take about 2.3 h (about 17 s a frame):
    ```
    git worktree add ../tavr-cut1 293afc7
-   cd ../tavr-cut1 && EGL_PLATFORM=surfaceless python tools/tavr-video/anim.py --engine cycles \
-     --samples 8 --out <this repo>/video/out/tavr-procedure/frames1 --shot position,deploy
+   cd ../tavr-cut1 && git apply <this repo>/tools/tavr-video/cut1-caps.patch
+   EGL_PLATFORM=surfaceless python tools/tavr-video/anim.py --engine cycles \
+     --samples 8 --out <this repo>/video/out/tavr-procedure/frames1 --range 45:61
    ```
 4. Render this cut's Blender frames: 600 frames. On 4 CPU cores, Cycles takes about 2.5 h (about
    14 s a frame; 23 s in the pacing shot, which shows the whole body):
