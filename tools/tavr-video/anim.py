@@ -545,6 +545,12 @@ class Rig:
 
     def shot_look(self, t, shot, st):
         body_on, skin, heart_a, aorta_a, art_a, cut = self.LOOK.get(shot, self.LOOK['title'])
+        # the fly-in to the groin (4.0-5.4 s): the title's look turns into the groin's
+        fly = 1.0 - ease(t, 4.0, 5.2) if shot == 'access' else 0.0
+        if fly > 0:
+            _, skin0, h0, a0, r0, _ = self.LOOK['title']
+            skin = tuple(x1 + (x0 - x1) * fly for x0, x1 in zip(skin0, skin))
+            heart_a, aorta_a, art_a = (x1 + (x0 - x1) * fly for x0, x1 in ((h0, heart_a), (a0, aorta_a), (r0, art_a)))
         S = self.S
         for o in [S['body'], S['table']] + list(S['marks']):
             self.show(o, body_on)
@@ -552,6 +558,7 @@ class Rig:
         for o in S['marks']:
             if o.name.startswith('Ligament'):
                 self.show(o, groin and o.name == 'Ligament1')
+        mats.set_alpha(self.M['ligament'], 1.0 - fly)
         # the groin shots: the skin fades out round the puncture (a patch over the anatomy)
         nt = self.M['skin'].node_tree
         fp = nt.nodes['focus']
@@ -560,15 +567,17 @@ class Rig:
         r = 1000.0
         if shot == 'access':
             r = 14.0 + 30.0 * ease(t, 13.0, 15.8)
+            r += (300.0 - r) * (1.0 - ease(t, 4.0, 5.4))     # the patch closes in as the camera nears
         elif shot in ('sheathpass', 'close'):
             r = 16.0
         nt.nodes['focus_r'].outputs[0].default_value = r
-        nt.nodes['cull'].outputs[0].default_value = 1.0 if groin else 0.0
+        nt.nodes['cull'].outputs[0].default_value = (1.0 - fly) if groin else 0.0
         for o in S['marks']:
             if o.name.startswith('Femur'):
                 self.show(o, False)
             if o.name == 'FemoralHead-1':
-                self.show(o, body_on and not groin)
+                # the far femoral head leaves the groin shots once the camera is near
+                self.show(o, body_on and (not groin or (shot == 'access' and t < 5.0)))
         if skin:
             nt = self.M['skin'].node_tree
             nt.nodes['alpha_lo'].outputs[0].default_value = skin[0]
