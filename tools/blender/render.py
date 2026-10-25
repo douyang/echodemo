@@ -1,8 +1,9 @@
-# Render the procedure pane of chapter M-TEER or T-TEER in Blender (Cycles): the heart model cut
-# away, with the guide from the inferior vena cava across the atrial septum and the clip on the
-# mitral valve, or the guide in the right atrium and the clip on the tricuspid valve (the export's
-# geo.ch). The meshes come from the site itself (tools/blender/export.mjs), so the frames show the
-# heart and the device that the echo panes cut. A frame of the export may carry its own camera
+# Render the procedure pane of chapter M-TEER, T-TEER or TAVR in Blender (Cycles): the heart model
+# cut away, with the guide from the inferior vena cava across the atrial septum and the clip on the
+# mitral valve, the guide in the right atrium and the clip on the tricuspid valve, or the
+# transcatheter valve in the aortic root (the export's geo.ch). The meshes come from the site
+# itself (tools/blender/export.mjs), so the frames show the heart and the device that the echo
+# panes cut. A frame of the export may carry its own camera
 # (cam: { at: [x, y, z] in the site's cm, width (cm), yaw and pitch (deg) about the step's view }),
 # for a video with camera moves.
 #
@@ -91,8 +92,18 @@ w.node_tree.nodes['Background'].inputs[1].default_value = 0.25
 
 G = M['geo']
 TRI = G.get('ch') == 'tteer'
+TAV = G.get('ch') == 'tavr'
 TILT = (0.8, 0.6)
-if TRI:
+D3 = lambda d: Vector((d[0], -d[2], d[1])).normalized()
+if TAV:
+    # the cut: the plane of the root's axis and the LV apex, as the TEE long axis of the aortic
+    # valve cuts it; the half toward the front goes, so the root, the valve in it, the LVOT and
+    # the LV show from the front
+    C, apex = V(G['C']), V(G['apex'])
+    n = D3(G['n']).cross(apex - C).normalized()
+    if n.dot(Vector((0, -1, 0))) < 0:
+        n = -n
+elif TRI:
     # the cut: the plane through the clip's site square to the anteroseptal line of coaptation; the
     # half toward the patient's right and front goes, so the RA, the anterior and septal leaflets
     # in section, the clip's arms and the RV show from that side
@@ -206,6 +217,16 @@ CHORD = material('chord', (0.88, 0.82, 0.74), cut=False, rough=0.4)
 # the tricuspid, aortic and pulmonary valves sit in the walls that the cut opens: they go with them
 VALVE_CUT = material('valvecut', (0.80, 0.62, 0.50), (0.68, 0.48, 0.38), bump=0.05, rough=0.38, sheen=0.25, coat=0.2)
 CHORD_CUT = material('chordcut', (0.88, 0.82, 0.74), rough=0.4)
+def balloon_mat():
+    """The balloon: a clear, slightly blue film that the frame and the leaflets show through."""
+    m = bpy.data.materials.new('balloon')
+    m.use_nodes = True
+    b = m.node_tree.nodes['Principled BSDF']
+    b.inputs['Base Color'].default_value = (0.72, 0.80, 0.95, 1)
+    b.inputs['Roughness'].default_value = 0.12
+    b.inputs['Transmission Weight'].default_value = 0.85
+    b.inputs['Alpha'].default_value = 0.6
+    return m
 DEV = {
     'clip': material('clip', (0.52, 0.53, 0.55), cut=False, rough=0.7, sheen=0.45),
     'grip': material('grip', (0.80, 0.80, 0.82), cut=False, rough=0.22, metal=1.0),
@@ -215,6 +236,26 @@ DEV = {
     'sheath': material('sheath', (0.80, 0.80, 0.78), cut=False, rough=0.3, coat=0.3),
 }
 PART = {'body': 'clip', 'armA': 'clip', 'armP': 'clip', 'gripA': 'grip', 'gripP': 'grip', 'dc': 'dc', 'sleeve': 'sleeve', 'guide': 'guide', 'sheath': 'sheath'}
+if TAV:
+    # the transcatheter valve: a cobalt-chromium frame, a fabric skirt, bovine pericardial
+    # leaflets; the delivery catheter, its nose cone, the stiff wire and the balloon. The native
+    # leaflets, calcified and pushed out, go with the walls in the cut, so the new valve shows
+    # in front of them. The metals stay light: a mirror finish would show the dark room.
+    DEV.update({
+        'struts': material('struts', (0.88, 0.89, 0.92), cut=False, rough=0.34, metal=0.8),
+        'skirt': material('skirtfab', (0.86, 0.86, 0.84), cut=False, rough=0.78, sheen=0.5),
+        'leaflet': material('pericard', (0.90, 0.84, 0.72), cut=False, rough=0.42, sheen=0.35, coat=0.15),
+        'native': material('native', (0.80, 0.71, 0.56), (0.70, 0.60, 0.46), bump=0.1, rough=0.55),
+        'shaft': material('shaft', (0.88, 0.88, 0.90), cut=False, rough=0.3, coat=0.3),
+        'nose': material('nose', (0.28, 0.40, 0.66), cut=False, rough=0.3, coat=0.4),
+        'wire': material('wire', (0.86, 0.86, 0.88), cut=False, rough=0.3, metal=0.75),
+        'balloon': balloon_mat(),
+    })
+def dev_mat(k):
+    """A device part's material: by its name, or by its kind for TAVR's numbered parts (leaflet0, native2)."""
+    if TAV:
+        return DEV[k.rstrip('0123456789')] if k.rstrip('0123456789') in DEV else DEV['shaft']
+    return DEV[PART.get(k, 'dc')]
 
 def make(name, verts, faces, mats, face_mat=None):
     me = bpy.data.meshes.new(name)
@@ -245,11 +286,14 @@ for name in M['topo']:
         fm = np.array([lut.get(int(r), lut[1]) for r in face_reg], dtype=np.int32)
         ob = make(name, pos, idx, [MAT[k] for k in keys], fm)
     elif 'Chordae' in name:
-        ob = make(name, pos, idx, [CHORD if ('Tricuspid' if TRI else 'Mitral') in name else CHORD_CUT])
+        ob = make(name, pos, idx, [CHORD if ('Tricuspid' if TRI else 'Mitral') in name and not TAV else CHORD_CUT])
     elif name == 'Papillary':
         ob = make(name, pos, idx, [MAT[2] if TRI else MAT[1]])
     elif name.startswith('skirt_') and ('Aortic' in name or 'Pulmonary' in name):
         ob = make(name, pos, idx, [MAT[5]])
+    elif TAV:
+        # TAVR: the aortic valve stays whole in the cut root; the others go with the walls
+        ob = make(name, pos, idx, [VALVE if 'Aortic' in name else VALVE_CUT])
     else:
         # the tricuspid valve is cut with the walls, so its leaflets show in section round the clip
         ob = make(name, pos, idx, [VALVE_CUT if TRI or 'Mitral' not in name else VALVE])
@@ -311,8 +355,26 @@ def framing_tri(f):
     u = u * u * (3 - 2 * u)
     return a[1].lerp(b[1], u), a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u
 
+def framing_tav(f):
+    C, ax = V(f['C']), D3(f['n'])
+    s = f['s']
+    # (step, the point looked at, the field's width in cm, the camera's height over the cut)
+    keys = [
+        (0, C + ax * 0.004, 6.5, 0.3),
+        (1, C + ax * 0.002, 5.0, 0.25),
+        (2, C - ax * 0.008, 7.5, 0.35),
+        (3, C + ax * 0.005, 5.5, 0.3),
+        (4, C + ax * 0.006, 5.0, 0.35),
+        (5, C + ax * 0.004, 6.0, 0.4),
+    ]
+    i = max(0, min(len(keys) - 2, int(math.floor(s))))
+    a, b = keys[i], keys[i + 1]
+    u = max(0.0, min(1.0, s - a[0]))
+    u = u * u * (3 - 2 * u)
+    return a[1].lerp(b[1], u), a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u
+
 def place(f):
-    at, width, lift = framing_tri(f) if TRI else framing(f)
+    at, width, lift = framing_tav(f) if TAV else framing_tri(f) if TRI else framing(f)
     cam_o = f.get('cam') or {}
     if 'at' in cam_o:
         at = V(cam_o['at'])
@@ -359,13 +421,15 @@ for f in frames:
         pos = to_blender(read(os.path.join(args.mesh, f['name'], f'{name}.pos'), np.float32))
         ob.data.vertices.foreach_set('co', pos.reshape(-1).astype(np.float32))
         ob.data.update()
+        # a valve the device has replaced (TAVR's native valve, once the frame expands)
+        ob.hide_render = name in f.get('hide', [])
     for ob in device:
         bpy.data.objects.remove(ob, do_unlink=True)
     device = []
     for k in f['parts']:
         pos = to_blender(read(os.path.join(args.mesh, f['name'], f'dev_{k}.pos'), np.float32))
         idx = read(os.path.join(args.mesh, f['name'], f'dev_{k}.idx'), np.uint32).reshape(-1, 3)
-        device.append(make(f'dev_{k}', pos, idx, [DEV[PART.get(k, 'dc')]]))
+        device.append(make(f'dev_{k}', pos, idx, [dev_mat(k)]))
     at = place(f)
     lights(at)
     # the landmarks' places in the frame (px from the top left, and the depth in m), for labels

@@ -27,7 +27,7 @@ An illustrated, interactive guide to echocardiography. 22 chapters in nine parts
 | | 15 Mitral regurgitation | Mild to severe with LV dysfunction: PISA, pulmonary vein flow reversal |
 | | 16 Tricuspid regurgitation | Mild to torrential: PISA, RV and RA dilation, hepatic vein flow reversal |
 | VII Structural heart | 17 Transesophageal echocardiography | 17 views of Hahn 2013, with all 11 views of the basic perioperative examination. Level, turn and multiplane angle; a free probe that advances, turns and flexes |
-| | 18 Transcatheter aortic valve replacement (TAVR) | TEE guidance of a balloon-expandable or a self-expanding valve in four steps: measure, cross, deploy, check. Paravalvular regurgitation from none to severe; the VARC-3 intended performance |
+| | 18 Transcatheter aortic valve replacement (TAVR) | A balloon-expandable valve, step by step: the TEE views that guide each step (measure, cross, deploy, check), TTE before and after, and the procedure in a cut-away heart rendered in Blender. Paravalvular regurgitation from none to severe; the VARC-3 intended performance |
 | | 19 Mitral transcatheter edge-to-edge repair (M-TEER) | Repair of a flail P2 with a clip, step by step: the TEE views that guide each step, the 3D en face view, TTE before and after, and the procedure in a cut-away heart rendered in Blender |
 | | 20 Tricuspid transcatheter edge-to-edge repair (T-TEER) | Repair of massive secondary TR with a clip on the anteroseptal line, step by step: the TEE views that guide each step, the 3D en face view from the RA, TTE before and after, and the procedure in a cut-away heart rendered in Blender |
 | VIII Aorta | 21 Diseases of the aorta | Dilation, dissection and coarctation |
