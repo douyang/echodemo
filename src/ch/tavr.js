@@ -19,7 +19,7 @@
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, caliper, tagBox, SC } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
-import { shown, Beat, cursor, rows, cols, inner, note, gradeTable, paintBands, playSeverity, cine } from '../sev.js';
+import { shown, Beat, cursor, rows, cols, inner, note, gradeTable, paintBands, playSeverity, cine, motionNow } from '../sev.js';
 import { cal, jet } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { asWeights } from '../meshcal.js';
@@ -621,7 +621,7 @@ function mosaic(c, poly, a, seed) {
   c.save();
   c.clip(path);
   // the colors change every 60 ms while the cine runs, as a scanner's frames do
-  const cell = 3, f = cine.live ? Math.floor(performance.now() / 60) : 0;
+  const cell = 3, f = cine.live ? Math.floor((motionNow() * 1000) / 60) : 0;
   for (let y = y0; y < y1; y += cell) {
     for (let x = x0; x < x1; x += cell) {
       const k = hash(Math.floor(x / cell), Math.floor(y / cell), f * 31 + seed);

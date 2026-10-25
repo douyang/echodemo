@@ -1,5 +1,5 @@
-// The page engine: chapters, controls, readouts, live sentences, citations, dialogs, tour.
-import { state, set, subscribe, declare, reducedMotion } from './state.js';
+// The page engine: chapters, controls, readouts, live sentences, citations, dialogs, tour, motion.
+import { state, set, subscribe, declare, reducedMotion, motion } from './state.js';
 import { REFS } from './refs.js';
 import { CHAPTERS, BAR, MAIN, PARTS, numOf, barOf } from './chapters.js';
 import { NORM_TABLES } from './norms.js';
@@ -226,14 +226,17 @@ function bindControls() {
     });
   }
   // the Play button of a severity page shows whether the page moves (its own sequence or the
-  // tour), and toggles it. Pause stops both and holds the page. Play continues the sequence,
-  // from tourAt after a control (takeUp).
+  // tour, and not held by Pause on the figure), and toggles it. Pause stops both and holds the
+  // page. Play continues the sequence, from tourAt after a control (takeUp), and lifts the
+  // figure's Pause.
   for (const b of $$('button[data-anim]')) {
     b.addEventListener('click', () => {
-      const on = state.playing || state.anim;
+      const on = (state.playing || state.anim) && !state.paused;
       held = on;
-      if (!on) takeUp(CHAPTERS[state.chapter]);
-      set(on ? { playing: false, anim: false } : { anim: true });
+      if (on) { set({ playing: false, anim: false }); return; }
+      if (state.playing || state.anim) { set({ paused: false }); return; }
+      takeUp(CHAPTERS[state.chapter]);
+      set({ anim: true, paused: false });
     });
   }
 }
@@ -253,8 +256,8 @@ function syncControls(changed) {
     for (const b of $$('button[data-val]', g)) b.setAttribute('aria-pressed', String(String(parse(b.dataset.val)) === String(state[k])));
   }
   for (const el of $$('input[type="checkbox"][data-key]')) if (has(el.dataset.key)) el.checked = !!state[el.dataset.key];
-  if (has('anim') || has('playing')) {
-    const on = !!(state.anim || state.playing);
+  if (has('anim') || has('playing') || has('paused')) {
+    const on = !!(state.anim || state.playing) && !state.paused;
     for (const b of $$('button[data-anim]')) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Pause' : b.dataset.anim || 'Play the progression'); }
   }
   for (const el of $$('input[type="number"][data-key]')) {
@@ -426,6 +429,8 @@ function showChapter() {
   entered = false;
   inStep = false;
   held = false;
+  // a chapter opens moving: Pause on the figure holds the chapter that it was pressed in
+  if (state.paused) set({ paused: false });
   if (active >= 0 && active !== i) CHAPTERS[active].leave?.();
   active = i;
   // the tour runs through the main chapters only: the bonus page and a bonus chapter stop it, and
@@ -461,7 +466,7 @@ document.addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea, select, dialog[open]')) return;
   if (e.key === 'ArrowRight') { goChapter(state.chapter + 1); e.preventDefault(); }
   else if (e.key === 'ArrowLeft') { goChapter(state.chapter - 1); e.preventDefault(); }
-  else if (e.key === ' ' && !e.target.closest('button')) { togglePlay(); e.preventDefault(); }
+  else if (e.key === ' ' && !e.target.closest('button')) { (TOUR ? togglePlay : toggleMotion)(); e.preventDefault(); }
   // a key that the chapter takes (it sets state) is input in the chapter
   else CHAPTERS[state.chapter].key_?.(e.key, (p) => { hold(e); set(p); }, state);
 });
@@ -472,6 +477,9 @@ document.addEventListener('keydown', (e) => {
 // chapter from the step that it shows, never with tourEnter, which resets the chapter. A chapter
 // out of step (a control, a heart, or a chapter opened with no steps run) starts at the time that
 // matches its state (tourAt), or from the beginning when it has no tourAt.
+// TOUR: Play all chapters is hidden (index.html). The tour does not start when the page opens, and
+// the space bar plays or pauses the open chapter's motion (toggleMotion) in its place.
+const TOUR = false;
 const play = $('#play');
 let tourT = 0;          // s into the open chapter's steps: the tour's, or the chapter's own sequence
 let entered = false;    // this pass began: tourEnter ran, or takeUp started the chapter at tourAt
@@ -552,6 +560,43 @@ function togglePlay() {
 }
 play.addEventListener('click', togglePlay);
 
+// ---------------------------------------------------------------- motion
+// The Motion buttons at the figure's corner: Pause holds the open chapter's motion (its beat,
+// flow and speckle, the 3D heart and its sequence) and Play lets it go on; the speed (0.5, 1 or 2)
+// scales all of it (frame, below). In a chapter without a Play button of its own (on its slider),
+// Play also starts its sequence again, from the step it shows, after an input stopped it.
+const SPEEDS = [1, 2, 0.5];   // the order in which the one speed button of a narrow figure cycles
+const speedText = (v) => `${v}×`;
+function toggleMotion() {
+  if (!state.paused) { set({ paused: true }); return; }
+  set({ paused: false });
+  const c = CHAPTERS[state.chapter];
+  if (!state.anim && !state.playing && ownPlays(c) && !$(`#ch-${c.key} button[data-anim]`)) {
+    held = false;
+    takeUp(c);
+    set({ anim: true });
+  }
+}
+function syncMotion() {
+  const b = $('#mo-play'), label = state.paused ? 'Play' : 'Pause';
+  b.setAttribute('aria-pressed', String(!state.paused));
+  b.setAttribute('aria-label', label);
+  b.title = label;
+  for (const s of $$('#mo-speeds button')) s.setAttribute('aria-pressed', String(Number(s.dataset.speed) === state.speed));
+  const cyc = $('#mo-cycle');
+  cyc.textContent = speedText(state.speed);
+  cyc.setAttribute('aria-label', `Speed ${speedText(state.speed)}: change the speed`);
+}
+function bindMotion() {
+  $('#mo-play').addEventListener('click', toggleMotion);
+  $('#mo-speeds').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-speed]');
+    if (b) set({ speed: Number(b.dataset.speed) });
+  });
+  $('#mo-cycle').addEventListener('click', () => set({ speed: SPEEDS[(SPEEDS.indexOf(state.speed) + 1) % SPEEDS.length] }));
+  syncMotion();
+}
+
 // ---------------------------------------------------------------- state -> view
 // While a chapter moves (its own sequence or the tour), its readouts and live sentence render at
 // most 5 times a second: a timer collects the renders. The figure, the sliders and their outputs
@@ -574,6 +619,7 @@ subscribe((s, changed) => {
     dotX = -1;
     moveDot();
   }
+  if ('paused' in changed || 'speed' in changed) syncMotion();
   // a write by the user (a control, a heart) takes the open chapter out of step
   if (inStep && !autoWrites && !('chapter' in changed)) {
     const c = CHAPTERS[s.chapter], keys = c.watch || Object.keys(c.defaults || {});
@@ -610,11 +656,15 @@ function frame(now) {
   const dt = Math.min(0.1, raw);
   lastT = now;
   const tdt = Math.min(0.25, raw);
-  if (state.playing) tourTick(tdt);
-  else if (state.anim) ownTick(tdt);
+  // the Motion buttons: Pause holds every clock that moves the figure, and the speed scales them
+  const rate = state.paused ? 0 : state.speed;
+  motion.rate = rate;
+  motion.t += dt * rate;
+  if (state.playing) tourTick(tdt * rate);
+  else if (state.anim) ownTick(tdt * rate);
   const c = CHAPTERS[state.chapter];
   // the chapter's own animation (the cursor of Cycle) does not take the chapter out of step
-  if (c.anim) { autoWrites++; try { c.anim(state.playing || state.anim ? tdt : dt, state, set); } finally { autoWrites--; } }
+  if (c.anim) { autoWrites++; try { c.anim((state.playing || state.anim ? tdt : dt) * rate, state, set); } finally { autoWrites--; } }
   follow(c.pulse ? c.pulse(state) : null, now);
   const sh = sheets[c.key];
   if (sh && sh.render) sh.render();
@@ -763,9 +813,9 @@ function fitTransport() {
   const k = BAR.indexOf(barOf(state.chapter));
   const need = widen(reg.map((w, j) => (j === k ? cur[j] : w)));
   const most = widen([...reg]).reduce((a, b) => a + b, 0) + Math.max(...cur.map((w, j) => w - reg[j]));
-  // the row's room in the full form: the bar's content less the Play button and the gap
-  const cs = getComputedStyle(bar);
-  const room = bar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - $('#play').offsetWidth - parseFloat(cs.columnGap);
+  // the row's room in the full form: the bar's content less the Play button and the gap, when it shows
+  const cs = getComputedStyle(bar), pb = $('#play');
+  const room = bar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - (pb.hidden ? 0 : pb.offsetWidth + parseFloat(cs.columnGap));
   const strip = most > room, was = isStrip();
   bar.classList.toggle('is-strip', strip);
   const cols = need.map((w) => (strip ? `${w.toFixed(1)}px` : `minmax(0, ${w.toFixed(1)}fr)`)).join(' ');
@@ -851,6 +901,7 @@ function start() {
   fillNorms();
   for (const c of CHAPTERS) c.init?.({ state, set, subscribe, $, $$, cite: (ids) => cite(ids) });
   bindControls();
+  bindMotion();
   const heart = store.get(PHENO_STORE);
   if (heart && heart !== 'normal' && PHENOS[heart]) set({ pheno: heart, ...phenoPatch(heart) });
   showPheno();
@@ -861,8 +912,9 @@ function start() {
   // the address before showChapter writes the chapter's own
   const hash = location.hash, fromHash = chapterOf(hash);
   renderAllText();
-  // the tour plays when the page opens, from the chapter that opens; not with reduced motion
-  if (!reducedMotion) set({ playing: true });
+  // with TOUR, the tour plays when the page opens, from the chapter that opens; not with reduced
+  // motion. Without it, the chapter that opens plays its own sequence (showChapter).
+  if (TOUR && !reducedMotion) set({ playing: true });
   if (fromHash > 0) set({ chapter: fromHash }); else showChapter();
   aliasState(hash);
   // a new #key in the address bar opens that chapter (showChapter writes the hash with
@@ -878,6 +930,7 @@ function start() {
   });
   document.fonts?.ready?.then(() => dirtyAll());
   document.fonts?.addEventListener?.('loadingdone', () => dirtyAll());
+  motion.live = true;
   requestAnimationFrame(frame);
   warmQueue();
 }

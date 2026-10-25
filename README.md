@@ -49,11 +49,11 @@ Chapters 09, 11 to 16 and 21, and B2 to B10, each follow one disease or one load
 ## Use
 
 - **Heart.** The menu in the header sets the heart for every chapter: normal, cardiac amyloidosis, ischemic cardiomyopathy, a Barlow mitral valve with severe regurgitation, or a bicuspid aortic valve with severe stenosis. Each chapter opens at that heart's values. The page keeps the choice between visits.
-- **Tour.** *Play all chapters* runs the 22 main chapters in order. It starts when the page opens, except with reduced motion. Any input pauses it, and the next click continues from the step on screen. A paused chapter plays its own sequence.
+- **Motion.** Each chapter opens and plays its own steps. The buttons at the corner of the figure pause or play all motion (the beating heart, the flow and the steps) and set its speed: 0.5×, 1× or 2×. The readouts and the time scales stay in real units. An input stops the steps; the slider's Play, or the figure's Play in a chapter without one, starts them again. With reduced motion the figures stay still and the buttons are hidden. The tour through all chapters (*Play all chapters*) is hidden, and its code stays (`TOUR` in `src/main.js`).
 - **Severity pages.** One slider runs from normal to the end stage, with the grade bands under it. The views, the Doppler strips and the measurement strip change together. Diagrams with ▲▼ buttons show how each measurement moves the grade.
 - **Sound.** The Sound button plays music in time with the heart and soft cues for changes on screen, synthesized in the browser. It is off until clicked. On iPhone and iPad the page asks for media playback, so the silent switch does not mute it.
-- **Keys and addresses.** ← and → change the chapter, the space bar plays or pauses the tour, and [ and ] step the views in 04. Each chapter opens by its key, for example `#as` or `#tee`.
-- **Phones.** The figure stays in view above the text. A bar at the bottom holds Play, back, next and the chapter list.
+- **Keys and addresses.** ← and → change the chapter, the space bar pauses or plays the motion, and [ and ] step the views in 04. Each chapter opens by its key, for example `#as` or `#tee`.
+- **Phones.** The figure stays in view above the text, with Play or Pause and one speed button (1×, 2×, 0.5×) at its top right. A bar at the bottom holds back, next and the chapter list.
 
 ## Images and values
 

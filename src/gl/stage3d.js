@@ -5,7 +5,7 @@ import { Pencil } from './pencil.js';
 import { loadModel } from '../model3d.js';
 import { cycleAt, RR } from '../cyclemodel.js';
 import { tokens } from '../sketch.js';
-import { reducedMotion } from '../state.js';
+import { reducedMotion, motion } from '../state.js';
 
 const smooth = (t) => t * t * (3 - 2 * t);
 
@@ -267,10 +267,13 @@ export class Stage3D {
 
   tick(dt) {
     if (!this.heart) return;
-    this.clock += dt;
+    // the heart moves on the motion clock (the Motion buttons: held by Pause, scaled by the
+    // speed); the camera keeps real time, so a drag or a preset still moves it
+    const mdt = dt * motion.rate;
+    this.clock += mdt;
     const o = this.opts;
     // one beat of the shared cycle model (70 per minute); still = end-diastole
-    if (o.beat && !reducedMotion) this.phase = (this.phase + dt / (RR / 1000)) % 1;
+    if (o.beat && !reducedMotion) this.phase = (this.phase + mdt / (RR / 1000)) % 1;
     else this.phase = o.stillPhase ?? 0;
     const cyc = cycleAt(this.phase * RR);
     const s = cyc.s, v = cyc.v, drive = cyc.drive;

@@ -9,7 +9,7 @@
 // bright tissue keeps its grey (write priority), and the samples are interpolated onto the
 // screen (scan conversion).
 import { flowColor } from './scope.js';
-import { cine } from './sev.js';
+import { cine, motionNow } from './sev.js';
 
 const smooth = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
 
@@ -322,7 +322,7 @@ export function colorFlow(ctx, F, cf) {
   if (!(t1 > t0 && r1 > r0)) return;
   const lo = cf.lo, hi = cf.hi, Vn = (hi - lo) / 2, span = hi - lo;
   const fixed = Number.isFinite(cf.now);
-  const key = cine.live && !cf.stats && !fixed ? `${Math.floor(performance.now() / 50)}|${F.box.x},${F.box.y},${F.box.w},${F.box.h}|${k}|${sect.cx},${sect.top}|${cf.box.join(',')}|${lo},${hi},${cf.variance}` : '';
+  const key = cine.live && !cf.stats && !fixed ? `${Math.floor(motionNow() * 20)}|${F.box.x},${F.box.y},${F.box.w},${F.box.h}|${k}|${sect.cx},${sect.top}|${cf.box.join(',')}|${lo},${hi},${cf.variance}` : '';
   if (key && key === LAST.key) {
     blit(ctx, F, LAST);
     outlineBox(ctx, F, cf.box);
@@ -335,7 +335,7 @@ export function colorFlow(ctx, F, cf) {
   const NSc = (NS + 1) >> 1;
   if (N > CAP) { CAP = N; RE = new Float32Array(N); IM = new Float32Array(N); DP = new Float32Array(N); PB = new Float32Array(N); CV = new Float32Array(N); CS = new Float32Array(N); }
   const M = bloodMask(cf, t0, t1, r0, r1);
-  const now = fixed ? cf.now : cine.live ? performance.now() / 1000 : 0;
+  const now = fixed ? cf.now : cine.live ? motionNow() : 0;
   const tf = now * 12, fr = Math.floor(now * 20);    // eddies change over about 80 ms; color frames at 20 Hz
   const pwf = 0.1 * Math.PI;                          // wall filter: 10% of the Nyquist limit
   const flows = cf.flows;
