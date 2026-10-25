@@ -75,7 +75,8 @@ scipy for the score.
    ```
    The script skips the frames that exist, so a stopped run continues. For a motion check, use
    `--engine workbench --step 3` (about 1 s a frame).
-5. Capture the TAVR chapter on this clock (`python tools/tavr-video/capture.py`) and, if
+5. Capture the TAVR chapter on this clock (`python tools/tavr-video/capture.py`: the chapter at
+   `REV`, whose layout `compose.py` crops) and, if
    `video/out/chapter-tee.mp4` is absent, the TEE chapter video (serve the repository, then
    `node tools/render-video.mjs --ch=tee`).
 6. Make the soundtrack: `python3 tools/tavr-video/score.py video/out/tavr-procedure/score.wav`

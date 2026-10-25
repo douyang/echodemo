@@ -127,6 +127,13 @@ python3 tools/shorts/qa.py video/shorts/tteer/script.yaml video/out/shorts/tteer
 python3 tools/shorts/compose.py storyboard video/shorts/tteer/script.yaml
 ```
 
+The TAVR stills, saved as `assets/tavr/<step>.webp` (WebP, quality 80):
+
+```
+node tools/blender/export.mjs --ch=tavr --frames=stills --out=video/out/tavr/mesh_stills
+python tools/blender/render.py --mesh video/out/tavr/mesh_stills --out video/out/tavr/stills --res 800 --samples 32 --bounces 5
+```
+
 To update `video/renders/`, copy the reel files and encode the chapter video again. A two-pass encode at 1.9 Mb/s from the CRF 16 master keeps the chapter video under the 25 MiB limit:
 
 ```

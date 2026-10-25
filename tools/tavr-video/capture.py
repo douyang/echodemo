@@ -1,8 +1,10 @@
-"""Capture the TAVR chapter on this video's clock: a copy of the repository (git archive of HEAD)
+"""Capture the TAVR chapter on this video's clock: a copy of the repository at REV (git archive)
 whose video/chapters.js has the capture script below in place of VIDEOS.tavr, served on a free
 port, then tools/render-video.mjs --ch=tavr in it. Writes chapter-tavr.mp4 (1920 x 1080, silent).
+REV is the chapter whose figure compose.py crops (its long axis, short axis and Doppler panes, and
+its slider of four steps): the chapter took the M-TEER layout after it.
 
-    python capture.py [--out video/out/tavr-procedure] [--keep]
+    python capture.py [--out video/out/tavr-procedure] [--rev REV] [--keep]
 
 The script: baseline (Measure, 0-6 s), position (the crimped valve at its place, 6-13.71 s), the
 balloon's inflation under pacing (13.71-22.71 s: the Blender clock's 52-61 s of the first cut:
@@ -20,6 +22,8 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
+# the chapter with the leaflet fix (#128 on main), before the M-TEER layout
+REV = '81a9ca9'
 SPEC = '''  tavr: {
     pane: '',
     side: false,
@@ -42,10 +46,11 @@ SPEC = '''  tavr: {
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default=os.path.join(REPO, 'video', 'out', 'tavr-procedure'))
+    ap.add_argument('--rev', default=REV, help='the revision of the chapter to capture')
     ap.add_argument('--keep', action='store_true', help='keep the copy of the repository')
     a = ap.parse_args()
     tree = tempfile.mkdtemp(prefix='tavr-capture-')
-    subprocess.run(f'git -C "{REPO}" archive HEAD | tar -x -C "{tree}"', shell=True, check=True)
+    subprocess.run(f'git -C "{REPO}" archive {a.rev} | tar -x -C "{tree}"', shell=True, check=True)
     p = os.path.join(tree, 'video', 'chapters.js')
     s = open(p, encoding='utf-8').read()
     i = s.index('  tavr: {\n')

@@ -266,6 +266,8 @@ a:hover { text-decoration-color: var(--accent); }
     #fig-mteer { --tall: 1.5; }
     /* T-TEER: the procedure pane over two echo panes and a third, stacked */
     #fig-tteer { --tall: 1.5; }
+    /* TAVR: the procedure pane over two echo panes and a third, stacked */
+    #fig-tavr { --tall: 1.5; }
   }
   #fig-windows, #fig-planes, #fig-tee, #fig-ai { bottom: 0; height: auto; }
 }
@@ -915,8 +917,8 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   html[data-ch="peri"] .stage { height: min(64vh, 560px); }
   /* Prosthetic valves: two echo views beside the CW and PW Doppler strips */
   html[data-ch="prosthetic"] .stage { height: min(64vh, 560px); }
-  /* TAVR: the TEE long and short axes beside the CW and PW Doppler strips */
-  html[data-ch="tavr"] .stage { height: min(64vh, 560px); }
+  /* TAVR: the procedure pane, two echo panes and a third pane, stacked */
+  html[data-ch="tavr"] .stage { height: min(72vh, 620px); }
   /* Shunts: two echo views beside the Doppler strips or the bubble counts */
   html[data-ch="shunts"] .stage { height: min(64vh, 560px); }
   /* Infective endocarditis: two echo views beside two Doppler strips */
