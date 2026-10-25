@@ -22,8 +22,8 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-# the chapter with the leaflet fix, before the M-TEER layout
-REV = '70ee2a1'
+# the chapter with the leaflet fix (#128 on main), before the M-TEER layout
+REV = '81a9ca9'
 SPEC = '''  tavr: {
     pane: '',
     side: false,
