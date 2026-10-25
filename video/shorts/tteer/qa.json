@@ -5,12 +5,12 @@
    {
     "check": "duration",
     "pass": true,
-    "detail": "76.80 s, planned 76.80 s (window 60-90 s)"
+    "detail": "76.20 s, planned 76.20 s (window 60-90 s)"
    },
    {
     "check": "frames",
     "pass": true,
-    "detail": "2304 frames at 30.00 fps, planned 2304"
+    "detail": "2286 frames at 30.00 fps, planned 2286"
    },
    {
     "check": "size",
@@ -25,7 +25,7 @@
    {
     "check": "true peak",
     "pass": true,
-    "detail": "-1.6 dBTP (ceiling -1.0)"
+    "detail": "-1.8 dBTP (ceiling -1.0)"
    },
    {
     "check": "caption coverage",
@@ -45,7 +45,7 @@
    {
     "check": "claims",
     "pass": true,
-    "detail": "20 claims cited, all verified"
+    "detail": "21 claims cited, all verified"
    },
    {
     "check": "loop",
@@ -61,12 +61,12 @@
    {
     "check": "duration",
     "pass": true,
-    "detail": "76.80 s, planned 76.80 s (window 60-90 s)"
+    "detail": "76.20 s, planned 76.20 s (window 60-90 s)"
    },
    {
     "check": "frames",
     "pass": true,
-    "detail": "2304 frames at 30.00 fps, planned 2304"
+    "detail": "2286 frames at 30.00 fps, planned 2286"
    },
    {
     "check": "size",
@@ -81,7 +81,7 @@
    {
     "check": "true peak",
     "pass": true,
-    "detail": "-3.1 dBTP (ceiling -1.0)"
+    "detail": "-3.0 dBTP (ceiling -1.0)"
    },
    {
     "check": "caption time",
@@ -101,7 +101,7 @@
    {
     "check": "claims",
     "pass": true,
-    "detail": "20 claims cited, all verified"
+    "detail": "21 claims cited, all verified"
    },
    {
     "check": "loop",

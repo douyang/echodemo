@@ -1,9 +1,9 @@
-# T-TEER reel (the TriClip): the script. Each beat has its voice line ([shown|spoken] where the caption and the
+# T-TEER reel: the script. Each beat has its voice line ([shown|spoken] where the caption and the
 # voice differ), its words on screen (7 or fewer), its claims (claims.yaml), its 3D shot and its
 # panes. The voice sets the times: a beat starts `lead` s before its line and ends `gap` s after
 # it, or at its `min` length (tools/shorts/compose.py writes the times to <cut>.cues.json).
 # faster: {word: tempo} says a word faster than the voice gave it (tools/shorts/voice.py).
-# seed: the ElevenLabs seed of a beat's clip. Route: "kayvuh" with seed 33 gave VEE-nuh KAY-vuh;
+# seed: the ElevenLabs seed of a beat's clip. Route: "kayvuh" with seed 303 gave VEE-nuh KAY-vuh;
 #       a phoneme model (wav2vec2, espeak IPA) and the formants of each vowel checked it.
 #
 # shot: {frame: <name>, zoom: [from, to]} holds one Blender frame (video/out/shorts/tteer/frames3d)
@@ -32,7 +32,7 @@ beats:
     claims: [C01, C35]
     shot: {frame: hook, zoom: [1.0, 1.04]}
     panes: {text: hook, lines: [Percutaneous, tricuspid repair]}
-    source: "TriClip · transcatheter edge-to-edge repair (TEER)"
+    source: "Transcatheter edge-to-edge repair (T-TEER)"
   - id: problem
     voice: "In severe tricuspid regurgitation, the valve no longer closes fully, and blood leaks back into the right atrium."
     onscreen: "Severe TR: blood leaks back"
@@ -42,14 +42,14 @@ beats:
     labels: [{mark: Q0, text: Tricuspid valve, dx: 70, dy: -120}, {mark: ra, text: Right atrium, dx: -50, dy: -130}]
     source: "Simulated TTE · grading: TVARC 2023"
   - id: route
-    voice: "The TriClip enters the femoral vein. A 25 French guide carries it up the [inferior vena cava|inferior vena kayvuh] into the right atrium."
-    seed: 33
+    voice: "The clip enters the femoral vein. A 25 French guide carries it up the [inferior vena cava|inferior vena kayvuh] into the right atrium."
+    seed: 303
     onscreen: "Femoral vein to the right atrium"
     claims: [C35, C34, C46]
     shot: {chapter: 1}
     panes: {step: 1, show: [b, c]}
     labels: [{mark: tip, text: Guide, dx: 70, dy: -50}]
-    source: "Simulated TEE · TriClip G4 IFU; Hahn 2025"
+    source: "Simulated TEE · FDA panel 2024; Onishi 2026; Hahn 2025"
   - id: steer
     voice: "[TEE|T E E], with fluoroscopy, guides each step. The clip is steered down toward the valve, and biplane imaging shows it in two planes at once."
     faster: {TEE: 1.9}
@@ -62,18 +62,18 @@ beats:
   - id: align
     voice: "Above the valve, the arms open and turn until they lie square to the line where the leaflets meet."
     onscreen: "Arms square to the coaptation line"
-    claims: [C93, C48]
+    claims: [C98, C48]
     shot: {chapter: 3}
     panes: {step: 3, show: [b, c]}
     labels: [{mark: clipTop, text: Clip, dx: 80, dy: -70}]
-    source: "Simulated TEE · TriClip G4 IFU; Hahn 2025"
+    source: "Simulated TEE · Onishi 2026; Hahn 2025"
   - id: grasp
     voice: "The clip goes into the right ventricle, opens, and comes back up under the septal and anterior leaflets. The grippers drop to hold them."
     onscreen: "Grasp the septal and anterior leaflets"
-    claims: [C93, C94, C55, C54]
+    claims: [C99, C94, C55, C54]
     shot: {chapter: 4}
     panes: {step: 4, show: [b, c]}
-    source: "Simulated TEE · TriClip G4 IFU; Onishi 2026; Hahn 2025"
+    source: "Simulated TEE · Onishi 2026; Hahn 2025"
   - id: assess
     voice: "The arms close, and [TEE|T E E] checks the grasp, the leak that is left, and the gradient across the valve."
     faster: {TEE: 1.9}
@@ -112,4 +112,4 @@ beats:
     min: 3.6
     shot: {frame: hook, zoom: [1.0, 1.0]}
     panes: {text: hook, lines: [Percutaneous, tricuspid repair]}
-    source: "TriClip · transcatheter edge-to-edge repair (TEER)"
+    source: "Transcatheter edge-to-edge repair (T-TEER)"
