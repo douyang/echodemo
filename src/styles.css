@@ -786,6 +786,12 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   .mo-speeds { display: none; }
   .mo-cycle { display: inline-grid; place-items: center; }
 }
+/* 821 to 900 px: the tools show their icons only, as on a phone, so that the Motion buttons fit
+   beside them in the row above the figure */
+@media (min-width: 821px) and (max-width: 900px) {
+  .tools .tool:not(.heart-pick) { width: 34px; padding: 0; justify-content: center; }
+  .tools .tool:not(.heart-pick) .t { display: none; }
+}
 /* On a phone or a tablet the buttons take a strip of their own at the top of the sticky figure,
    at its right: over the figure they hid pane titles, values and the buttons of 09. The strip is
    the stage's top padding, outside its content box, so the figure keeps its size and layout. */
