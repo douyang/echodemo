@@ -18,7 +18,7 @@
 import { Sheet, clamp, MONO, SANS } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
-import { tracks, bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, meters, note, fit, gradeTable, shown as rnd } from '../sev.js';
+import { tracks, bands, paintBands, playSeverity, Beat, cine, cursor, rows, cols, inner, meters, note, fit, gradeTable, shown as rnd, motionNow } from '../sev.js';
 import { cal, jet, barFor } from '../echo2d.js';
 import { mmode } from '../bmode.js';
 import { MeshPanel } from '../meshpanel.js';
@@ -669,7 +669,7 @@ function paintLumens(ctx, F, e, flowAt) {
   const g = CF.getContext('2d', { willReadFrequently: true });
   g.clearRect(0, 0, CF.width, CF.height);
   const img = g.createImageData(W, H), data = img.data;
-  const fr = cine.live ? Math.floor(performance.now() / 45) : 0;
+  const fr = cine.live ? Math.floor((motionNow() * 1000) / 45) : 0;
   let any = false;
   for (let j = 0; j < H; j++) {
     for (let i = 0; i < W; i++) {

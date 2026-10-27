@@ -179,6 +179,15 @@
 
   <!-- ============================================================ figures -->
   <main class="stage" id="stage">
+    <!-- the open chapter's motion (main.js): Play or Pause, and the speed. A narrow figure has one
+         speed button, which cycles 1×, 2× and 0.5× (styles.css) -->
+    <div class="motion" role="group" aria-label="Motion">
+      <button type="button" class="mo-play" id="mo-play" aria-pressed="true" aria-label="Pause" title="Pause"><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8Z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg></button>
+      <div class="mo-speeds" id="mo-speeds" role="group" aria-label="Speed">
+        <button type="button" data-speed="0.5" aria-pressed="false" title="Half speed">0.5×</button><button type="button" data-speed="1" aria-pressed="true" title="Normal speed">1×</button><button type="button" data-speed="2" aria-pressed="false" title="Double speed">2×</button>
+      </div>
+      <button type="button" class="mo-cycle" id="mo-cycle" aria-label="Speed 1×: change the speed">1×</button>
+    </div>
     <figure class="fig is-active" id="fig-pulse">
       <canvas class="fig-canvas" aria-hidden="true"></canvas>
       <figcaption class="sr-only">A transducer sends a short pulse into the chest. The pulse crosses the chest wall, the right ventricle, the septum, the left ventricle and the posterior wall. Echoes return from each boundary. An amplitude (A-mode) trace and a single brightness (B-mode) line display the echoes by depth.</figcaption>
@@ -2668,7 +2677,9 @@
 
   <!-- ============================================================ transport -->
   <nav class="transport" aria-label="Chapters">
-    <button class="play" id="play" type="button" aria-pressed="false" aria-label="Play all chapters">
+    <!-- hidden: Play all chapters, the tour through the chapters (TOUR in main.js). Each chapter
+         has its own Motion buttons at the figure's corner -->
+    <button class="play" id="play" type="button" aria-pressed="false" aria-label="Play all chapters" hidden>
       <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8Z" fill="currentColor"/></svg>
       <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>
     </button>

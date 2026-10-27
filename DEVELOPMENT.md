@@ -31,7 +31,7 @@ Open <http://localhost:8000/>. There is no build step: ES modules, a canvas sket
 
 ```
 index.html        the page, the chapter text, the dialogs and the preload block
-src/main.js       the chapter engine: controls, readouts, citations, the tour, the chapter bar
+src/main.js       the chapter engine: controls, readouts, citations, the motion clock and its buttons, the tour (hidden), the chapter bar
 src/order.js      the chapter order and numbers, the bonus chapters, the hidden chapters
 src/state.js      the store: each chapter's own keys and the shared keys
 src/ch/*.js       one module per chapter

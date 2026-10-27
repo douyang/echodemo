@@ -737,6 +737,77 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .play .i-pause { display: none; }
 .play[aria-pressed="true"] .i-play { display: none; }
 .play[aria-pressed="true"] .i-pause { display: block; }
+/* Play all chapters is hidden (index.html): the chapters take the whole bar */
+.transport:has(> .play[hidden]) { grid-template-columns: minmax(0, 1fr); }
+
+/* ---------------------------------------------------------------- motion */
+/* The open chapter's Motion buttons (main.js): Play or Pause, and the speed. Above the figure's
+   top left corner, in the row of the tools; on a phone or a tablet, over the figure's top right
+   corner with one speed button that cycles. A figure narrower than 640 px has that one button too.
+   Hidden with reduced motion: the figures do not move then. */
+.motion { position: absolute; z-index: 4; top: var(--gutter); left: 14px; display: flex; align-items: center; gap: 6px; }
+.mo-play {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.mo-play svg { width: 14px; height: 14px; }
+.mo-play .i-pause, .mo-play[aria-pressed="true"] .i-play { display: none; }
+.mo-play[aria-pressed="true"] .i-pause { display: block; }
+.mo-speeds, .mo-cycle {
+  height: 34px;
+  border: 1px solid var(--rule);
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--paper-2) 82%, transparent);
+}
+.mo-speeds { display: inline-flex; padding: 3px; }
+.mo-speeds button, .mo-cycle {
+  min-width: 40px;
+  padding: 0 9px;
+  color: var(--ink-2);
+  font: 500 0.75rem/1 var(--sans);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.mo-speeds button { border: 0; border-radius: 14px; background: none; }
+.mo-speeds button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.mo-cycle { display: none; color: var(--ink); }
+@media (hover: hover) {
+  .mo-speeds button:not([aria-pressed="true"]):hover { color: var(--ink); }
+  .mo-cycle:hover { border-color: var(--ink-2); }
+}
+@container (width < 640px) {
+  .mo-speeds { display: none; }
+  .mo-cycle { display: inline-grid; place-items: center; }
+}
+/* 821 to 900 px: the tools show their icons only, as on a phone, so that the Motion buttons fit
+   beside them in the row above the figure */
+@media (min-width: 821px) and (max-width: 900px) {
+  .tools .tool:not(.heart-pick) { width: 34px; padding: 0; justify-content: center; }
+  .tools .tool:not(.heart-pick) .t { display: none; }
+}
+/* On a phone or a tablet the buttons take a strip of their own at the top of the sticky figure,
+   at its right: over the figure they hid pane titles, values and the buttons of 09. The strip is
+   the stage's top padding, outside its content box, so the figure keeps its size and layout. */
+@media (max-width: 820px) {
+  :root { --mo-strip: 36px; }
+  .stage { box-sizing: content-box; padding-top: var(--mo-strip); }
+  .fig { top: var(--mo-strip); }
+  .motion { top: 3px; left: auto; right: 8px; gap: 4px; }
+  .mo-play { width: 30px; height: 30px; }
+  .mo-speeds { display: none; }
+  .mo-cycle { display: inline-grid; place-items: center; height: 30px; min-width: 38px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motion { display: none; }
+  :root { --mo-strip: 0px; }
+}
 .groups {
   display: grid;
   grid-template-columns: repeat(var(--n-ch, 13), minmax(0, 1fr));
@@ -1163,13 +1234,13 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
   .ase-head { top: -6px; }
 }
 @media (max-width: 820px) {
-  .ase-head { top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px)); }
+  .ase-head { top: calc(env(safe-area-inset-top, 0px) + var(--mo-strip, 0px) + min(48vh, 440px)); }
   /* clear of the sticky figure and result above, and of the chapter bar below */
-  .ase-b, .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 110px); scroll-margin-bottom: 80px; }
+  .ase-b, .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--mo-strip, 0px) + min(48vh, 440px) + 110px); scroll-margin-bottom: 80px; }
 }
 @media (max-width: 820px) and (max-height: 640px) {
   .ase-head { position: static; }
-  .ase-b, .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 12px); }
+  .ase-b, .ase .seg button { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--mo-strip, 0px) + min(48vh, 440px) + 12px); }
 }
 
 /* ------------------------------------------------- Aortic stenosis: the calculations in the text
@@ -1230,10 +1301,10 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent)
 }
 /* a link focused from the keyboard stops clear of the sticky figure, the result and the chapter bar */
 @media (max-width: 820px) {
-  .asx-go { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 110px); scroll-margin-bottom: 80px; }
+  .asx-go { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--mo-strip, 0px) + min(48vh, 440px) + 110px); scroll-margin-bottom: 80px; }
 }
 @media (max-width: 820px) and (max-height: 640px) {
-  .asx-go { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + min(48vh, 440px) + 12px); }
+  .asx-go { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--mo-strip, 0px) + min(48vh, 440px) + 12px); }
 }
 /* ------------------------------------------------- The RA pressure from the IVC
    Mukherjee 2025, Table 4 and Figure 3, in the classes of the diastolic function diagram (.ase-*): the

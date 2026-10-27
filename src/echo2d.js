@@ -8,7 +8,7 @@ import { cycleAt, mitralV, lvotV, EV, RR } from './cyclemodel.js';
 import { colorFlow, convergence, jetFlow, jetShare, stream, boxAround } from './cflow.js';
 import { bmode, mmode, DB } from './bmode.js';
 import { MONO, SANS, clamp, mix } from './sketch.js';
-import { cine } from './sev.js';
+import { cine, motionNow } from './sev.js';
 
 // ---------------------------------------------------------------- small geometry
 const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
@@ -515,7 +515,7 @@ export function jet(ctx, F, j) {
       else if (entered) { L = t; break; }
     }
   }
-  const f = cine.live ? Math.floor(performance.now() / 45) : 0;
+  const f = cine.live ? Math.floor((motionNow() * 1000) / 45) : 0;
   for (let jj = 0; jj < H; jj++) {
     for (let ii = 0; ii < W; ii++) {
       const X = x0 + (ii + 0.5) * cell, Y = y0 + (jj + 0.5) * cell;
@@ -631,7 +631,7 @@ export function pathJet(ctx, F, j) {
     return path;
   };
   const clip = pathOf(j.clip), pclip = pathOf(j.pclip);
-  const f = cine.live ? Math.floor(performance.now() / 45) : 0;
+  const f = cine.live ? Math.floor((motionNow() * 1000) / 45) : 0;
   for (let jj = 0; jj < H; jj++) {
     for (let ii = 0; ii < W; ii++) {
       const X = x0 + (ii + 0.5) * cell, Y = y0 + (jj + 0.5) * cell;

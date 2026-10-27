@@ -126,6 +126,8 @@ export function playSeverity(dt, s, set, key, bandsOrFn) {
 
 /** Whether the cine of the page being drawn runs: Beat.at() sets it, the echo views read it. */
 export const cine = { live: false };
+/** The time (s) that a running cine's speckle and color flow move on: the motion clock (state.js). */
+export { motionNow } from './state.js';
 
 /** The beat: ms since the R wave, advanced while the cine runs. */
 export class Beat {
