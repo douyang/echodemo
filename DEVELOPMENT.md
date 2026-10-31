@@ -64,6 +64,7 @@ archive/          markup of hidden chapters, not loaded by the site
 | `node tools/preload.mjs --check` | The preload block of `index.html` lists every module (105) |
 | `node tools/stress-volumes.mjs --check` | Bonus chapter B1's stored LV volumes match the mesh |
 | `node tools/hinges.mjs --check` | The stored valve hinges (`assets/hinges.json`) match the model |
+| `node tools/llms.mjs --check` | `llms.txt` lists every chapter of the order with its title and kicker |
 | `node tools/free-reach.mjs` | In 04, from every view, the free probe reaches every view the panel names within the sliders' ranges, in each heart |
 | `node --input-type=module --check < src/echo.js` | A module parses (`node --check src/echo.js` does not check ES modules in `.js` files) |
 | `node tools/loadtime.mjs [keys]` | The load time of each chapter |
@@ -170,6 +171,8 @@ Rendering needs Node 22, Playwright with Chromium, ffmpeg, and Python 3 with num
 ## Deploy
 
 `main` deploys to Cloudflare Pages and serves <https://intro2echo.com>. Each pull request gets a preview at `<branch>.echodemo.pages.dev`.
+
+For crawlers: `robots.txt` lets every crawler read every page and names `sitemap.xml`. The sitemap has one page, because the chapters open by their key after `#`, which a crawler does not count as a page of its own. `llms.txt` describes the site and lists the chapters for language models; `node tools/llms.mjs` writes it from the order and the page, after a change to a chapter's title or kicker. The page's canonical link names intro2echo.com, so search engines count it and not echodemo.pages.dev. Cloudflare marks the previews `noindex`.
 
 ## History
 

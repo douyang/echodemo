@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- One page: the chapters open by their key after # (#tavr), which a crawler does not count as a page of its own -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://intro2echo.com/</loc></url>
+</urlset>

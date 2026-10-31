@@ -1,0 +1,5 @@
+# The Heart by Ultrasound: every crawler may read every page.
+User-agent: *
+Allow: /
+
+Sitemap: https://intro2echo.com/sitemap.xml
