@@ -99,7 +99,10 @@ node tools/render-video.mjs --ch=all --jobs=3 --audio=auto
 node tools/render-video.mjs --cut=A --jobs=3 --audio=video/out/echo-views-A.wav
 node tools/render-video.mjs --reel --jobs=3 --audio=auto
 node tools/storyboard.mjs --ch=as
+node tools/youtube.mjs
 ```
+
+`tools/youtube.mjs` writes the text for YouTube to `video/out/youtube/`: each video's title, a description that links to its chapter's address, its chapters (timestamps) and tags (`<key>.txt`), and its captions as subtitles (`<key>.srt`). It reads the captions from each video's page and draws no frames.
 
 The M-TEER frames and voice-over. The voice needs an ElevenLabs API key in the environment; it is never written to a file:
 
