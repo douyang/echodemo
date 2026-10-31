@@ -10,6 +10,7 @@ import { meshPanelsReady } from './meshpanel.js';
 import { setHeart } from './echo2d.js';
 import { JETS } from './jets.js';
 import { canPlay, setMusic, follow, cue } from './music.js';
+import { PAGES } from './pages.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -24,6 +25,23 @@ const ALIAS_STATE = { constrict: { periMode: 'cp', periS: 0.55 }, ivc: { pressMo
 /** The chapter index of an address's #key, or -1. An alias applies only to a key that is not a chapter. */
 const chapterOf = (hash) => { const h = (hash || '').slice(1); return KEYS.indexOf(KEYS.includes(h) ? h : ALIAS[h] || h); };
 const CH = Object.fromEntries(KEYS.map((k, i) => [k, i]));
+// On the site (intro2echo.com, and its previews on pages.dev) each chapter has an address of its
+// own: /tavr, and / for the first chapter. functions/[key].js gives each its title, description and
+// preview for search engines and link previews. Elsewhere (a local server, the tools) the page keeps
+// the old form, #tavr, which serves no other address. Both forms open their chapter, and so does an
+// old address /#tavr on the site.
+const PATHS = /(^|\.)intro2echo\.com$|\.pages\.dev$/.test(location.hostname);
+/** The chapter key in the path of the address ('' at the site's root). */
+const pathKey = () => location.pathname.replace(/^\/+|\/+$/g, '');
+/** The address of chapter k (or an old key) in the page's form. */
+const hrefOf = (k) => { const i = CH[k] ?? CH[ALIAS[k]] ?? 0; return PATHS ? `/${i ? KEYS[i] : ''}` : `#${KEYS[i]}`; };
+/** The open chapter's date under the text: the day its text last changed (src/pages.js). */
+function setUpdated(day) {
+  const t = $('time.updated');
+  if (!t || !day) return;
+  t.dateTime = day;
+  t.textContent = new Date(`${day}T00:00:00Z`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+}
 
 // a chapter article left out of CHAPTERS (the report and Planes, order.js) stays hidden, its citations unnumbered
 for (const a of $$('article.chapter')) a.hidden = !KEYS.includes(a.id.replace(/^ch-/, ''));
@@ -35,6 +53,7 @@ for (const a of $$('article.chapter')) {
   if (n && el) el.textContent = n;
 }
 for (const a of $$('a[data-go]')) {
+  if (!PATHS) a.setAttribute('href', hrefOf(a.dataset.go));   // a local server has no /tavr
   const n = numOf(a.dataset.go), t = a.textContent;
   if (!n) continue;
   const m = t.match(/^([Bb]onus c|[Cc])hapter (?:\d\d|B\d+)$/);
@@ -454,7 +473,9 @@ function showChapter() {
     const top = $('.masthead').offsetHeight;
     if (window.scrollY > top) window.scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' });
   }
-  try { history.replaceState(null, '', `${location.pathname}${location.search}#${c.key}`); } catch (e) { /* sandboxed */ }
+  try { history.replaceState(null, '', PATHS ? `${hrefOf(c.key)}${location.search}` : `${location.pathname}${location.search}#${c.key}`); } catch (e) { /* sandboxed */ }
+  const pg = PAGES[c.key];
+  if (pg) { document.title = pg.title; setUpdated(pg.modified); }
   const sh = ensureFigure(i);
   if (sh && sh.resize) { sh.resize(); sh.dirty = true; }
   c.enter?.({ state, set, playing: state.playing });
@@ -743,7 +764,7 @@ function buildBonus() {
   ol.className = 'bonus';
   ol.innerHTML = bonus.map((c) => {
     const kicker = $(`#ch-${c.key} .ch-kicker`)?.textContent.trim() || '';
-    return `<li><a href="#${c.key}" data-go="${c.key}"><span class="n">${numOf(c.key)}</span> <span class="t">${esc(c.title)}</span>${kicker ? ` <span class="k">${esc(kicker)}</span>` : ''}</a></li>`;
+    return `<li><a href="${hrefOf(c.key)}" data-go="${c.key}"><span class="n">${numOf(c.key)}</span> <span class="t">${esc(c.title)}</span>${kicker ? ` <span class="k">${esc(kicker)}</span>` : ''}</a></li>`;
   }).join('');
   page.appendChild(ol);
 }
@@ -909,14 +930,15 @@ function start() {
   refIndex = numberCitations();
   applyTheme();
   syncControls();
-  // the address before showChapter writes the chapter's own
+  // the address before showChapter writes the chapter's own: an old #key first, then the path
   const hash = location.hash, fromHash = chapterOf(hash);
+  const fromPath = PATHS ? chapterOf(`#${pathKey()}`) : -1, from = fromHash >= 0 ? fromHash : fromPath;
   renderAllText();
   // with TOUR, the tour plays when the page opens, from the chapter that opens; not with reduced
   // motion. Without it, the chapter that opens plays its own sequence (showChapter).
   if (TOUR && !reducedMotion) set({ playing: true });
-  if (fromHash > 0) set({ chapter: fromHash }); else showChapter();
-  aliasState(hash);
+  if (from > 0) set({ chapter: from }); else showChapter();
+  aliasState(fromHash >= 0 ? hash : `#${pathKey()}`);
   // a new #key in the address bar opens that chapter (showChapter writes the hash with
   // replaceState, which fires no hashchange)
   window.addEventListener('hashchange', () => {

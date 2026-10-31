@@ -30,7 +30,9 @@ Open <http://localhost:8000/>. There is no build step: ES modules, a canvas sket
 ## Code
 
 ```
-index.html        the page, the chapter text, the dialogs and the preload block
+index.html        the page, the chapter text, the dialogs, the preload block and the crawlers' block
+functions/[key].js  a chapter's address on Cloudflare (/tavr): the page with that chapter's head
+src/pages.js      each address's title, description, preview image, date and structured data
 src/main.js       the chapter engine: controls, readouts, citations, the motion clock and its buttons, the tour (hidden), the chapter bar
 src/order.js      the chapter order and numbers, the bonus chapters, the hidden chapters
 src/state.js      the store: each chapter's own keys and the shared keys
@@ -46,7 +48,7 @@ src/music.js      the site's sound (Web Audio)
 src/norms.js      normal values and integrated grades
 src/refs.js       references
 src/idbcache.js   the model's fields in IndexedDB, from one visit to the next
-assets/           heart mesh, landmarks, valve hinges, poster, favicon
+assets/           heart mesh, landmarks, valve hinges, poster, favicon; assets/og/ the link previews
 video/            the views video, the chapter videos and the intro
 video/renders/    the T-TEER chapter video and reel cuts, kept in git
 tools/            checks and video tools; tools/score/ the soundtracks, tools/voice/ the voice-over,
@@ -64,7 +66,8 @@ archive/          markup of hidden chapters, not loaded by the site
 | `node tools/preload.mjs --check` | The preload block of `index.html` lists every module (105) |
 | `node tools/stress-volumes.mjs --check` | Bonus chapter B1's stored LV volumes match the mesh |
 | `node tools/hinges.mjs --check` | The stored valve hinges (`assets/hinges.json`) match the model |
-| `node tools/llms.mjs --check` | `llms.txt` lists every chapter of the order with its title and kicker |
+| `node tools/crawlers.mjs --check` | `src/pages.js`, the head block of `index.html`, `sitemap.xml`, `llms.txt`, `_routes.json` and `_redirects` match the page and the order; no chapter's text changed without a new date |
+| `node tools/prerender.mjs --check` | The citation numbers, the sources and the normal values written in `index.html` match what the page draws |
 | `node tools/free-reach.mjs` | In 04, from every view, the free probe reaches every view the panel names within the sliders' ranges, in each heart |
 | `node --input-type=module --check < src/echo.js` | A module parses (`node --check src/echo.js` does not check ES modules in `.js` files) |
 | `node tools/loadtime.mjs [keys]` | The load time of each chapter |
@@ -96,7 +99,10 @@ node tools/render-video.mjs --ch=all --jobs=3 --audio=auto
 node tools/render-video.mjs --cut=A --jobs=3 --audio=video/out/echo-views-A.wav
 node tools/render-video.mjs --reel --jobs=3 --audio=auto
 node tools/storyboard.mjs --ch=as
+node tools/youtube.mjs
 ```
+
+`tools/youtube.mjs` writes the text for YouTube to `video/out/youtube/`: each video's title, a description that links to its chapter's address, its chapters (timestamps) and tags (`<key>.txt`), and its captions as subtitles (`<key>.srt`). It reads the captions from each video's page and draws no frames.
 
 The M-TEER frames and voice-over. The voice needs an ElevenLabs API key in the environment; it is never written to a file:
 
@@ -172,7 +178,13 @@ Rendering needs Node 22, Playwright with Chromium, ffmpeg, and Python 3 with num
 
 `main` deploys to Cloudflare Pages and serves <https://intro2echo.com>. Each pull request gets a preview at `<branch>.echodemo.pages.dev`.
 
-For crawlers: `robots.txt` lets every crawler read every page and names `sitemap.xml`. The sitemap has one page, because the chapters open by their key after `#`, which a crawler does not count as a page of its own. `llms.txt` describes the site and lists the chapters for language models; `node tools/llms.mjs` writes it from the order and the page, after a change to a chapter's title or kicker. The page's canonical link names intro2echo.com, so search engines count it and not echodemo.pages.dev. Cloudflare marks the previews `noindex`.
+For search engines, AI crawlers and link previews:
+- **Addresses.** On the site each chapter has an address of its own: `/tavr`, and `/` for the first chapter (`src/main.js`). `functions/[key].js` serves each one as `index.html` with that chapter's title, description, canonical link, preview tags, structured data (schema.org `MedicalWebPage`) and date, its article the only one not hidden. `_routes.json` runs the function only at those addresses. The function sends `/tavr/` to `/tavr`, and `_redirects` sends `/pulse` to `/`. A local server keeps the old form, `#tavr`, which still opens its chapter on the site too.
+- **`node tools/crawlers.mjs`** writes `src/pages.js`, the head block of `index.html`, `sitemap.xml` (every address with its date), `llms.txt`, `_routes.json` and `_redirects`. A chapter's date is the day its text last changed: the tool keeps a hash of each chapter's text and moves the date when it changes (`--from-git` takes the dates from the history). Run it after a change to a chapter's text, title or kicker, or to the order.
+- **`node tools/prerender.mjs`** writes the citation numbers, the list of sources and the normal values into `index.html`, as the page draws them, so that a crawler that runs no script sees the sources. Run it after a change to a citation or a source.
+- **`node tools/og.mjs`** makes the preview images (1200 × 630) in `assets/og/` from the README screenshots; then run `node tools/crawlers.mjs`.
+- **`node tools/indexnow.mjs`**, after a merge that changes pages, tells Bing and the other IndexNow engines to crawl the addresses again (the key file is at the site's root).
+- `robots.txt` lets every crawler read every page and names the sitemap. The canonical link names intro2echo.com, so search engines count it and not echodemo.pages.dev. Cloudflare marks the previews `noindex`.
 
 ## History
 

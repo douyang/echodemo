@@ -1,0 +1,4 @@
+# The first chapter's key goes to the site's root, which shows it (tools/crawlers.mjs writes this file).
+# functions/[key].js sends /tavr/ to /tavr: a rule here does not apply to an address that a Function serves.
+/pulse / 301
+/pulse/ / 301
