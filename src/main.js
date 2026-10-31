@@ -53,6 +53,7 @@ for (const a of $$('article.chapter')) {
   if (n && el) el.textContent = n;
 }
 for (const a of $$('a[data-go]')) {
+  if (!PATHS) a.setAttribute('href', hrefOf(a.dataset.go));   // a local server has no /tavr
   const n = numOf(a.dataset.go), t = a.textContent;
   if (!n) continue;
   const m = t.match(/^([Bb]onus c|[Cc])hapter (?:\d\d|B\d+)$/);
