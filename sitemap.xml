@@ -1,5 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- One page: the chapters open by their key after # (#tavr), which a crawler does not count as a page of its own -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://intro2echo.com/</loc></url>
+  <url><loc>https://intro2echo.com/</loc><lastmod>2026-10-02</lastmod></url>
+  <url><loc>https://intro2echo.com/image</loc><lastmod>2026-10-03</lastmod></url>
+  <url><loc>https://intro2echo.com/shift</loc><lastmod>2026-10-03</lastmod></url>
+  <url><loc>https://intro2echo.com/windows</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://intro2echo.com/cycle</loc><lastmod>2026-10-03</lastmod></url>
+  <url><loc>https://intro2echo.com/loop</loc><lastmod>2026-10-03</lastmod></url>
+  <url><loc>https://intro2echo.com/pressure</loc><lastmod>2026-10-08</lastmod></url>
+  <url><loc>https://intro2echo.com/eject</loc><lastmod>2026-10-06</lastmod></url>
+  <url><loc>https://intro2echo.com/fill</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/segments</loc><lastmod>2026-10-03</lastmod></url>
+  <url><loc>https://intro2echo.com/rv</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/as</loc><lastmod>2026-10-03</lastmod></url>
+  <url><loc>https://intro2echo.com/ar</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>https://intro2echo.com/ms</loc><lastmod>2026-10-12</lastmod></url>
+  <url><loc>https://intro2echo.com/mr</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>https://intro2echo.com/tr</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>https://intro2echo.com/tee</loc><lastmod>2026-10-12</lastmod></url>
+  <url><loc>https://intro2echo.com/tavr</loc><lastmod>2026-10-25</lastmod></url>
+  <url><loc>https://intro2echo.com/mteer</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://intro2echo.com/tteer</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://intro2echo.com/aorta</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/ai</loc><lastmod>2026-10-11</lastmod></url>
+  <url><loc>https://intro2echo.com/bonus</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/stress</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>https://intro2echo.com/strain</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/hcm</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/amyloid</loc><lastmod>2026-10-04</lastmod></url>
+  <url><loc>https://intro2echo.com/peri</loc><lastmod>2026-10-08</lastmod></url>
+  <url><loc>https://intro2echo.com/prosthetic</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/endocarditis</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/shunts</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/masses</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/mi</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://intro2echo.com/lvad</loc><lastmod>2026-10-07</lastmod></url>
 </urlset>

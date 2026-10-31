@@ -351,6 +351,9 @@ a:hover { text-decoration-color: var(--accent); }
 
 /* ------------------------------------------------------------------ chapters */
 .chapter { display: none; }
+/* the author and the open chapter's date, under every chapter (index.html, main.js) */
+.credit { margin: 22px 0 0; padding-top: 10px; border-top: 1px solid var(--rule); font: 400 0.75rem/1.45 var(--sans); color: var(--ink-3); }
+.credit .author { color: var(--ink-2); }
 .chapter.is-active { display: block; animation: settle 0.3s ease both; }
 @keyframes settle { from { opacity: 0.6; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 
