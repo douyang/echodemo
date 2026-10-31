@@ -1,37 +1,4 @@
-# Each chapter address with a trailing slash goes to the one without (tools/crawlers.mjs writes this file),
-# and the first chapter's key to the site's root, which shows it
-/image/ /image 301
-/shift/ /shift 301
-/windows/ /windows 301
-/cycle/ /cycle 301
-/loop/ /loop 301
-/pressure/ /pressure 301
-/eject/ /eject 301
-/fill/ /fill 301
-/segments/ /segments 301
-/rv/ /rv 301
-/as/ /as 301
-/ar/ /ar 301
-/ms/ /ms 301
-/mr/ /mr 301
-/tr/ /tr 301
-/tee/ /tee 301
-/tavr/ /tavr 301
-/mteer/ /mteer 301
-/tteer/ /tteer 301
-/aorta/ /aorta 301
-/ai/ /ai 301
-/bonus/ /bonus 301
-/stress/ /stress 301
-/strain/ /strain 301
-/hcm/ /hcm 301
-/amyloid/ /amyloid 301
-/peri/ /peri 301
-/prosthetic/ /prosthetic 301
-/endocarditis/ /endocarditis 301
-/shunts/ /shunts 301
-/masses/ /masses 301
-/mi/ /mi 301
-/lvad/ /lvad 301
+# The first chapter's key goes to the site's root, which shows it (tools/crawlers.mjs writes this file).
+# functions/[key].js sends /tavr/ to /tavr: a rule here does not apply to an address that a Function serves.
 /pulse / 301
 /pulse/ / 301

@@ -12,6 +12,10 @@ export async function onRequestGet({ request, params, env, next }) {
   const key = params.key;
   const p = Object.hasOwn(PAGES, key) ? PAGES[key] : null;
   if (!p || p.path === '/') return next();
+  // /tavr/ to /tavr: the page's relative links need the address without the slash. A _redirects
+  // rule does not apply to an address that a Function serves.
+  const url = new URL(request.url);
+  if (url.pathname !== p.path) { url.pathname = p.path; return Response.redirect(url.href, 301); }
   try {
     const page = await env.ASSETS.fetch(new URL('/', request.url));
     if (!page.ok) return next();

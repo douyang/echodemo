@@ -5,7 +5,7 @@
 //   index.html     the block in its head (canonical link, preview tags, structured data) and the
 //                  date under the text, both for the site's root, which shows the first chapter
 //   sitemap.xml    every address with its date; llms.txt, the site for language models (llmstxt.org)
-//   _routes.json   the addresses that run functions/[key].js; _redirects, /tavr/ to /tavr
+//   _routes.json   the addresses that run functions/[key].js; _redirects, /pulse to /
 // A chapter's date is the day its text last changed. src/pages.js keeps a hash of each chapter's
 // text, and the date moves to today when the hash changes. --from-git takes the dates from the
 // history instead: the last commit that changed each chapter's text.
@@ -184,9 +184,8 @@ const sitemap = [
 ].join('\n');
 const routes = `${JSON.stringify({ version: 1, description: 'The chapter addresses run functions/[key].js (tools/crawlers.mjs)', include: KEYS.slice(1).map((k) => `/${k}`), exclude: [] }, null, 2)}\n`;
 const redirects = [
-  '# Each chapter address with a trailing slash goes to the one without (tools/crawlers.mjs writes this file),',
-  '# and the first chapter\'s key to the site\'s root, which shows it',
-  ...KEYS.slice(1).map((k) => `/${k}/ /${k} 301`),
+  '# The first chapter\'s key goes to the site\'s root, which shows it (tools/crawlers.mjs writes this file).',
+  '# functions/[key].js sends /tavr/ to /tavr: a rule here does not apply to an address that a Function serves.',
   `/${KEYS[0]} / 301`, `/${KEYS[0]}/ / 301`, '',
 ].join('\n');
 
