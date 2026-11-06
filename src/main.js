@@ -11,6 +11,7 @@ import { setHeart } from './echo2d.js';
 import { JETS } from './jets.js';
 import { canPlay, setMusic, follow, cue } from './music.js';
 import { PAGES } from './pages.js';
+import { initSearch } from './search.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -425,7 +426,8 @@ const ownPlays = (c) => !reducedMotion && !!c.tourTick && !(state.pheno !== 'nor
 // toggles the sequence instead (bindControls).
 let held = false;
 function hold(e) {
-  if (e.target.closest?.('button[data-anim]')) return;
+  // a dialog's controls (the search) are not input in the chapter
+  if (e.target.closest?.('button[data-anim], dialog')) return;
   held = true;
   if (state.anim || state.playing) set({ anim: false, playing: false });
 }
@@ -483,9 +485,12 @@ function showChapter() {
   renderText(i);
 }
 
+let openSearch = null;   // start() binds it (search.js)
 document.addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea, select, dialog[open]')) return;
-  if (e.key === 'ArrowRight') { goChapter(state.chapter + 1); e.preventDefault(); }
+  // / or Ctrl+K (⌘K): the search
+  if ((e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) || ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K'))) { openSearch?.(); e.preventDefault(); }
+  else if (e.key === 'ArrowRight') { goChapter(state.chapter + 1); e.preventDefault(); }
   else if (e.key === 'ArrowLeft') { goChapter(state.chapter - 1); e.preventDefault(); }
   else if (e.key === ' ' && !e.target.closest('button')) { (TOUR ? togglePlay : toggleMotion)(); e.preventDefault(); }
   // a key that the chapter takes (it sets state) is input in the chapter
@@ -928,6 +933,8 @@ function start() {
   showPheno();
   buildQuizzes();
   refIndex = numberCitations();
+  // a passage that the search opens stays where it is: the chapter's own sequence stops, as on any input in it
+  openSearch = initSearch({ open: openDialog, go: goChapter, still: () => { held = true; if (state.anim || state.playing) set({ anim: false, playing: false }); } });
   applyTheme();
   syncControls();
   // the address before showChapter writes the chapter's own: an old #key first, then the path

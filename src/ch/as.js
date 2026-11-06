@@ -3,11 +3,11 @@
 // sets the jet by the continuity equation; the LV thickens, then fails. Illustrative values.
 // The figure: an apical five-chamber view with the CW Doppler line through the valve, the CW
 // trace with the LVOT and aortic jet envelopes, and the short-axis valve orifice to scale.
-// The text holds the calculations as a diagram, with ▲▼ buttons on six measurements: the LVOT
-// diameter, the LVOT VTI and peak velocity, the AV peak velocity and VTI, and the LVEF. An edit
-// stores the six values in ax; the slider then marks a band of their result and does not change
-// them. A move of the slider, Play, the tour or a heart's preset clears ax, and the values
-// follow the slider again.
+// The text holds the calculations as a diagram, a valve area calculator: each of seven
+// measurements takes a typed number or a step of its ▲▼ buttons: the LVOT diameter, the LVOT VTI
+// and peak velocity, the AV peak velocity and VTI, the LVEF and the BSA. An edit stores the seven
+// values in ax; the slider then marks a band of their result and does not change them. A move of
+// the slider, Play, the tour or a heart's preset clears ax, and the values follow the slider again.
 import { Sheet, clamp, mix, MONO } from '../sketch.js';
 import { panel, spectral, vscale, caliper, tagBox, SC } from '../scope.js';
 import { RR, EV, cycleAt } from '../cyclemodel.js';
@@ -18,7 +18,8 @@ import { MeshPanel } from '../meshpanel.js';
 import { laWeight, lvSizeOf, lvByEf, lvWallOf, asWeights } from '../meshcal.js';
 import { onPlane, closureOf, blood, cavity, enFaceOrifice, middle, sub, add, mul, unit, perp } from '../meshjet.js';
 import { reducedMotion } from '../state.js';
-import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash, FLASH } from '../edits.js';
+import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash, FLASH, field, fieldWidth, showField, typedValue, bindFields } from '../edits.js';
+import { continuityFig } from '../calcfig.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
 import { numOf } from '../order.js';
@@ -100,11 +101,12 @@ const TRK = tracks([0, 0.2, 0.42, 0.56, 0.72, 0.84, 1], {
   cusp: [0.1, 0.15, 0.2, 0.25, 0.28, 0.28, 0.28],
 });
 
-/** The model at slider position s: its six measurements before rounding, and the rest of the heart. */
+/** The model at slider position s: its seven measurements before rounding, and the rest of the heart. */
 function modelAt(s) {
   const m = TRK(s);
   m.s = s;
   const ava = avaOf(s), csa = Math.PI * (LVOT_D / 2) ** 2;
+  m.bsa = BSA;
   m.lvotD = LVOT_D;
   m.vtiL = m.sv / csa;
   m.vL = m.vtiL / (100 * ET * gMean(1, P_LVOT));
@@ -113,7 +115,7 @@ function modelAt(s) {
   return m;
 }
 
-/** The six measurements: decimals as reported, and the step and limits of their buttons. */
+/** The seven measurements: decimals as reported, and the step and limits of their buttons. */
 const INPUTS = {
   lvotD: { d: 1, step: 0.1, min: 1.6, max: 2.6 },
   vtiL: { d: 0, step: 1, min: 8, max: 35 },
@@ -121,6 +123,7 @@ const INPUTS = {
   vmax: { d: 1, step: 0.1, min: 1.0, max: 6.0 },
   vtiA: { d: 0, step: 2, min: 20, max: 160 },
   ef: { d: 0, step: 5, min: 15, max: 75 },
+  bsa: { d: 2, step: 0.05, min: 1.2, max: 2.8 },
 };
 const IN = Object.keys(INPUTS);
 const DEC = { csa: 2, sv: 0, svi: 0, ava: 2, avai: 2, dvi: 2, vr: 2, pg: 0, mg: 0, f2: 2, ...Object.fromEntries(IN.map((k) => [k, INPUTS[k].d])) };
@@ -132,10 +135,12 @@ const DEC = { csa: 2, sv: 0, svi: 0, ava: 2, avai: 2, dvi: 2, vr: 2, pg: 0, mg: 
 function measure(raw) {
   const v = { ...raw };
   for (const k of IN) v[k] = round(raw[k], INPUTS[k].d);
+  // the model's own BSA stays unrounded, so the grades along the slider stay where they were
+  if (raw.bsa === BSA) v.bsa = BSA;
   const csa = Math.PI * (v.lvotD / 2) ** 2, sv = csa * v.vtiL, ava = sv / v.vtiA;
   const E = envelopes({ ...v, ava });
   Object.assign(v, E);
-  const calc = { csa, sv, svi: sv / BSA, ava, avai: ava / BSA, dvi: v.vtiL / v.vtiA, vr: v.vL / v.vmax, pg: 4 * v.vmax ** 2, mg: E.mg };
+  const calc = { csa, sv, svi: sv / v.bsa, ava, avai: ava / v.bsa, dvi: v.vtiL / v.vtiA, vr: v.vL / v.vmax, pg: 4 * v.vmax ** 2, mg: E.mg };
   for (const [k, x] of Object.entries(calc)) v[k] = round(x, DEC[k]);
   v.crit = asCriteria({ vmax: v.vmax, mean: v.mg, ava: v.ava, svi: v.svi, ef: v.ef });
   v.grade = asGrade({ vmax: v.vmax, mean: v.mg, ava: v.ava, svi: v.svi, ef: v.ef });
@@ -455,29 +460,29 @@ function draw(sh, t) {
 // From the six measurements (▲▼) through the formulas to each criterion's grade band
 // (Baumgartner 2017 Table 3) and to the result. Each change flashes where it acts.
 const NAME = {
-  lvotD: 'LVOT diameter', vtiL: 'LVOT VTI', vL: 'LVOT peak velocity', vmax: 'AV peak velocity', vtiA: 'AV VTI', ef: 'LVEF',
+  lvotD: 'LVOT diameter', vtiL: 'LVOT VTI', vL: 'LVOT peak velocity', vmax: 'AV peak velocity', vtiA: 'AV VTI', ef: 'LVEF', bsa: 'Body surface area',
   csa: 'LVOT area', sv: 'Stroke volume', svi: 'Stroke volume index', ava: 'AVA', avai: 'AVA index', dvi: 'Dimensionless index (DVI)', vr: 'Velocity ratio', pg: 'Peak gradient', mg: 'Mean gradient',
 };
-const UNIT = { lvotD: 'cm', vtiL: 'cm', vL: 'm/s', vmax: 'm/s', vtiA: 'cm', ef: '%', csa: 'cm²', sv: 'mL', svi: 'mL/m²', ava: 'cm²', avai: 'cm²/m²', pg: 'mmHg', mg: 'mmHg' };
-const ARIA = { lvotD: 'LVOT diameter', vtiL: 'LVOT velocity-time integral', vL: 'LVOT peak velocity', vmax: 'aortic valve peak velocity', vtiA: 'aortic valve velocity-time integral', ef: 'LVEF' };
+const UNIT = { lvotD: 'cm', vtiL: 'cm', vL: 'm/s', vmax: 'm/s', vtiA: 'cm', ef: '%', bsa: 'm²', csa: 'cm²', sv: 'mL', svi: 'mL/m²', ava: 'cm²', avai: 'cm²/m²', pg: 'mmHg', mg: 'mmHg' };
+const ARIA = { lvotD: 'LVOT diameter', vtiL: 'LVOT velocity-time integral', vL: 'LVOT peak velocity', vmax: 'aortic valve peak velocity', vtiA: 'aortic valve velocity-time integral', ef: 'LVEF', bsa: 'body surface area' };
 /** The names in the change line: the cause, and its effects. */
 const EFFECT = { csa: 'LVOT area', sv: 'stroke volume', svi: 'SVi', ava: 'AVA', avai: 'AVA index', dvi: 'DVI', vr: 'velocity ratio', pg: 'peak gradient', mg: 'mean gradient' };
 /** What each measurement changes, first the values that grade the valve. */
-const EFFECTS = { lvotD: ['ava', 'svi', 'csa'], vtiL: ['ava', 'dvi', 'svi'], vL: ['vr'], vmax: ['mg', 'pg', 'vr'], vtiA: ['ava', 'dvi', 'mg'], ef: [] };
+const EFFECTS = { lvotD: ['ava', 'svi', 'csa'], vtiL: ['ava', 'dvi', 'svi'], vL: ['vr'], vmax: ['mg', 'pg', 'vr'], vtiA: ['ava', 'dvi', 'mg'], ef: [], bsa: ['avai', 'svi'] };
 /** Each formula, and its numbers: text, and the keys whose values show. */
 const FORMULA = {
   csa: ['π × (LVOT diameter ÷ 2)²', ['π × (', { k: 'lvotD' }, ' ÷ 2)²']],
   sv: ['LVOT area × LVOT VTI', [{ k: 'csa' }, ' × ', { k: 'vtiL' }]],
-  svi: ['stroke volume ÷ BSA', [{ k: 'sv' }, ` ÷ ${BSA.toFixed(2)}`]],
+  svi: ['stroke volume ÷ BSA', [{ k: 'sv' }, ' ÷ ', { k: 'bsa' }]],
   ava: ['LVOT area × LVOT VTI ÷ AV VTI', [{ k: 'csa' }, ' × ', { k: 'vtiL' }, ' ÷ ', { k: 'vtiA' }]],
-  avai: ['AVA ÷ BSA', [{ k: 'ava' }, ` ÷ ${BSA.toFixed(2)}`]],
+  avai: ['AVA ÷ BSA', [{ k: 'ava' }, ' ÷ ', { k: 'bsa' }]],
   dvi: ['LVOT VTI ÷ AV VTI', [{ k: 'vtiL' }, ' ÷ ', { k: 'vtiA' }]],
   vr: ['LVOT peak velocity ÷ AV peak velocity', [{ k: 'vL' }, ' ÷ ', { k: 'vmax' }]],
   pg: ['4 × (AV peak velocity)²', ['4 × ', { k: 'vmax' }, '²']],
   mg: ['mean of 4v² over the AV envelope', ['4 × ', { k: 'vmax' }, '² × ', { k: 'f2' }]],
 };
 /** The widest each number gets (characters), so a formula keeps its place as values change. */
-const WIDE = { lvotD: 3, vtiL: 2, vL: 4, vmax: 3, vtiA: 3, csa: 4, sv: 3, ava: 4, f2: 4 };
+const WIDE = { lvotD: 3, vtiL: 2, vL: 4, vmax: 3, vtiA: 3, csa: 4, sv: 3, ava: 4, f2: 4, bsa: 4 };
 /** The grade bands of a row: its criterion in AS_BANDS (the dimensionless index takes the velocity ratio's). */
 const CRIT = { svi: 'svi', ava: 'ava', avai: 'avai', dvi: 'vr', vr: 'vr', vmax: 'vmax', mg: 'mg' };
 const BAND_LEVEL = { sclerosis: 0, mild: 1, moderate: 2, severe: 3, 'very severe': 4, 'normal flow': 0, 'low flow': 3 };
@@ -517,7 +522,7 @@ function buildDiagram(host) {
   const btn = (k, dir) => `<button type="button" class="ase-b" data-k="${k}" data-dir="${dir}" aria-label="${dir > 0 ? 'Increase' : 'Decrease'} ${ARIA[k]}">${dir > 0 ? UP : DOWN}</button>`;
   const input = (k) => `<div class="ase-row asx-in" data-row="${k}" role="group" aria-label="${NAME[k]}">
       <span class="ase-nm">${NAME[k]}</span>
-      <span class="ase-ctl">${btn(k, -1)}<span class="ase-v"><b></b><small>${UNIT[k]}</small></span>${btn(k, 1)}</span>
+      <span class="ase-ctl">${btn(k, -1)}<span class="ase-v">${field(k, `${ARIA[k]}, ${UNIT[k]}`, fieldWidth(INPUTS[k]))}<small>${UNIT[k]}</small></span>${btn(k, 1)}</span>
     </div>`;
   const nums = (k) => FORMULA[k][1].map((p) => (typeof p === 'string' ? p : `<i data-x="${p.k}" style="--w:${WIDE[p.k]}ch"></i>`)).join('');
   const chips = (k) => `<span class="asx-chips" aria-hidden="true">${AS_BANDS[CRIT[k]].map(([g, lab], i) => `<span class="asx-c" data-i="${i}" data-l="${BAND_LEVEL[g]}">${lab}</span>`).join('')}</span>`;
@@ -528,10 +533,13 @@ function buildDiagram(host) {
     </div>`;
   const step = ([s, name, law, keys]) => `<div class="ase-step is-on asx-step" data-s="${s}">
       <p class="ase-sh"><span class="ase-sn">${name}</span><span class="ase-sx">${law}<span class="cite" data-ref="baumgartner2017"></span></span><a class="asx-go" href="#pressure" data-go="pressure" aria-label="${law}: chapter ${numOf('pressure')}, Doppler hemodynamics">${numOf('pressure')} Pressure →</a></p>
-      ${keys.map(eq).join('')}${s === 'grad' ? `<p class="ase-note asx-note">${MG_NOTE}</p>` : ''}
+      ${s === 'area' ? '<div class="cfig-box" data-fig></div>' : ''}${keys.map(eq).join('')}${s === 'grad' ? `<p class="ase-note asx-note">${MG_NOTE}</p>` : ''}
     </div>`;
+  // the line under the title is index.html's, where a crawler reads it
+  const lede = host.querySelector('.ase-lede')?.outerHTML ?? '';
   host.innerHTML = `
-    <div class="ase-tbar"><h3 class="ase-title">Calculations and grades</h3><button type="button" class="ase-reset is-off" aria-label="Reset the edited values">Reset</button></div>
+    <div class="ase-tbar"><h3 class="ase-title">Valve area calculator and grades</h3><button type="button" class="ase-reset is-off" aria-label="Reset the edited values">Reset</button></div>
+    ${lede}
     <div class="ase-head">
       <p class="ase-result" tabindex="-1"><b></b> · <span></span></p>
       <p class="ase-change" aria-live="polite"></p>
@@ -549,9 +557,10 @@ function buildDiagram(host) {
   const q = (s) => host.querySelector(s);
   dg = {
     host, result: q('.ase-result'), head: q('.ase-result b'), sub: q('.ase-result span'), change: q('.ase-change'), reset: q('.ase-reset'),
+    fig: q('[data-fig]'), figKey: '',
     rows: Object.fromEntries(IN.map((k) => {
       const el = q(`[data-row="${k}"]`);
-      return [k, { el, v: el.querySelector('.ase-v b'), dn: el.querySelector('[data-dir="-1"]'), up: el.querySelector('[data-dir="1"]') }];
+      return [k, { el, v: el.querySelector('.ase-in'), dn: el.querySelector('[data-dir="-1"]'), up: el.querySelector('[data-dir="1"]') }];
     })),
     eqs: Object.fromEntries([...host.querySelectorAll('.asx-eq')].map((el) => [el.dataset.eq, {
       el, v: el.querySelector('.asx-v b'), st: el.querySelector('.asx-st'), chips: el.querySelector('.asx-chips'),
@@ -566,6 +575,7 @@ function buildDiagram(host) {
     if (b && !b.disabled) edit(b.dataset.k, Number(b.dataset.dir), b);
     else if (e.target.closest('.ase-reset')) resetEdits();
   });
+  bindFields(host, { apply: typed, step: edit });
 }
 
 /** The keys of ax that differ from the model's values where the edits started. */
@@ -576,23 +586,41 @@ function editedOf(ax) {
 
 const freeLive = () => { const live = document.querySelector('#ch-as .live'); if (live?.style.minHeight) live.style.minHeight = ''; };
 
-/** A ▲▼ click: the edited values and the slider at their result, in one patch; Play and the tour stop. */
+/** A ▲▼ click, or ↑ ↓ in a field: the value one step away. */
 function edit(k, dir, btn = null) {
-  const s = st, I = INPUTS[k];
+  editTo(k, stepOf(shown(st)[k], INPUTS[k], dir), btn);
+}
+
+/** A typed number, held within the measurement's limits; no number, or the number shown, shows the value again. */
+function typed(k, text, f) {
+  const cur = shown(st), t = typedValue(text, INPUTS[k]);
+  // the model's BSA is unrounded (1.97203): its own 1.97 typed again is no edit
+  if (t && num(k, t.to) !== num(k, cur[k]) && editTo(k, t.to, f, t.limit)) return;
+  showField(f, num(k, cur[k]));
+  if (t?.limit) txt(dg.change, `${NAME[k]} stays at ${withUnit(k, num(k, cur[k]))}: the ${t.limit} limit.`);
+}
+
+/**
+ * Measurement k to the value to: the edited values and the slider at their result, in one patch;
+ * Play and the tour stop. limit: the typed number lay beyond that limit. False when nothing changes.
+ */
+function editTo(k, to, btn = null, limit = '') {
+  const s = st;
   const base = s.ax ? s.ax.base : s[KEY];
   const cur = shown(s);
   const vals = Object.fromEntries(IN.map((q) => [q, cur[q]]));
-  const from = vals[k], to = stepOf(from, I, dir);
-  if (to === from) return;
+  const from = vals[k];
+  if (to === from) return false;
   vals[k] = to;
   const next = shownOf({ ax: { ...vals, base } });
-  pending = { kind: 'edit', k, from, to };
+  pending = { kind: 'edit', k, from, to, limit };
   steady(btn, () => {
     if (!editedOf({ ...vals, base }).length) setState({ ax: null, [KEY]: base, anim: false, playing: false });   // back at the model's values
     else setState({ ax: Object.freeze({ ...vals, base }), [KEY]: slideTo(s[KEY], next.grade), anim: false, playing: false });
   });
   pending = null;
   if (next.grade !== cur.grade) cue('bell');
+  return true;
 }
 
 function resetEdits() {
@@ -614,13 +642,16 @@ function renderDiagram(s, v) {
   // the measurements and their buttons
   for (const k of IN) {
     const R = dg.rows[k], I = INPUTS[k];
-    txt(R.v, num(k, v[k]));
+    showField(R.v, num(k, v[k]));
     R.el.classList.toggle('is-ed', M.ed.includes(k));
     for (const [b, off, other] of [[R.dn, v[k] <= I.min + 1e-9, R.up], [R.up, v[k] >= I.max - 1e-9, R.dn]]) {
       if (off && document.activeElement === b) other.focus();   // keep the focus in the row at a limit
       b.disabled = off;
     }
   }
+  // the two columns of the continuity equation, to scale
+  const fk = [v.lvotD, v.csa, v.vtiL, v.ava, v.vtiA, v.sv].join('|');
+  if (dg.fig && dg.figKey !== fk) { dg.figKey = fk; dg.fig.innerHTML = continuityFig(v); }
   // the calculations, the numbers in their formulas, and their grade bands
   for (const [k, E] of Object.entries(dg.eqs)) {
     txt(E.v, num(k, v[k]));
@@ -677,7 +708,7 @@ function crossed(P, M) {
 
 /** The cause and effect of a change, as one line. crossed: a cut-off or the result changed. */
 function changeLine(P, M, cause) {
-  const head = cause.kind === 'edit' ? `${NAME[cause.k]} ${withUnit(cause.k, `${num(cause.k, cause.from)} → ${num(cause.k, cause.to)}`)}` : cause.kind === 'reset' ? 'Reset' : 'Severity';
+  const head = cause.kind === 'edit' ? `${NAME[cause.k]} ${withUnit(cause.k, `${num(cause.k, cause.from)} → ${num(cause.k, cause.to)}`)}${cause.limit ? ` (the ${cause.limit} limit)` : ''}` : cause.kind === 'reset' ? 'Reset' : 'Severity';
   const cut = crossed(P, M);
   let what;
   if (cause.kind === 'edit' && cause.k === 'ef') what = cut.length ? cut.join(', ') : 'no calculation uses the LVEF';
