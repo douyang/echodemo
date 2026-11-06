@@ -14,6 +14,8 @@ Hidden chapters keep their code and come back with a flag in `src/order.js`: the
 - **Echo images.** `src/bmode.js` forms every frame: echogenicity by structure, specular surfaces, speckle that moves with the wall, beam blur, near-field clutter, noise, time-gain and log compression. Color jets come from a model of their flow (`jet()` in `src/echo2d.js`). A scanner-style color format is kept and off (`JETS` in `src/jets.js`).
 - **Values.** Each severity page runs a one-slider model set inside the guideline bands. It rounds each value to its printed decimals and grades from the rounded values, so a value on screen never contradicts its grade (`shown` in `src/sev.js`). Each page models one lesion, as the guidelines grade one lesion at a time.
 - **State.** One store (`src/state.js`) holds each chapter's own keys and a few shared keys (`SHARED`). A chapter's controls and Play change only its own keys.
+- **Calculators.** In 12, 15 and 16 the diagram under *Calculations and grades* takes typed numbers as well as ▲▼ steps (`bindFields` in `src/edits.js`). An edit moves the slider into the grade band of the result (`slideTo`). A slider move, Play or a preset clears the edits. In 15 and 16 the aliasing velocity (Va) is a field. The guideline's PISA radius criteria hold at 30–40 cm/s (15) and at 28 cm/s (16). At another Va, the grade uses the radius × √(Va / the criteria's Va), the radius of the same flow. In 12 the BSA is a field; the model's own BSA stays unrounded, so the grade bands do not move. `src/calcfig.js` draws the PISA hemisphere and the two columns of the continuity equation to scale.
+- **Search.** `src/search.js` builds its index from the page at the first search: chapter titles, headings, paragraphs, list items, table rows, the calculators' headings and the normal values, without citation numbers. Every word of the query must match. A result opens its chapter, stops the chapter's own steps and marks the passage.
 
 ## Text
 
@@ -38,6 +40,9 @@ src/order.js      the chapter order and numbers, the bonus chapters, the hidden 
 src/state.js      the store: each chapter's own keys and the shared keys
 src/ch/*.js       one module per chapter
 src/sev.js        severity pages: tracks, grade bands, Play, the measurement strip
+src/edits.js      the calculations in the text: ▲▼ steps, typed numbers, the slider's place for a result
+src/calcfig.js    the drawings of the calculators: PISA (15, 16) and the continuity equation (12)
+src/search.js     the search dialog and its index of the page's text and the normal values
 src/echo.js       view planes and echo views cut from the mesh, with the disease targets
 src/echo2d.js     parametric views (07), LV tracing, color jets, measurement boxes
 src/bmode.js      B-mode and M-mode image formation
@@ -63,7 +68,7 @@ archive/          markup of hidden chapters, not loaded by the site
 | Command | What it checks |
 | --- | --- |
 | `node tools/check-state.mjs` | Each chapter changes only its own state keys |
-| `node tools/preload.mjs --check` | The preload block of `index.html` lists every module (105) |
+| `node tools/preload.mjs --check` | The preload block of `index.html` lists every module (108) |
 | `node tools/stress-volumes.mjs --check` | Bonus chapter B1's stored LV volumes match the mesh |
 | `node tools/hinges.mjs --check` | The stored valve hinges (`assets/hinges.json`) match the model |
 | `node tools/crawlers.mjs --check` | `src/pages.js`, the head block of `index.html`, `sitemap.xml`, `llms.txt`, `_routes.json` and `_redirects` match the page and the order; no chapter's text changed without a new date |

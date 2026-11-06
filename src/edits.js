@@ -63,3 +63,73 @@ export function flash(el, cls = 'is-flash') {
   all[cls] = setTimeout(() => el.classList.remove(cls), FLASH + 200);
   timers.set(el, all);
 }
+
+// ---------------------------------------------------------------- typed measurements
+// A chapter that holds its calculations shows each measurement as a field: a number can be typed
+// there as well as stepped with ▲▼. The chapter applies it as it applies a step.
+
+/**
+ * The field of measurement k: an input that shows the number, `w` characters wide. label: its
+ * name for a screen reader, with the unit.
+ */
+export const field = (k, label, w = 4) => `<input class="ase-in" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false" data-k="${k}" aria-label="${label}" style="--w:${w}">`;
+
+/** The characters that the widest number of limits I ({ min, max, d }) takes. */
+export const fieldWidth = (I) => Math.max(2, String(Math.trunc(Math.max(Math.abs(I.max), Math.abs(I.min)))).length + (I.d ? I.d + 1 : 0) + (I.min < 0 ? 1 : 0));
+
+/** Show s in field f, unless a number is being typed there. */
+export function showField(f, s) {
+  if (f && !(document.activeElement === f && f.dataset.dirty) && f.value !== s) f.value = s;
+}
+
+/**
+ * A typed number for limits L ({ min, max, d }): rounded to d decimals and held within the limits.
+ * null for no number. limit: 'upper' or 'lower' when the number lay beyond that limit.
+ */
+export function typedValue(text, L) {
+  const s = String(text).trim().replace(',', '.');
+  if (!/^[-+]?(\d+\.?\d*|\.\d+)/.test(s)) return null;
+  const x = parseFloat(s);
+  if (!Number.isFinite(x)) return null;
+  const to = round(clamp(x, L.min, L.max), L.d);
+  return { to, limit: x > L.max + 1e-9 ? 'upper' : x < L.min - 1e-9 ? 'lower' : '' };
+}
+
+/**
+ * The fields of a diagram in host. A typed number applies on Enter or when its field loses the
+ * focus: apply(k, text, field). Escape restores the number. ↑ and ↓ step it as ▲▼ do:
+ * step(k, dir, field).
+ */
+export function bindFields(host, { apply, step }) {
+  const of = (e) => e.target.closest?.('input.ase-in');
+  host.addEventListener('focusin', (e) => {
+    const f = of(e);
+    if (!f) return;
+    f.dataset.was = f.value;
+    requestAnimationFrame(() => { if (document.activeElement === f) f.select(); });
+  });
+  // a field is being typed in from the first key: a keystroke can stop the chapter's own sequence
+  // (main.js hold, on input), and the page that renders then must not write over the field
+  for (const type of ['beforeinput', 'input']) host.addEventListener(type, (e) => { const f = of(e); if (f) f.dataset.dirty = '1'; });
+  host.addEventListener('keydown', (e) => {
+    const f = of(e);
+    if (!f) return;
+    if (e.key === 'Enter') { e.preventDefault(); f.blur(); }
+    else if (e.key === 'Escape') {
+      e.preventDefault();
+      delete f.dataset.dirty;
+      f.value = f.dataset.was ?? f.value;
+      f.blur();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (f.dataset.dirty) { delete f.dataset.dirty; apply(f.dataset.k, f.value, f); }
+      else step(f.dataset.k, e.key === 'ArrowUp' ? 1 : -1, f);
+    }
+  });
+  host.addEventListener('focusout', (e) => {
+    const f = of(e);
+    if (!f || !f.dataset.dirty) return;
+    delete f.dataset.dirty;
+    apply(f.dataset.k, f.value, f);
+  });
+}

@@ -35,6 +35,7 @@
 <link rel="modulepreload" href="src/jets.js">
 <link rel="modulepreload" href="src/music.js">
 <link rel="modulepreload" href="src/pages.js">
+<link rel="modulepreload" href="src/search.js">
 <link rel="modulepreload" href="src/ch/pulse.js">
 <link rel="modulepreload" href="src/ch/image.js">
 <link rel="modulepreload" href="src/ch/windows.js">
@@ -99,6 +100,7 @@
 <link rel="modulepreload" href="src/straintrack.js">
 <link rel="modulepreload" href="src/straincal.js">
 <link rel="modulepreload" href="src/meshjet.js">
+<link rel="modulepreload" href="src/calcfig.js">
 <link rel="modulepreload" href="src/constriction.js">
 <link rel="modulepreload" href="src/stresscal.js">
 <link rel="modulepreload" href="src/gl/rvpemesh.js">
@@ -171,6 +173,11 @@
         <option value="bav">Bicuspid AS</option>
       </select>
     </label>
+    <!-- search: the / key opens it too (src/search.js) -->
+    <button class="tool" id="btn-search" type="button" aria-haspopup="dialog" aria-keyshortcuts="/ Control+K Meta+K" aria-label="Search the chapters" title="Search (/)">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M10.4 10.4 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <span class="t">Search</span>
+    </button>
     <!-- hidden: Normal values opens from the report chapter (#ch-report) -->
     <button class="tool" id="btn-norms" type="button" aria-haspopup="dialog" aria-label="Normal values" hidden>
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h11M6 2v12" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
@@ -1421,8 +1428,9 @@
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <!-- the calculations, with buttons on six measurements (Baumgartner 2017): src/ch/as.js -->
-      <section class="ase asx" id="as-calc" aria-label="Aortic stenosis: measurements, calculations, grades and result"></section>
+      <!-- the calculations, a valve area calculator: seven measurements that take a typed number or ▲▼
+           (Baumgartner 2017): src/ch/as.js. The line here stays under its title -->
+      <section class="ase asx" id="as-calc" aria-label="Aortic stenosis: valve area calculator, grades and result"><p class="ase-lede">This valve area calculator takes your own measurements: type a number, or step it with the arrows. The continuity equation gives the AVA, the AVA index and the dimensionless index, and the grade and the figure follow.</p></section>
       <div class="prose" data-part="prose">
         <h3>Natural history</h3>
         <ol class="steps">
@@ -1578,8 +1586,9 @@
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <!-- the calculations, with buttons on thirteen measurements and the flail switch (Zoghbi 2017 Figure 18): src/ch/mr.js -->
-      <section class="ase asx" id="mr-calc" aria-label="Mitral regurgitation: measurements, calculations, criteria and result"></section>
+      <!-- the calculations, a PISA calculator: fourteen measurements that take a typed number or ▲▼,
+           and the flail switch (Zoghbi 2017 Figure 18): src/ch/mr.js. The line here stays under its title -->
+      <section class="ase asx" id="mr-calc" aria-label="Mitral regurgitation: PISA calculator, criteria and result"><p class="ase-lede">This PISA calculator takes your own measurements: type a number, or step it with the arrows. The flow rate, the EROA, the regurgitant volume and fraction, the grade and the figure follow.</p></section>
       <div class="prose" data-part="prose">
         <h3>Echocardiographic findings by grade and stage</h3>
         <ol class="steps">
@@ -1644,8 +1653,9 @@
       </div>
       <dl class="readouts"></dl>
       <p class="live"></p>
-      <!-- the calculations, with buttons on fifteen measurements and two switches (Zoghbi 2017 Figure 31; Lancellotti 2022 Table 16): src/ch/tr.js -->
-      <section class="ase asx" id="tr-calc" aria-label="Tricuspid regurgitation: measurements, pressures, calculations, criteria and result"></section>
+      <!-- the calculations, a PISA calculator: sixteen measurements that take a typed number or ▲▼, and
+           two switches (Zoghbi 2017 Figure 31; Lancellotti 2022 Table 16): src/ch/tr.js. The line here stays under its title -->
+      <section class="ase asx" id="tr-calc" aria-label="Tricuspid regurgitation: PISA calculator, pressures, criteria and result"><p class="ase-lede">This PISA calculator takes your own measurements: type a number, or step it with the arrows. The EROA, the regurgitant volume, the RV systolic pressure, the grade and the figure follow.</p></section>
       <div class="prose" data-part="prose">
         <h3>Echocardiographic findings by grade</h3>
         <ol class="steps">
@@ -2717,6 +2727,15 @@
     </div>
   </nav>
 </div>
+
+<dialog id="dlg-search" aria-labelledby="search-title">
+  <div class="dlg-head srch-head">
+    <h2 id="search-title" class="sr-only">Search</h2>
+    <label class="srch-box"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M10.4 10.4 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><input id="search-q" type="search" placeholder="Search: PISA, E/e′, TAPSE" autocomplete="off" spellcheck="false" enterkeyhint="search" aria-label="Search the chapters and the normal values" aria-controls="search-res" aria-describedby="search-n"></label>
+    <button class="tool" type="button" data-close>Close</button>
+  </div>
+  <div class="dlg-body"><p class="srch-n" id="search-n" aria-live="polite"></p><ol class="srch-res" id="search-res"></ol></div>
+</dialog>
 
 <dialog id="dlg-chapters" aria-labelledby="chapters-title">
   <div class="dlg-head"><h2 id="chapters-title">Chapters</h2><button class="tool" type="button" data-close>Close</button></div>

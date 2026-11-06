@@ -1,11 +1,11 @@
 // Mitral regurgitation: one slider from no leak to severe primary MR with LV dysfunction.
 // The orifice drives the numbers (PISA, volume, fraction); the chambers, the pulmonary veins and
 // the mitral inflow follow. Values are illustrative, set inside the ASE 2017 bands.
-// The text holds the calculations as a diagram (Zoghbi 2017 Figure 18), with ▲▼ buttons on the
-// thirteen measurements that the figure uses and a switch for a flail leaflet. An edit stores
-// the measurements in mx; the slider then marks a band of their result and does not change
-// them. A move of the slider, Play, the tour or a heart's preset clears mx, and the values
-// follow the slider again.
+// The text holds the calculations as a diagram (Zoghbi 2017 Figure 18), a PISA calculator: each
+// of the fourteen measurements that the figure uses takes a typed number or a step of its ▲▼
+// buttons, and a switch sets a flail leaflet. An edit stores the measurements in mx; the slider
+// then marks a band of their result and does not change them. A move of the slider, Play, the
+// tour or a heart's preset clears mx, and the values follow the slider again.
 import { Sheet, clamp, MONO } from '../sketch.js';
 import { panel, spectral, vscale, SC } from '../scope.js';
 import { mitralV, RR, EV, cycleAt } from '../cyclemodel.js';
@@ -15,7 +15,8 @@ import { drawA4C, cal, measures, heartShown, jet, barFor } from '../echo2d.js';
 import { MeshPanel } from '../meshpanel.js';
 import { laWeight, lvSizeOf, lvByEf } from '../meshcal.js';
 import { onPlane, hingesOf, closureOf, blood, cavity, area, middle, sub, add, mul, dot, unit, perp } from '../meshjet.js';
-import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
+import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash, field, fieldWidth, showField, typedValue, bindFields } from '../edits.js';
+import { pisaFig } from '../calcfig.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
 import { numOf } from '../order.js';
@@ -29,9 +30,15 @@ const slideTo = (x, g) => slideOf(x, g, BANDS);
 const KEY = 'mrS';
 const VMAX = 5.0;        // m/s, the model's MR jet (LV-LA gradient about 100 mmHg)
 const VTI = 150;         // cm, the model's MR jet through all of systole
-// cm/s, the aliasing velocity for PISA (ASE 2017: 30-40). At 5 m/s, 32 cm/s puts the radius of 1.0 cm
-// at an EROA of 0.40 cm², where the grade turns severe. The plume format draws the view at it.
+// cm/s, the model's aliasing velocity for PISA (ASE 2017: 30-40). At 5 m/s, 32 cm/s puts the radius
+// of 1.0 cm at an EROA of 0.40 cm², where the grade turns severe. An edit can set another (va).
 const VA = 32;
+/**
+ * The radius criteria (≤0.3 and ≥1.0 cm) hold at an aliasing velocity of 30-40 cm/s. Outside that
+ * range a radius r compares as r × rScale(va): the radius of the same flow rate (2π r² Va) at the
+ * nearest end of the range.
+ */
+const rScale = (va) => (va < 30 ? Math.sqrt(va / 30) : va > 40 ? Math.sqrt(va / 40) : 1);
 const NYQ = 60;          // cm/s, the scanner format's scale for the jet (ASE 2017: 50-70)
 
 // By the EROA as printed, so that each parameter crosses its ASE 2017 cut-off where the EROA crosses
@@ -128,6 +135,7 @@ function modelAt(s) {
   const eroa = round(eroaOf(s), 2);
   m.onset = onsetOf(eroa);
   m.r = Math.sqrt((eroa * VMAX * 100) / (2 * Math.PI * VA));
+  m.va = VA;
   m.vmax = VMAX;
   // a leak through part of systole has a shorter jet VTI: less volume for the same EROA
   m.vti = VTI * (1 - m.onset);
@@ -140,9 +148,10 @@ function modelAt(s) {
   return m;
 }
 
-/** The thirteen measurements: decimals as reported, and the step and limits of their buttons. */
+/** The fourteen measurements: decimals as reported, and the step and limits of their buttons. */
 const INPUTS = {
   r: { d: 2, step: 0.05, min: 0, max: 1.5 },
+  va: { d: 0, step: 1, min: 10, max: 70 },
   vc: { d: 2, step: 0.05, min: 0, max: 1.2 },
   jet: { d: 0, step: 5, min: 0, max: 80 },
   vmax: { d: 1, step: 0.1, min: 3, max: 7 },
@@ -185,14 +194,16 @@ function measure(raw) {
   for (const k of IN) v[k] = round(raw[k], INPUTS[k].d);
   v.flail = !!raw.flail;
   v.trv = round(raw.trv, 1);
-  v.flow = round(2 * Math.PI * v.r ** 2 * VA, 0);
+  v.flow = round(2 * Math.PI * v.r ** 2 * v.va, 0);
   v.eroa = round(v.flow / (100 * v.vmax), 2);
   v.rvol = round(v.eroa * v.vti, 0);
   v.rf = v.rvol > 0 ? round((100 * v.rvol) / (v.rvol + v.fwd), 0) : 0;
   v.leak = v.flow > 0 || v.vc > 0 || v.jet > 0;    // a color signal: flow convergence, vena contracta or jet
   v.p = fitP(q2(v.tri), v.vti / ((v.vmax * durOf(v.onset)) / 10));
   v.sd = v.pvS / v.pvD;
-  v.crit = mrIntegrated(v);
+  // the radius criteria hold at 30-40 cm/s: outside, the radius of the same flow at the nearest end
+  const sc = rScale(v.va);
+  v.crit = mrIntegrated(sc === 1 ? v : { ...v, r: round(v.r * sc, 2) });
   v.grade = v.crit.grade;
   return v;
 }
@@ -309,7 +320,7 @@ function a4c(ctx, box, v, t, mode) {
     // one view at the aliasing velocity: the flow convergence with its radius, and the jet
     const heart = st.pheno || 'normal';
     const W8 = lvByEf(heart, lvSizeOf(heart, v.lvedd), v.ef), sy = cycleAt(t).s;
-    MESH.draw(ctx, box, fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${VA} cm/s`, `A4C · COLOR ${VA}`), {
+    MESH.draw(ctx, box, fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${v.va} cm/s`, `A4C · COLOR ${v.va}`), {
       tms: t, disease: { la: laWeight(v.lavi, heart), lvSize: W8.size + (W8.esSize - W8.size) * sy }, lvK: W8.k,
       // deeper as the LA grows (its length as the cube root of its volume, 5 cm at 25 mL/m²)
       deeper: Math.max(0, 5 * (Math.cbrt(v.lavi / 25) - 1)),
@@ -318,8 +329,8 @@ function a4c(ctx, box, v, t, mode) {
         if (!v.leak) return;
         const J = mrJet(ev, v, sy);
         if (!J) return;
-        jet(c, F, { q, va: VA, vc: v.vc, jl: J.jl, jw: J.jw, a, pisa, O: J.O, dir: J.dir, clip: J.clip });
-        barFor(c, F, -VA, VA);
+        jet(c, F, { q, va: v.va, vc: v.vc, jl: J.jl, jw: J.jw, a, pisa, O: J.O, dir: J.dir, clip: J.clip });
+        barFor(c, F, -v.va, v.va);
         // the PISA radius from the orifice into the LV, along its long axis
         if (pisa && a > 0.5) cal(c, F, J.O, add(J.O, mul(J.ax, v.r)), '', { solid: true });
       },
@@ -343,14 +354,14 @@ function a4c(ctx, box, v, t, mode) {
   const jl = Math.min(lMax * 0.92, Math.sqrt(jA / 0.55 * 1.3));
   const jw = jl > 0 ? Math.min(wMax * 0.9, jA / (0.55 * jl)) : 0;
   // Jet: the standard scale. PISA: zoomed on the valve, the baseline shifted toward the jet
-  // (down: MR runs away from the probe) until the flow aliases at VA; variance off
+  // (down: MR runs away from the probe) until the flow aliases at the aliasing velocity; variance off
   const zoom = mode === 'pisa';
   drawA4C(ctx, box, g, {
     t, depth: 16 + 1.2 * v.s,
-    title: zoom ? fit(box.w, `APICAL FOUR-CHAMBER · ZOOM · Va ${VA} cm/s`, `A4C ZOOM · Va ${VA}`) : fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${NYQ} cm/s`, `A4C · COLOR ${NYQ}`),
+    title: zoom ? fit(box.w, `APICAL FOUR-CHAMBER · ZOOM · Va ${v.va} cm/s`, `A4C ZOOM · Va ${v.va}`) : fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${NYQ} cm/s`, `A4C · COLOR ${NYQ}`),
     color: {
       roi: zoom ? 'mv' : 'la', zoom: zoom ? { at: 'mv', span: 7 } : null,
-      lo: zoom ? -VA : -NYQ, hi: zoom ? 2 * NYQ - VA : NYQ, variance: !zoom,
+      lo: zoom ? -v.va : -NYQ, hi: zoom ? 2 * NYQ - v.va : NYQ, variance: !zoom,
       E: v.E, A: v.A, pvS: v.pvS, pvD: v.pvD,
       mr: v.leak ? { q, u0: v.vmax * 100, vc: v.vc, jl, jw, frac: v.jet / 100, a } : null,
     },
@@ -361,7 +372,7 @@ function a4c(ctx, box, v, t, mode) {
         cal(c, F, O, [O[0] * (1 - r / l), O[1] * (1 - r / l)], '', { solid: true });
       }
       measures(c, F, tags(zoom
-        ? [`PISA r ${v.r.toFixed(2)} cm`, `Va ${VA} cm/s`, [`EROA ${v.eroa.toFixed(2)} cm²`, `EROA ${v.eroa.toFixed(2)}`]]
+        ? [`PISA r ${v.r.toFixed(2)} cm`, `Va ${v.va} cm/s`, [`EROA ${v.eroa.toFixed(2)} cm²`, `EROA ${v.eroa.toFixed(2)}`]]
         : [`VC ${v.vc.toFixed(2)} cm`, [`jet ${v.jet}% of LA`, `jet ${v.jet}% LA`]]));
     },
   });
@@ -435,7 +446,8 @@ function meterItems(v) {
     { k: 'Regurgitant volume', v: v.rvol, u: 'mL', lo: 0, hi: 110, cuts: [[30, '30'], [60, '60']], bad: v.rvol >= 60 },
     { k: 'Regurgitant fraction', v: v.rf, u: '%', lo: 0, hi: 70, cuts: [[30, '30'], [50, '50']], bad: v.rf >= 50 },
     { k: 'Vena contracta', v: v.vc, u: 'cm', d: 2, lo: 0, hi: 1.0, cuts: [[0.3, '0.3'], [0.7, '0.7']], bad: v.vc >= 0.7 },
-    { k: `PISA radius (${VA} cm/s)`, v: v.r, u: 'cm', d: 2, lo: 0, hi: 1.4, cuts: [[0.3, '0.3'], [1.0, '1.0']], bad: v.r >= 1.0 },
+    // the radius criteria as radii at the aliasing velocity shown (rScale)
+    { k: `PISA radius (${v.va} cm/s)`, v: v.r, u: 'cm', d: 2, lo: 0, hi: 1.4, cuts: [0.3, 1.0].map((c) => { const x = c / rScale(v.va); return [x, x.toFixed(rScale(v.va) === 1 ? 1 : 2)]; }), bad: v.r * rScale(v.va) >= 1.0 - 1e-9 },
     { k: 'LV end-systolic diameter', v: v.lvesd, u: 'mm', lo: 20, hi: 50, norm: [25, 40], cuts: [[40, '40']], bad: v.lvesd >= 40 },
     { k: 'LVEF', v: v.ef, u: '%', lo: 30, hi: 75, norm: [52, 72], cuts: [[60, '60']], bad: v.ef <= 60 && SEVERE.has(v.grade) },
     { k: 'LA volume index', v: v.lavi, u: 'mL/m²', lo: 10, hi: 80, norm: [16, 34], cuts: [[34, '34']], bad: v.lavi > 34 },
@@ -471,38 +483,38 @@ function draw(sh, t) {
 // From the measurements (▲▼) through the PISA formulas to the quantitative grades and the
 // specific criteria of Figure 18, and to the result. Each change flashes where it acts.
 const NAME = {
-  r: 'PISA radius', vc: 'Vena contracta', jet: 'Jet area', vmax: 'MR peak velocity', vti: 'MR VTI', fwd: 'LVOT stroke volume',
+  r: 'PISA radius', va: 'Aliasing velocity (Va)', vc: 'Vena contracta', jet: 'Jet area', vmax: 'MR peak velocity', vti: 'MR VTI', fwd: 'LVOT stroke volume',
   E: 'Mitral E', A: 'Mitral A', pvS: 'Pulmonary vein S', lvedd: 'LVEDD', lvesd: 'LVESD', lavi: 'LA volume index', ef: 'LVEF', flail: 'Flail leaflet',
   flow: 'Flow rate', eroa: 'EROA', rvol: 'Regurgitant volume', rf: 'Regurgitant fraction',
 };
 const UNIT = {
-  r: 'cm', vc: 'cm', jet: '% LA', vmax: 'm/s', vti: 'cm', fwd: 'mL', E: 'm/s', A: 'm/s', pvS: 'm/s', lvedd: 'mm', lvesd: 'mm', lavi: 'mL/m²', ef: '%',
+  r: 'cm', va: 'cm/s', vc: 'cm', jet: '% LA', vmax: 'm/s', vti: 'cm', fwd: 'mL', E: 'm/s', A: 'm/s', pvS: 'm/s', lvedd: 'mm', lvesd: 'mm', lavi: 'mL/m²', ef: '%',
   flow: 'mL/s', eroa: 'cm²', rvol: 'mL', rf: '%',
 };
 const ARIA = {
-  r: 'PISA radius', vc: 'vena contracta width', jet: 'jet area as a percentage of the LA area', vmax: 'MR peak velocity', vti: 'MR velocity-time integral',
+  r: 'PISA radius', va: 'aliasing velocity', vc: 'vena contracta width', jet: 'jet area as a percentage of the LA area', vmax: 'MR peak velocity', vti: 'MR velocity-time integral',
   fwd: 'LVOT stroke volume', E: 'mitral E velocity', A: 'mitral A velocity', pvS: 'pulmonary vein systolic velocity', lvedd: 'LV end-diastolic diameter',
   lvesd: 'LV end-systolic diameter', lavi: 'LA volume index', ef: 'LVEF',
 };
 /** The measurements in the groups of the diagram: color Doppler, spectral Doppler, 2D. */
 const GROUPS = [
-  ['color', 'Color Doppler', `PISA at an aliasing velocity of ${VA} cm/s; jet area at 50–70 cm/s`, ['r', 'vc', 'jet']],
+  ['color', 'Color Doppler', 'PISA radius at the aliasing velocity Va; jet area at 50–70 cm/s', ['r', 'va', 'vc', 'jet']],
   ['spec', 'Spectral Doppler', 'CW through the jet; PW in the LVOT, the mitral inflow and a pulmonary vein', ['vmax', 'vti', 'fwd', 'E', 'A', 'pvS']],
   ['twod', '2D', 'LV diameters, LA volume index, LVEF and the leaflets', ['lvedd', 'lvesd', 'lavi', 'ef', 'flail']],
 ];
 /** The names in the change line: the cause, and its effects. */
 const EFFECT = { flow: 'flow rate', eroa: 'EROA', rvol: 'regurgitant volume', rf: 'regurgitant fraction' };
 /** What each measurement changes, first the values that grade the leak. */
-const EFFECTS = { r: ['eroa', 'rvol', 'rf', 'flow'], vmax: ['eroa', 'rvol', 'rf'], vti: ['rvol', 'rf'], fwd: ['rf'] };
+const EFFECTS = { r: ['eroa', 'rvol', 'rf', 'flow'], va: ['eroa', 'rvol', 'rf', 'flow'], vmax: ['eroa', 'rvol', 'rf'], vti: ['rvol', 'rf'], fwd: ['rf'] };
 /** Each formula, and its numbers: text, and the keys whose values show. */
 const FORMULA = {
-  flow: ['2π × r² × Va', ['2π × ', { k: 'r' }, `² × ${VA}`]],
+  flow: ['2π × r² × Va', ['2π × ', { k: 'r' }, '² × ', { k: 'va' }]],
   eroa: ['flow rate ÷ (100 × peak velocity)', [{ k: 'flow' }, ' ÷ (100 × ', { k: 'vmax' }, ')']],
   rvol: ['EROA × VTI', [{ k: 'eroa' }, ' × ', { k: 'vti' }]],
   rf: ['RVol ÷ (RVol + LVOT stroke volume)', [{ k: 'rvol' }, ' ÷ (', { k: 'rvol' }, ' + ', { k: 'fwd' }, ')']],
 };
 /** The widest each number gets (characters), so a formula keeps its place as values change. */
-const WIDE = { r: 4, flow: 3, vmax: 3, eroa: 4, vti: 3, rvol: 3, fwd: 3 };
+const WIDE = { r: 4, va: 2, flow: 3, vmax: 3, eroa: 4, vti: 3, rvol: 3, fwd: 3 };
 const QUANT = ['eroa', 'rvol', 'rf'];
 const ROMAN = ['', 'I', 'II', 'III', 'IV'];
 /** The colour level of a quantitative grade: II and III are moderate, IV severe. */
@@ -514,7 +526,7 @@ const OUTS = [
 const SEV_OUT = new Set(['severe', 'q3s', 'q4']);
 const UP = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.2 7.2 5 2.6l3.8 4.6z" fill="currentColor"/></svg>';
 const DOWN = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.2 2.8 5 7.4l3.8-4.6z" fill="currentColor"/></svg>';
-const CRIT_NOTE = 'Figure 18 gives no number for four criteria. This site uses a jet below 20% of the LA area and the upper limits of normal for men<span class="cite" data-ref="lang2015"></span>. Normal LV function is an LVEF above 60%, because an LVEF ≤60% is LV dysfunction in MR<span class="cite" data-ref="otto2020"></span>. A soft CW jet is a jet that the figure draws faint, at a regurgitant volume below 30 mL.';
+const CRIT_NOTE = 'Figure 18 gives no number for four criteria. This site uses a jet below 20% of the LA area and the upper limits of normal for men<span class="cite" data-ref="lang2015"></span>. Normal LV function is an LVEF above 60%, because an LVEF ≤60% is LV dysfunction in MR<span class="cite" data-ref="otto2020"></span>. A soft CW jet is a jet that the figure draws faint, at a regurgitant volume below 30 mL. The radius criteria hold at an aliasing velocity of 30–40 cm/s. Outside that range, the page compares the radius that gives the same flow rate at the nearest end of the range: r × √(Va ÷ 30) below it and r × √(Va ÷ 40) above it.';
 const QUANT_NOTE = 'Figure 18 gives no rule when the three measures fall in different grades. The diagram uses the middle grade of the three.';
 /** A slider's crossing stays in the change line this long (ms) while the moves after it cross nothing. */
 const HOLD = 2500;
@@ -541,7 +553,7 @@ function buildDiagram(host) {
     </div>`
     : `<div class="ase-row asx-in" data-row="${k}" role="group" aria-label="${NAME[k]}">
       <span class="ase-nm">${NAME[k]}</span>
-      <span class="ase-ctl">${btn(k, -1)}<span class="ase-v"><b></b><small>${UNIT[k]}</small></span>${btn(k, 1)}</span>
+      <span class="ase-ctl">${btn(k, -1)}<span class="ase-v">${field(k, `${ARIA[k]}, ${UNIT[k]}`, fieldWidth(INPUTS[k]))}<small>${UNIT[k]}</small></span>${btn(k, 1)}</span>
     </div>`);
   const group = ([s, name, sub, keys]) => `<div class="ase-step is-on asx-step" data-s="${s}">
       <p class="ase-sh"><span class="ase-sn">${name}</span><span class="ase-sx">${sub}</span></p>
@@ -556,8 +568,11 @@ function buildDiagram(host) {
     </div>`;
   const crit = (set) => ([k, name, rule]) => `<p class="asx-q" data-c="${set}:${k}"><i class="ase-mk" aria-hidden="true"></i><span class="asx-qn">${name}</span>${rule ? `<span class="asx-qr">${rule}</span>` : ''}<span class="asx-qs"></span></p>`;
   const set = (s, name, list) => `<div class="rgx-set" data-set="${s}"><p class="rgx-sh"><span>${name}</span><span class="ase-count"></span></p>${list.map(crit(s)).join('')}</div>`;
+  // the line under the title is index.html's, where a crawler reads it
+  const lede = host.querySelector('.ase-lede')?.outerHTML ?? '';
   host.innerHTML = `
-    <div class="ase-tbar"><h3 class="ase-title">Calculations and grades</h3><button type="button" class="ase-reset is-off" aria-label="Reset the edited values">Reset</button></div>
+    <div class="ase-tbar"><h3 class="ase-title">PISA calculator and grades</h3><button type="button" class="ase-reset is-off" aria-label="Reset the edited values">Reset</button></div>
+    ${lede}
     <div class="ase-head">
       <p class="ase-result" tabindex="-1"><b></b> · <span></span></p>
       <p class="ase-change" aria-live="polite"></p>
@@ -565,6 +580,7 @@ function buildDiagram(host) {
     ${GROUPS.map(group).join('')}
     <div class="ase-step is-on asx-step" data-s="quant">
       <p class="ase-sh"><span class="ase-sn">Quantitation</span><span class="ase-sx">PISA method and the ASE grades I to IV<span class="cite" data-ref="zoghbi2017"></span></span><a class="asx-go" href="#pressure" data-go="pressure" aria-label="The flow rate: chapter ${numOf('pressure')}, Doppler hemodynamics">${numOf('pressure')} Pressure →</a></p>
+      <div class="cfig-box" data-fig></div>
       ${['flow', ...QUANT].map(eq).join('')}
       <p class="asx-q rgx-qg"><span class="asx-qn">Quantitative grade</span><span class="asx-qr">the middle grade of the three</span><span class="asx-qs"></span></p>
       <p class="ase-note asx-note">${QUANT_NOTE}</p>
@@ -582,9 +598,10 @@ function buildDiagram(host) {
   const q = (s) => host.querySelector(s);
   dg = {
     host, result: q('.ase-result'), head: q('.ase-result b'), sub: q('.ase-result span'), change: q('.ase-change'), reset: q('.ase-reset'), dur: q('.rgx-dur'),
+    fig: q('[data-fig]'), figKey: '',
     rows: Object.fromEntries(IN.map((k) => {
       const el = q(`[data-row="${k}"]`);
-      return [k, { el, v: el.querySelector('.ase-v b'), dn: el.querySelector('[data-dir="-1"]'), up: el.querySelector('[data-dir="1"]') }];
+      return [k, { el, v: el.querySelector('.ase-in'), dn: el.querySelector('[data-dir="-1"]'), up: el.querySelector('[data-dir="1"]') }];
     })),
     flail: { el: q('[data-row="flail"]'), no: q('[data-k="flail"][data-dir="-1"]'), yes: q('[data-k="flail"][data-dir="1"]') },
     eqs: Object.fromEntries([...host.querySelectorAll('.asx-eq')].map((el) => [el.dataset.eq, {
@@ -603,6 +620,7 @@ function buildDiagram(host) {
     if (b && !b.disabled) edit(b.dataset.k, Number(b.dataset.dir), b);
     else if (e.target.closest('.ase-reset')) resetEdits();
   });
+  bindFields(host, { apply: typed, step: edit });
 }
 
 /** The measurements and the flail switch of the values v, as mx stores them. */
@@ -616,23 +634,41 @@ function editedOf(mx) {
 
 const freeLive = () => { const live = document.querySelector('#ch-mr .live'); if (live?.style.minHeight) live.style.minHeight = ''; };
 
-/** A ▲▼ click or the flail switch: the edited values and the slider at their result, in one patch; Play and the tour stop. */
+/** A ▲▼ click, ↑ or ↓ in a field, or the flail switch: the value one step away, or the switch's. */
 function edit(k, dir, btn = null) {
+  const cur = shown(st);
+  editTo(k, k === 'flail' ? dir > 0 : stepOf(cur[k], limits(k, cur), dir), btn);
+}
+
+/** A typed number, held within the measurement's limits at the values shown; no number shows the value again. */
+function typed(k, text, f) {
+  const cur = shown(st), t = typedValue(text, { ...limits(k, cur), d: INPUTS[k].d });
+  if (t && editTo(k, t.to, f, t.limit)) return;
+  showField(f, num(k, cur[k]));
+  if (t?.limit) txt(dg.change, `${NAME[k]} stays at ${withUnit(k, num(k, cur[k]))}: the ${t.limit} limit.`);
+}
+
+/**
+ * Measurement k to the value to: the edited values and the slider at their result, in one patch;
+ * Play and the tour stop. limit: the typed number lay beyond that limit. False when nothing changes.
+ */
+function editTo(k, to, btn = null, limit = '') {
   const s = st;
   const base = s.mx ? s.mx.base : s[KEY];
   const cur = shown(s);
   const vals = valsOf(cur);
-  const from = vals[k], to = k === 'flail' ? dir > 0 : stepOf(from, limits(k, cur), dir);
-  if (to === from) return;
+  const from = vals[k];
+  if (to === from) return false;
   vals[k] = to;
   const next = shownOf({ mx: { ...vals, base } });
-  pending = { kind: 'edit', k, from, to };
+  pending = { kind: 'edit', k, from, to, limit };
   steady(btn, () => {
     if (!editedOf({ ...vals, base }).length) setState({ mx: null, [KEY]: base, anim: false, playing: false });   // back at the model's values
     else setState({ mx: Object.freeze({ ...vals, base }), [KEY]: slideTo(s[KEY], next.grade), anim: false, playing: false });
   });
   pending = null;
   if (next.grade !== cur.grade) cue('bell');
+  return true;
 }
 
 function resetEdits() {
@@ -654,7 +690,7 @@ function renderDiagram(s, v) {
   // the measurements and their buttons
   for (const k of IN) {
     const R = dg.rows[k], L = limits(k, v);
-    txt(R.v, num(k, v[k]));
+    showField(R.v, num(k, v[k]));
     R.el.classList.toggle('is-ed', M.ed.includes(k));
     for (const [b, off, other] of [[R.dn, v[k] <= L.min + 1e-9, R.up], [R.up, v[k] >= L.max - 1e-9, R.dn]]) {
       if (off && document.activeElement === b) other.focus();   // keep the focus in the row at a limit
@@ -665,6 +701,9 @@ function renderDiagram(s, v) {
   dg.flail.yes.setAttribute('aria-pressed', String(v.flail));
   dg.flail.el.classList.toggle('is-ed', M.ed.includes('flail'));
   txt(dg.dur, `The jet lasts ${Math.round(durOf(v.onset))} ms, from ${v.onset > 0.05 ? 'mid-systole' : 'mitral closure'} to mitral opening, so the VTI and the peak velocity limit each other.`);
+  // the flow convergence to scale
+  const fk = [v.r, v.va, v.flow, v.eroa, v.vmax].join('|');
+  if (dg.fig && dg.figKey !== fk) { dg.figKey = fk; dg.fig.innerHTML = pisaFig(v, { up: 'LV', down: 'LA' }); }
   // the calculations, the numbers in their formulas, and their quantitative grades
   for (const [k, E] of Object.entries(dg.eqs)) {
     txt(E.v, num(k, v[k]));
@@ -734,7 +773,7 @@ function crossed(P, M) {
 
 /** The cause and effect of a change, as one line. crossed: a cut-off, a criterion or the result changed. */
 function changeLine(P, M, cause) {
-  const head = cause.kind === 'edit' ? `${NAME[cause.k]} ${withUnit(cause.k, `${num(cause.k, cause.from)} → ${num(cause.k, cause.to)}`)}` : cause.kind === 'reset' ? 'Reset' : 'Severity';
+  const head = cause.kind === 'edit' ? `${NAME[cause.k]} ${withUnit(cause.k, `${num(cause.k, cause.from)} → ${num(cause.k, cause.to)}`)}${cause.limit ? ` (the ${cause.limit} limit)` : ''}` : cause.kind === 'reset' ? 'Reset' : 'Severity';
   const cut = crossed(P, M);
   let what;
   if (cause.kind === 'edit' && EFFECTS[cause.k]) {

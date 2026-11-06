@@ -2,8 +2,9 @@
 // contracta, the jet and the flow convergence grow, and the right heart and the veins follow. The
 // peak velocity rises with the RV pressure to severe TR and falls as the RV and RA pressures
 // approach each other. The text holds the calculations as a diagram (Zoghbi 2017 Figure 31; beyond
-// severe, Lancellotti 2022 Table 16), with ▲▼ buttons on fifteen measurements and switches for the
-// leaflets and the contour of the CW jet. The PISA method gives the EROA (flow ÷ peak velocity) and
+// severe, Lancellotti 2022 Table 16), a PISA calculator: each of sixteen measurements takes a typed
+// number or a step of its ▲▼ buttons, and switches set the leaflets and the contour of the CW jet.
+// The PISA method gives the EROA (flow ÷ peak velocity) and
 // the regurgitant volume (EROA × VTI); the IVC gives the RA pressure, and with the peak velocity
 // the RV systolic pressure. An edit stores the measurements in trx; the slider then marks a band
 // of their result and does not change them. A move of the slider, Play, the tour or a heart's
@@ -17,7 +18,8 @@ import { drawA4C, drawIVC, drawPSAXpm, cal, measures, jet, barFor } from '../ech
 import { MeshPanel } from '../meshpanel.js';
 import { rvGrowOf, raWeight, sepOf } from '../meshcal.js';
 import { onPlane, hingesOf, closureOf, blood, cavity, area, middle, sub, add, mul, dot, unit, perp } from '../meshjet.js';
-import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash } from '../edits.js';
+import { round, stepOf, slideTo as slideOf, steady as holdPlace, flash, field, fieldWidth, showField, typedValue, bindFields } from '../edits.js';
+import { pisaFig } from '../calcfig.js';
 import { cue } from '../music.js';
 import { BSA } from './pressure.js';
 import { numOf } from '../order.js';
@@ -31,6 +33,11 @@ const slideTo = (x, g) => slideOf(x, g, BANDS);
 const KEY = 'trS';
 const EDITS = 'trx';
 const VA = 28;             // cm/s, the aliasing velocity for PISA: a baseline shift to 28 cm/s (ASE 2017 Table 14)
+/**
+ * Table 14 gives the radius criteria (≤0.5 and >0.9 cm) at VA. An edit can set another aliasing
+ * velocity (va); a radius r then compares as r × rScale(va), the radius of the same flow rate at VA.
+ */
+const rScale = (va) => Math.sqrt(va / VA);
 const NYQ = 60;            // cm/s, the scanner format's scale for the jet (ASE 2017: 50-70)
 const DUR = EV.mvo + 10 - EV.mvc;   // ms, the jet: tricuspid closure to tricuspid opening
 
@@ -119,6 +126,7 @@ function modelAt(s) {
   m.tri = triOf(s);
   // the PISA radius that gives the model's EROA at the peak velocity as printed
   m.r = Math.sqrt((eroa * vmax * 100) / (2 * Math.PI * VA));
+  m.va = VA;
   // the VTI of the model's own envelope (p = 1)
   m.vti = 100 * vmax * (DUR / 1000) * envMean(q2(m.tri), 1);
   m.vc = vcOf(s);
@@ -128,11 +136,12 @@ function modelAt(s) {
   return m;
 }
 
-/** The fifteen measurements: decimals as reported, and the step and limits of their buttons. */
+/** The sixteen measurements: decimals as reported, and the step and limits of their buttons. */
 const INPUTS = {
   vc: { d: 1, step: 0.1, min: 0, max: 2.8 },
   jet: { d: 0, step: 5, min: 0, max: 90 },
   r: { d: 2, step: 0.05, min: 0, max: 1.5 },
+  va: { d: 0, step: 1, min: 10, max: 70 },
   vmax: { d: 1, step: 0.1, min: 1, max: 5 },
   vti: { d: 0, step: 5, min: 20, max: 160 },
   E: { d: 2, step: 0.05, min: 0.2, max: 1.6 },
@@ -174,7 +183,7 @@ function limits(k, v) {
 function measure(raw) {
   const v = { ...raw };
   for (const k of IN) v[k] = round(raw[k], INPUTS[k].d);
-  v.flow = round(2 * Math.PI * v.r ** 2 * VA, 0);
+  v.flow = round(2 * Math.PI * v.r ** 2 * v.va, 0);
   v.eroa = round(v.flow / (100 * v.vmax), 2);
   v.rvol = round(v.eroa * v.vti, 0);
   v.grad = round(4 * v.vmax ** 2, 0);
@@ -185,7 +194,8 @@ function measure(raw) {
   v.triD = v.cw === cwOf(raw.tri) ? raw.tri : v.cw === 'triangular' ? 1 : 0;
   v.p = fitP(q2(v.triD), v.vti / ((v.vmax * DUR) / 10));
   v.leak = v.flow > 0 || v.vc > 0 || v.jet > 0;    // a color signal: flow convergence, vena contracta or jet
-  v.crit = trIntegrated(v);
+  // the radius criteria hold at VA: at another aliasing velocity, the radius of the same flow at VA
+  v.crit = trIntegrated(v.va === VA ? v : { ...v, r: round(v.r * rScale(v.va), 2) });
   v.grade = v.crit.grade;
   return v;
 }
@@ -323,7 +333,7 @@ function a4c(ctx, box, v, t, mode) {
   if (JETS === 'plume') {
     // one view at the aliasing velocity: the flow convergence with its radius, and the jet
     const heart = st.pheno || 'normal';
-    MESH.draw(ctx, box, titleOf(ctx, box.w, [`APICAL FOUR-CHAMBER, RV FOCUSED · COLOR ${VA} cm/s`, `A4C, RV FOCUSED · COLOR ${VA} cm/s`, `A4C RV · COLOR ${VA}`]), {
+    MESH.draw(ctx, box, titleOf(ctx, box.w, [`APICAL FOUR-CHAMBER, RV FOCUSED · COLOR ${v.va} cm/s`, `A4C, RV FOCUSED · COLOR ${v.va} cm/s`, `A4C RV · COLOR ${v.va}`]), {
       tms: t, disease: { rvGrow: rvGrowOf(heart, v.rvb), raGrow: raWeight(v.ravi, heart) },
       // deeper as the RA grows (its length as the cube root of its volume, 5 cm at 25 mL/m²)
       deeper: Math.max(0, 5 * (Math.cbrt(v.ravi / 25) - 1)),
@@ -332,8 +342,8 @@ function a4c(ctx, box, v, t, mode) {
         if (!v.leak) return;
         const J = trJet(ev, v, cycleAt(t).s);
         if (!J) return;
-        jet(c, F, { q, va: VA, vc: v.vc, jl: J.jl, jw: J.jw, a, O: J.O, dir: J.dir, clip: J.clip, pclip: J.pclip });
-        barFor(c, F, -VA, VA);
+        jet(c, F, { q, va: v.va, vc: v.vc, jl: J.jl, jw: J.jw, a, O: J.O, dir: J.dir, clip: J.clip, pclip: J.pclip });
+        barFor(c, F, -v.va, v.va);
         // the PISA radius from the orifice into the RV
         if (v.r > 0 && a > 0.5) cal(c, F, J.O, add(J.O, mul(J.ax, v.r)), '', { solid: true });
       },
@@ -359,15 +369,15 @@ function a4c(ctx, box, v, t, mode) {
   const jl = Math.min(rlMax * 0.95, Math.sqrt((jA / 0.55) * 1.2));
   const jw = jl > 0 ? Math.min(rwMax * 0.95, jA / (0.55 * jl)) : 0;
   // Jet: the standard scale. PISA: zoomed on the valve, the baseline shifted toward the jet
-  // (down: TR runs away from the probe) until the flow aliases at VA; variance off. The
-  // torrential jet is slow and laminar.
+  // (down: TR runs away from the probe) until the flow aliases at the aliasing velocity; variance
+  // off. The torrential jet is slow and laminar.
   const pisa = mode === 'pisa';
   drawA4C(ctx, box, g, {
     t, depth: 16 + 1.4 * v.s,
-    title: pisa ? fit(box.w, `APICAL FOUR-CHAMBER · ZOOM · Va ${VA} cm/s`, `A4C ZOOM · Va ${VA}`) : fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${NYQ} cm/s`, `A4C · COLOR ${NYQ}`),
+    title: pisa ? fit(box.w, `APICAL FOUR-CHAMBER · ZOOM · Va ${v.va} cm/s`, `A4C ZOOM · Va ${v.va}`) : fit(box.w, `APICAL FOUR-CHAMBER · COLOR ${NYQ} cm/s`, `A4C · COLOR ${NYQ}`),
     color: {
       roi: pisa ? 'tv' : 'ra', zoom: pisa ? { at: 'tv', span: 7 } : null,
-      lo: pisa ? -VA : -NYQ, hi: pisa ? 2 * NYQ - VA : NYQ, variance: !pisa,
+      lo: pisa ? -v.va : -NYQ, hi: pisa ? 2 * NYQ - v.va : NYQ, variance: !pisa,
       // the hepatic veins: negative is forward flow here
       Et: v.E, At: v.A, hvS: -v.hvS, hvD: -v.hvD,
       tr: v.leak ? { q, u0: v.vmax * 100, vc: v.vc, jl, jw, area: jA, a, lam: v.s > 0.7 ? 1 : 0 } : null,
@@ -379,7 +389,7 @@ function a4c(ctx, box, v, t, mode) {
         cal(c, F, O, [O[0] * (1 - r / l), O[1] * (1 - r / l)], '', { solid: true });
       }
       measures(c, F, pisa
-        ? [`PISA r ${v.r.toFixed(2)} cm`, `Va ${VA} cm/s`, [`EROA ${v.eroa.toFixed(2)} cm²`, `EROA ${v.eroa.toFixed(2)}`]]
+        ? [`PISA r ${v.r.toFixed(2)} cm`, `Va ${v.va} cm/s`, [`EROA ${v.eroa.toFixed(2)} cm²`, `EROA ${v.eroa.toFixed(2)}`]]
         : [`RV base ${v.rvb.toFixed(1)} cm`, [`annulus ${v.ta.toFixed(1)} cm`, `TA ${v.ta.toFixed(1)} cm`], `VC ${v.vc.toFixed(1)} cm`, [`jet ${v.jet}% of RA`, `jet ${v.jet}%`], ...tags]);
     },
   });
@@ -514,17 +524,17 @@ function draw(sh, t) {
 // and Table 16 and the specific criteria of Figure 31, and to the result. Each change flashes
 // where it acts.
 const NAME = {
-  vc: 'Vena contracta', jet: 'Jet area / RA area', r: 'PISA radius', vmax: 'Peak velocity', vti: 'TR VTI', cw: 'CW contour',
+  vc: 'Vena contracta', jet: 'Jet area / RA area', r: 'PISA radius', va: 'Aliasing velocity (Va)', vmax: 'Peak velocity', vti: 'TR VTI', cw: 'CW contour',
   E: 'Tricuspid E', A: 'Tricuspid A', hvS: 'Hepatic vein S', hvD: 'Hepatic vein D',
   leaf: 'Leaflets', ta: 'Tricuspid annulus', rvb: 'RV basal diameter', ravi: 'RA volume index', tapse: 'TAPSE', ivc: 'IVC diameter', coll: 'IVC collapse, sniff',
   grad: 'RV–RA gradient', rap: 'RA pressure', rvsp: 'RV systolic pressure', flow: 'Flow rate', eroa: 'EROA', rvol: 'Regurgitant volume',
 };
 const UNIT = {
-  vc: 'cm', jet: '%', r: 'cm', vmax: 'm/s', vti: 'cm', E: 'm/s', A: 'm/s', hvS: 'm/s', hvD: 'm/s', ta: 'cm', rvb: 'cm', ravi: 'mL/m²', tapse: 'mm', ivc: 'cm', coll: '%',
+  vc: 'cm', jet: '%', r: 'cm', va: 'cm/s', vmax: 'm/s', vti: 'cm', E: 'm/s', A: 'm/s', hvS: 'm/s', hvD: 'm/s', ta: 'cm', rvb: 'cm', ravi: 'mL/m²', tapse: 'mm', ivc: 'cm', coll: '%',
   grad: 'mmHg', rap: 'mmHg', rvsp: 'mmHg', flow: 'mL/s', eroa: 'cm²', rvol: 'mL',
 };
 const ARIA = {
-  vc: 'vena contracta width', jet: 'jet area as a percentage of the RA area', r: 'PISA radius', vmax: 'peak TR velocity', vti: 'TR velocity-time integral',
+  vc: 'vena contracta width', jet: 'jet area as a percentage of the RA area', r: 'PISA radius', va: 'aliasing velocity', vmax: 'peak TR velocity', vti: 'TR velocity-time integral',
   E: 'tricuspid E velocity', A: 'tricuspid A velocity', hvS: 'hepatic vein systolic velocity', hvD: 'hepatic vein diastolic velocity',
   ta: 'tricuspid annulus diameter', rvb: 'RV basal diameter', ravi: 'RA volume index', tapse: 'TAPSE', ivc: 'IVC diameter', coll: 'IVC collapse with a sniff',
 };
@@ -532,24 +542,24 @@ const ARIA = {
 const SWITCH_LABEL = { leaf: ['Coapt', 'No coaptation', 'Flail'], cw: ['Parabolic', 'Triangular'] };
 /** The measurements in the groups of the diagram: color Doppler, spectral Doppler, 2D and M-mode. */
 const GROUPS = [
-  ['color', 'Color Doppler', 'jet at 50–70 cm/s; PISA at a baseline shift to 28 cm/s', ['vc', 'jet', 'r']],
+  ['color', 'Color Doppler', 'jet at 50–70 cm/s; PISA at a baseline shift to the aliasing velocity Va, 28 cm/s in Table 14', ['vc', 'jet', 'r', 'va']],
   ['spec', 'Spectral Doppler', 'CW through the jet and the inflow; PW in a hepatic vein', ['vmax', 'vti', 'cw', 'E', 'A', 'hvS', 'hvD']],
   ['twod', '2D and M-mode', 'the valve, the right heart and the IVC', ['leaf', 'ta', 'rvb', 'ravi', 'tapse', 'ivc', 'coll']],
 ];
 /** The names in the change line: the cause, and its effects. */
 const EFFECT = { flow: 'flow rate', eroa: 'EROA', rvol: 'regurgitant volume', grad: 'RV–RA gradient', rap: 'RA pressure', rvsp: 'RV systolic pressure' };
 /** What each measurement changes, first the values that grade the leak. */
-const EFFECTS = { r: ['eroa', 'rvol', 'flow'], vmax: ['eroa', 'rvol', 'rvsp', 'grad'], vti: ['rvol'], ivc: ['rap', 'rvsp'], coll: ['rap', 'rvsp'] };
+const EFFECTS = { r: ['eroa', 'rvol', 'flow'], va: ['eroa', 'rvol', 'flow'], vmax: ['eroa', 'rvol', 'rvsp', 'grad'], vti: ['rvol'], ivc: ['rap', 'rvsp'], coll: ['rap', 'rvsp'] };
 /** Each formula, and its numbers: text, and the keys whose values show. */
 const FORMULA = {
   grad: ['4 × peak velocity²', ['4 × ', { k: 'vmax' }, '²']],
   rvsp: ['RV–RA gradient + RA pressure', [{ k: 'grad' }, ' + ', { k: 'rap' }]],
-  flow: ['2π × r² × Va', ['2π × ', { k: 'r' }, `² × ${VA}`]],
+  flow: ['2π × r² × Va', ['2π × ', { k: 'r' }, '² × ', { k: 'va' }]],
   eroa: ['flow rate ÷ (100 × peak velocity)', [{ k: 'flow' }, ' ÷ (100 × ', { k: 'vmax' }, ')']],
   rvol: ['EROA × TR VTI', [{ k: 'eroa' }, ' × ', { k: 'vti' }]],
 };
 /** The widest each number gets (characters), so a formula keeps its place as values change. */
-const WIDE = { vmax: 3, grad: 3, rap: 2, r: 4, flow: 3, eroa: 4, vti: 3 };
+const WIDE = { vmax: 3, grad: 3, rap: 2, r: 4, va: 2, flow: 3, eroa: 4, vti: 3 };
 const QUANT = ['vc', 'eroa', 'rvol'];
 /** The colour level of a grade: moderate, then severe and beyond in the flag colour. */
 const QLEV = [0, 1, 2, 3, 4, 4];
@@ -561,7 +571,7 @@ const OUTS = [
 const SEV_OUT = new Set(['severe', 'q3', 'b3', 'b4', 'b5']);
 const UP = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.2 7.2 5 2.6l3.8 4.6z" fill="currentColor"/></svg>';
 const DOWN = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.2 2.8 5 7.4l3.8-4.6z" fill="currentColor"/></svg>';
-const CRIT_NOTE = 'Most criteria: the ASE text asks for a majority of the specific signs, so four of the seven. Figure 31 gives no number for five criteria. This site uses a jet below 20% of the RA area; a normal RV basal diameter (<4.1 cm) and RA volume index (<30 mL/m²) and a TAPSE >17 mm for preserved RV function<span class="cite" data-ref="mukherjee2025"></span>; an annulus >4.0 cm as dilated<span class="cite" data-ref="otto2020"></span>; and a CW jet that the figure draws faint, at a regurgitant volume below 30 mL. Figure 31 gives the PISA radius at a Nyquist limit of 30–40 cm/s (mild <0.4 cm); the page measures it at a baseline shift to 28 cm/s, where Table 14 gives ≤0.5 cm and >0.9 cm<span class="cite" data-ref="zoghbi2017"></span>.';
+const CRIT_NOTE = 'Most criteria: the ASE text asks for a majority of the specific signs, so four of the seven. Figure 31 gives no number for five criteria. This site uses a jet below 20% of the RA area; a normal RV basal diameter (<4.1 cm) and RA volume index (<30 mL/m²) and a TAPSE >17 mm for preserved RV function<span class="cite" data-ref="mukherjee2025"></span>; an annulus >4.0 cm as dilated<span class="cite" data-ref="otto2020"></span>; and a CW jet that the figure draws faint, at a regurgitant volume below 30 mL. Figure 31 gives the PISA radius at a Nyquist limit of 30–40 cm/s (mild <0.4 cm); the page measures it at a baseline shift to 28 cm/s, where Table 14 gives ≤0.5 cm and >0.9 cm<span class="cite" data-ref="zoghbi2017"></span>. With another aliasing velocity, the page compares the radius that gives the same flow rate at 28 cm/s: r × √(Va ÷ 28).';
 const QUANT_NOTE = 'Figure 31 and Table 16 give no rule when the three measures fall in different grades. The diagram uses the middle grade of the three. The regurgitant volume is the EROA × the VTI of the jet, so a slow jet with a short VTI gives a small volume for its EROA.';
 /** A slider's crossing stays in the change line this long (ms) while the moves after it cross nothing. */
 const HOLD = 2500;
@@ -590,7 +600,7 @@ function buildDiagram(host) {
     </div>`
     : `<div class="ase-row asx-in" data-row="${k}" role="group" aria-label="${NAME[k]}">
       <span class="ase-nm">${NAME[k]}</span>
-      <span class="ase-ctl">${btn(k, -1)}<span class="ase-v"><b></b><small>${UNIT[k]}</small></span>${btn(k, 1)}</span>
+      <span class="ase-ctl">${btn(k, -1)}<span class="ase-v">${field(k, `${ARIA[k]}, ${UNIT[k]}`, fieldWidth(INPUTS[k]))}<small>${UNIT[k]}</small></span>${btn(k, 1)}</span>
     </div>`);
   const group = ([s, name, sub, keys]) => `<div class="ase-step is-on asx-step" data-s="${s}">
       <p class="ase-sh"><span class="ase-sn">${name}</span><span class="ase-sx">${sub}</span></p>
@@ -605,8 +615,11 @@ function buildDiagram(host) {
     </div>`;
   const crit = (set) => ([k, name, rule]) => `<p class="asx-q" data-c="${set}:${k}"><i class="ase-mk" aria-hidden="true"></i><span class="asx-qn">${name}</span>${rule ? `<span class="asx-qr">${rule}</span>` : ''}<span class="asx-qs"></span></p>`;
   const set = (s, name, list) => `<div class="rgx-set" data-set="${s}" data-n="${list.length}"><p class="rgx-sh"><span>${name}</span><span class="ase-count"></span></p>${list.map(crit(s)).join('')}</div>`;
+  // the line under the title is index.html's, where a crawler reads it
+  const lede = host.querySelector('.ase-lede')?.outerHTML ?? '';
   host.innerHTML = `
-    <div class="ase-tbar"><h3 class="ase-title">Calculations and grades</h3><button type="button" class="ase-reset is-off" aria-label="Reset the edited values">Reset</button></div>
+    <div class="ase-tbar"><h3 class="ase-title">PISA calculator and grades</h3><button type="button" class="ase-reset is-off" aria-label="Reset the edited values">Reset</button></div>
+    ${lede}
     <div class="ase-head">
       <p class="ase-result" tabindex="-1"><b></b> · <span></span></p>
       <p class="ase-change" aria-live="polite"></p>
@@ -618,6 +631,7 @@ function buildDiagram(host) {
     </div>
     <div class="ase-step is-on asx-step" data-s="quant">
       <p class="ase-sh"><span class="ase-sn">Quantitation</span><span class="ase-sx">PISA method; ASE grades, then EACVI beyond severe<span class="cite" data-ref="zoghbi2017,lancellotti2022"></span></span><a class="asx-go" href="#mr" data-go="mr" aria-label="The PISA method: chapter ${numOf('mr')}, Mitral regurgitation">${numOf('mr')} MR →</a></p>
+      <div class="cfig-box" data-fig></div>
       ${['vc', 'flow', 'eroa', 'rvol'].map(eq).join('')}
       <p class="asx-q rgx-qg"><span class="asx-qn">Quantitative grade</span><span class="asx-qr">the middle grade of the three</span><span class="asx-qs"></span></p>
       <p class="ase-note asx-note">${QUANT_NOTE}</p>
@@ -634,9 +648,10 @@ function buildDiagram(host) {
   const q = (s) => host.querySelector(s);
   dg = {
     host, result: q('.ase-result'), head: q('.ase-result b'), sub: q('.ase-result span'), change: q('.ase-change'), reset: q('.ase-reset'), dur: q('.rgx-dur'),
+    fig: q('[data-fig]'), figKey: '',
     rows: Object.fromEntries(IN.map((k) => {
       const el = q(`[data-row="${k}"]`);
-      return [k, { el, v: el.querySelector('.ase-v b'), dn: el.querySelector('[data-dir="-1"]'), up: el.querySelector('[data-dir="1"]') }];
+      return [k, { el, v: el.querySelector('.ase-in'), dn: el.querySelector('[data-dir="-1"]'), up: el.querySelector('[data-dir="1"]') }];
     })),
     sw: Object.fromEntries(SW.map((k) => [k, { el: q(`[data-row="${k}"]`), bs: [...host.querySelectorAll(`[data-row="${k}"] button`)] }])),
     eqs: Object.fromEntries([...host.querySelectorAll('.asx-eq')].map((el) => [el.dataset.eq, {
@@ -654,6 +669,7 @@ function buildDiagram(host) {
     if (b && !b.disabled) edit(b.dataset.k, b.dataset.i !== undefined ? SWITCH[b.dataset.k][Number(b.dataset.i)] : Number(b.dataset.dir), b);
     else if (e.target.closest('.ase-reset')) resetEdits();
   });
+  bindFields(host, { apply: typed, step: edit });
 }
 
 /** The measurements and the switches of the values v, as trx stores them. */
@@ -667,23 +683,42 @@ function editedOf(ed) {
 
 const freeLive = () => { const live = document.querySelector('#ch-tr .live'); if (live?.style.minHeight) live.style.minHeight = ''; };
 
-/** A ▲▼ click (dir) or a switch (its value): the edited values and the slider at their result, in one patch; Play and the tour stop. */
+/** A ▲▼ click or ↑ ↓ in a field (dir), or a switch (its value): the value one step away, or the switch's. */
 function edit(k, x, btn = null) {
+  const cur = shown(st);
+  editTo(k, SWITCH[k] ? x : stepOf(cur[k], limits(k, cur), x), btn);
+}
+
+/** A typed number, held within the measurement's limits at the values shown; no number shows the value again. */
+function typed(k, text, f) {
+  const cur = shown(st), t = typedValue(text, { ...limits(k, cur), d: INPUTS[k].d });
+  if (t && editTo(k, t.to, f, t.limit)) return;
+  showField(f, num(k, cur[k]));
+  if (t?.limit) txt(dg.change, `${NAME[k]} stays at ${withUnit(k, num(k, cur[k]))}: the ${t.limit} limit.`);
+}
+
+/**
+ * Measurement or switch k to the value to: the edited values and the slider at their result, in
+ * one patch; Play and the tour stop. limit: the typed number lay beyond that limit. False when
+ * nothing changes.
+ */
+function editTo(k, to, btn = null, limit = '') {
   const s = st;
   const base = s[EDITS] ? s[EDITS].base : s[KEY];
   const cur = shown(s);
   const vals = valsOf(cur);
-  const from = vals[k], to = SWITCH[k] ? x : stepOf(from, limits(k, cur), x);
-  if (to === from) return;
+  const from = vals[k];
+  if (to === from) return false;
   vals[k] = to;
   const next = shownOf({ [EDITS]: { ...vals, base } });
-  pending = { kind: 'edit', k, from, to };
+  pending = { kind: 'edit', k, from, to, limit };
   steady(btn, () => {
     if (!editedOf({ ...vals, base }).length) setState({ [EDITS]: null, [KEY]: base, anim: false, playing: false });   // back at the model's values
     else setState({ [EDITS]: Object.freeze({ ...vals, base }), [KEY]: slideTo(s[KEY], next.grade), anim: false, playing: false });
   });
   pending = null;
   if (next.grade !== cur.grade) cue('bell');
+  return true;
 }
 
 function resetEdits() {
@@ -705,7 +740,7 @@ function renderDiagram(s, v) {
   // the measurements and their buttons
   for (const k of IN) {
     const R = dg.rows[k], L = limits(k, v);
-    txt(R.v, num(k, v[k]));
+    showField(R.v, num(k, v[k]));
     R.el.classList.toggle('is-ed', M.eds.includes(k));
     for (const [b, off, other] of [[R.dn, v[k] <= L.min + 1e-9, R.up], [R.up, v[k] >= L.max - 1e-9, R.dn]]) {
       if (off && document.activeElement === b) other.focus();   // keep the focus in the row at a limit
@@ -717,6 +752,9 @@ function renderDiagram(s, v) {
     S.el.classList.toggle('is-ed', M.eds.includes(k));
   }
   txt(dg.dur, `The jet lasts ${Math.round(DUR)} ms, from tricuspid closure to tricuspid opening, so the VTI and the peak velocity limit each other.`);
+  // the flow convergence to scale
+  const fk = [v.r, v.va, v.flow, v.eroa, v.vmax].join('|');
+  if (dg.fig && dg.figKey !== fk) { dg.figKey = fk; dg.fig.innerHTML = pisaFig(v, { up: 'RV', down: 'RA' }); }
   // the pressures and the calculations, the numbers in their formulas, and the grades
   for (const [k, E] of Object.entries(dg.eqs)) {
     txt(E.v, num(k, v[k]));
@@ -784,7 +822,7 @@ function crossed(P, M) {
 
 /** The cause and effect of a change, as one line. crossed: a cut-off, a criterion or the result changed. */
 function changeLine(P, M, cause) {
-  const head = cause.kind === 'edit' ? `${NAME[cause.k]} ${withUnit(cause.k, `${num(cause.k, cause.from)} → ${num(cause.k, cause.to)}`)}` : cause.kind === 'reset' ? 'Reset' : 'Severity';
+  const head = cause.kind === 'edit' ? `${NAME[cause.k]} ${withUnit(cause.k, `${num(cause.k, cause.from)} → ${num(cause.k, cause.to)}`)}${cause.limit ? ` (the ${cause.limit} limit)` : ''}` : cause.kind === 'reset' ? 'Reset' : 'Severity';
   const cut = crossed(P, M);
   let what;
   if (cause.kind === 'edit' && EFFECTS[cause.k]) {
