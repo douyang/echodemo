@@ -89,6 +89,9 @@ if (FROM_GIT) {
 } else {
   for (const k of KEYS) dates[k] = old[k] && old[k].text === hashes[k] ? old[k].modified : TODAY;
 }
+// The root shows the first chapter, but its credit line ("By David Ouyang, MD · Updated ...") dates the
+// whole site. The root's date is therefore the latest date of any page, not the first chapter's own.
+dates[KEYS[0]] = KEYS.map((k) => dates[k]).sort().at(-1);
 
 // the pages
 const image = (k) => (fs.existsSync(at(`assets/og/${k}.jpg`)) ? `assets/og/${k}.jpg` : 'assets/og/home.jpg');
